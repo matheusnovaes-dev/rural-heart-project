@@ -4,8 +4,7 @@ export const siteConfig = {
   description:
     "Safralume traduz os relatórios do Cepea e da Conab em respostas simples, com frete já descontado, direto no WhatsApp do produtor.",
   whatsapp: {
-    // TODO: confirm this number is correct and active before going live.
-    number: "5537998333290",
+    number: "5531990040215",
     defaultMessage: "Olá! Quero testar o Safralume grátis por 7 dias.",
   },
 } as const;
