@@ -24,3 +24,5 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+<!-- sync test: pushed from Claude Code on 2026-08-23 -->
