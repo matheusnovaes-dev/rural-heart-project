@@ -89,7 +89,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "O preço líquido da sua saca, direto no WhatsApp.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "/images/og-image.jpg" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "/images/og-image.jpg" },
     ],
     links: [
       {
@@ -97,6 +101,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.png", type: "image/png", sizes: "32x32" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
     ],
   }),
   shellComponent: RootShell,
