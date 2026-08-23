@@ -1,6 +1,6 @@
 # Rural Naming Project
 
-Nomeia esse projeto para,  Project Rural, construa nada, apenas nomeie
+Nomeia esse projeto para, Project Rural, construa nada, apenas nomeie
 
 This project was built with [Lovable](https://lovable.dev).
 
