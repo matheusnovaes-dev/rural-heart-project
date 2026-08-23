@@ -1,12 +1,12 @@
 export const siteConfig = {
-  name: "Terralume",
+  name: "Safralume",
   tagline: "O preço líquido da sua saca, direto no WhatsApp",
   description:
-    "Terralume traduz os relatórios do Cepea e da Conab em respostas simples, com frete já descontado, direto no WhatsApp do produtor.",
+    "Safralume traduz os relatórios do Cepea e da Conab em respostas simples, com frete já descontado, direto no WhatsApp do produtor.",
   whatsapp: {
     // TODO: confirm this number is correct and active before going live.
     number: "5537998333290",
-    defaultMessage: "Olá! Quero testar o Terralume grátis por 7 dias.",
+    defaultMessage: "Olá! Quero testar o Safralume grátis por 7 dias.",
   },
 } as const;
 

@@ -69,7 +69,7 @@ export function LeadForm({ className }: { className?: string }) {
     setStatus("success");
 
     const cropLabel = cropOptions.find((c) => c.value === values.crop)?.label ?? values.crop;
-    const message = `Olá! Sou ${values.name}, produtor de ${cropLabel}. Quero testar o Terralume grátis por 7 dias.`;
+    const message = `Olá! Sou ${values.name}, produtor de ${cropLabel}. Quero testar o Safralume grátis por 7 dias.`;
     window.open(buildWhatsAppLink(message), "_blank", "noopener,noreferrer");
   }
 

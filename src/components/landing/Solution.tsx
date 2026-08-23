@@ -12,7 +12,7 @@ export function Solution() {
             Como funciona na prática
           </span>
           <h2 className="mt-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            Você pergunta. O Terralume responde com o preço líquido.
+            Você pergunta. O Safralume responde com o preço líquido.
           </h2>
           <p className="mt-4 max-w-md text-muted-foreground">
             Cruzamos os dados oficiais do Cepea e da Conab com o frete da sua região na hora — sem
@@ -50,7 +50,7 @@ function PhoneMockup() {
             <Sprout className="size-4" />
           </span>
           <div>
-            <p className="text-sm font-semibold text-white">Terralume</p>
+            <p className="text-sm font-semibold text-white">Safralume</p>
             <p className="text-xs text-white/70">online</p>
           </div>
         </div>

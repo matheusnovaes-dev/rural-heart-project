@@ -77,13 +77,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Terralume — Preço líquido da sua saca, direto no WhatsApp" },
+      { title: "Safralume — Preço líquido da sua saca, direto no WhatsApp" },
       {
         name: "description",
         content:
-          "Terralume traduz os relatórios do Cepea e da Conab em respostas simples, com frete já descontado, direto no WhatsApp do produtor.",
+          "Safralume traduz os relatórios do Cepea e da Conab em respostas simples, com frete já descontado, direto no WhatsApp do produtor.",
       },
-      { property: "og:title", content: "Terralume" },
+      { property: "og:title", content: "Safralume" },
       {
         property: "og:description",
         content: "O preço líquido da sua saca, direto no WhatsApp.",

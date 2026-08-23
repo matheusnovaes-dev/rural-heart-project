@@ -26,8 +26,8 @@ export function TrustProof() {
           </h2>
 
           <p className="mt-4 max-w-lg text-primary-foreground/85">
-            Todo preço mostrado no Terralume vem do Cepea ou da Conab, com data de referência
-            visível na resposta. O Terralume apresenta cenários de mercado com base em dados
+            Todo preço mostrado no Safralume vem do Cepea ou da Conab, com data de referência
+            visível na resposta. O Safralume apresenta cenários de mercado com base em dados
             públicos — não é recomendação de investimento nem consultoria financeira.
           </p>
 

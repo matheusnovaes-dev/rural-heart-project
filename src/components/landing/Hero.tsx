@@ -42,7 +42,7 @@ export function Hero() {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="mt-5 max-w-2xl text-pretty text-lg text-white/85"
         >
-          Sem planilha, sem relatório complicado. O Terralume já desconta o frete e te manda o
+          Sem planilha, sem relatório complicado. O Safralume já desconta o frete e te manda o
           número certo, na hora que você precisa decidir.
         </motion.p>
 
