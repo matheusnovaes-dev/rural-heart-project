@@ -10,33 +10,160 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as DashboardLayoutRouteImport } from './routes/dashboard/_layout'
+import { Route as DashboardLayoutIndexRouteImport } from './routes/dashboard/_layout/index'
+import { Route as DashboardLayoutEquipeRouteImport } from './routes/dashboard/_layout/equipe'
+import { Route as DashboardLayoutLeadsRouteImport } from './routes/dashboard/_layout/leads'
+import { Route as DashboardLayoutLembretesRouteImport } from './routes/dashboard/_layout/lembretes'
+import { Route as DashboardLayoutMarcaRouteImport } from './routes/dashboard/_layout/marca'
+import { Route as DashboardLayoutPrecosRouteImport } from './routes/dashboard/_layout/precos'
+import { Route as DashboardLayoutProdutoresRouteImport } from './routes/dashboard/_layout/produtores'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardLayoutRoute = DashboardLayoutRouteImport.update({
+  id: '/dashboard/_layout',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardLayoutIndexRoute = DashboardLayoutIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardLayoutRoute,
+} as any)
+const DashboardLayoutEquipeRoute = DashboardLayoutEquipeRouteImport.update({
+  id: '/equipe',
+  path: '/equipe',
+  getParentRoute: () => DashboardLayoutRoute,
+} as any)
+const DashboardLayoutLeadsRoute = DashboardLayoutLeadsRouteImport.update({
+  id: '/leads',
+  path: '/leads',
+  getParentRoute: () => DashboardLayoutRoute,
+} as any)
+const DashboardLayoutLembretesRoute =
+  DashboardLayoutLembretesRouteImport.update({
+    id: '/lembretes',
+    path: '/lembretes',
+    getParentRoute: () => DashboardLayoutRoute,
+  } as any)
+const DashboardLayoutMarcaRoute = DashboardLayoutMarcaRouteImport.update({
+  id: '/marca',
+  path: '/marca',
+  getParentRoute: () => DashboardLayoutRoute,
+} as any)
+const DashboardLayoutPrecosRoute = DashboardLayoutPrecosRouteImport.update({
+  id: '/precos',
+  path: '/precos',
+  getParentRoute: () => DashboardLayoutRoute,
+} as any)
+const DashboardLayoutProdutoresRoute =
+  DashboardLayoutProdutoresRouteImport.update({
+    id: '/produtores',
+    path: '/produtores',
+    getParentRoute: () => DashboardLayoutRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRoute
+  '/dashboard': typeof DashboardLayoutRouteWithChildren
+  '/dashboard/equipe': typeof DashboardLayoutEquipeRoute
+  '/dashboard/leads': typeof DashboardLayoutLeadsRoute
+  '/dashboard/lembretes': typeof DashboardLayoutLembretesRoute
+  '/dashboard/marca': typeof DashboardLayoutMarcaRoute
+  '/dashboard/precos': typeof DashboardLayoutPrecosRoute
+  '/dashboard/produtores': typeof DashboardLayoutProdutoresRoute
+  '/dashboard/': typeof DashboardLayoutIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRoute
+  '/dashboard/equipe': typeof DashboardLayoutEquipeRoute
+  '/dashboard/leads': typeof DashboardLayoutLeadsRoute
+  '/dashboard/lembretes': typeof DashboardLayoutLembretesRoute
+  '/dashboard/marca': typeof DashboardLayoutMarcaRoute
+  '/dashboard/precos': typeof DashboardLayoutPrecosRoute
+  '/dashboard/produtores': typeof DashboardLayoutProdutoresRoute
+  '/dashboard': typeof DashboardLayoutIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRoute
+  '/dashboard/_layout': typeof DashboardLayoutRouteWithChildren
+  '/dashboard/_layout/equipe': typeof DashboardLayoutEquipeRoute
+  '/dashboard/_layout/leads': typeof DashboardLayoutLeadsRoute
+  '/dashboard/_layout/lembretes': typeof DashboardLayoutLembretesRoute
+  '/dashboard/_layout/marca': typeof DashboardLayoutMarcaRoute
+  '/dashboard/_layout/precos': typeof DashboardLayoutPrecosRoute
+  '/dashboard/_layout/produtores': typeof DashboardLayoutProdutoresRoute
+  '/dashboard/_layout/': typeof DashboardLayoutIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/onboarding'
+    | '/dashboard'
+    | '/dashboard/equipe'
+    | '/dashboard/leads'
+    | '/dashboard/lembretes'
+    | '/dashboard/marca'
+    | '/dashboard/precos'
+    | '/dashboard/produtores'
+    | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/login'
+    | '/onboarding'
+    | '/dashboard/equipe'
+    | '/dashboard/leads'
+    | '/dashboard/lembretes'
+    | '/dashboard/marca'
+    | '/dashboard/precos'
+    | '/dashboard/produtores'
+    | '/dashboard'
+  id:
+    | '__root__'
+    | '/'
+    | '/login'
+    | '/onboarding'
+    | '/dashboard/_layout'
+    | '/dashboard/_layout/equipe'
+    | '/dashboard/_layout/leads'
+    | '/dashboard/_layout/lembretes'
+    | '/dashboard/_layout/marca'
+    | '/dashboard/_layout/precos'
+    | '/dashboard/_layout/produtores'
+    | '/dashboard/_layout/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LoginRoute: typeof LoginRoute
+  OnboardingRoute: typeof OnboardingRoute
+  DashboardLayoutRoute: typeof DashboardLayoutRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +175,108 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/_layout': {
+      id: '/dashboard/_layout'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardLayoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/_layout/': {
+      id: '/dashboard/_layout/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardLayoutIndexRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
+    '/dashboard/_layout/equipe': {
+      id: '/dashboard/_layout/equipe'
+      path: '/equipe'
+      fullPath: '/dashboard/equipe'
+      preLoaderRoute: typeof DashboardLayoutEquipeRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
+    '/dashboard/_layout/leads': {
+      id: '/dashboard/_layout/leads'
+      path: '/leads'
+      fullPath: '/dashboard/leads'
+      preLoaderRoute: typeof DashboardLayoutLeadsRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
+    '/dashboard/_layout/lembretes': {
+      id: '/dashboard/_layout/lembretes'
+      path: '/lembretes'
+      fullPath: '/dashboard/lembretes'
+      preLoaderRoute: typeof DashboardLayoutLembretesRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
+    '/dashboard/_layout/marca': {
+      id: '/dashboard/_layout/marca'
+      path: '/marca'
+      fullPath: '/dashboard/marca'
+      preLoaderRoute: typeof DashboardLayoutMarcaRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
+    '/dashboard/_layout/precos': {
+      id: '/dashboard/_layout/precos'
+      path: '/precos'
+      fullPath: '/dashboard/precos'
+      preLoaderRoute: typeof DashboardLayoutPrecosRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
+    '/dashboard/_layout/produtores': {
+      id: '/dashboard/_layout/produtores'
+      path: '/produtores'
+      fullPath: '/dashboard/produtores'
+      preLoaderRoute: typeof DashboardLayoutProdutoresRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
   }
 }
 
+interface DashboardLayoutRouteChildren {
+  DashboardLayoutEquipeRoute: typeof DashboardLayoutEquipeRoute
+  DashboardLayoutLeadsRoute: typeof DashboardLayoutLeadsRoute
+  DashboardLayoutLembretesRoute: typeof DashboardLayoutLembretesRoute
+  DashboardLayoutMarcaRoute: typeof DashboardLayoutMarcaRoute
+  DashboardLayoutPrecosRoute: typeof DashboardLayoutPrecosRoute
+  DashboardLayoutProdutoresRoute: typeof DashboardLayoutProdutoresRoute
+  DashboardLayoutIndexRoute: typeof DashboardLayoutIndexRoute
+}
+
+const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
+  DashboardLayoutEquipeRoute: DashboardLayoutEquipeRoute,
+  DashboardLayoutLeadsRoute: DashboardLayoutLeadsRoute,
+  DashboardLayoutLembretesRoute: DashboardLayoutLembretesRoute,
+  DashboardLayoutMarcaRoute: DashboardLayoutMarcaRoute,
+  DashboardLayoutPrecosRoute: DashboardLayoutPrecosRoute,
+  DashboardLayoutProdutoresRoute: DashboardLayoutProdutoresRoute,
+  DashboardLayoutIndexRoute: DashboardLayoutIndexRoute,
+}
+
+const DashboardLayoutRouteWithChildren = DashboardLayoutRoute._addFileChildren(
+  DashboardLayoutRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LoginRoute: LoginRoute,
+  OnboardingRoute: OnboardingRoute,
+  DashboardLayoutRoute: DashboardLayoutRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

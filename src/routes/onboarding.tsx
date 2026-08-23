@@ -1,0 +1,268 @@
+import { useEffect, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { z } from "zod";
+import { Loader2 } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/lib/auth";
+
+const searchSchema = z.object({
+  convite: z.string().uuid().optional(),
+  equipe: z.string().uuid().optional(),
+});
+
+export const Route = createFileRoute("/onboarding")({
+  validateSearch: searchSchema,
+  component: OnboardingPage,
+});
+
+const cropOptions = [
+  { value: "soja", label: "Soja" },
+  { value: "milho", label: "Milho" },
+  { value: "outra", label: "Outra cultura" },
+];
+
+function OnboardingPage() {
+  const { convite, equipe } = Route.useSearch();
+  const { session, refresh } = useAuth();
+  const navigate = useNavigate();
+
+  const [tipo, setTipo] = useState<"produtor" | "cooperativa">(convite ? "produtor" : "produtor");
+  const [nome, setNome] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [cultura, setCultura] = useState("");
+  const [uf, setUf] = useState("");
+  const [nomeCooperativa, setNomeCooperativa] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+
+  if (!session) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4 text-center">
+        <p className="text-muted-foreground">
+          Faça login primeiro em{" "}
+          <a href="/login" className="text-primary underline">
+            /login
+          </a>
+          .
+        </p>
+      </div>
+    );
+  }
+
+  if (equipe) {
+    return <ConfirmarEquipe cooperativaId={equipe} onDone={() => navigate({ to: "/dashboard" })} />;
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!supabase || !session) return;
+    setStatus("loading");
+
+    if (tipo === "produtor") {
+      const { error } = await supabase.from("produtores").insert({
+        user_id: session.user.id,
+        nome,
+        whatsapp,
+        cultura_principal: cultura || null,
+        uf: uf || null,
+        cooperativa_id: convite ?? null,
+      });
+      if (error) {
+        setStatus("error");
+        return;
+      }
+    } else {
+      // Gera o id no cliente: como o usuário só passa a enxergar a
+      // cooperativa via RLS depois de virar membro dela, não dá pra inserir
+      // com `.select()` (o SELECT de retorno falharia por RLS).
+      const cooperativaId = crypto.randomUUID();
+      const { error: coopError } = await supabase
+        .from("cooperativas")
+        .insert({ id: cooperativaId, nome: nomeCooperativa });
+      if (coopError) {
+        setStatus("error");
+        return;
+      }
+      const { error: membroError } = await supabase.from("cooperativa_membros").insert({
+        cooperativa_id: cooperativaId,
+        user_id: session.user.id,
+        papel: "admin",
+      });
+      if (membroError) {
+        setStatus("error");
+        return;
+      }
+    }
+
+    await refresh();
+    navigate({ to: "/dashboard" });
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-secondary/40 px-4 py-12">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
+        <h1 className="text-xl font-semibold text-foreground">Só mais um passo</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {convite
+            ? "Você foi convidado por uma cooperativa. Complete seu cadastro de produtor."
+            : "Conta pra gente quem você é."}
+        </p>
+
+        <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-5">
+          {!convite && (
+            <RadioGroup
+              value={tipo}
+              onValueChange={(v) => setTipo(v as "produtor" | "cooperativa")}
+              className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+            >
+              <label
+                className={`flex cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm ${tipo === "produtor" ? "border-primary bg-secondary/50" : "border-border"}`}
+              >
+                <RadioGroupItem value="produtor" />
+                Sou produtor
+              </label>
+              <label
+                className={`flex cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm ${tipo === "cooperativa" ? "border-primary bg-secondary/50" : "border-border"}`}
+              >
+                <RadioGroupItem value="cooperativa" />
+                Represento uma cooperativa
+              </label>
+            </RadioGroup>
+          )}
+
+          {tipo === "produtor" ? (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="nome">Seu nome</Label>
+                <Input id="nome" required value={nome} onChange={(e) => setNome(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp">WhatsApp</Label>
+                <Input
+                  id="whatsapp"
+                  type="tel"
+                  placeholder="(00) 00000-0000"
+                  required
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Cultura principal</Label>
+                <Select value={cultura} onValueChange={setCultura}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cropOptions.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="uf">Estado (UF)</Label>
+                <Input
+                  id="uf"
+                  placeholder="Ex: GO"
+                  maxLength={2}
+                  value={uf}
+                  onChange={(e) => setUf(e.target.value.toUpperCase())}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="nomeCooperativa">Nome da cooperativa/corretora</Label>
+              <Input
+                id="nomeCooperativa"
+                required
+                value={nomeCooperativa}
+                onChange={(e) => setNomeCooperativa(e.target.value)}
+              />
+            </div>
+          )}
+
+          {status === "error" && (
+            <p className="text-sm text-destructive">
+              Algo deu errado. Confira os dados e tente de novo.
+            </p>
+          )}
+
+          <Button type="submit" size="lg" disabled={status === "loading"}>
+            {status === "loading" ? <Loader2 className="size-4 animate-spin" /> : "Concluir"}
+          </Button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function ConfirmarEquipe({ cooperativaId, onDone }: { cooperativaId: string; onDone: () => void }) {
+  const { session, refresh } = useAuth();
+  const [nomeCoop, setNomeCoop] = useState<string | null>(null);
+  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+
+  useEffect(() => {
+    if (!supabase) return;
+    supabase
+      .from("cooperativas")
+      .select("nome")
+      .eq("id", cooperativaId)
+      .maybeSingle()
+      .then(({ data }) => setNomeCoop(data?.nome ?? null));
+  }, [cooperativaId]);
+
+  async function handleConfirm() {
+    if (!supabase || !session) return;
+    setStatus("loading");
+    const { error } = await supabase.from("cooperativa_membros").insert({
+      cooperativa_id: cooperativaId,
+      user_id: session.user.id,
+      papel: "membro",
+    });
+    if (error) {
+      setStatus("error");
+      return;
+    }
+    await refresh();
+    onDone();
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-secondary/40 px-4 py-12">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+        <h1 className="text-xl font-semibold text-foreground">Convite de equipe</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Você foi convidado a entrar na equipe de{" "}
+          <strong className="text-foreground">{nomeCoop ?? "carregando..."}</strong>.
+        </p>
+        {status === "error" && (
+          <p className="mt-3 text-sm text-destructive">
+            Não foi possível confirmar. Tente de novo.
+          </p>
+        )}
+        <Button
+          className="mt-5 w-full"
+          onClick={handleConfirm}
+          disabled={status === "loading" || !nomeCoop}
+        >
+          {status === "loading" ? <Loader2 className="size-4 animate-spin" /> : "Entrar na equipe"}
+        </Button>
+      </div>
+    </div>
+  );
+}
