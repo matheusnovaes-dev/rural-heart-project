@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as DashboardLayoutRouteImport } from './routes/dashboard/_layout'
+import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
 import { Route as DashboardLayoutIndexRouteImport } from './routes/dashboard/_layout/index'
 import { Route as DashboardLayoutAlertasRouteImport } from './routes/dashboard/_layout/alertas'
 import { Route as DashboardLayoutEquipeRouteImport } from './routes/dashboard/_layout/equipe'
@@ -41,6 +42,11 @@ const OnboardingRoute = OnboardingRouteImport.update({
 const DashboardLayoutRoute = DashboardLayoutRouteImport.update({
   id: '/dashboard/_layout',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
+  id: '/api/stripe/webhook',
+  path: '/api/stripe/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardLayoutIndexRoute = DashboardLayoutIndexRouteImport.update({
@@ -97,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/dashboard': typeof DashboardLayoutRouteWithChildren
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/equipe': typeof DashboardLayoutEquipeRoute
   '/dashboard/leads': typeof DashboardLayoutLeadsRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/equipe': typeof DashboardLayoutEquipeRoute
   '/dashboard/leads': typeof DashboardLayoutLeadsRoute
@@ -127,6 +135,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/dashboard/_layout': typeof DashboardLayoutRouteWithChildren
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/dashboard/_layout/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/_layout/equipe': typeof DashboardLayoutEquipeRoute
   '/dashboard/_layout/leads': typeof DashboardLayoutLeadsRoute
@@ -144,6 +153,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/dashboard'
+    | '/api/stripe/webhook'
     | '/dashboard/alertas'
     | '/dashboard/equipe'
     | '/dashboard/leads'
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/onboarding'
+    | '/api/stripe/webhook'
     | '/dashboard/alertas'
     | '/dashboard/equipe'
     | '/dashboard/leads'
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/dashboard/_layout'
+    | '/api/stripe/webhook'
     | '/dashboard/_layout/alertas'
     | '/dashboard/_layout/equipe'
     | '/dashboard/_layout/leads'
@@ -189,6 +201,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   DashboardLayoutRoute: typeof DashboardLayoutRouteWithChildren
+  ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -219,6 +232,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardLayoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/stripe/webhook': {
+      id: '/api/stripe/webhook'
+      path: '/api/stripe/webhook'
+      fullPath: '/api/stripe/webhook'
+      preLoaderRoute: typeof ApiStripeWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/_layout/': {
@@ -320,6 +340,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   DashboardLayoutRoute: DashboardLayoutRouteWithChildren,
+  ApiStripeWebhookRoute: ApiStripeWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

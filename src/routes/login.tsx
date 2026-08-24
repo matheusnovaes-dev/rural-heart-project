@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { Sprout, Loader2 } from "lucide-react";
+import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,13 +9,21 @@ import { Label } from "@/components/ui/label";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { siteConfig } from "@/config/site";
 
+const searchSchema = z.object({
+  plano: z.enum(["bronze", "prata", "ouro"]).optional(),
+});
+
 export const Route = createFileRoute("/login")({
+  validateSearch: searchSchema,
   component: LoginPage,
 });
 
 function LoginPage() {
+  const { plano } = Route.useSearch();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"entrar" | "criar">("entrar");
+  // Quem chega com um plano na URL veio da página de preços — já abre no
+  // modo de criar conta, não faz sentido pedir pra ele achar o botão.
+  const [mode, setMode] = useState<"entrar" | "criar">(plano ? "criar" : "entrar");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
@@ -43,9 +52,15 @@ function LoginPage() {
       return;
     }
 
-    // /dashboard's guard redirects to /onboarding on its own if this
-    // account has no produtor/cooperativa profile yet — don't duplicate
-    // that check here, or returning users get sent to onboarding every time.
+    // Veio de um plano específico e está criando conta agora: manda direto
+    // pro onboarding já com o plano, em vez de deixar o guard do /dashboard
+    // redirecionar sem esse contexto. Login normal (sem plano) continua
+    // indo pro /dashboard, que redireciona sozinho pro onboarding se for
+    // conta nova sem perfil ainda.
+    if (plano && mode === "criar") {
+      navigate({ to: "/onboarding", search: { plano } });
+      return;
+    }
     navigate({ to: "/dashboard" });
   }
 

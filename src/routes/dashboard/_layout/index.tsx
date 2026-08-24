@@ -29,10 +29,81 @@ function todayLabel() {
 function DashboardHome() {
   const { produtor, cooperativa } = useAuth();
 
-  if (produtor) return <ProdutorHome produtor={produtor} />;
-  if (cooperativa)
-    return <CooperativaHome cooperativaId={cooperativa.id} cooperativaNome={cooperativa.nome} />;
-  return null;
+  return (
+    <div className="flex flex-col gap-4">
+      <AssinaturaBanner produtorId={produtor?.id} cooperativaId={cooperativa?.id} />
+      {produtor ? (
+        <ProdutorHome produtor={produtor} />
+      ) : cooperativa ? (
+        <CooperativaHome cooperativaId={cooperativa.id} cooperativaNome={cooperativa.nome} />
+      ) : null}
+    </div>
+  );
+}
+
+type Assinatura = {
+  plano: "bronze" | "prata" | "ouro";
+  status: "trial" | "ativa" | "inadimplente" | "cancelada";
+  trial_expira_em: string;
+};
+
+const planoLabel: Record<Assinatura["plano"], string> = {
+  bronze: "Bronze",
+  prata: "Prata",
+  ouro: "Ouro",
+};
+
+function AssinaturaBanner({
+  produtorId,
+  cooperativaId,
+}: {
+  produtorId: string | undefined;
+  cooperativaId: string | undefined;
+}) {
+  const [assinatura, setAssinatura] = useState<Assinatura | null>(null);
+
+  useEffect(() => {
+    if (!supabase || (!produtorId && !cooperativaId)) return;
+    let query = supabase.from("assinaturas").select("plano, status, trial_expira_em");
+    query = produtorId
+      ? query.eq("produtor_id", produtorId)
+      : query.eq("cooperativa_id", cooperativaId);
+    query.maybeSingle().then(({ data }) => setAssinatura(data));
+  }, [produtorId, cooperativaId]);
+
+  if (!assinatura || assinatura.status === "ativa") return null;
+
+  if (assinatura.status === "inadimplente") {
+    return (
+      <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-2.5 text-sm text-destructive">
+        Pagamento do plano {planoLabel[assinatura.plano]} não foi confirmado — verifique seu cartão
+        pra não perder o acesso.
+      </div>
+    );
+  }
+
+  if (assinatura.status === "cancelada") {
+    return (
+      <div className="rounded-lg border border-border bg-muted px-4 py-2.5 text-sm text-muted-foreground">
+        Sua assinatura do plano {planoLabel[assinatura.plano]} foi cancelada.
+      </div>
+    );
+  }
+
+  const diasRestantes = Math.max(
+    0,
+    Math.ceil((new Date(assinatura.trial_expira_em).getTime() - Date.now()) / 86_400_000),
+  );
+
+  return (
+    <div className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm text-foreground">
+      Teste grátis do plano <span className="font-semibold">{planoLabel[assinatura.plano]}</span> —{" "}
+      {diasRestantes === 0
+        ? "expira hoje"
+        : `${diasRestantes} dia${diasRestantes === 1 ? "" : "s"} restante${diasRestantes === 1 ? "" : "s"}`}
+      .
+    </div>
+  );
 }
 
 function ProdutorHome({ produtor }: { produtor: Produtor }) {

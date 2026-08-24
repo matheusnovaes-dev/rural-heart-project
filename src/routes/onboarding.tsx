@@ -16,10 +16,12 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
+import { criarSessaoCheckout } from "@/lib/stripe.server";
 
 const searchSchema = z.object({
   convite: z.string().uuid().optional(),
   equipe: z.string().uuid().optional(),
+  plano: z.enum(["bronze", "prata", "ouro"]).optional(),
 });
 
 export const Route = createFileRoute("/onboarding")({
@@ -34,7 +36,7 @@ const cropOptions = [
 ];
 
 function OnboardingPage() {
-  const { convite, equipe } = Route.useSearch();
+  const { convite, equipe, plano } = Route.useSearch();
   const { session, refresh } = useAuth();
   const navigate = useNavigate();
 
@@ -45,6 +47,8 @@ function OnboardingPage() {
   const [uf, setUf] = useState("");
   const [nomeCooperativa, setNomeCooperativa] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+
+  const planoEscolhido = plano ?? "bronze";
 
   if (!session) {
     return (
@@ -69,18 +73,39 @@ function OnboardingPage() {
     if (!supabase || !session) return;
     setStatus("loading");
 
+    let novaAssinaturaId: string | null = null;
+
     if (tipo === "produtor") {
-      const { error } = await supabase.from("produtores").insert({
-        user_id: session.user.id,
-        nome,
-        whatsapp,
-        cultura_principal: cultura || null,
-        uf: uf || null,
-        cooperativa_id: convite ?? null,
-      });
+      const { data: produtor, error } = await supabase
+        .from("produtores")
+        .insert({
+          user_id: session.user.id,
+          nome,
+          whatsapp,
+          cultura_principal: cultura || null,
+          uf: uf || null,
+          cooperativa_id: convite ?? null,
+        })
+        .select("id")
+        .single();
       if (error) {
         setStatus("error");
         return;
+      }
+
+      // Produtor convidado por uma cooperativa já está coberto pelo plano
+      // dela — só produtor solo (sem convite) assina o próprio plano.
+      if (!convite) {
+        const { data: assinatura, error: assinaturaError } = await supabase
+          .from("assinaturas")
+          .insert({ produtor_id: produtor.id, plano: planoEscolhido })
+          .select("id")
+          .single();
+        if (assinaturaError) {
+          setStatus("error");
+          return;
+        }
+        novaAssinaturaId = assinatura.id;
       }
     } else {
       // Gera o id no cliente: como o usuário só passa a enxergar a
@@ -103,9 +128,34 @@ function OnboardingPage() {
         setStatus("error");
         return;
       }
+
+      const { data: assinatura, error: assinaturaError } = await supabase
+        .from("assinaturas")
+        .insert({ cooperativa_id: cooperativaId, plano: planoEscolhido })
+        .select("id")
+        .single();
+      if (assinaturaError) {
+        setStatus("error");
+        return;
+      }
+      novaAssinaturaId = assinatura.id;
     }
 
     await refresh();
+
+    if (novaAssinaturaId) {
+      try {
+        const checkout = await criarSessaoCheckout({
+          data: { plano: planoEscolhido, assinaturaId: novaAssinaturaId },
+        });
+        window.location.href = checkout.url;
+        return;
+      } catch {
+        // Checkout indisponível não deve travar o cadastro — segue pro
+        // dashboard, a assinatura fica "trial" até tentar de novo depois.
+      }
+    }
+
     navigate({ to: "/dashboard" });
   }
 

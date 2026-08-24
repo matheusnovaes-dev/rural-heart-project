@@ -1,4 +1,5 @@
 import { Check } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 import { Reveal } from "@/components/landing/Reveal";
 import { Button } from "@/components/ui/button";
@@ -54,7 +55,9 @@ export function Pricing() {
                 )}
                 variant={plan.highlighted ? "default" : "outline"}
               >
-                <a href="#comece">Testar grátis</a>
+                <Link to="/login" search={{ plano: plan.id as "bronze" | "prata" | "ouro" }}>
+                  Testar grátis
+                </Link>
               </Button>
             </div>
           </Reveal>
