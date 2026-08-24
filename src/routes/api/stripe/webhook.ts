@@ -8,7 +8,7 @@ export const Route = createFileRoute("/api/stripe/webhook")({
       POST: async ({ request }) => {
         const stripeSecretKey = process.env["STRIPE_SECRET_KEY"];
         const webhookSecret = process.env["STRIPE_WEBHOOK_SECRET"];
-        const supabaseUrl = process.env["VITE_SUPABASE_URL"];
+        const supabaseUrl = process.env["SB_URL"];
         const serviceRoleKey = process.env["SB_SERVICE_ROLE_KEY"];
 
         if (!stripeSecretKey || !webhookSecret || !supabaseUrl || !serviceRoleKey) {
