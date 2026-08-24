@@ -3,10 +3,12 @@ import { useEffect } from "react";
 import {
   LayoutDashboard,
   LineChart,
+  TrendingUp,
   Users,
   ListChecks,
   UsersRound,
   Palette,
+  FileDown,
   LogOut,
   Loader2,
   Sprout,
@@ -95,6 +97,7 @@ function CooperativaSidebar({
   const items = [
     { to: "/dashboard", label: "Visão geral", icon: LayoutDashboard },
     { to: "/dashboard/precos", label: "Preços", icon: LineChart },
+    { to: "/dashboard/alertas", label: "Alertas de preço", icon: TrendingUp },
     { to: "/dashboard/produtores", label: "Produtores", icon: Users },
     { to: "/dashboard/leads", label: "Leads", icon: ListChecks },
     { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
@@ -102,6 +105,7 @@ function CooperativaSidebar({
       ? [
           { to: "/dashboard/equipe", label: "Equipe", icon: UsersRound },
           { to: "/dashboard/marca", label: "Marca própria", icon: Palette },
+          { to: "/dashboard/relatorios", label: "Relatórios", icon: FileDown },
         ]
       : []),
   ];

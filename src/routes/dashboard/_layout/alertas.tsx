@@ -1,12 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Bell, Loader2, Plus, Clock } from "lucide-react";
+import { TrendingUp, Loader2, Plus, ArrowDown, ArrowUp } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -25,50 +24,46 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 
-export const Route = createFileRoute("/dashboard/_layout/lembretes")({
-  component: LembretesPage,
+export const Route = createFileRoute("/dashboard/_layout/alertas")({
+  component: AlertasPage,
 });
 
-type Lembrete = {
+type Alerta = {
   id: string;
-  titulo: string;
-  descricao: string | null;
-  enviar_em: string;
-  status: "pendente" | "enviado" | "erro" | "cancelado";
-  recorrencia: "diaria" | "semanal" | null;
-  produtor_id: string;
+  cultura: string;
+  uf: string;
+  limite: number;
+  direcao: "acima" | "abaixo";
+  ativo: boolean;
+  disparado_em: string | null;
 };
 
-const statusLabel: Record<
-  Lembrete["status"],
-  { label: string; variant: "default" | "secondary" | "destructive" }
-> = {
-  pendente: { label: "Pendente", variant: "secondary" },
-  enviado: { label: "Enviado", variant: "default" },
-  erro: { label: "Erro", variant: "destructive" },
-  cancelado: { label: "Cancelado", variant: "secondary" },
-};
-
-function LembretesPage() {
+function AlertasPage() {
   const { produtor, cooperativa } = useAuth();
-  const [lembretes, setLembretes] = useState<Lembrete[]>([]);
+  const [alertas, setAlertas] = useState<Alerta[]>([]);
   const [produtoresOpcoes, setProdutoresOpcoes] = useState<
-    { id: string; nome: string; whatsapp: string }[]
+    {
+      id: string;
+      nome: string;
+      whatsapp: string;
+      cultura_principal: string | null;
+      uf: string | null;
+    }[]
   >([]);
   const [open, setOpen] = useState(false);
 
   async function load() {
     if (!supabase) return;
     const { data } = await supabase
-      .from("lembretes")
-      .select("id, titulo, descricao, enviar_em, status, recorrencia, produtor_id")
-      .order("enviar_em", { ascending: true });
-    setLembretes(data ?? []);
+      .from("alertas_preco")
+      .select("id, cultura, uf, limite, direcao, ativo, disparado_em")
+      .order("created_at", { ascending: false });
+    setAlertas(data ?? []);
 
     if (cooperativa) {
       const { data: prods } = await supabase
         .from("produtores")
-        .select("id, nome, whatsapp")
+        .select("id, nome, whatsapp, cultura_principal, uf")
         .eq("cooperativa_id", cooperativa.id);
       setProdutoresOpcoes(prods ?? []);
     }
@@ -80,7 +75,15 @@ function LembretesPage() {
   }, [produtor, cooperativa]);
 
   const destinatarios = produtor
-    ? [{ id: produtor.id, nome: "Você mesmo", whatsapp: produtor.whatsapp }]
+    ? [
+        {
+          id: produtor.id,
+          nome: "Você mesmo",
+          whatsapp: produtor.whatsapp,
+          cultura_principal: produtor.cultura_principal,
+          uf: produtor.uf,
+        },
+      ]
     : produtoresOpcoes;
 
   return (
@@ -88,26 +91,27 @@ function LembretesPage() {
       <CardHeader className="flex flex-col items-start gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle className="flex items-center gap-2">
-            <Bell className="size-4" />
-            Lembretes
+            <TrendingUp className="size-4" />
+            Alertas de preço
           </CardTitle>
           <CardDescription>
-            Alertas enviados por WhatsApp — o envio liga assim que a integração com o WhatsApp
-            estiver ativa; por enquanto ficam agendados aqui.
+            Diferente de lembrete de tarefa — isso avisa quando o preço cruzar um valor. O envio por
+            WhatsApp liga junto com o bot; por enquanto o alerta fica marcado como "disparado" aqui
+            assim que a condição bater.
           </CardDescription>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size="sm" disabled={destinatarios.length === 0}>
               <Plus className="size-4" />
-              Novo lembrete
+              Novo alerta
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Novo lembrete</DialogTitle>
+              <DialogTitle>Novo alerta de preço</DialogTitle>
             </DialogHeader>
-            <NovoLembreteForm
+            <NovoAlertaForm
               destinatarios={destinatarios}
               onDone={() => {
                 setOpen(false);
@@ -118,32 +122,32 @@ function LembretesPage() {
         </Dialog>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        {lembretes.length === 0 && (
+        {alertas.length === 0 && (
           <p className="py-8 text-center text-sm text-muted-foreground">
-            Nenhum lembrete ainda. Crie o primeiro.
+            Nenhum alerta ainda. Crie o primeiro.
           </p>
         )}
-        {lembretes.map((l) => (
+        {alertas.map((a) => (
           <div
-            key={l.id}
+            key={a.id}
             className="flex flex-col gap-1 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
           >
-            <div>
-              <p className="font-medium text-foreground">{l.titulo}</p>
-              {l.descricao && <p className="text-sm text-muted-foreground">{l.descricao}</p>}
-              <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                <Clock className="size-3" />
-                {new Date(l.enviar_em).toLocaleString("pt-BR", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-                {l.recorrencia &&
-                  ` · repete ${l.recorrencia === "diaria" ? "todo dia" : "toda semana"}`}
-              </p>
+            <div className="flex items-center gap-2 text-sm">
+              {a.direcao === "acima" ? (
+                <ArrowUp className="size-4 text-primary" />
+              ) : (
+                <ArrowDown className="size-4 text-destructive" />
+              )}
+              <span className="font-medium text-foreground">
+                {a.cultura} · {a.uf} {a.direcao} de R${" "}
+                {a.limite.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+              </span>
             </div>
-            <Badge variant={statusLabel[l.status].variant}>{statusLabel[l.status].label}</Badge>
+            <Badge variant={a.disparado_em ? "default" : "secondary"}>
+              {a.disparado_em
+                ? `Disparado em ${new Date(a.disparado_em).toLocaleDateString("pt-BR")}`
+                : "Ativo, aguardando"}
+            </Badge>
           </div>
         ))}
       </CardContent>
@@ -151,37 +155,44 @@ function LembretesPage() {
   );
 }
 
-function NovoLembreteForm({
+function NovoAlertaForm({
   destinatarios,
   onDone,
 }: {
-  destinatarios: { id: string; nome: string; whatsapp: string }[];
+  destinatarios: {
+    id: string;
+    nome: string;
+    whatsapp: string;
+    cultura_principal: string | null;
+    uf: string | null;
+  }[];
   onDone: () => void;
 }) {
   const { session } = useAuth();
   const [produtorId, setProdutorId] = useState(destinatarios[0]?.id ?? "");
-  const [titulo, setTitulo] = useState("");
-  const [descricao, setDescricao] = useState("");
-  const [data, setData] = useState("");
-  const [hora, setHora] = useState("08:00");
-  const [recorrencia, setRecorrencia] = useState<string>("nenhuma");
+  const selecionado = destinatarios.find((d) => d.id === produtorId) ?? destinatarios[0];
+
+  const [cultura, setCultura] = useState(selecionado?.cultura_principal ?? "soja");
+  const [uf, setUf] = useState(selecionado?.uf ?? "");
+  const [limite, setLimite] = useState("");
+  const [direcao, setDirecao] = useState<"acima" | "abaixo">("acima");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!supabase || !session || !data) return;
+    if (!supabase || !session || !limite || !uf) return;
     const destinatario = destinatarios.find((d) => d.id === produtorId);
     if (!destinatario) return;
 
     setLoading(true);
-    await supabase.from("lembretes").insert({
+    await supabase.from("alertas_preco").insert({
       produtor_id: produtorId,
       criado_por: session.user.id,
-      titulo,
-      descricao: descricao || null,
-      enviar_em: new Date(`${data}T${hora}:00`).toISOString(),
+      cultura,
+      uf: uf.toUpperCase(),
+      limite: parseFloat(limite.replace(",", ".")),
+      direcao,
       whatsapp_destino: destinatario.whatsapp,
-      recorrencia: recorrencia === "nenhuma" ? null : recorrencia,
     });
     setLoading(false);
     onDone();
@@ -206,61 +217,52 @@ function NovoLembreteForm({
           </Select>
         </div>
       )}
-      <div className="space-y-1.5">
-        <Label htmlFor="l-titulo">Título</Label>
-        <Input
-          id="l-titulo"
-          placeholder='Ex: "Limpou o curral?"'
-          required
-          value={titulo}
-          onChange={(e) => setTitulo(e.target.value)}
-        />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="l-descricao">Descrição (opcional)</Label>
-        <Textarea
-          id="l-descricao"
-          value={descricao}
-          onChange={(e) => setDescricao(e.target.value)}
-        />
-      </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label htmlFor="l-data">Data</Label>
+          <Label htmlFor="a-cultura">Cultura</Label>
           <Input
-            id="l-data"
-            type="date"
+            id="a-cultura"
             required
-            value={data}
-            onChange={(e) => setData(e.target.value)}
+            value={cultura}
+            onChange={(e) => setCultura(e.target.value)}
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="l-hora">Hora</Label>
+          <Label htmlFor="a-uf">UF</Label>
           <Input
-            id="l-hora"
-            type="time"
+            id="a-uf"
             required
-            value={hora}
-            onChange={(e) => setHora(e.target.value)}
+            maxLength={2}
+            value={uf}
+            onChange={(e) => setUf(e.target.value.toUpperCase())}
           />
         </div>
       </div>
       <div className="space-y-1.5">
-        <Label>Repetir</Label>
-        <Select value={recorrencia} onValueChange={setRecorrencia}>
+        <Label>Avisar quando o preço ficar</Label>
+        <Select value={direcao} onValueChange={(v) => setDirecao(v as "acima" | "abaixo")}>
           <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="nenhuma">Não repetir</SelectItem>
-            <SelectItem value="diaria">Todo dia</SelectItem>
-            <SelectItem value="semanal">Toda semana</SelectItem>
+            <SelectItem value="acima">Acima de</SelectItem>
+            <SelectItem value="abaixo">Abaixo de</SelectItem>
           </SelectContent>
         </Select>
       </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="a-limite">Valor (R$ por saca)</Label>
+        <Input
+          id="a-limite"
+          required
+          inputMode="decimal"
+          placeholder="Ex: 130,00"
+          value={limite}
+          onChange={(e) => setLimite(e.target.value)}
+        />
+      </div>
       <Button type="submit" disabled={loading} className="mt-2">
-        {loading ? <Loader2 className="size-4 animate-spin" /> : "Agendar lembrete"}
+        {loading ? <Loader2 className="size-4 animate-spin" /> : "Criar alerta"}
       </Button>
     </form>
   );

@@ -60,7 +60,7 @@ function ProdutoresPage() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+      <CardHeader className="flex flex-col items-start gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle>Produtores</CardTitle>
           <CardDescription>Produtores associados à sua cooperativa</CardDescription>

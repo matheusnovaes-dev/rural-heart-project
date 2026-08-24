@@ -14,12 +14,14 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as DashboardLayoutRouteImport } from './routes/dashboard/_layout'
 import { Route as DashboardLayoutIndexRouteImport } from './routes/dashboard/_layout/index'
+import { Route as DashboardLayoutAlertasRouteImport } from './routes/dashboard/_layout/alertas'
 import { Route as DashboardLayoutEquipeRouteImport } from './routes/dashboard/_layout/equipe'
 import { Route as DashboardLayoutLeadsRouteImport } from './routes/dashboard/_layout/leads'
 import { Route as DashboardLayoutLembretesRouteImport } from './routes/dashboard/_layout/lembretes'
 import { Route as DashboardLayoutMarcaRouteImport } from './routes/dashboard/_layout/marca'
 import { Route as DashboardLayoutPrecosRouteImport } from './routes/dashboard/_layout/precos'
 import { Route as DashboardLayoutProdutoresRouteImport } from './routes/dashboard/_layout/produtores'
+import { Route as DashboardLayoutRelatoriosRouteImport } from './routes/dashboard/_layout/relatorios'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -44,6 +46,11 @@ const DashboardLayoutRoute = DashboardLayoutRouteImport.update({
 const DashboardLayoutIndexRoute = DashboardLayoutIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => DashboardLayoutRoute,
+} as any)
+const DashboardLayoutAlertasRoute = DashboardLayoutAlertasRouteImport.update({
+  id: '/alertas',
+  path: '/alertas',
   getParentRoute: () => DashboardLayoutRoute,
 } as any)
 const DashboardLayoutEquipeRoute = DashboardLayoutEquipeRouteImport.update({
@@ -78,30 +85,40 @@ const DashboardLayoutProdutoresRoute =
     path: '/produtores',
     getParentRoute: () => DashboardLayoutRoute,
   } as any)
+const DashboardLayoutRelatoriosRoute =
+  DashboardLayoutRelatoriosRouteImport.update({
+    id: '/relatorios',
+    path: '/relatorios',
+    getParentRoute: () => DashboardLayoutRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/dashboard': typeof DashboardLayoutRouteWithChildren
+  '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/equipe': typeof DashboardLayoutEquipeRoute
   '/dashboard/leads': typeof DashboardLayoutLeadsRoute
   '/dashboard/lembretes': typeof DashboardLayoutLembretesRoute
   '/dashboard/marca': typeof DashboardLayoutMarcaRoute
   '/dashboard/precos': typeof DashboardLayoutPrecosRoute
   '/dashboard/produtores': typeof DashboardLayoutProdutoresRoute
+  '/dashboard/relatorios': typeof DashboardLayoutRelatoriosRoute
   '/dashboard/': typeof DashboardLayoutIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/equipe': typeof DashboardLayoutEquipeRoute
   '/dashboard/leads': typeof DashboardLayoutLeadsRoute
   '/dashboard/lembretes': typeof DashboardLayoutLembretesRoute
   '/dashboard/marca': typeof DashboardLayoutMarcaRoute
   '/dashboard/precos': typeof DashboardLayoutPrecosRoute
   '/dashboard/produtores': typeof DashboardLayoutProdutoresRoute
+  '/dashboard/relatorios': typeof DashboardLayoutRelatoriosRoute
   '/dashboard': typeof DashboardLayoutIndexRoute
 }
 export interface FileRoutesById {
@@ -110,12 +127,14 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/dashboard/_layout': typeof DashboardLayoutRouteWithChildren
+  '/dashboard/_layout/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/_layout/equipe': typeof DashboardLayoutEquipeRoute
   '/dashboard/_layout/leads': typeof DashboardLayoutLeadsRoute
   '/dashboard/_layout/lembretes': typeof DashboardLayoutLembretesRoute
   '/dashboard/_layout/marca': typeof DashboardLayoutMarcaRoute
   '/dashboard/_layout/precos': typeof DashboardLayoutPrecosRoute
   '/dashboard/_layout/produtores': typeof DashboardLayoutProdutoresRoute
+  '/dashboard/_layout/relatorios': typeof DashboardLayoutRelatoriosRoute
   '/dashboard/_layout/': typeof DashboardLayoutIndexRoute
 }
 export interface FileRouteTypes {
@@ -125,24 +144,28 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/dashboard'
+    | '/dashboard/alertas'
     | '/dashboard/equipe'
     | '/dashboard/leads'
     | '/dashboard/lembretes'
     | '/dashboard/marca'
     | '/dashboard/precos'
     | '/dashboard/produtores'
+    | '/dashboard/relatorios'
     | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/onboarding'
+    | '/dashboard/alertas'
     | '/dashboard/equipe'
     | '/dashboard/leads'
     | '/dashboard/lembretes'
     | '/dashboard/marca'
     | '/dashboard/precos'
     | '/dashboard/produtores'
+    | '/dashboard/relatorios'
     | '/dashboard'
   id:
     | '__root__'
@@ -150,12 +173,14 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/dashboard/_layout'
+    | '/dashboard/_layout/alertas'
     | '/dashboard/_layout/equipe'
     | '/dashboard/_layout/leads'
     | '/dashboard/_layout/lembretes'
     | '/dashboard/_layout/marca'
     | '/dashboard/_layout/precos'
     | '/dashboard/_layout/produtores'
+    | '/dashboard/_layout/relatorios'
     | '/dashboard/_layout/'
   fileRoutesById: FileRoutesById
 }
@@ -203,6 +228,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLayoutIndexRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
+    '/dashboard/_layout/alertas': {
+      id: '/dashboard/_layout/alertas'
+      path: '/alertas'
+      fullPath: '/dashboard/alertas'
+      preLoaderRoute: typeof DashboardLayoutAlertasRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
     '/dashboard/_layout/equipe': {
       id: '/dashboard/_layout/equipe'
       path: '/equipe'
@@ -245,26 +277,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLayoutProdutoresRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
+    '/dashboard/_layout/relatorios': {
+      id: '/dashboard/_layout/relatorios'
+      path: '/relatorios'
+      fullPath: '/dashboard/relatorios'
+      preLoaderRoute: typeof DashboardLayoutRelatoriosRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
   }
 }
 
 interface DashboardLayoutRouteChildren {
+  DashboardLayoutAlertasRoute: typeof DashboardLayoutAlertasRoute
   DashboardLayoutEquipeRoute: typeof DashboardLayoutEquipeRoute
   DashboardLayoutLeadsRoute: typeof DashboardLayoutLeadsRoute
   DashboardLayoutLembretesRoute: typeof DashboardLayoutLembretesRoute
   DashboardLayoutMarcaRoute: typeof DashboardLayoutMarcaRoute
   DashboardLayoutPrecosRoute: typeof DashboardLayoutPrecosRoute
   DashboardLayoutProdutoresRoute: typeof DashboardLayoutProdutoresRoute
+  DashboardLayoutRelatoriosRoute: typeof DashboardLayoutRelatoriosRoute
   DashboardLayoutIndexRoute: typeof DashboardLayoutIndexRoute
 }
 
 const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
+  DashboardLayoutAlertasRoute: DashboardLayoutAlertasRoute,
   DashboardLayoutEquipeRoute: DashboardLayoutEquipeRoute,
   DashboardLayoutLeadsRoute: DashboardLayoutLeadsRoute,
   DashboardLayoutLembretesRoute: DashboardLayoutLembretesRoute,
   DashboardLayoutMarcaRoute: DashboardLayoutMarcaRoute,
   DashboardLayoutPrecosRoute: DashboardLayoutPrecosRoute,
   DashboardLayoutProdutoresRoute: DashboardLayoutProdutoresRoute,
+  DashboardLayoutRelatoriosRoute: DashboardLayoutRelatoriosRoute,
   DashboardLayoutIndexRoute: DashboardLayoutIndexRoute,
 }
 

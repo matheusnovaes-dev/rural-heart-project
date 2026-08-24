@@ -73,6 +73,12 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
               {produtor.uf ?? "sua região"}.
             </p>
           )}
+          <Link
+            to="/dashboard/alertas"
+            className="mt-3 inline-block text-sm font-medium text-primary-foreground underline underline-offset-2 opacity-90 hover:opacity-100"
+          >
+            Avisar quando o preço mudar
+          </Link>
         </CardContent>
       </Card>
 
