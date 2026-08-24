@@ -50,6 +50,29 @@ function OnboardingPage() {
 
   const planoEscolhido = plano ?? "bronze";
 
+  // Logo após um cadastro novo, a navegação pra cá pode chegar antes do
+  // AuthProvider terminar de propagar a sessão (a troca de auth state é
+  // assíncrona). Confirma direto com o Supabase antes de decidir que não
+  // há sessão — evita mandar quem acabou de criar conta de volta pro login.
+  const [confirmandoSessao, setConfirmandoSessao] = useState(!session);
+
+  useEffect(() => {
+    if (session) {
+      setConfirmandoSessao(false);
+      return;
+    }
+    refresh().finally(() => setConfirmandoSessao(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (confirmandoSessao) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   if (!session) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4 text-center">
