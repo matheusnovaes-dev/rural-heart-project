@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Bell, TrendingUp, Users, ListChecks } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowDown, ArrowUp, Bell, ListChecks, Minus, TrendingUp, Users } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
@@ -10,11 +10,28 @@ export const Route = createFileRoute("/dashboard/_layout/")({
   component: DashboardHome,
 });
 
+function greeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Bom dia";
+  if (hour < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
+function todayLabel() {
+  const label = new Date().toLocaleDateString("pt-BR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+  });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
 function DashboardHome() {
   const { produtor, cooperativa } = useAuth();
 
   if (produtor) return <ProdutorHome produtor={produtor} />;
-  if (cooperativa) return <CooperativaHome cooperativaId={cooperativa.id} />;
+  if (cooperativa)
+    return <CooperativaHome cooperativaId={cooperativa.id} cooperativaNome={cooperativa.nome} />;
   return null;
 }
 
@@ -51,6 +68,10 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
 
   return (
     <div className="flex flex-col gap-4">
+      <p className="font-display text-xl font-semibold tracking-tight text-foreground">
+        {greeting()}, {produtor.nome.split(" ")[0]}
+      </p>
+
       <Card className="border-primary/30 bg-primary text-primary-foreground">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base font-medium opacity-90">
@@ -61,7 +82,9 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
         <CardContent>
           {preco ? (
             <>
-              <p className="text-4xl font-bold">R$ {preco.preco.toFixed(2).replace(".", ",")}</p>
+              <p className="font-mono text-4xl font-bold tabular-nums">
+                R$ {preco.preco.toFixed(2).replace(".", ",")}
+              </p>
               <p className="mt-1 text-sm opacity-80">
                 {produtor.cultura_principal} · {produtor.uf} · atualizado em{" "}
                 {new Date(preco.data_referencia).toLocaleDateString("pt-BR")}
@@ -99,7 +122,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
               className="flex items-center justify-between rounded-lg border border-border p-3 text-sm"
             >
               <span className="font-medium text-foreground">{l.titulo}</span>
-              <span className="text-muted-foreground">
+              <span className="font-mono text-xs tabular-nums text-muted-foreground">
                 {new Date(l.enviar_em).toLocaleString("pt-BR", {
                   day: "2-digit",
                   month: "2-digit",
@@ -121,8 +144,66 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
   );
 }
 
-function CooperativaHome({ cooperativaId }: { cooperativaId: string }) {
+type TickerEntry = { uf: string; atual: number; variacao: number | null };
+
+function PriceTicker({ entries }: { entries: TickerEntry[] }) {
+  if (entries.length === 0) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-full border border-border bg-card px-3 py-2 shadow-sm">
+      <span className="flex items-center gap-1.5 pl-1 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+        <span className="size-1.5 animate-pulse rounded-full bg-primary" />
+        Soja agora
+      </span>
+      {entries.map((e) => (
+        <span
+          key={e.uf}
+          className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium"
+        >
+          <span className="font-semibold text-foreground">{e.uf}</span>
+          <span className="font-mono tabular-nums text-foreground">
+            R${" "}
+            {e.atual.toLocaleString("pt-BR", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </span>
+          {e.variacao != null && (
+            <span
+              className={`flex items-center gap-0.5 font-mono tabular-nums ${
+                e.variacao > 0
+                  ? "text-primary"
+                  : e.variacao < 0
+                    ? "text-destructive"
+                    : "text-muted-foreground"
+              }`}
+            >
+              {e.variacao > 0 ? (
+                <ArrowUp className="size-3" />
+              ) : e.variacao < 0 ? (
+                <ArrowDown className="size-3" />
+              ) : (
+                <Minus className="size-3" />
+              )}
+              {Math.abs(e.variacao).toFixed(1)}%
+            </span>
+          )}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function CooperativaHome({
+  cooperativaId,
+  cooperativaNome,
+}: {
+  cooperativaId: string;
+  cooperativaNome: string;
+}) {
   const [stats, setStats] = useState({ produtores: 0, leads: 0, lembretes: 0 });
+  const [precoRows, setPrecoRows] = useState<
+    { uf: string; preco: number; data_referencia: string }[]
+  >([]);
 
   useEffect(() => {
     if (!supabase) return;
@@ -143,7 +224,35 @@ function CooperativaHome({ cooperativaId }: { cooperativaId: string }) {
         lembretes: lembretesRes.count ?? 0,
       });
     });
+
+    supabase
+      .from("precos")
+      .select("uf, preco, data_referencia")
+      .ilike("produto", "%soja%")
+      .order("data_referencia", { ascending: false })
+      .limit(60)
+      .then(({ data }) => setPrecoRows(data ?? []));
   }, [cooperativaId]);
+
+  const ticker = useMemo<TickerEntry[]>(() => {
+    const byUf = new Map<string, { preco: number; data_referencia: string }[]>();
+    for (const r of precoRows) {
+      const list = byUf.get(r.uf) ?? [];
+      list.push(r);
+      byUf.set(r.uf, list);
+    }
+    return [...byUf.entries()]
+      .map(([uf, list]) => {
+        const sorted = list.sort((a, b) => b.data_referencia.localeCompare(a.data_referencia));
+        const atual = sorted[0]?.preco;
+        const anterior = sorted[1]?.preco;
+        const variacao =
+          atual != null && anterior != null ? ((atual - anterior) / anterior) * 100 : null;
+        return atual != null ? { uf, atual, variacao } : null;
+      })
+      .filter((e): e is TickerEntry => e != null)
+      .sort((a, b) => a.uf.localeCompare(b.uf));
+  }, [precoRows]);
 
   const cards = [
     {
@@ -162,22 +271,36 @@ function CooperativaHome({ cooperativaId }: { cooperativaId: string }) {
   ];
 
   return (
-    <div className="grid gap-4 sm:grid-cols-3">
-      {cards.map((c) => (
-        <Link key={c.label} to={c.to}>
-          <Card className="transition-colors hover:border-primary/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <c.icon className="size-4" />
-                {c.label}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-foreground">{c.value}</p>
-            </CardContent>
-          </Card>
-        </Link>
-      ))}
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-medium text-muted-foreground">{todayLabel()}</p>
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground text-balance">
+            {greeting()}, {cooperativaNome}
+          </h1>
+        </div>
+        <PriceTicker entries={ticker} />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        {cards.map((c) => (
+          <Link key={c.label} to={c.to}>
+            <Card className="h-full transition-colors hover:border-primary/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <c.icon className="size-4" />
+                  {c.label}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="font-mono text-3xl font-bold tabular-nums text-foreground">
+                  {c.value}
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

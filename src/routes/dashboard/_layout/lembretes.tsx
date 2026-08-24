@@ -87,7 +87,7 @@ function LembretesPage() {
     <Card>
       <CardHeader className="flex flex-col items-start gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 font-display text-lg font-semibold">
             <Bell className="size-4" />
             Lembretes
           </CardTitle>
@@ -133,17 +133,21 @@ function LembretesPage() {
               {l.descricao && <p className="text-sm text-muted-foreground">{l.descricao}</p>}
               <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                 <Clock className="size-3" />
-                {new Date(l.enviar_em).toLocaleString("pt-BR", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                <span className="font-mono tabular-nums">
+                  {new Date(l.enviar_em).toLocaleString("pt-BR", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
                 {l.recorrencia &&
                   ` · repete ${l.recorrencia === "diaria" ? "todo dia" : "toda semana"}`}
               </p>
             </div>
-            <Badge variant={statusLabel[l.status].variant}>{statusLabel[l.status].label}</Badge>
+            <Badge variant={statusLabel[l.status].variant} className="text-[11px] font-semibold">
+              {statusLabel[l.status].label}
+            </Badge>
           </div>
         ))}
       </CardContent>

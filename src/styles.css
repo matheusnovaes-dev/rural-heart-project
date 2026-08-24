@@ -61,6 +61,12 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --color-cta: var(--cta);
   --color-cta-foreground: var(--cta-foreground);
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-gold-soft: var(--gold-soft);
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque", "IBM Plex Sans", ui-sans-serif, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
 }
 
 :root {
@@ -86,9 +92,12 @@
   --ring: oklch(0.536 0.071 155.7);
   --cta: oklch(0.731 0.151 64.6);
   --cta-foreground: oklch(0.204 0.027 60.3);
-  --chart-1: oklch(0.751 0.13 79.8);
-  --chart-2: oklch(0.731 0.151 64.6);
-  --chart-3: oklch(0.536 0.071 155.7);
+  --gold: oklch(0.62 0.13 75);
+  --gold-foreground: oklch(0.22 0.03 75);
+  --gold-soft: oklch(0.93 0.045 80);
+  --chart-1: oklch(0.55 0.09 155);
+  --chart-2: oklch(0.62 0.13 75);
+  --chart-3: oklch(0.58 0.1 40);
   --chart-4: oklch(0.331 0.049 156.2);
   --chart-5: oklch(0.492 0.02 140);
   --sidebar: oklch(0.941 0.02 87.5);
@@ -123,9 +132,12 @@
   --ring: oklch(0.759 0.068 154.7);
   --cta: oklch(0.786 0.135 70.2);
   --cta-foreground: oklch(0.204 0.027 60.3);
-  --chart-1: oklch(0.751 0.13 79.8);
-  --chart-2: oklch(0.786 0.135 70.2);
-  --chart-3: oklch(0.759 0.068 154.7);
+  --gold: oklch(0.76 0.13 80);
+  --gold-foreground: oklch(0.22 0.03 75);
+  --gold-soft: oklch(0.34 0.05 78);
+  --chart-1: oklch(0.68 0.1 155);
+  --chart-2: oklch(0.76 0.13 80);
+  --chart-3: oklch(0.68 0.12 42);
   --chart-4: oklch(0.938 0.014 84.6);
   --chart-5: oklch(0.72 0.02 130);
   --sidebar: oklch(0.274 0.031 155.5);
@@ -146,5 +158,6 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: var(--font-sans);
   }
 }

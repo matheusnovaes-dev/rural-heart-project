@@ -90,7 +90,7 @@ function AlertasPage() {
     <Card>
       <CardHeader className="flex flex-col items-start gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 font-display text-lg font-semibold">
             <TrendingUp className="size-4" />
             Alertas de preço
           </CardTitle>
@@ -139,11 +139,16 @@ function AlertasPage() {
                 <ArrowDown className="size-4 text-destructive" />
               )}
               <span className="font-medium text-foreground">
-                {a.cultura} · {a.uf} {a.direcao} de R${" "}
-                {a.limite.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                {a.cultura} · {a.uf} {a.direcao} de{" "}
+                <span className="font-mono tabular-nums">
+                  R${a.limite.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </span>
               </span>
             </div>
-            <Badge variant={a.disparado_em ? "default" : "secondary"}>
+            <Badge
+              variant={a.disparado_em ? "default" : "secondary"}
+              className="font-mono text-[11px] tabular-nums"
+            >
               {a.disparado_em
                 ? `Disparado em ${new Date(a.disparado_em).toLocaleDateString("pt-BR")}`
                 : "Ativo, aguardando"}

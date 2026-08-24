@@ -117,7 +117,9 @@ function CooperativaSidebar({
           <span className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Sprout className="size-3.5" />
           </span>
-          <span className="truncate text-sm font-semibold text-foreground">{cooperativaNome}</span>
+          <span className="truncate font-display text-sm font-semibold text-foreground">
+            {cooperativaNome}
+          </span>
         </div>
       </SidebarHeader>
       <SidebarContent>

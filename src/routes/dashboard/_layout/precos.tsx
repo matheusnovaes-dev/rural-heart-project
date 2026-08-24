@@ -30,6 +30,50 @@ function formatBRL(v: number) {
   return v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function Sparkline({ data, color }: { data: number[]; color: string }) {
+  if (data.length < 2) {
+    return <div className="h-11 w-full" />;
+  }
+  const w = 100;
+  const h = 34;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const pad = (max - min) * 0.25 || 1;
+  const lo = min - pad;
+  const hi = max + pad;
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * (w - 4) + 2;
+    const y = h - ((v - lo) / (hi - lo)) * (h - 6) - 3;
+    return [x, y] as const;
+  });
+  const linePath = points.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x},${y}`).join(" ");
+  const first = points[0]!;
+  const last = points[points.length - 1]!;
+  const areaPath = `${linePath} L${last[0]},${h} L${first[0]},${h} Z`;
+  const gradId = `spark-${color.replace(/[^a-zA-Z0-9]/g, "")}`;
+
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="h-11 w-full overflow-visible" aria-hidden="true">
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.28" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={areaPath} fill={`url(#${gradId})`} />
+      <path
+        d={linePath}
+        fill="none"
+        stroke={color}
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      <circle cx={last[0]} cy={last[1]} r="2.4" fill={color} />
+    </svg>
+  );
+}
+
 function PrecosPage() {
   const [rows, setRows] = useState<PrecoRow[]>([]);
   const [hidden, setHidden] = useState<Set<string>>(new Set());
@@ -70,7 +114,7 @@ function PrecosPage() {
   }, [rows]);
 
   const stats = useMemo(() => {
-    return ufs.map((uf) => {
+    return ufs.map((uf, i) => {
       const series = rows
         .filter((r) => r.uf === uf)
         .sort((a, b) => a.data_referencia.localeCompare(b.data_referencia));
@@ -87,6 +131,8 @@ function PrecosPage() {
         variacao,
         min: precos.length ? Math.min(...precos) : null,
         max: precos.length ? Math.max(...precos) : null,
+        sparkline: precos.slice(-14),
+        color: UF_COLORS[i % UF_COLORS.length] ?? "var(--color-chart-1)",
       };
     });
   }, [rows, ufs]);
@@ -103,52 +149,70 @@ function PrecosPage() {
   return (
     <div className="flex flex-col gap-4">
       {stats.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-3">
-          {stats.map((s) => (
-            <Card key={s.uf}>
-              <CardHeader className="pb-2">
-                <CardDescription>Soja — {s.uf}</CardDescription>
-                <CardTitle className="text-2xl">
-                  {s.atual != null ? `R$ ${formatBRL(s.atual)}` : "—"}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex items-center justify-between text-sm">
-                {s.variacao != null ? (
-                  <span
-                    className={`flex items-center gap-1 font-medium ${
-                      s.variacao > 0
-                        ? "text-primary"
-                        : s.variacao < 0
-                          ? "text-destructive"
-                          : "text-muted-foreground"
-                    }`}
-                  >
-                    {s.variacao > 0 ? (
-                      <ArrowUp className="size-3.5" />
-                    ) : s.variacao < 0 ? (
-                      <ArrowDown className="size-3.5" />
+        <div className="@container">
+          <div className="grid gap-4 @lg:grid-cols-2 @2xl:grid-cols-3">
+            {stats.map((s) => (
+              <Card key={s.uf} className="gap-3 py-4">
+                <CardHeader className="gap-1 pb-0">
+                  <CardDescription className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    Soja · {s.uf}
+                  </CardDescription>
+                  <CardTitle className="font-mono text-3xl font-semibold tabular-nums tracking-tight">
+                    {s.atual != null ? (
+                      <>
+                        <span className="mr-0.5 align-top text-base font-sans font-semibold text-muted-foreground">
+                          R$
+                        </span>
+                        {formatBRL(s.atual)}
+                      </>
                     ) : (
-                      <Minus className="size-3.5" />
+                      "—"
                     )}
-                    {Math.abs(s.variacao).toFixed(1)}% na semana
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground">Sem histórico suficiente</span>
-                )}
-                {s.min != null && s.max != null && (
-                  <span className="text-muted-foreground">
-                    Mín R${formatBRL(s.min)} · Máx R${formatBRL(s.max)}
-                  </span>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-2 pb-0">
+                  <div className="flex items-center justify-between">
+                    {s.variacao != null ? (
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                          s.variacao > 0
+                            ? "bg-primary/10 text-primary"
+                            : s.variacao < 0
+                              ? "bg-destructive/10 text-destructive"
+                              : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {s.variacao > 0 ? (
+                          <ArrowUp className="size-3" />
+                        ) : s.variacao < 0 ? (
+                          <ArrowDown className="size-3" />
+                        ) : (
+                          <Minus className="size-3" />
+                        )}
+                        {Math.abs(s.variacao).toFixed(1)}% sem.
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Sem histórico</span>
+                    )}
+                    {s.min != null && s.max != null && (
+                      <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
+                        {formatBRL(s.min)} – {formatBRL(s.max)}
+                      </span>
+                    )}
+                  </div>
+                  <Sparkline data={s.sparkline} color={s.color} />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       )}
 
       <Card>
         <CardHeader>
-          <CardTitle>Histórico de preço — Soja</CardTitle>
+          <CardTitle className="font-display text-lg font-semibold">
+            Histórico de preço — Soja
+          </CardTitle>
           <CardDescription>
             Fonte: Conab, atualizado diariamente. Clique num UF na legenda pra esconder/mostrar.
           </CardDescription>
@@ -161,13 +225,23 @@ function PrecosPage() {
           ) : (
             <ChartContainer config={chartConfig} className="h-80 w-full">
               <LineChart data={chartData} margin={{ left: 8, right: 8 }}>
-                <CartesianGrid vertical={false} />
-                <XAxis dataKey="data" tickLine={false} axisLine={false} />
+                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="data"
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fontSize: 12, fontFamily: "var(--font-mono)" }}
+                />
                 <YAxis
                   tickLine={false}
                   axisLine={false}
-                  width={48}
+                  width={52}
+                  tick={{ fontSize: 12, fontFamily: "var(--font-mono)" }}
                   tickFormatter={(v) => `R$${v}`}
+                  domain={[
+                    (dataMin: number) => Math.floor(dataMin - 2),
+                    (dataMax: number) => Math.ceil(dataMax + 2),
+                  ]}
                 />
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <Legend
@@ -180,8 +254,9 @@ function PrecosPage() {
                     dataKey={uf}
                     type="monotone"
                     stroke={`var(--color-${uf})`}
-                    strokeWidth={2}
+                    strokeWidth={2.25}
                     dot={false}
+                    activeDot={{ r: 4 }}
                     hide={hidden.has(uf)}
                     connectNulls
                   />
