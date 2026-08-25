@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { CartesianGrid, Legend, Line, LineChart, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { ArrowDown, ArrowUp, Minus } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,13 +26,17 @@ export const Route = createFileRoute("/dashboard/_layout/precos")({
 
 type PrecoRow = { uf: string; preco: number; data_referencia: string; produto: string };
 
-const UF_COLORS = [
-  "var(--color-chart-1)",
-  "var(--color-chart-2)",
-  "var(--color-chart-3)",
-  "var(--color-chart-4)",
-  "var(--color-chart-5)",
-];
+const QTD_VISIVEL_PADRAO = 6;
+
+// Os 5 primeiros UFs usam os tokens de marca já definidos em styles.css
+// (--chart-1..5). A partir do 6º, gera cor no mesmo espaço OKLCH (mesma
+// luminosidade/croma dos tokens), variando só o matiz — garante que nenhum
+// UF repete cor, não importa quantos apareçam no gráfico.
+function corDoUf(index: number) {
+  if (index < 5) return `var(--color-chart-${index + 1})`;
+  const matiz = (index * 47) % 360;
+  return `oklch(0.6 0.1 ${matiz})`;
+}
 
 function formatBRL(v: number) {
   return v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -85,11 +89,11 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
 function PrecosPage() {
   const [cultura, setCultura] = useState("soja");
   const [rawRows, setRawRows] = useState<PrecoRow[]>([]);
-  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const [visiveis, setVisiveis] = useState<Set<string> | null>(null);
 
   useEffect(() => {
     if (!supabase) return;
-    setHidden(new Set());
+    setVisiveis(null);
     supabase
       .from("precos")
       .select("uf, preco, data_referencia, produto")
@@ -118,12 +122,31 @@ function PrecosPage() {
 
   const culturaLabel = culturas.find((c) => c.value === cultura)?.label ?? cultura;
 
-  const ufs = useMemo(() => [...new Set(rows.map((r) => r.uf))].sort(), [rows]);
+  // Ordenado por quantidade de pontos (série mais completa primeiro) — não
+  // é alfabético porque ordem de UF não carrega nenhum significado aqui.
+  const ufs = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of rows) counts.set(r.uf, (counts.get(r.uf) ?? 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([uf]) => uf);
+  }, [rows]);
+
+  const corPorUf = useMemo(() => {
+    const map = new Map<string, string>();
+    ufs.forEach((uf, i) => map.set(uf, corDoUf(i)));
+    return map;
+  }, [ufs]);
+
+  // Começa mostrando só os UFs com mais histórico — todo mundo junto de uma
+  // vez, com 15+ estados, vira espaguete ilegível independente de cor.
+  useEffect(() => {
+    if (visiveis !== null || ufs.length === 0) return;
+    setVisiveis(new Set(ufs.slice(0, QTD_VISIVEL_PADRAO)));
+  }, [ufs, visiveis]);
 
   const chartConfig: ChartConfig = useMemo(() => {
     const config: ChartConfig = {};
     ufs.forEach((uf, i) => {
-      config[uf] = { label: uf, color: UF_COLORS[i % UF_COLORS.length] ?? "var(--color-chart-1)" };
+      config[uf] = { label: uf, color: corDoUf(i) };
     });
     return config;
   }, [ufs]);
@@ -145,7 +168,7 @@ function PrecosPage() {
   }, [rows]);
 
   const stats = useMemo(() => {
-    return ufs.map((uf, i) => {
+    return ufs.map((uf) => {
       const series = rows
         .filter((r) => r.uf === uf)
         .sort((a, b) => a.data_referencia.localeCompare(b.data_referencia));
@@ -163,14 +186,14 @@ function PrecosPage() {
         min: precos.length ? Math.min(...precos) : null,
         max: precos.length ? Math.max(...precos) : null,
         sparkline: precos.slice(-14),
-        color: UF_COLORS[i % UF_COLORS.length] ?? "var(--color-chart-1)",
+        color: corPorUf.get(uf) ?? corDoUf(0),
       };
     });
-  }, [rows, ufs]);
+  }, [rows, ufs, corPorUf]);
 
   function toggleUf(uf: string) {
-    setHidden((prev) => {
-      const next = new Set(prev);
+    setVisiveis((prev) => {
+      const next = new Set(prev ?? []);
       if (next.has(uf)) next.delete(uf);
       else next.add(uf);
       return next;
@@ -203,7 +226,11 @@ function PrecosPage() {
             {stats.map((s) => (
               <Card key={s.uf} className="gap-3 py-4">
                 <CardHeader className="gap-1 pb-0">
-                  <CardDescription className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  <CardDescription className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    <span
+                      className="size-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: s.color }}
+                    />
                     {culturaLabel} · {s.uf}
                   </CardDescription>
                   <CardTitle className="font-mono text-3xl font-semibold tabular-nums tracking-tight">
@@ -263,10 +290,40 @@ function PrecosPage() {
             Histórico de preço — {culturaLabel}
           </CardTitle>
           <CardDescription>
-            Fonte: Conab, atualizado diariamente. Clique num UF na legenda pra esconder/mostrar.
+            Fonte: Conab, atualizado diariamente
+            {ufs.length > QTD_VISIVEL_PADRAO &&
+              ` · mostrando os ${QTD_VISIVEL_PADRAO} UFs com mais histórico, clique pra ver outros`}
+            .
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-4">
+          {ufs.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {ufs.map((uf) => {
+                const ativo = visiveis?.has(uf) ?? false;
+                const cor = corPorUf.get(uf) ?? corDoUf(0);
+                return (
+                  <button
+                    key={uf}
+                    type="button"
+                    onClick={() => toggleUf(uf)}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                      ativo
+                        ? "border-transparent bg-secondary text-foreground"
+                        : "border-border text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <span
+                      className="size-2 shrink-0 rounded-full transition-opacity"
+                      style={{ backgroundColor: cor, opacity: ativo ? 1 : 0.35 }}
+                    />
+                    {uf}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {chartData.length === 0 ? (
             <p className="py-12 text-center text-sm text-muted-foreground">
               Ainda sem dados de preço.
@@ -292,21 +349,36 @@ function PrecosPage() {
                     (dataMax: number) => Math.ceil(dataMax + 2),
                   ]}
                 />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Legend
-                  onClick={(e) => toggleUf(String(e.dataKey))}
-                  wrapperStyle={{ cursor: "pointer", fontSize: 13 }}
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      formatter={(value, name) => (
+                        <div className="flex w-full items-center justify-between gap-3">
+                          <span className="flex items-center gap-1.5 text-muted-foreground">
+                            <span
+                              className="size-2 shrink-0 rounded-[2px]"
+                              style={{ backgroundColor: corPorUf.get(String(name)) }}
+                            />
+                            {name}
+                          </span>
+                          <span className="font-mono font-medium tabular-nums text-foreground">
+                            R$ {formatBRL(Number(value))}
+                          </span>
+                        </div>
+                      )}
+                    />
+                  }
                 />
                 {ufs.map((uf) => (
                   <Line
                     key={uf}
                     dataKey={uf}
                     type="monotone"
-                    stroke={`var(--color-${uf})`}
+                    stroke={corPorUf.get(uf)}
                     strokeWidth={2.25}
                     dot={false}
                     activeDot={{ r: 4 }}
-                    hide={hidden.has(uf)}
+                    hide={!(visiveis?.has(uf) ?? false)}
                     connectNulls
                   />
                 ))}
