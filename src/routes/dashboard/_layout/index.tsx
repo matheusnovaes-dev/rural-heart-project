@@ -34,6 +34,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth, type Produtor } from "@/lib/auth";
 import { culturas } from "@/config/culturas";
 import { InsightsPanel } from "@/components/dashboard/InsightsPanel";
+import { CooperativaInsights } from "@/components/dashboard/CooperativaInsights";
 
 export const Route = createFileRoute("/dashboard/_layout/")({
   component: DashboardHome,
@@ -483,6 +484,8 @@ function CooperativaHome({
           </span>
         </div>
       )}
+
+      <CooperativaInsights cooperativaId={cooperativaId} />
 
       <div className="grid gap-4 sm:grid-cols-3">
         {cards.map((c) => (

@@ -9,13 +9,13 @@ import {
   TrendingUp,
 } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/lib/supabase";
 import { buscarPrevisao } from "@/lib/clima";
 import { temAcessoPrata, useAssinatura } from "@/lib/planos";
 import type { Produtor } from "@/lib/auth";
+import { InsightCard } from "@/components/dashboard/InsightCard";
 
 type PrecoPonto = { preco: number; data_referencia: string; produto: string; uf: string };
 
@@ -90,39 +90,6 @@ function detectarAnomalia(
   }
 
   return null;
-}
-
-function InsightCard({
-  icon: Icon,
-  tone,
-  title,
-  children,
-}: {
-  icon: typeof TrendingUp;
-  tone: "up" | "down" | "neutral" | "warn";
-  title: string;
-  children: React.ReactNode;
-}) {
-  const toneClasses = {
-    up: "bg-primary/10 text-primary",
-    down: "bg-destructive/10 text-destructive",
-    neutral: "bg-secondary text-muted-foreground",
-    warn: "bg-cta/10 text-cta-foreground",
-  }[tone];
-
-  return (
-    <Card className="gap-2 py-4">
-      <CardHeader className="gap-0 pb-0">
-        <div className="flex items-center gap-2">
-          <span className={`flex size-7 items-center justify-center rounded-full ${toneClasses}`}>
-            <Icon className="size-3.5" />
-          </span>
-          <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent className="pb-0 text-sm text-foreground">{children}</CardContent>
-    </Card>
-  );
 }
 
 export function InsightsPanel({ produtor }: { produtor: Produtor }) {
