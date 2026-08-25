@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Search, Trash2 } from "lucide-react";
+import { ListChecks, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@/components/dashboard/PageHeader";
+import { EmptyState } from "@/components/dashboard/EmptyState";
 import {
   Table,
   TableBody,
@@ -98,95 +100,104 @@ function LeadsPage() {
   if (!cooperativa) return null;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Leads</CardTitle>
-        <CardDescription>Quem preencheu o formulário da landing page</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {leads.length > 0 && (
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nome, WhatsApp ou cultura..."
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-        )}
+    <div className="flex flex-col gap-5">
+      <PageHeader
+        icon={ListChecks}
+        title="Leads"
+        description="Quem preencheu o formulário da landing page"
+      />
+      <Card>
+        <CardContent className="flex flex-col gap-4 pt-6">
+          {leads.length > 0 && (
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome, WhatsApp ou cultura..."
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          )}
 
-        {leads.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">Nenhum lead ainda.</p>
-        ) : filtrados.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            Nenhum lead encontrado para "{busca}".
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>WhatsApp</TableHead>
-                  <TableHead>Cultura</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtrados.map((lead) => (
-                  <TableRow key={lead.id}>
-                    <TableCell className="font-medium">{lead.name}</TableCell>
-                    <TableCell>{lead.whatsapp}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{lead.crop}</Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {new Date(lead.created_at).toLocaleDateString("pt-BR")}
-                    </TableCell>
-                    <TableCell>
-                      <button
-                        onClick={() => toggleContatado(lead)}
-                        className="cursor-pointer"
-                        title="Marcar como contatado/pendente"
-                      >
-                        <Badge variant={lead.contatado ? "default" : "outline"}>
-                          {lead.contatado ? "Contatado" : "Pendente"}
-                        </Badge>
-                      </button>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-8">
-                            <Trash2 className="size-3.5 text-destructive" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Remover {lead.name}?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Essa ação não pode ser desfeita.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(lead.id)}>
-                              Remover
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </TableCell>
+          {leads.length === 0 ? (
+            <EmptyState
+              icon={ListChecks}
+              title="Nenhum lead ainda"
+              description="Quando alguém preencher o formulário da sua landing page, o contato aparece aqui automaticamente."
+            />
+          ) : filtrados.length === 0 ? (
+            <EmptyState
+              icon={Search}
+              title="Nada encontrado"
+              description={`Nenhum lead corresponde a "${busca}".`}
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>WhatsApp</TableHead>
+                    <TableHead>Cultura</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                </TableHeader>
+                <TableBody>
+                  {filtrados.map((lead) => (
+                    <TableRow key={lead.id}>
+                      <TableCell className="font-medium">{lead.name}</TableCell>
+                      <TableCell>{lead.whatsapp}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{lead.crop}</Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(lead.created_at).toLocaleDateString("pt-BR")}
+                      </TableCell>
+                      <TableCell>
+                        <button
+                          onClick={() => toggleContatado(lead)}
+                          className="cursor-pointer"
+                          title="Marcar como contatado/pendente"
+                        >
+                          <Badge variant={lead.contatado ? "default" : "outline"}>
+                            {lead.contatado ? "Contatado" : "Pendente"}
+                          </Badge>
+                        </button>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="size-8">
+                              <Trash2 className="size-3.5 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remover {lead.name}?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Essa ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(lead.id)}>
+                                Remover
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

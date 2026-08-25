@@ -13,6 +13,7 @@ import {
   Loader2,
   Sprout,
   CloudSun,
+  Search,
 } from "lucide-react";
 
 import {
@@ -30,6 +31,8 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { CommandPalette } from "@/components/dashboard/CommandPalette";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
@@ -62,27 +65,47 @@ function DashboardGuard() {
 
   if (cooperativa) {
     return (
-      <SidebarProvider>
-        <CooperativaSidebar cooperativaNome={cooperativa.nome} isAdmin={papel === "admin"} />
-        <SidebarInset>
-          <header className="flex h-14 items-center gap-2 border-b border-border px-4">
-            <SidebarTrigger />
-          </header>
-          <div className="flex-1 p-4 sm:p-6">
-            <Outlet />
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
+      <TooltipProvider delayDuration={200}>
+        <SidebarProvider>
+          <CooperativaSidebar cooperativaNome={cooperativa.nome} isAdmin={papel === "admin"} />
+          <SidebarInset>
+            <header className="flex h-14 items-center gap-2 border-b border-border px-4">
+              <SidebarTrigger />
+              <AtalhoBusca />
+            </header>
+            <div className="flex-1 p-4 sm:p-6">
+              <Outlet />
+            </div>
+          </SidebarInset>
+          <CommandPalette />
+        </SidebarProvider>
+      </TooltipProvider>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <ProdutorHeader nome={produtor!.nome} />
-      <main className="mx-auto max-w-lg px-4 py-6">
-        <Outlet />
-      </main>
-    </div>
+    <TooltipProvider delayDuration={200}>
+      <div className="min-h-screen bg-background">
+        <ProdutorHeader nome={produtor!.nome} />
+        {/* max-w-6xl, não max-w-lg: a coluna de 512px fazia o painel parecer
+            um app de celular esticado no desktop. Mobile segue coluna única. */}
+        <main className="mx-auto max-w-6xl px-4 py-6">
+          <Outlet />
+        </main>
+      </div>
+      <CommandPalette />
+    </TooltipProvider>
+  );
+}
+
+/** Dica visual de que o ⌘K existe — senão ninguém descobre o atalho. */
+function AtalhoBusca() {
+  return (
+    <span className="ml-auto hidden items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground sm:flex">
+      <Search className="size-3" />
+      Buscar
+      <kbd className="ml-1 font-mono text-[10px] opacity-70">⌘K</kbd>
+    </span>
   );
 }
 

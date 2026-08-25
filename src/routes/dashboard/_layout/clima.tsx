@@ -1,9 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { CloudRain, CloudSun, Lock, Loader2, Thermometer } from "lucide-react";
+import { CloudRain, CloudSun, Lock, MapPin, Thermometer } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/dashboard/PageHeader";
+import { EmptyState } from "@/components/dashboard/EmptyState";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { temAcessoPrata, useAssinatura } from "@/lib/planos";
@@ -18,8 +21,9 @@ function ClimaPage() {
 
   if (loadingPlano) {
     return (
-      <div className="flex justify-center py-16">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      <div className="flex flex-col gap-4">
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-48 w-full" />
       </div>
     );
   }
@@ -117,24 +121,22 @@ function ClimaConteudo() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2.5">
-        <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
-          <CloudSun className="size-4.5" />
-        </span>
-        <div>
-          <h1 className="font-display text-xl font-semibold tracking-tight text-foreground">
-            Tendências climáticas
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Previsão de chuva e temperatura pros próximos 5 dias, por estado.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        icon={CloudSun}
+        title="Tendências climáticas"
+        description="Previsão de chuva e temperatura pros próximos 5 dias, por estado."
+      />
 
       {ufs.length === 0 && (
-        <p className="py-8 text-center text-sm text-muted-foreground">
-          Cadastre a UF do produtor pra ver a previsão da região.
-        </p>
+        <Card>
+          <CardContent className="pt-6">
+            <EmptyState
+              icon={MapPin}
+              title="Nenhum estado pra acompanhar"
+              description="A previsão sai da UF dos produtores cadastrados. Cadastre um produtor com estado preenchido pra ver o clima da região aqui."
+            />
+          </CardContent>
+        </Card>
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -158,8 +160,10 @@ function ClimaConteudo() {
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
                 {previsao === undefined ? (
-                  <div className="flex justify-center py-6">
-                    <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Skeleton key={i} className="h-18 w-full" />
+                    ))}
                   </div>
                 ) : previsao === null ? (
                   <p className="py-2 text-sm text-muted-foreground">Previsão indisponível agora.</p>

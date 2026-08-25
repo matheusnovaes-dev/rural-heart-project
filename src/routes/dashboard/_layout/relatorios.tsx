@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import { Document, Page, Text, View, Image, StyleSheet, pdf } from "@react-pdf/renderer";
 import { FileDown, Loader2 } from "lucide-react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@/components/dashboard/PageHeader";
+import { EmptyState } from "@/components/dashboard/EmptyState";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -142,44 +144,49 @@ function RelatoriosPage() {
     }
   }
 
+  const seletorCultura = (
+    <Select value={cultura} onValueChange={setCultura}>
+      <SelectTrigger className="w-55">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {culturas.map((c) => (
+          <SelectItem key={c.value} value={c.value}>
+            {c.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
   return (
-    <Card>
-      <CardHeader className="flex flex-col items-start gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <CardTitle>Relatórios</CardTitle>
-          <CardDescription>
-            PDF com a marca da sua cooperativa e os preços mais recentes por UF.
-          </CardDescription>
-        </div>
-        <Select value={cultura} onValueChange={setCultura}>
-          <SelectTrigger className="w-55">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {culturas.map((c) => (
-              <SelectItem key={c.value} value={c.value}>
-                {c.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </CardHeader>
-      <CardContent>
-        {precos.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            Ainda sem dados de preço pra incluir no relatório.
-          </p>
-        ) : (
-          <Button onClick={baixarRelatorio} disabled={gerando}>
-            {gerando ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <FileDown className="size-4" />
-            )}
-            Baixar relatório em PDF
-          </Button>
-        )}
-      </CardContent>
-    </Card>
+    <div className="flex flex-col gap-5">
+      <PageHeader
+        icon={FileDown}
+        title="Relatórios"
+        description="PDF com a marca da sua cooperativa e os preços mais recentes por UF."
+        action={seletorCultura}
+      />
+      <Card>
+        <CardContent className="pt-6">
+          {precos.length === 0 ? (
+            <EmptyState
+              icon={FileDown}
+              title="Sem dados pra essa cultura"
+              description={`Ainda não temos preço publicado de ${culturaLabel.toLowerCase()} pra montar o relatório. Tente outra cultura no seletor acima.`}
+            />
+          ) : (
+            <Button onClick={baixarRelatorio} disabled={gerando}>
+              {gerando ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <FileDown className="size-4" />
+              )}
+              Baixar relatório em PDF
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

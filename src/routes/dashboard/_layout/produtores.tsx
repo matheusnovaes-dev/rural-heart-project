@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Plus, Search, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@/components/dashboard/PageHeader";
+import { EmptyState } from "@/components/dashboard/EmptyState";
 import {
   Table,
   TableBody,
@@ -91,126 +93,135 @@ function ProdutoresPage() {
 
   if (!cooperativa) return null;
 
-  return (
-    <Card>
-      <CardHeader className="flex flex-col items-start gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <CardTitle>Produtores</CardTitle>
-          <CardDescription>Produtores associados à sua cooperativa</CardDescription>
-        </div>
-        <Dialog
-          open={open || !!editando}
-          onOpenChange={(v) => {
-            if (!v) {
-              setOpen(false);
-              setEditando(null);
-            }
+  const dialogAdicionar = (
+    <Dialog
+      open={open || !!editando}
+      onOpenChange={(v) => {
+        if (!v) {
+          setOpen(false);
+          setEditando(null);
+        }
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button size="sm" onClick={() => setOpen(true)}>
+          <Plus className="size-4" />
+          Adicionar
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{editando ? "Editar produtor" : "Adicionar produtor"}</DialogTitle>
+        </DialogHeader>
+        <ProdutorForm
+          cooperativaId={cooperativa?.id ?? ""}
+          produtor={editando}
+          onDone={() => {
+            setOpen(false);
+            setEditando(null);
+            load();
           }}
-        >
-          <DialogTrigger asChild>
-            <Button size="sm" onClick={() => setOpen(true)}>
-              <Plus className="size-4" />
-              Adicionar
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editando ? "Editar produtor" : "Adicionar produtor"}</DialogTitle>
-            </DialogHeader>
-            <ProdutorForm
-              cooperativaId={cooperativa?.id ?? ""}
-              produtor={editando}
-              onDone={() => {
-                setOpen(false);
-                setEditando(null);
-                load();
-              }}
-            />
-          </DialogContent>
-        </Dialog>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {produtores.length > 0 && (
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nome ou WhatsApp..."
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-        )}
+        />
+      </DialogContent>
+    </Dialog>
+  );
 
-        {produtores.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            Nenhum produtor cadastrado ainda.
-          </p>
-        ) : filtrados.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            Nenhum produtor encontrado para "{busca}".
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>WhatsApp</TableHead>
-                  <TableHead>Cultura</TableHead>
-                  <TableHead>UF</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtrados.map((p) => (
-                  <TableRow key={p.id}>
-                    <TableCell className="font-medium">{p.nome}</TableCell>
-                    <TableCell>{p.whatsapp}</TableCell>
-                    <TableCell>{p.cultura_principal ?? "—"}</TableCell>
-                    <TableCell>{p.uf ?? "—"}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8"
-                          onClick={() => setEditando(p)}
-                        >
-                          <Pencil className="size-3.5" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="size-8">
-                              <Trash2 className="size-3.5 text-destructive" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Remover {p.nome}?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Essa ação não pode ser desfeita. Alertas e lembretes ligados a esse
-                                produtor também serão removidos.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDelete(p.id)}>
-                                Remover
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
+  return (
+    <div className="flex flex-col gap-5">
+      <PageHeader
+        icon={Users}
+        title="Produtores"
+        description="Produtores associados à sua cooperativa"
+        action={dialogAdicionar}
+      />
+      <Card>
+        <CardContent className="flex flex-col gap-4 pt-6">
+          {produtores.length > 0 && (
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome ou WhatsApp..."
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          )}
+
+          {produtores.length === 0 ? (
+            <EmptyState
+              icon={Users}
+              title="Nenhum produtor cadastrado"
+              description="Cadastre os produtores da sua cooperativa pra acompanhar preço, clima e enviar alertas pra eles."
+            />
+          ) : filtrados.length === 0 ? (
+            <EmptyState
+              icon={Search}
+              title="Nada encontrado"
+              description={`Nenhum produtor corresponde a "${busca}".`}
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>WhatsApp</TableHead>
+                    <TableHead>Cultura</TableHead>
+                    <TableHead>UF</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                </TableHeader>
+                <TableBody>
+                  {filtrados.map((p) => (
+                    <TableRow key={p.id}>
+                      <TableCell className="font-medium">{p.nome}</TableCell>
+                      <TableCell>{p.whatsapp}</TableCell>
+                      <TableCell>{p.cultura_principal ?? "—"}</TableCell>
+                      <TableCell>{p.uf ?? "—"}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8"
+                            onClick={() => setEditando(p)}
+                          >
+                            <Pencil className="size-3.5" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="size-8">
+                                <Trash2 className="size-3.5 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Remover {p.nome}?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Essa ação não pode ser desfeita. Alertas e lembretes ligados a
+                                  esse produtor também serão removidos.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(p.id)}>
+                                  Remover
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 

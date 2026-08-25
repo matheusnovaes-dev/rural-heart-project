@@ -9,6 +9,10 @@ export function temAcessoPrata(plano: Plano | null | undefined) {
   return plano === "prata" || plano === "ouro";
 }
 
+export function temAcessoOuro(plano: Plano | null | undefined) {
+  return plano === "ouro";
+}
+
 /** Assinatura (plano) do produtor ou cooperativa logado, pra gating de feature. */
 export function useAssinatura() {
   const { produtor, cooperativa } = useAuth();

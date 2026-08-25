@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
-import { ArrowDown, ArrowUp, Minus } from "lucide-react";
+import { ArrowDown, ArrowUp, LineChart as LineChartIcon, Minus } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -19,6 +19,9 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/lib/supabase";
 import { culturas } from "@/config/culturas";
+import { PageHeader } from "@/components/dashboard/PageHeader";
+import { EmptyState } from "@/components/dashboard/EmptyState";
+import { Sparkline } from "@/components/dashboard/Sparkline";
 
 export const Route = createFileRoute("/dashboard/_layout/precos")({
   component: PrecosPage,
@@ -50,50 +53,6 @@ function corDoUf(index: number) {
 
 function formatBRL(v: number) {
   return v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function Sparkline({ data, color }: { data: number[]; color: string }) {
-  if (data.length < 2) {
-    return <div className="h-11 w-full" />;
-  }
-  const w = 100;
-  const h = 34;
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const pad = (max - min) * 0.25 || 1;
-  const lo = min - pad;
-  const hi = max + pad;
-  const points = data.map((v, i) => {
-    const x = (i / (data.length - 1)) * (w - 4) + 2;
-    const y = h - ((v - lo) / (hi - lo)) * (h - 6) - 3;
-    return [x, y] as const;
-  });
-  const linePath = points.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x},${y}`).join(" ");
-  const first = points[0]!;
-  const last = points[points.length - 1]!;
-  const areaPath = `${linePath} L${last[0]},${h} L${first[0]},${h} Z`;
-  const gradId = `spark-${color.replace(/[^a-zA-Z0-9]/g, "")}`;
-
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="h-11 w-full overflow-visible" aria-hidden="true">
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.28" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={areaPath} fill={`url(#${gradId})`} />
-      <path
-        d={linePath}
-        fill="none"
-        stroke={color}
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-      <circle cx={last[0]} cy={last[1]} r="2.4" fill={color} />
-    </svg>
-  );
 }
 
 function PrecosPage() {
@@ -215,23 +174,25 @@ function PrecosPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="font-display text-xl font-semibold tracking-tight text-foreground">
-          Preços
-        </h1>
-        <Select value={cultura} onValueChange={setCultura}>
-          <SelectTrigger className="w-55">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {culturas.map((c) => (
-              <SelectItem key={c.value} value={c.value}>
-                {c.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <PageHeader
+        icon={LineChartIcon}
+        title="Preços"
+        description="Cotação por estado, direto da Conab"
+        action={
+          <Select value={cultura} onValueChange={setCultura}>
+            <SelectTrigger className="w-55">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {culturas.map((c) => (
+                <SelectItem key={c.value} value={c.value}>
+                  {c.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        }
+      />
 
       {stats.length > 0 && (
         <div className="@container">
@@ -338,9 +299,11 @@ function PrecosPage() {
           )}
 
           {chartData.length === 0 ? (
-            <p className="py-12 text-center text-sm text-muted-foreground">
-              Ainda sem dados de preço.
-            </p>
+            <EmptyState
+              icon={LineChartIcon}
+              title="Sem dados pra essa cultura"
+              description={`A Conab ainda não publicou preço de ${culturaLabel.toLowerCase()} nos últimos 6 meses. Tente outra cultura no seletor acima.`}
+            />
           ) : (
             <ChartContainer config={chartConfig} className="h-80 w-full">
               <LineChart data={chartData} margin={{ left: 8, right: 8 }}>

@@ -4,6 +4,7 @@ import {
   ArrowDown,
   ArrowUp,
   Bell,
+  CloudSun,
   ListChecks,
   Loader2,
   Minus,
@@ -35,6 +36,12 @@ import { useAuth, type Produtor } from "@/lib/auth";
 import { culturas } from "@/config/culturas";
 import { InsightsPanel } from "@/components/dashboard/InsightsPanel";
 import { CooperativaInsights } from "@/components/dashboard/CooperativaInsights";
+import { Sparkline } from "@/components/dashboard/Sparkline";
+import { AtualizadoEm } from "@/components/dashboard/AtualizadoEm";
+import { StatCard } from "@/components/dashboard/StatCard";
+import { Watchlist } from "@/components/dashboard/Watchlist";
+import { Skeleton } from "@/components/ui/skeleton";
+import { buscarPrevisao, type Previsao } from "@/lib/clima";
 
 export const Route = createFileRoute("/dashboard/_layout/")({
   component: DashboardHome,
@@ -205,25 +212,31 @@ function TrocarCulturaDialog({ produtor }: { produtor: Produtor }) {
   );
 }
 
+type PrecoHistorico = { preco: number; data_referencia: string; updated_at: string | null };
+
 function ProdutorHome({ produtor }: { produtor: Produtor }) {
-  const [preco, setPreco] = useState<{ preco: number; data_referencia: string } | null>(null);
+  const [serie, setSerie] = useState<PrecoHistorico[] | null>(null);
   const [lembretes, setLembretes] = useState<{ id: string; titulo: string; enviar_em: string }[]>(
     [],
   );
+  const [previsao, setPrevisao] = useState<Previsao | null | undefined>(undefined);
 
   useEffect(() => {
     if (!supabase) return;
 
     if (produtor.cultura_principal && produtor.uf) {
+      const desde = new Date();
+      desde.setDate(desde.getDate() - 90);
       supabase
         .from("precos")
-        .select("preco, data_referencia")
+        .select("preco, data_referencia, updated_at")
         .ilike("produto", `%${produtor.cultura_principal}%`)
         .eq("uf", produtor.uf)
-        .order("data_referencia", { ascending: false })
-        .limit(1)
-        .maybeSingle()
-        .then(({ data }) => setPreco(data));
+        .gte("data_referencia", desde.toISOString().slice(0, 10))
+        .order("data_referencia", { ascending: true })
+        .then(({ data }) => setSerie(data ?? []));
+    } else {
+      setSerie([]);
     }
 
     supabase
@@ -236,88 +249,212 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
       .then(({ data }) => setLembretes(data ?? []));
   }, [produtor]);
 
+  useEffect(() => {
+    if (!produtor.uf) {
+      setPrevisao(null);
+      return;
+    }
+    buscarPrevisao(produtor.uf).then(setPrevisao);
+  }, [produtor.uf]);
+
+  const atual = serie?.at(-1) ?? null;
+  const anterior = serie?.at(-2) ?? null;
+  const variacao =
+    atual && anterior && anterior.preco !== 0
+      ? ((atual.preco - anterior.preco) / anterior.preco) * 100
+      : null;
+
   return (
-    <div className="flex flex-col gap-4">
-      <p className="font-display text-xl font-semibold tracking-tight text-foreground">
-        {greeting()}, {produtor.nome.split(" ")[0]}
-      </p>
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-1">
+        <p className="text-xs font-medium text-muted-foreground">{todayLabel()}</p>
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground text-balance">
+          {greeting()}, {produtor.nome.split(" ")[0]}
+        </h1>
+      </div>
 
-      <Card className="border-primary/30 bg-primary text-primary-foreground">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base font-medium opacity-90">
-            <TrendingUp className="size-4" />
-            Seu preço hoje
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {preco ? (
-            <>
-              <p className="font-mono text-4xl font-bold tabular-nums">
-                R$ {preco.preco.toFixed(2).replace(".", ",")}
-              </p>
-              <div className="mt-1 flex items-center gap-1.5 text-sm opacity-80">
-                <span>
-                  {produtor.cultura_principal} · {produtor.uf} · atualizado em{" "}
-                  {new Date(preco.data_referencia).toLocaleDateString("pt-BR")}
+      <div className="grid gap-4 lg:grid-cols-3">
+        {/* Coluna principal: preço herói + insights */}
+        <div className="flex flex-col gap-4 lg:col-span-2">
+          <Card className="border-primary/30 bg-primary text-primary-foreground">
+            <CardHeader className="pb-0">
+              <CardTitle className="flex items-center justify-between gap-2 text-sm font-medium opacity-90">
+                <span className="flex items-center gap-2">
+                  <TrendingUp className="size-4" />
+                  Seu preço hoje
                 </span>
-                <TrocarCulturaDialog produtor={produtor} />
-              </div>
-            </>
-          ) : (
-            <div className="flex items-center gap-1.5 text-sm opacity-80">
-              <span>
-                Ainda não temos preço pra {produtor.cultura_principal ?? "sua cultura"} em{" "}
-                {produtor.uf ?? "sua região"}.
-              </span>
-              <TrocarCulturaDialog produtor={produtor} />
-            </div>
-          )}
-          <Link
-            to="/dashboard/alertas"
-            className="mt-3 inline-block text-sm font-medium text-primary-foreground underline underline-offset-2 opacity-90 hover:opacity-100"
-          >
-            Avisar quando o preço mudar
-          </Link>
-        </CardContent>
-      </Card>
+                {atual?.updated_at && (
+                  <AtualizadoEm iso={atual.updated_at} className="opacity-75" />
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              {serie === null ? (
+                <Skeleton className="h-14 w-56 bg-primary-foreground/15" />
+              ) : atual ? (
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                  <div>
+                    <div className="flex items-end gap-2">
+                      <p className="font-mono text-5xl font-bold tabular-nums">
+                        <span className="mr-1 align-top text-xl font-sans font-semibold opacity-70">
+                          R$
+                        </span>
+                        {atual.preco.toFixed(2).replace(".", ",")}
+                      </p>
+                      {variacao != null && Math.abs(variacao) >= 0.05 && (
+                        <span
+                          className={`mb-2 inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            variacao > 0
+                              ? "bg-primary-foreground/15"
+                              : "bg-destructive/25 text-primary-foreground"
+                          }`}
+                        >
+                          {variacao > 0 ? (
+                            <ArrowUp className="size-3" />
+                          ) : (
+                            <ArrowDown className="size-3" />
+                          )}
+                          <span className="font-mono tabular-nums">
+                            {Math.abs(variacao).toFixed(1)}%
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-1 flex items-center gap-1.5 text-sm opacity-80">
+                      <span className="capitalize">
+                        {produtor.cultura_principal} · {produtor.uf}
+                      </span>
+                      <TrocarCulturaDialog produtor={produtor} />
+                    </div>
+                  </div>
+                  {serie.length >= 2 && (
+                    <div className="w-full max-w-56">
+                      <Sparkline
+                        data={serie.slice(-14).map((s) => s.preco)}
+                        color="currentColor"
+                        className="h-12 w-full"
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 text-sm opacity-80">
+                  <span>
+                    Ainda não temos preço pra {produtor.cultura_principal ?? "sua cultura"} em{" "}
+                    {produtor.uf ?? "sua região"}.
+                  </span>
+                  <TrocarCulturaDialog produtor={produtor} />
+                </div>
+              )}
+              <Link
+                to="/dashboard/alertas"
+                className="inline-block text-sm font-medium text-primary-foreground underline underline-offset-2 opacity-90 hover:opacity-100"
+              >
+                Avisar quando o preço mudar
+              </Link>
+            </CardContent>
+          </Card>
 
-      <InsightsPanel produtor={produtor} />
+          <InsightsPanel produtor={produtor} />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base font-medium">
-            <Bell className="size-4" />
-            Seus lembretes
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2">
-          {lembretes.length === 0 && (
-            <p className="text-sm text-muted-foreground">Nenhum lembrete por enquanto.</p>
-          )}
-          {lembretes.map((l) => (
-            <div
-              key={l.id}
-              className="flex items-center justify-between rounded-lg border border-border p-3 text-sm"
-            >
-              <span className="font-medium text-foreground">{l.titulo}</span>
-              <span className="font-mono text-xs tabular-nums text-muted-foreground">
-                {new Date(l.enviar_em).toLocaleString("pt-BR", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
-            </div>
-          ))}
-          <Link
-            to="/dashboard/lembretes"
-            className="mt-2 text-center text-sm font-medium text-primary hover:underline"
-          >
-            Ver todos / criar novo
-          </Link>
-        </CardContent>
-      </Card>
+          <Watchlist produtor={produtor} />
+        </div>
+
+        {/* Coluna lateral: clima + lembretes */}
+        <div className="flex flex-col gap-4">
+          <Card className="gap-3">
+            <CardHeader className="pb-0">
+              <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <CloudSun className="size-4" />
+                Clima em {produtor.uf ?? "sua região"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {previsao === undefined ? (
+                <div className="grid grid-cols-5 gap-1.5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
+                  ))}
+                </div>
+              ) : previsao === null ? (
+                <p className="text-sm text-muted-foreground">Previsão indisponível.</p>
+              ) : (
+                <div className="grid grid-cols-5 gap-1.5">
+                  {previsao.dias.slice(0, 5).map((dia, i) => {
+                    const pct = previsao.chuvaPct[i] ?? 0;
+                    return (
+                      <div
+                        key={dia}
+                        className={`flex flex-col items-center gap-0.5 rounded-lg border p-1.5 text-center ${
+                          pct >= 60
+                            ? "border-destructive/20 bg-destructive/10 text-destructive"
+                            : "border-transparent bg-secondary text-muted-foreground"
+                        }`}
+                      >
+                        <span className="text-[10px] font-semibold uppercase opacity-80">
+                          {i === 0
+                            ? "hoje"
+                            : new Date(`${dia}T00:00:00`).toLocaleDateString("pt-BR", {
+                                weekday: "short",
+                              })}
+                        </span>
+                        <span className="font-mono text-xs font-semibold tabular-nums">{pct}%</span>
+                        <span className="font-mono text-[10px] tabular-nums opacity-70">
+                          {Math.round(previsao.tempMax[i] ?? 0)}°
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <Link
+                to="/dashboard/clima"
+                className="mt-3 inline-block text-sm font-medium text-primary hover:underline"
+              >
+                Ver previsão completa
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card className="gap-3">
+            <CardHeader className="pb-0">
+              <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Bell className="size-4" />
+                Seus lembretes
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2">
+              {lembretes.length === 0 && (
+                <p className="py-2 text-sm text-muted-foreground">
+                  Nenhum lembrete agendado. Crie um pra não esquecer uma tarefa da lavoura.
+                </p>
+              )}
+              {lembretes.map((l) => (
+                <div
+                  key={l.id}
+                  className="flex items-center justify-between gap-2 rounded-lg border border-border p-2.5 text-sm"
+                >
+                  <span className="truncate font-medium text-foreground">{l.titulo}</span>
+                  <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
+                    {new Date(l.enviar_em).toLocaleString("pt-BR", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+              ))}
+              <Link
+                to="/dashboard/lembretes"
+                className="mt-1 text-sm font-medium text-primary hover:underline"
+              >
+                Ver todos / criar novo
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
@@ -438,13 +575,21 @@ function CooperativaHome({
     {
       label: "Produtores cadastrados",
       value: stats.produtores,
+      hint: "Na sua cooperativa",
       icon: Users,
       to: "/dashboard/produtores",
     },
-    { label: "Leads da landing", value: stats.leads, icon: ListChecks, to: "/dashboard/leads" },
+    {
+      label: "Leads da landing",
+      value: stats.leads,
+      hint: "Vindos do site",
+      icon: ListChecks,
+      to: "/dashboard/leads",
+    },
     {
       label: "Lembretes pendentes",
       value: stats.lembretes,
+      hint: "Aguardando envio",
       icon: Bell,
       to: "/dashboard/lembretes",
     },
@@ -489,21 +634,14 @@ function CooperativaHome({
 
       <div className="grid gap-4 sm:grid-cols-3">
         {cards.map((c) => (
-          <Link key={c.label} to={c.to}>
-            <Card className="h-full transition-colors hover:border-primary/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                  <c.icon className="size-4" />
-                  {c.label}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="font-mono text-3xl font-bold tabular-nums text-foreground">
-                  {c.value}
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
+          <StatCard
+            key={c.label}
+            icon={c.icon}
+            label={c.label}
+            value={c.value}
+            hint={c.hint}
+            to={c.to}
+          />
         ))}
       </div>
     </div>

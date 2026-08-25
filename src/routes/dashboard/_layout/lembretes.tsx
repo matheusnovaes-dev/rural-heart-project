@@ -2,7 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Bell, Loader2, Plus, Clock } from "lucide-react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@/components/dashboard/PageHeader";
+import { EmptyState } from "@/components/dashboard/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -84,75 +86,76 @@ function LembretesPage() {
     ? [{ id: produtor.id, nome: "Você mesmo", whatsapp: produtor.whatsapp }]
     : produtoresOpcoes;
 
+  const dialogNovo = (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" disabled={destinatarios.length === 0}>
+          <Plus className="size-4" />
+          Novo lembrete
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Novo lembrete</DialogTitle>
+        </DialogHeader>
+        <NovoLembreteForm
+          destinatarios={destinatarios}
+          onDone={() => {
+            setOpen(false);
+            load();
+          }}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
-    <Card>
-      <CardHeader className="flex flex-col items-start gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <CardTitle className="flex items-center gap-2 font-display text-lg font-semibold">
-            <Bell className="size-4" />
-            Lembretes
-          </CardTitle>
-          <CardDescription>
-            Alertas enviados por WhatsApp — o envio liga assim que a integração com o WhatsApp
-            estiver ativa; por enquanto ficam agendados aqui.
-          </CardDescription>
-        </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" disabled={destinatarios.length === 0}>
-              <Plus className="size-4" />
-              Novo lembrete
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Novo lembrete</DialogTitle>
-            </DialogHeader>
-            <NovoLembreteForm
-              destinatarios={destinatarios}
-              onDone={() => {
-                setOpen(false);
-                load();
-              }}
+    <div className="flex flex-col gap-5">
+      <PageHeader
+        icon={Bell}
+        title="Lembretes"
+        description="Tarefas agendadas pra chegar no WhatsApp na hora certa."
+        action={dialogNovo}
+      />
+      <Card>
+        <CardContent className="flex flex-col gap-3 pt-6">
+          {lembretes.length === 0 && (
+            <EmptyState
+              icon={Bell}
+              title="Nenhum lembrete ainda"
+              description="Agende tarefas da lavoura (aplicação, manutenção, vistoria) pra não depender da memória."
             />
-          </DialogContent>
-        </Dialog>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        {lembretes.length === 0 && (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            Nenhum lembrete ainda. Crie o primeiro.
-          </p>
-        )}
-        {lembretes.map((l) => (
-          <div
-            key={l.id}
-            className="flex flex-col gap-1 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div>
-              <p className="font-medium text-foreground">{l.titulo}</p>
-              {l.descricao && <p className="text-sm text-muted-foreground">{l.descricao}</p>}
-              <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                <Clock className="size-3" />
-                <span className="font-mono tabular-nums">
-                  {new Date(l.enviar_em).toLocaleString("pt-BR", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-                {l.recorrencia &&
-                  ` · repete ${l.recorrencia === "diaria" ? "todo dia" : "toda semana"}`}
-              </p>
+          )}
+          {lembretes.map((l) => (
+            <div
+              key={l.id}
+              className="flex flex-col gap-1 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div>
+                <p className="font-medium text-foreground">{l.titulo}</p>
+                {l.descricao && <p className="text-sm text-muted-foreground">{l.descricao}</p>}
+                <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                  <Clock className="size-3" />
+                  <span className="font-mono tabular-nums">
+                    {new Date(l.enviar_em).toLocaleString("pt-BR", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                  {l.recorrencia &&
+                    ` · repete ${l.recorrencia === "diaria" ? "todo dia" : "toda semana"}`}
+                </p>
+              </div>
+              <Badge variant={statusLabel[l.status].variant} className="text-[11px] font-semibold">
+                {statusLabel[l.status].label}
+              </Badge>
             </div>
-            <Badge variant={statusLabel[l.status].variant} className="text-[11px] font-semibold">
-              {statusLabel[l.status].label}
-            </Badge>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 

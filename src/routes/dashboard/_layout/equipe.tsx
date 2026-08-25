@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase";
 import { useRequireCooperativa } from "@/lib/auth";
+import { PageHeader } from "@/components/dashboard/PageHeader";
 
 export const Route = createFileRoute("/dashboard/_layout/equipe")({
   component: EquipePage,
@@ -49,7 +50,12 @@ function EquipePage() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
+      <PageHeader
+        icon={UsersRound}
+        title="Equipe"
+        description="Quem tem acesso ao painel da sua cooperativa"
+      />
       <Card>
         <CardHeader>
           <CardTitle>Convidar pra equipe</CardTitle>

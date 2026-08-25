@@ -2,7 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { TrendingUp, Loader2, Plus, ArrowDown, ArrowUp } from "lucide-react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@/components/dashboard/PageHeader";
+import { EmptyState } from "@/components/dashboard/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -87,77 +89,77 @@ function AlertasPage() {
       ]
     : produtoresOpcoes;
 
+  const dialogNovo = (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" disabled={destinatarios.length === 0}>
+          <Plus className="size-4" />
+          Novo alerta
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Novo alerta de preço</DialogTitle>
+        </DialogHeader>
+        <NovoAlertaForm
+          destinatarios={destinatarios}
+          onDone={() => {
+            setOpen(false);
+            load();
+          }}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
-    <Card>
-      <CardHeader className="flex flex-col items-start gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <CardTitle className="flex items-center gap-2 font-display text-lg font-semibold">
-            <TrendingUp className="size-4" />
-            Alertas de preço
-          </CardTitle>
-          <CardDescription>
-            Diferente de lembrete de tarefa — isso avisa quando o preço cruzar um valor. O envio por
-            WhatsApp liga junto com o bot; por enquanto o alerta fica marcado como "disparado" aqui
-            assim que a condição bater.
-          </CardDescription>
-        </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" disabled={destinatarios.length === 0}>
-              <Plus className="size-4" />
-              Novo alerta
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Novo alerta de preço</DialogTitle>
-            </DialogHeader>
-            <NovoAlertaForm
-              destinatarios={destinatarios}
-              onDone={() => {
-                setOpen(false);
-                load();
-              }}
+    <div className="flex flex-col gap-5">
+      <PageHeader
+        icon={TrendingUp}
+        title="Alertas de preço"
+        description="Avisa quando o preço cruzar um valor que você definir."
+        action={dialogNovo}
+      />
+      <Card>
+        <CardContent className="flex flex-col gap-3 pt-6">
+          {alertas.length === 0 && (
+            <EmptyState
+              icon={TrendingUp}
+              title="Nenhum alerta ainda"
+              description="Crie um alerta pra ser avisado assim que a saca passar (ou cair abaixo) do valor que te interessa."
             />
-          </DialogContent>
-        </Dialog>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        {alertas.length === 0 && (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            Nenhum alerta ainda. Crie o primeiro.
-          </p>
-        )}
-        {alertas.map((a) => (
-          <div
-            key={a.id}
-            className="flex flex-col gap-1 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div className="flex items-center gap-2 text-sm">
-              {a.direcao === "acima" ? (
-                <ArrowUp className="size-4 text-primary" />
-              ) : (
-                <ArrowDown className="size-4 text-destructive" />
-              )}
-              <span className="font-medium text-foreground">
-                {a.cultura} · {a.uf} {a.direcao} de{" "}
-                <span className="font-mono tabular-nums">
-                  R${a.limite.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                </span>
-              </span>
-            </div>
-            <Badge
-              variant={a.disparado_em ? "default" : "secondary"}
-              className="font-mono text-[11px] tabular-nums"
+          )}
+          {alertas.map((a) => (
+            <div
+              key={a.id}
+              className="flex flex-col gap-1 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
             >
-              {a.disparado_em
-                ? `Disparado em ${new Date(a.disparado_em).toLocaleDateString("pt-BR")}`
-                : "Ativo, aguardando"}
-            </Badge>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
+              <div className="flex items-center gap-2 text-sm">
+                {a.direcao === "acima" ? (
+                  <ArrowUp className="size-4 text-primary" />
+                ) : (
+                  <ArrowDown className="size-4 text-destructive" />
+                )}
+                <span className="font-medium text-foreground">
+                  {a.cultura} · {a.uf} {a.direcao} de{" "}
+                  <span className="font-mono tabular-nums">
+                    R${a.limite.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  </span>
+                </span>
+              </div>
+              <Badge
+                variant={a.disparado_em ? "default" : "secondary"}
+                className="font-mono text-[11px] tabular-nums"
+              >
+                {a.disparado_em
+                  ? `Disparado em ${new Date(a.disparado_em).toLocaleDateString("pt-BR")}`
+                  : "Ativo, aguardando"}
+              </Badge>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
