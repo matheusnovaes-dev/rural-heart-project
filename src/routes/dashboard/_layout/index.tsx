@@ -424,7 +424,9 @@ function CooperativaHome({
         const atual = sorted[0]?.preco;
         const anterior = sorted[1]?.preco;
         const variacao =
-          atual != null && anterior != null ? ((atual - anterior) / anterior) * 100 : null;
+          atual != null && anterior != null && anterior !== 0
+            ? ((atual - anterior) / anterior) * 100
+            : null;
         return atual != null ? { uf, atual, variacao } : null;
       })
       .filter((e): e is TickerEntry => e != null)

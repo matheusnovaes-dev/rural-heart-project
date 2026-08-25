@@ -45,7 +45,9 @@ function variacaoDuasSemanas(serie: PrecoPonto[]) {
   limite.setDate(limite.getDate() - 14);
   const limiteIso = limite.toISOString().slice(0, 10);
   const referencia = [...serie].reverse().find((p) => p.data_referencia <= limiteIso);
-  if (!referencia) return null;
+  // preco 0 é sempre erro de dado (nenhuma commodity real zera), nunca um
+  // ponto de referência válido — dividir por ele daria Infinity/NaN na tela.
+  if (!referencia || referencia.preco === 0) return null;
   return {
     atual,
     referencia,

@@ -27,6 +27,11 @@ export const Route = createFileRoute("/dashboard/_layout/precos")({
 type PrecoRow = { uf: string; preco: number; data_referencia: string; produto: string };
 
 const QTD_VISIVEL_PADRAO = 6;
+// 2 anos inteiros de semanas espremidas num gráfico só viram ruído
+// ilegível (era exatamente esse o bug: eixo X com dois anos de marcações,
+// linhas praticamente invisíveis de tão finas/esparsas). 6 meses dá uma
+// leitura de tendência de verdade sem sobrecarregar.
+const JANELA_DIAS = 180;
 
 // Os 5 primeiros UFs usam os tokens de marca já definidos em styles.css
 // (--chart-1..5). A partir do 6º, gera cor no mesmo espaço OKLCH (mesma
@@ -94,10 +99,13 @@ function PrecosPage() {
   useEffect(() => {
     if (!supabase) return;
     setVisiveis(null);
+    const desde = new Date();
+    desde.setDate(desde.getDate() - JANELA_DIAS);
     supabase
       .from("precos")
       .select("uf, preco, data_referencia, produto")
       .ilike("produto", `%${cultura}%`)
+      .gte("data_referencia", desde.toISOString().slice(0, 10))
       .order("data_referencia", { ascending: true })
       .then(({ data }) => setRawRows(data ?? []));
   }, [cultura]);
@@ -175,7 +183,7 @@ function PrecosPage() {
       const atual = series.at(-1);
       const semanaPassada = series.at(-2);
       const variacao =
-        atual && semanaPassada
+        atual && semanaPassada && semanaPassada.preco !== 0
           ? ((atual.preco - semanaPassada.preco) / semanaPassada.preco) * 100
           : null;
       const precos = series.map((s) => s.preco);
@@ -290,7 +298,7 @@ function PrecosPage() {
             Histórico de preço — {culturaLabel}
           </CardTitle>
           <CardDescription>
-            Fonte: Conab, atualizado diariamente
+            Fonte: Conab, últimos 6 meses
             {ufs.length > QTD_VISIVEL_PADRAO &&
               ` · mostrando os ${QTD_VISIVEL_PADRAO} UFs com mais histórico, clique pra ver outros`}
             .
