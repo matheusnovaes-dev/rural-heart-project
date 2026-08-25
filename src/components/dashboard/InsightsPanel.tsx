@@ -152,7 +152,9 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
   }, [cultura, uf, produtor.id]);
 
   useEffect(() => {
-    if (!supabase || !cultura || uf !== "MT") {
+    // Cross-check entre fontes é insight avançado, mesmo nível de "Clima" —
+    // Bronze não busca nem paga o request à toa.
+    if (!supabase || !cultura || uf !== "MT" || !temAcessoPrata(plano)) {
       setImeaPonto(null);
       return;
     }
@@ -171,7 +173,7 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
       .limit(1)
       .maybeSingle()
       .then(({ data }) => setImeaPonto(data));
-  }, [cultura, uf]);
+  }, [cultura, uf, plano]);
 
   useEffect(() => {
     if (!uf || !temAcessoPrata(plano)) return;
