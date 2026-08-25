@@ -10,13 +10,21 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/lib/supabase";
+import { culturas } from "@/config/culturas";
 
 export const Route = createFileRoute("/dashboard/_layout/precos")({
   component: PrecosPage,
 });
 
-type PrecoRow = { uf: string; preco: number; data_referencia: string };
+type PrecoRow = { uf: string; preco: number; data_referencia: string; produto: string };
 
 const UF_COLORS = [
   "var(--color-chart-1)",
@@ -75,18 +83,40 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
 }
 
 function PrecosPage() {
-  const [rows, setRows] = useState<PrecoRow[]>([]);
+  const [cultura, setCultura] = useState("soja");
+  const [rawRows, setRawRows] = useState<PrecoRow[]>([]);
   const [hidden, setHidden] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!supabase) return;
+    setHidden(new Set());
     supabase
       .from("precos")
-      .select("uf, preco, data_referencia")
-      .ilike("produto", "%soja%")
+      .select("uf, preco, data_referencia, produto")
+      .ilike("produto", `%${cultura}%`)
       .order("data_referencia", { ascending: true })
-      .then(({ data }) => setRows(data ?? []));
-  }, []);
+      .then(({ data }) => setRawRows(data ?? []));
+  }, [cultura]);
+
+  // A busca por substring pode casar mais de uma variante de embalagem da
+  // mesma cultura (ex: "ALHO COMUM (10 kg)" e "ALHO EXTRA ROXO NOBRE 5
+  // (kg)") — misturar as duas no mesmo ponto do gráfico (por uf+data) faria
+  // o preço pular sem sentido. Fica só com a variante mais publicada.
+  const rows = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of rawRows) counts.set(r.produto, (counts.get(r.produto) ?? 0) + 1);
+    let principal: string | null = null;
+    let max = 0;
+    for (const [produto, count] of counts) {
+      if (count > max) {
+        max = count;
+        principal = produto;
+      }
+    }
+    return rawRows.filter((r) => r.produto === principal);
+  }, [rawRows]);
+
+  const culturaLabel = culturas.find((c) => c.value === cultura)?.label ?? cultura;
 
   const ufs = useMemo(() => [...new Set(rows.map((r) => r.uf))].sort(), [rows]);
 
@@ -149,6 +179,24 @@ function PrecosPage() {
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="font-display text-xl font-semibold tracking-tight text-foreground">
+          Preços
+        </h1>
+        <Select value={cultura} onValueChange={setCultura}>
+          <SelectTrigger className="w-55">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {culturas.map((c) => (
+              <SelectItem key={c.value} value={c.value}>
+                {c.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       {stats.length > 0 && (
         <div className="@container">
           <div className="grid gap-4 @lg:grid-cols-2 @2xl:grid-cols-3">
@@ -156,7 +204,7 @@ function PrecosPage() {
               <Card key={s.uf} className="gap-3 py-4">
                 <CardHeader className="gap-1 pb-0">
                   <CardDescription className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                    Soja · {s.uf}
+                    {culturaLabel} · {s.uf}
                   </CardDescription>
                   <CardTitle className="font-mono text-3xl font-semibold tabular-nums tracking-tight">
                     {s.atual != null ? (
@@ -212,7 +260,7 @@ function PrecosPage() {
       <Card>
         <CardHeader>
           <CardTitle className="font-display text-lg font-semibold">
-            Histórico de preço — Soja
+            Histórico de preço — {culturaLabel}
           </CardTitle>
           <CardDescription>
             Fonte: Conab, atualizado diariamente. Clique num UF na legenda pra esconder/mostrar.

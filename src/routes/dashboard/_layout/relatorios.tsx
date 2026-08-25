@@ -5,9 +5,17 @@ import { FileDown, Loader2 } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/lib/supabase";
 import { useRequireCooperativa } from "@/lib/auth";
 import { siteConfig } from "@/config/site";
+import { culturas } from "@/config/culturas";
 
 export const Route = createFileRoute("/dashboard/_layout/relatorios")({
   component: RelatoriosPage,
@@ -40,11 +48,13 @@ function RelatorioDocument({
   coopNome,
   logoUrl,
   corPrimaria,
+  culturaLabel,
   precos,
 }: {
   coopNome: string;
   logoUrl: string | null;
   corPrimaria: string | null;
+  culturaLabel: string;
   precos: PrecoRow[];
 }) {
   const cor = corPrimaria ?? "#1F3D2B";
@@ -55,7 +65,7 @@ function RelatorioDocument({
           {logoUrl && <Image src={logoUrl} style={styles.logo} />}
           <Text style={[styles.coopNome, { color: cor }]}>{coopNome}</Text>
         </View>
-        <Text style={styles.titulo}>Relatório de preços — Soja</Text>
+        <Text style={styles.titulo}>Relatório de preços — {culturaLabel}</Text>
         <Text style={styles.subtitulo}>
           Fonte: Conab · Gerado em {new Date().toLocaleDateString("pt-BR")}
         </Text>
@@ -64,7 +74,7 @@ function RelatorioDocument({
             <Text style={styles.cellHeader}>Produto</Text>
             <Text style={styles.cellHeader}>UF</Text>
             <Text style={styles.cellHeader}>Período</Text>
-            <Text style={styles.cellHeader}>Preço (R$/saca)</Text>
+            <Text style={styles.cellHeader}>Preço (R$)</Text>
           </View>
           {precos.map((p, i) => (
             <View style={styles.row} key={i}>
@@ -90,6 +100,7 @@ function RelatorioDocument({
 
 function RelatoriosPage() {
   const cooperativa = useRequireCooperativa();
+  const [cultura, setCultura] = useState("soja");
   const [precos, setPrecos] = useState<PrecoRow[]>([]);
   const [gerando, setGerando] = useState(false);
 
@@ -98,11 +109,13 @@ function RelatoriosPage() {
     supabase
       .from("precos")
       .select("produto, uf, preco, data_referencia")
-      .ilike("produto", "%soja%")
+      .ilike("produto", `%${cultura}%`)
       .order("data_referencia", { ascending: false })
       .limit(50)
       .then(({ data }) => setPrecos(data ?? []));
-  }, []);
+  }, [cultura]);
+
+  const culturaLabel = culturas.find((c) => c.value === cultura)?.label ?? cultura;
 
   if (!cooperativa) return null;
 
@@ -114,13 +127,14 @@ function RelatoriosPage() {
           coopNome={cooperativa!.nome}
           logoUrl={cooperativa!.logo_url}
           corPrimaria={cooperativa!.cor_primaria}
+          culturaLabel={culturaLabel}
           precos={precos}
         />,
       ).toBlob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `relatorio-precos-${new Date().toISOString().slice(0, 10)}.pdf`;
+      a.download = `relatorio-precos-${cultura}-${new Date().toISOString().slice(0, 10)}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
     } finally {
@@ -130,11 +144,25 @@ function RelatoriosPage() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Relatórios</CardTitle>
-        <CardDescription>
-          PDF com a marca da sua cooperativa e os preços mais recentes de soja por UF.
-        </CardDescription>
+      <CardHeader className="flex flex-col items-start gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <CardTitle>Relatórios</CardTitle>
+          <CardDescription>
+            PDF com a marca da sua cooperativa e os preços mais recentes por UF.
+          </CardDescription>
+        </div>
+        <Select value={cultura} onValueChange={setCultura}>
+          <SelectTrigger className="w-55">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {culturas.map((c) => (
+              <SelectItem key={c.value} value={c.value}>
+                {c.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </CardHeader>
       <CardContent>
         {precos.length === 0 ? (
