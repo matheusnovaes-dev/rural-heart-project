@@ -38,7 +38,12 @@ const JANELA_DIAS = 180;
 // luminosidade/croma dos tokens), variando só o matiz — garante que nenhum
 // UF repete cor, não importa quantos apareçam no gráfico.
 function corDoUf(index: number) {
-  if (index < 5) return `var(--color-chart-${index + 1})`;
+  // Atenção: o token real é --chart-N (sem "-color-"). --color-chart-N só
+  // existe dentro do bloco @theme inline do Tailwind (vira classe utilitária
+  // tipo bg-chart-1), não é uma custom property de verdade utilizável via
+  // var() em atributo/estilo solto — usar ela faz o stroke resolver pra
+  // "none" silenciosamente, sem erro nenhum no console.
+  if (index < 5) return `var(--chart-${index + 1})`;
   const matiz = (index * 47) % 360;
   return `oklch(0.6 0.1 ${matiz})`;
 }
