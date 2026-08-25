@@ -26,13 +26,18 @@ export function TrustProof() {
           </h2>
 
           <p className="mt-4 max-w-lg text-primary-foreground/85">
-            Todo preço mostrado no Safralume vem do Cepea ou da Conab, com data de referência
-            visível na resposta. O Safralume apresenta cenários de mercado com base em dados
-            públicos — não é recomendação de investimento nem consultoria financeira.
+            Todo preço mostrado no Safralume vem da Conab ou da Imea, com data de referência visível
+            na resposta. O Safralume apresenta cenários de mercado com base em dados públicos — não
+            é recomendação de investimento nem consultoria financeira.
+          </p>
+
+          <p className="mt-3 max-w-lg text-sm text-primary-foreground/70">
+            Grãos (soja, milho, algodão) e agora também pecuária (boi) — quando as duas fontes
+            cobrem a mesma cultura e estado, cruzamos uma com a outra antes de mostrar o número.
           </p>
 
           <div className="mt-5 flex flex-wrap gap-2">
-            {["Cepea", "Conab"].map((fonte) => (
+            {["Conab", "Imea"].map((fonte) => (
               <span
                 key={fonte}
                 className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-semibold tracking-wide"

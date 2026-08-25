@@ -16,7 +16,7 @@ const pains = [
   {
     icon: FileWarning,
     title: "Relatório difícil de ler",
-    description: "O boletim do Cepea é denso. Você quer o número, não dez páginas de tabela.",
+    description: "O boletim oficial é denso. Você quer o número, não dez páginas de tabela.",
   },
 ];
 

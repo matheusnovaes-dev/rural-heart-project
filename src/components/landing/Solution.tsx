@@ -15,13 +15,14 @@ export function Solution() {
             Você pergunta. O Safralume responde com o preço líquido.
           </h2>
           <p className="mt-4 max-w-md text-muted-foreground">
-            Cruzamos os dados oficiais do Cepea e da Conab com o frete da sua região na hora — sem
+            Cruzamos os dados oficiais da Conab e da Imea com o frete da sua região na hora — sem
             você abrir planilha nenhuma.
           </p>
           <ul className="mt-6 space-y-3">
             {[
               "Fonte e data sempre visíveis em cada resposta",
               "Frete já descontado do preço da bolsa",
+              "Grãos e pecuária, com duas fontes cruzadas onde é possível",
               "Funciona mesmo com internet fraca no campo",
             ].map((item) => (
               <li key={item} className="flex items-start gap-2 text-sm text-foreground">
@@ -87,7 +88,31 @@ function PhoneMockup() {
               Soja em Rio Verde/GO hoje: <strong>R$ 131,40/saca líquido</strong> (frete já
               descontado).
             </p>
-            <p className="mt-1 text-xs text-[#667781]">Fonte: Cepea · atualizado às 08:12</p>
+            <p className="mt-1 text-xs text-[#667781]">Fonte: Conab · atualizado às 08:12</p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 1, duration: 0.4 }}
+            className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-[#d9fdd3] px-3 py-2 text-sm text-[#111b21]"
+          >
+            E o boi gordo em MT?
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 1.3, duration: 0.4 }}
+            className="mr-auto max-w-[88%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-sm text-[#111b21] shadow-sm"
+          >
+            <p>
+              Boi gordo em MT hoje: <strong>R$ 328,33/@</strong>, confirmado com o boletim semanal
+              da Imea.
+            </p>
+            <p className="mt-1 text-xs text-[#667781]">Fonte: Conab + Imea · atualizado às 08:15</p>
           </motion.div>
         </div>
       </div>

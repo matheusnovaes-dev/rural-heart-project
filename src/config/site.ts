@@ -2,7 +2,7 @@ export const siteConfig = {
   name: "Safralume",
   tagline: "O preço líquido da sua saca, direto no WhatsApp",
   description:
-    "Safralume traduz os relatórios do Cepea e da Conab em respostas simples, com frete já descontado, direto no WhatsApp do produtor.",
+    "Safralume traduz os relatórios da Conab e da Imea em respostas simples, para grãos e pecuária, com frete já descontado, direto no WhatsApp do produtor.",
   whatsapp: {
     number: "5531990040215",
     defaultMessage: "Olá! Quero testar o Safralume grátis por 7 dias.",

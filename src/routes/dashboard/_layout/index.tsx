@@ -40,6 +40,7 @@ import { Sparkline } from "@/components/dashboard/Sparkline";
 import { AtualizadoEm } from "@/components/dashboard/AtualizadoEm";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Watchlist } from "@/components/dashboard/Watchlist";
+import { BoletimSemanal } from "@/components/dashboard/BoletimSemanal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buscarPrevisao, type Previsao } from "@/lib/clima";
 import { precoLiquido, type FreteRef } from "@/lib/frete";
@@ -384,6 +385,8 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
           <InsightsPanel produtor={produtor} />
 
           <Watchlist produtor={produtor} />
+
+          <BoletimSemanal produtor={produtor} />
         </div>
 
         {/* Coluna lateral: clima + lembretes */}

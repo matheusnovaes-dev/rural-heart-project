@@ -19,6 +19,18 @@ import { InsightCard } from "@/components/dashboard/InsightCard";
 
 type PrecoPonto = { preco: number; data_referencia: string; produto: string; uf: string };
 
+// Segunda fonte (Imea), só Mato Grosso e só pra cultura onde já confirmamos
+// que a unidade bate 1:1 com a Conab (R$/saca de 60kg) — soja e milho. Boi e
+// algodão em pluma também têm boletim Imea, mas em R$/@ (arroba), e não
+// sabemos ainda se a Conab publica na mesma unidade pra essas duas; até
+// confirmar, não comparamos números que podem estar em bases diferentes.
+const IMEA_CULTURAS: Record<string, { cadeia: string; indicador: string }> = {
+  soja: { cadeia: "soja", indicador: "Soja Disponível" },
+  milho: { cadeia: "milho", indicador: "Milho Disponível" },
+};
+
+type ImeaPonto = { valor: number; data_referencia: string };
+
 // Mesma proteção usada em precos.tsx: a busca por substring pode casar mais
 // de uma variante de embalagem da mesma cultura — fica só com a mais
 // publicada, senão a tendência mistura séries diferentes.
@@ -98,6 +110,7 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
   const [todasUfs, setTodasUfs] = useState<PrecoPonto[]>([]);
   const [temAlertaAtivo, setTemAlertaAtivo] = useState<boolean | null>(null);
   const [diasDeChuva, setDiasDeChuva] = useState<number | null>(null);
+  const [imeaPonto, setImeaPonto] = useState<ImeaPonto | null>(null);
 
   const cultura = produtor.cultura_principal;
   const uf = produtor.uf;
@@ -137,6 +150,28 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
         setTemAlertaAtivo(match);
       });
   }, [cultura, uf, produtor.id]);
+
+  useEffect(() => {
+    if (!supabase || !cultura || uf !== "MT") {
+      setImeaPonto(null);
+      return;
+    }
+    const config = IMEA_CULTURAS[cultura];
+    if (!config) {
+      setImeaPonto(null);
+      return;
+    }
+    supabase
+      .from("imea_indicadores")
+      .select("valor, data_referencia")
+      .eq("cadeia", config.cadeia)
+      .eq("indicador", config.indicador)
+      .eq("periodicidade", "diario")
+      .order("data_referencia", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => setImeaPonto(data));
+  }, [cultura, uf]);
 
   useEffect(() => {
     if (!uf || !temAcessoPrata(plano)) return;
@@ -183,6 +218,19 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
     );
   }
 
+  // Cross-check entre fontes independentes (Conab x Imea) — diferente da
+  // anomalia acima, que só olha a Conab contra ela mesma. Só roda quando as
+  // duas fontes têm preço pra comparar e a unidade já foi confirmada
+  // compatível (ver IMEA_CULTURAS).
+  let divergenciaFonte: { conab: number; imea: number; diferenca: number } | null = null;
+  const precoConabAtual = serie.at(-1)?.preco;
+  if (imeaPonto && precoConabAtual != null && imeaPonto.valor !== 0) {
+    const diferenca = ((precoConabAtual - imeaPonto.valor) / imeaPonto.valor) * 100;
+    if (Math.abs(diferenca) > 8) {
+      divergenciaFonte = { conab: precoConabAtual, imea: imeaPonto.valor, diferenca };
+    }
+  }
+
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       {semHistorico && (
@@ -218,6 +266,24 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
             </>
           )}
           {anomalia && <p className="mt-1.5 text-xs text-cta-foreground/80">{anomalia}</p>}
+        </InsightCard>
+      )}
+
+      {divergenciaFonte && (
+        <InsightCard icon={AlertTriangle} tone="warn" title="Divergência entre fontes">
+          Conab está em{" "}
+          <span className="font-mono font-semibold tabular-nums">
+            R$ {divergenciaFonte.conab.toFixed(2)}
+          </span>{" "}
+          e o boletim da Imea (referência MT) está em{" "}
+          <span className="font-mono font-semibold tabular-nums">
+            R$ {divergenciaFonte.imea.toFixed(2)}
+          </span>{" "}
+          — diferença de{" "}
+          <span className="font-mono font-semibold tabular-nums">
+            {Math.abs(divergenciaFonte.diferenca).toFixed(1)}%
+          </span>
+          . Vale conferir antes de decidir com esse número.
         </InsightCard>
       )}
 

@@ -11,7 +11,7 @@ const steps = [
   {
     icon: SearchCheck,
     title: "2. Cruzamos os dados oficiais",
-    description: "Consultamos Cepea e Conab na hora e aplicamos o frete líquido da sua região.",
+    description: "Consultamos Conab e Imea na hora e aplicamos o frete líquido da sua região.",
   },
   {
     icon: BadgeCheck,
