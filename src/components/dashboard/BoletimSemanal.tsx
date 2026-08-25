@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { ExternalLink, Newspaper } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { supabase } from "@/lib/supabase";
@@ -69,12 +68,6 @@ function CardDestaque({ boletim }: { boletim: Boletim }) {
         {boletim.manchete}
       </p>
       <p className="mt-1.5 text-sm text-muted-foreground">{boletim.resumo}</p>
-      <Button asChild size="sm" variant="outline" className="mt-3">
-        <a href={boletim.url_leitura} target="_blank" rel="noopener noreferrer">
-          Ler boletim completo
-          <ExternalLink className="size-3.5" />
-        </a>
-      </Button>
     </div>
   );
 }
