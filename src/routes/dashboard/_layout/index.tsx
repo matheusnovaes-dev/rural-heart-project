@@ -1,10 +1,39 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, Bell, ListChecks, Minus, TrendingUp, Users } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Bell,
+  ListChecks,
+  Loader2,
+  Minus,
+  Pencil,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { supabase } from "@/lib/supabase";
 import { useAuth, type Produtor } from "@/lib/auth";
+import { culturas } from "@/config/culturas";
+import { InsightsPanel } from "@/components/dashboard/InsightsPanel";
 
 export const Route = createFileRoute("/dashboard/_layout/")({
   component: DashboardHome,
@@ -106,6 +135,75 @@ function AssinaturaBanner({
   );
 }
 
+function TrocarCulturaDialog({ produtor }: { produtor: Produtor }) {
+  const { refresh } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [cultura, setCultura] = useState(produtor.cultura_principal ?? "soja");
+  const [uf, setUf] = useState(produtor.uf ?? "");
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!supabase) return;
+    setLoading(true);
+    await supabase
+      .from("produtores")
+      .update({ cultura_principal: cultura, uf: uf.toUpperCase() || null })
+      .eq("id", produtor.id);
+    await refresh();
+    setLoading(false);
+    setOpen(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          className="shrink-0 opacity-70 transition-opacity hover:opacity-100"
+          aria-label="Trocar cultura ou UF"
+        >
+          <Pencil className="size-3" />
+        </button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Trocar cultura / UF</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <div className="space-y-1.5">
+            <Label>Cultura principal</Label>
+            <Select value={cultura} onValueChange={setCultura}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {culturas.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>
+                    {c.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="trocar-uf">Estado (UF)</Label>
+            <Input
+              id="trocar-uf"
+              maxLength={2}
+              value={uf}
+              onChange={(e) => setUf(e.target.value.toUpperCase())}
+            />
+          </div>
+          <Button type="submit" disabled={loading} className="mt-2">
+            {loading ? <Loader2 className="size-4 animate-spin" /> : "Salvar"}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function ProdutorHome({ produtor }: { produtor: Produtor }) {
   const [preco, setPreco] = useState<{ preco: number; data_referencia: string } | null>(null);
   const [lembretes, setLembretes] = useState<{ id: string; titulo: string; enviar_em: string }[]>(
@@ -156,16 +254,22 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
               <p className="font-mono text-4xl font-bold tabular-nums">
                 R$ {preco.preco.toFixed(2).replace(".", ",")}
               </p>
-              <p className="mt-1 text-sm opacity-80">
-                {produtor.cultura_principal} · {produtor.uf} · atualizado em{" "}
-                {new Date(preco.data_referencia).toLocaleDateString("pt-BR")}
-              </p>
+              <div className="mt-1 flex items-center gap-1.5 text-sm opacity-80">
+                <span>
+                  {produtor.cultura_principal} · {produtor.uf} · atualizado em{" "}
+                  {new Date(preco.data_referencia).toLocaleDateString("pt-BR")}
+                </span>
+                <TrocarCulturaDialog produtor={produtor} />
+              </div>
             </>
           ) : (
-            <p className="text-sm opacity-80">
-              Ainda não temos preço pra {produtor.cultura_principal ?? "sua cultura"} em{" "}
-              {produtor.uf ?? "sua região"}.
-            </p>
+            <div className="flex items-center gap-1.5 text-sm opacity-80">
+              <span>
+                Ainda não temos preço pra {produtor.cultura_principal ?? "sua cultura"} em{" "}
+                {produtor.uf ?? "sua região"}.
+              </span>
+              <TrocarCulturaDialog produtor={produtor} />
+            </div>
           )}
           <Link
             to="/dashboard/alertas"
@@ -175,6 +279,8 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
           </Link>
         </CardContent>
       </Card>
+
+      <InsightsPanel produtor={produtor} />
 
       <Card>
         <CardHeader>
@@ -341,6 +447,11 @@ function CooperativaHome({
     },
   ];
 
+  const maiorVariacao = ticker
+    .filter((e) => e.variacao != null)
+    .sort((a, b) => Math.abs(b.variacao!) - Math.abs(a.variacao!))
+    .at(0);
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -352,6 +463,24 @@ function CooperativaHome({
         </div>
         <PriceTicker entries={ticker} />
       </div>
+
+      {maiorVariacao && Math.abs(maiorVariacao.variacao!) >= 1 && (
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm text-foreground">
+          {maiorVariacao.variacao! > 0 ? (
+            <ArrowUp className="size-4 shrink-0 text-primary" />
+          ) : (
+            <ArrowDown className="size-4 shrink-0 text-destructive" />
+          )}
+          <span>
+            Maior variação da semana: soja em <strong>{maiorVariacao.uf}</strong>{" "}
+            {maiorVariacao.variacao! > 0 ? "subiu" : "caiu"}{" "}
+            <span className="font-mono font-semibold tabular-nums">
+              {Math.abs(maiorVariacao.variacao!).toFixed(1)}%
+            </span>
+            .
+          </span>
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-3">
         {cards.map((c) => (

@@ -17,6 +17,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { criarSessaoCheckout } from "@/lib/stripe.server";
+import { culturas } from "@/config/culturas";
 
 const searchSchema = z.object({
   convite: z.string().uuid().optional(),
@@ -28,12 +29,6 @@ export const Route = createFileRoute("/onboarding")({
   validateSearch: searchSchema,
   component: OnboardingPage,
 });
-
-const cropOptions = [
-  { value: "soja", label: "Soja" },
-  { value: "milho", label: "Milho" },
-  { value: "outra", label: "Outra cultura" },
-];
 
 function OnboardingPage() {
   const { convite, equipe, plano } = Route.useSearch();
@@ -240,7 +235,7 @@ function OnboardingPage() {
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    {cropOptions.map((c) => (
+                    {culturas.map((c) => (
                       <SelectItem key={c.value} value={c.value}>
                         {c.label}
                       </SelectItem>
