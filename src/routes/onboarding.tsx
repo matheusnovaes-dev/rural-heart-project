@@ -146,6 +146,8 @@ function OnboardingPage() {
         cooperativa_id: cooperativaId,
         user_id: session.user.id,
         papel: "admin",
+        nome: session.user.user_metadata?.["nome"] ?? null,
+        email: session.user.email ?? null,
       });
       if (membroError) {
         setStatus("error");
@@ -306,6 +308,8 @@ function ConfirmarEquipe({ cooperativaId, onDone }: { cooperativaId: string; onD
       cooperativa_id: cooperativaId,
       user_id: session.user.id,
       papel: "membro",
+      nome: session.user.user_metadata?.["nome"] ?? null,
+      email: session.user.email ?? null,
     });
     if (error) {
       setStatus("error");

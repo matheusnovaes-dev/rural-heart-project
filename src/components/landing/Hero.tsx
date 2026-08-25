@@ -31,7 +31,7 @@ export function Hero() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-balance text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl"
+          className="text-balance font-display text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl"
         >
           Saiba o preço líquido da sua saca, direto no WhatsApp
         </motion.h1>

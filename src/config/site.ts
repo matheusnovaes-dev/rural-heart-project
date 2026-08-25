@@ -18,7 +18,7 @@ export type PricingPlan = {
   id: string;
   name: string;
   audience: string;
-  priceRange: string;
+  price: number;
   features: string[];
   highlighted?: boolean;
 };
@@ -28,14 +28,14 @@ export const pricingPlans: PricingPlan[] = [
     id: "bronze",
     name: "Bronze",
     audience: "Pequenos produtores",
-    priceRange: "R$ 29–49/mês",
+    price: 39,
     features: ["Bot de WhatsApp", "Cotações diárias", "Resumo semanal", "50 consultas por mês"],
   },
   {
     id: "prata",
     name: "Prata",
     audience: "Médios produtores",
-    priceRange: "R$ 99–149/mês",
+    price: 129,
     features: [
       "Consultas ilimitadas",
       "Leitura de relatórios em PDF",
@@ -48,7 +48,7 @@ export const pricingPlans: PricingPlan[] = [
     id: "ouro",
     name: "Ouro",
     audience: "Grandes produtores e consultores",
-    priceRange: "R$ 299–499/mês",
+    price: 399,
     features: [
       "Múltiplos usuários",
       "Relatórios com marca própria",

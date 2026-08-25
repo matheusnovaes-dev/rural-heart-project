@@ -98,6 +98,7 @@ function RelatoriosPage() {
     supabase
       .from("precos")
       .select("produto, uf, preco, data_referencia")
+      .ilike("produto", "%soja%")
       .order("data_referencia", { ascending: false })
       .limit(50)
       .then(({ data }) => setPrecos(data ?? []));

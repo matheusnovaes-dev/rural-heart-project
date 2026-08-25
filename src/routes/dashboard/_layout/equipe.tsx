@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Copy, Check } from "lucide-react";
+import { toast } from "sonner";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,12 @@ export const Route = createFileRoute("/dashboard/_layout/equipe")({
   component: EquipePage,
 });
 
-type Membro = { user_id: string; papel: "admin" | "membro"; email?: string };
+type Membro = {
+  user_id: string;
+  papel: "admin" | "membro";
+  nome: string | null;
+  email: string | null;
+};
 
 function EquipePage() {
   const cooperativa = useRequireCooperativa();
@@ -24,7 +30,7 @@ function EquipePage() {
     if (!supabase || !cooperativa) return;
     supabase
       .from("cooperativa_membros")
-      .select("user_id, papel")
+      .select("user_id, papel, nome, email")
       .eq("cooperativa_id", cooperativa.id)
       .then(({ data }) => setMembros(data ?? []));
   }, [cooperativa]);
@@ -38,6 +44,7 @@ function EquipePage() {
   function copyLink() {
     navigator.clipboard.writeText(inviteLink);
     setCopied(true);
+    toast.success("Link de convite copiado");
     setTimeout(() => setCopied(false), 2000);
   }
 
@@ -68,7 +75,11 @@ function EquipePage() {
               key={m.user_id}
               className="flex items-center justify-between rounded-lg border border-border p-3 text-sm"
             >
-              <span className="font-mono text-xs text-muted-foreground">{m.user_id}</span>
+              <span className="text-foreground">
+                {m.nome ?? m.email ?? (
+                  <span className="font-mono text-xs text-muted-foreground">{m.user_id}</span>
+                )}
+              </span>
               <Badge variant={m.papel === "admin" ? "default" : "secondary"}>{m.papel}</Badge>
             </div>
           ))}

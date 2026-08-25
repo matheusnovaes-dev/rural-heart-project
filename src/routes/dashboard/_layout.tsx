@@ -12,6 +12,7 @@ import {
   LogOut,
   Loader2,
   Sprout,
+  CloudSun,
 } from "lucide-react";
 
 import {
@@ -101,6 +102,7 @@ function CooperativaSidebar({
     { to: "/dashboard/produtores", label: "Produtores", icon: Users },
     { to: "/dashboard/leads", label: "Leads", icon: ListChecks },
     { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
+    { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
     ...(isAdmin
       ? [
           { to: "/dashboard/equipe", label: "Equipe", icon: UsersRound },
@@ -147,19 +149,49 @@ function CooperativaSidebar({
   );
 }
 
+const produtorNavItems = [
+  { to: "/dashboard", label: "Início", icon: LayoutDashboard },
+  { to: "/dashboard/alertas", label: "Alertas", icon: TrendingUp },
+  { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
+  { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
+] as const;
+
 function ProdutorHeader({ nome }: { nome: string }) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
   return (
-    <header className="flex items-center justify-between border-b border-border bg-card px-4 py-3">
-      <div className="flex items-center gap-2">
-        <span className="flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-          <Sprout className="size-4" />
-        </span>
-        <div>
-          <p className="text-xs text-muted-foreground">Olá,</p>
-          <p className="text-sm font-semibold text-foreground">{nome}</p>
+    <header className="border-b border-border bg-card">
+      <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+            <Sprout className="size-4" />
+          </span>
+          <div>
+            <p className="text-xs text-muted-foreground">Olá,</p>
+            <p className="text-sm font-semibold text-foreground">{nome}</p>
+          </div>
         </div>
+        <SignOutButton compact />
       </div>
-      <SignOutButton compact />
+      <nav className="flex items-center gap-1 overflow-x-auto px-2 pb-2">
+        {produtorNavItems.map((item) => {
+          const active = pathname === item.to;
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={`flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                active
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+              }`}
+            >
+              <item.icon className="size-3.5" />
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
     </header>
   );
 }

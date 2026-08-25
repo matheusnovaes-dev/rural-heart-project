@@ -9,7 +9,7 @@ export function FinalCta() {
     <section id="comece" className="bg-secondary/50 py-20">
       <div className="mx-auto grid max-w-5xl items-start gap-10 px-4 sm:px-6 lg:grid-cols-2">
         <Reveal>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          <h2 className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             Teste grátis por 7 dias
           </h2>
           <p className="mt-4 max-w-md text-muted-foreground">

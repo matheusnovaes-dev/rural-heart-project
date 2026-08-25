@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/_layout/lembretes")({
   component: LembretesPage,
@@ -178,7 +179,7 @@ function NovoLembreteForm({
     if (!destinatario) return;
 
     setLoading(true);
-    await supabase.from("lembretes").insert({
+    const { error } = await supabase.from("lembretes").insert({
       produtor_id: produtorId,
       criado_por: session.user.id,
       titulo,
@@ -188,6 +189,11 @@ function NovoLembreteForm({
       recorrencia: recorrencia === "nenhuma" ? null : recorrencia,
     });
     setLoading(false);
+    if (error) {
+      toast.error("Não foi possível agendar o lembrete.");
+      return;
+    }
+    toast.success("Lembrete agendado.");
     onDone();
   }
 

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Loader2, Plus } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Loader2, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -21,6 +22,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/lib/supabase";
 import { useRequireCooperativa } from "@/lib/auth";
 
@@ -39,7 +51,9 @@ type ProdutorRow = {
 function ProdutoresPage() {
   const cooperativa = useRequireCooperativa();
   const [produtores, setProdutores] = useState<ProdutorRow[]>([]);
+  const [busca, setBusca] = useState("");
   const [open, setOpen] = useState(false);
+  const [editando, setEditando] = useState<ProdutorRow | null>(null);
 
   async function load() {
     if (!supabase || !cooperativa) return;
@@ -56,6 +70,25 @@ function ProdutoresPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cooperativa]);
 
+  const filtrados = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
+    if (!termo) return produtores;
+    return produtores.filter(
+      (p) => p.nome.toLowerCase().includes(termo) || p.whatsapp.includes(termo),
+    );
+  }, [produtores, busca]);
+
+  async function handleDelete(id: string) {
+    if (!supabase) return;
+    const { error } = await supabase.from("produtores").delete().eq("id", id);
+    if (error) {
+      toast.error("Não foi possível remover o produtor.");
+      return;
+    }
+    toast.success("Produtor removido.");
+    load();
+  }
+
   if (!cooperativa) return null;
 
   return (
@@ -65,31 +98,57 @@ function ProdutoresPage() {
           <CardTitle>Produtores</CardTitle>
           <CardDescription>Produtores associados à sua cooperativa</CardDescription>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog
+          open={open || !!editando}
+          onOpenChange={(v) => {
+            if (!v) {
+              setOpen(false);
+              setEditando(null);
+            }
+          }}
+        >
           <DialogTrigger asChild>
-            <Button size="sm">
+            <Button size="sm" onClick={() => setOpen(true)}>
               <Plus className="size-4" />
               Adicionar
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Adicionar produtor</DialogTitle>
+              <DialogTitle>{editando ? "Editar produtor" : "Adicionar produtor"}</DialogTitle>
             </DialogHeader>
-            <NovoProdutorForm
+            <ProdutorForm
               cooperativaId={cooperativa?.id ?? ""}
+              produtor={editando}
               onDone={() => {
                 setOpen(false);
+                setEditando(null);
                 load();
               }}
             />
           </DialogContent>
         </Dialog>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col gap-4">
+        {produtores.length > 0 && (
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome ou WhatsApp..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+        )}
+
         {produtores.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
             Nenhum produtor cadastrado ainda.
+          </p>
+        ) : filtrados.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            Nenhum produtor encontrado para "{busca}".
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -100,15 +159,50 @@ function ProdutoresPage() {
                   <TableHead>WhatsApp</TableHead>
                   <TableHead>Cultura</TableHead>
                   <TableHead>UF</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {produtores.map((p) => (
+                {filtrados.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.nome}</TableCell>
                     <TableCell>{p.whatsapp}</TableCell>
                     <TableCell>{p.cultura_principal ?? "—"}</TableCell>
                     <TableCell>{p.uf ?? "—"}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          onClick={() => setEditando(p)}
+                        >
+                          <Pencil className="size-3.5" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="size-8">
+                              <Trash2 className="size-3.5 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remover {p.nome}?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Essa ação não pode ser desfeita. Alertas e lembretes ligados a esse
+                                produtor também serão removidos.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(p.id)}>
+                                Remover
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -120,31 +214,43 @@ function ProdutoresPage() {
   );
 }
 
-function NovoProdutorForm({
+function ProdutorForm({
   cooperativaId,
+  produtor,
   onDone,
 }: {
   cooperativaId: string;
+  produtor: ProdutorRow | null;
   onDone: () => void;
 }) {
-  const [nome, setNome] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
-  const [cultura, setCultura] = useState("");
-  const [uf, setUf] = useState("");
+  const [nome, setNome] = useState(produtor?.nome ?? "");
+  const [whatsapp, setWhatsapp] = useState(produtor?.whatsapp ?? "");
+  const [cultura, setCultura] = useState(produtor?.cultura_principal ?? "");
+  const [uf, setUf] = useState(produtor?.uf ?? "");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!supabase) return;
     setLoading(true);
-    await supabase.from("produtores").insert({
+
+    const payload = {
       nome,
       whatsapp,
       cultura_principal: cultura || null,
       uf: uf || null,
-      cooperativa_id: cooperativaId,
-    });
+    };
+
+    const { error } = produtor
+      ? await supabase.from("produtores").update(payload).eq("id", produtor.id)
+      : await supabase.from("produtores").insert({ ...payload, cooperativa_id: cooperativaId });
+
     setLoading(false);
+    if (error) {
+      toast.error("Não foi possível salvar o produtor.");
+      return;
+    }
+    toast.success(produtor ? "Produtor atualizado." : "Produtor adicionado.");
     onDone();
   }
 

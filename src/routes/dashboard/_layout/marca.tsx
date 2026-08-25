@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Loader2, Upload } from "lucide-react";
+import { toast } from "sonner";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,26 +33,40 @@ function MarcaPage() {
     });
     if (uploadError) {
       setStatus("idle");
+      toast.error("Não foi possível enviar a logo.");
       return;
     }
 
     const { data } = supabase.storage.from("logos").getPublicUrl(path);
     setLogoPreview(data.publicUrl);
 
-    await supabase
+    const { error: updateError } = await supabase
       .from("cooperativas")
       .update({ logo_url: data.publicUrl })
       .eq("id", cooperativa.id);
     await refresh();
     setStatus("saved");
+    if (updateError) {
+      toast.error("Logo enviada, mas não foi possível salvar no perfil.");
+      return;
+    }
+    toast.success("Logo atualizada.");
   }
 
   async function handleSaveCor() {
     if (!supabase || !cooperativa) return;
     setStatus("loading");
-    await supabase.from("cooperativas").update({ cor_primaria: cor }).eq("id", cooperativa.id);
+    const { error } = await supabase
+      .from("cooperativas")
+      .update({ cor_primaria: cor })
+      .eq("id", cooperativa.id);
     await refresh();
     setStatus("saved");
+    if (error) {
+      toast.error("Não foi possível salvar a cor.");
+      return;
+    }
+    toast.success("Cor atualizada.");
   }
 
   return (
@@ -105,7 +120,6 @@ function MarcaPage() {
           <Button onClick={handleSaveCor} disabled={status === "loading"}>
             {status === "loading" ? <Loader2 className="size-4 animate-spin" /> : "Salvar cor"}
           </Button>
-          {status === "saved" && <span className="text-sm text-muted-foreground">Salvo!</span>}
         </CardContent>
       </Card>
     </div>

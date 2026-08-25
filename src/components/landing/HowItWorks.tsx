@@ -22,20 +22,26 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+    <section id="como-funciona" className="mx-auto max-w-6xl scroll-mt-16 px-4 py-20 sm:px-6">
       <Reveal className="mx-auto max-w-2xl text-center">
-        <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+        <h2 className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           Como funciona
         </h2>
       </Reveal>
 
-      <div className="mt-12 grid gap-8 sm:grid-cols-3">
+      <div className="relative mt-12 grid gap-8 sm:grid-cols-3">
+        <div
+          aria-hidden
+          className="absolute top-7 left-[calc(16.66%+1.75rem)] right-[calc(16.66%+1.75rem)] hidden h-px bg-primary/40 sm:block"
+        />
         {steps.map((step, index) => (
-          <Reveal key={step.title} delay={index * 0.1} className="text-center">
-            <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <Reveal key={step.title} delay={index * 0.1} className="relative text-center">
+            <span className="relative z-10 mx-auto flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground ring-4 ring-background">
               <step.icon className="size-6" />
             </span>
-            <h3 className="mt-4 text-lg font-semibold text-foreground">{step.title}</h3>
+            <h3 className="mt-4 font-display text-lg font-semibold text-foreground">
+              {step.title}
+            </h3>
             <p className="mt-2 text-sm text-muted-foreground">{step.description}</p>
           </Reveal>
         ))}

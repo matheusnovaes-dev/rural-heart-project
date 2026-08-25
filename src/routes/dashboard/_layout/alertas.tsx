@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/_layout/alertas")({
   component: AlertasPage,
@@ -190,7 +191,7 @@ function NovoAlertaForm({
     if (!destinatario) return;
 
     setLoading(true);
-    await supabase.from("alertas_preco").insert({
+    const { error } = await supabase.from("alertas_preco").insert({
       produtor_id: produtorId,
       criado_por: session.user.id,
       cultura,
@@ -200,6 +201,11 @@ function NovoAlertaForm({
       whatsapp_destino: destinatario.whatsapp,
     });
     setLoading(false);
+    if (error) {
+      toast.error("Não foi possível criar o alerta.");
+      return;
+    }
+    toast.success("Alerta criado.");
     onDone();
   }
 

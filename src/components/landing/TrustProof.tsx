@@ -21,7 +21,7 @@ export function TrustProof() {
             Fonte oficial, sempre visível
           </div>
 
-          <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
+          <h2 className="mt-4 font-display text-3xl font-bold tracking-tight sm:text-4xl">
             Dado com origem clara, não achismo de IA
           </h2>
 
@@ -30,6 +30,18 @@ export function TrustProof() {
             visível na resposta. O Safralume apresenta cenários de mercado com base em dados
             públicos — não é recomendação de investimento nem consultoria financeira.
           </p>
+
+          <div className="mt-5 flex flex-wrap gap-2">
+            {["Cepea", "Conab"].map((fonte) => (
+              <span
+                key={fonte}
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-semibold tracking-wide"
+              >
+                <span className="size-1.5 rounded-full bg-[oklch(0.85_0.15_95)]" />
+                {fonte}
+              </span>
+            ))}
+          </div>
 
           <p className="mt-6 text-sm font-medium text-primary-foreground/70">
             Feito para chegar até você pela sua cooperativa, corretor de grãos ou agrônomo de

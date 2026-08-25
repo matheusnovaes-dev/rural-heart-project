@@ -12,10 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
+import { Route as TermosRouteImport } from './routes/termos'
 import { Route as DashboardLayoutRouteImport } from './routes/dashboard/_layout'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
 import { Route as DashboardLayoutIndexRouteImport } from './routes/dashboard/_layout/index'
 import { Route as DashboardLayoutAlertasRouteImport } from './routes/dashboard/_layout/alertas'
+import { Route as DashboardLayoutClimaRouteImport } from './routes/dashboard/_layout/clima'
 import { Route as DashboardLayoutEquipeRouteImport } from './routes/dashboard/_layout/equipe'
 import { Route as DashboardLayoutLeadsRouteImport } from './routes/dashboard/_layout/leads'
 import { Route as DashboardLayoutLembretesRouteImport } from './routes/dashboard/_layout/lembretes'
@@ -39,6 +42,16 @@ const OnboardingRoute = OnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermosRoute = TermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardLayoutRoute = DashboardLayoutRouteImport.update({
   id: '/dashboard/_layout',
   path: '/dashboard',
@@ -57,6 +70,11 @@ const DashboardLayoutIndexRoute = DashboardLayoutIndexRouteImport.update({
 const DashboardLayoutAlertasRoute = DashboardLayoutAlertasRouteImport.update({
   id: '/alertas',
   path: '/alertas',
+  getParentRoute: () => DashboardLayoutRoute,
+} as any)
+const DashboardLayoutClimaRoute = DashboardLayoutClimaRouteImport.update({
+  id: '/clima',
+  path: '/clima',
   getParentRoute: () => DashboardLayoutRoute,
 } as any)
 const DashboardLayoutEquipeRoute = DashboardLayoutEquipeRouteImport.update({
@@ -102,9 +120,12 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/privacidade': typeof PrivacidadeRoute
+  '/termos': typeof TermosRoute
   '/dashboard': typeof DashboardLayoutRouteWithChildren
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
+  '/dashboard/clima': typeof DashboardLayoutClimaRoute
   '/dashboard/equipe': typeof DashboardLayoutEquipeRoute
   '/dashboard/leads': typeof DashboardLayoutLeadsRoute
   '/dashboard/lembretes': typeof DashboardLayoutLembretesRoute
@@ -118,8 +139,11 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/privacidade': typeof PrivacidadeRoute
+  '/termos': typeof TermosRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
+  '/dashboard/clima': typeof DashboardLayoutClimaRoute
   '/dashboard/equipe': typeof DashboardLayoutEquipeRoute
   '/dashboard/leads': typeof DashboardLayoutLeadsRoute
   '/dashboard/lembretes': typeof DashboardLayoutLembretesRoute
@@ -134,9 +158,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/privacidade': typeof PrivacidadeRoute
+  '/termos': typeof TermosRoute
   '/dashboard/_layout': typeof DashboardLayoutRouteWithChildren
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/dashboard/_layout/alertas': typeof DashboardLayoutAlertasRoute
+  '/dashboard/_layout/clima': typeof DashboardLayoutClimaRoute
   '/dashboard/_layout/equipe': typeof DashboardLayoutEquipeRoute
   '/dashboard/_layout/leads': typeof DashboardLayoutLeadsRoute
   '/dashboard/_layout/lembretes': typeof DashboardLayoutLembretesRoute
@@ -152,9 +179,12 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/onboarding'
+    | '/privacidade'
+    | '/termos'
     | '/dashboard'
     | '/api/stripe/webhook'
     | '/dashboard/alertas'
+    | '/dashboard/clima'
     | '/dashboard/equipe'
     | '/dashboard/leads'
     | '/dashboard/lembretes'
@@ -168,8 +198,11 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/onboarding'
+    | '/privacidade'
+    | '/termos'
     | '/api/stripe/webhook'
     | '/dashboard/alertas'
+    | '/dashboard/clima'
     | '/dashboard/equipe'
     | '/dashboard/leads'
     | '/dashboard/lembretes'
@@ -183,9 +216,12 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/onboarding'
+    | '/privacidade'
+    | '/termos'
     | '/dashboard/_layout'
     | '/api/stripe/webhook'
     | '/dashboard/_layout/alertas'
+    | '/dashboard/_layout/clima'
     | '/dashboard/_layout/equipe'
     | '/dashboard/_layout/leads'
     | '/dashboard/_layout/lembretes'
@@ -200,6 +236,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
+  PrivacidadeRoute: typeof PrivacidadeRoute
+  TermosRoute: typeof TermosRoute
   DashboardLayoutRoute: typeof DashboardLayoutRouteWithChildren
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
 }
@@ -225,6 +263,20 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/termos': {
+      id: '/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof TermosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/_layout': {
@@ -253,6 +305,13 @@ declare module '@tanstack/react-router' {
       path: '/alertas'
       fullPath: '/dashboard/alertas'
       preLoaderRoute: typeof DashboardLayoutAlertasRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
+    '/dashboard/_layout/clima': {
+      id: '/dashboard/_layout/clima'
+      path: '/clima'
+      fullPath: '/dashboard/clima'
+      preLoaderRoute: typeof DashboardLayoutClimaRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
     '/dashboard/_layout/equipe': {
@@ -309,6 +368,7 @@ declare module '@tanstack/react-router' {
 
 interface DashboardLayoutRouteChildren {
   DashboardLayoutAlertasRoute: typeof DashboardLayoutAlertasRoute
+  DashboardLayoutClimaRoute: typeof DashboardLayoutClimaRoute
   DashboardLayoutEquipeRoute: typeof DashboardLayoutEquipeRoute
   DashboardLayoutLeadsRoute: typeof DashboardLayoutLeadsRoute
   DashboardLayoutLembretesRoute: typeof DashboardLayoutLembretesRoute
@@ -321,6 +381,7 @@ interface DashboardLayoutRouteChildren {
 
 const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
   DashboardLayoutAlertasRoute: DashboardLayoutAlertasRoute,
+  DashboardLayoutClimaRoute: DashboardLayoutClimaRoute,
   DashboardLayoutEquipeRoute: DashboardLayoutEquipeRoute,
   DashboardLayoutLeadsRoute: DashboardLayoutLeadsRoute,
   DashboardLayoutLembretesRoute: DashboardLayoutLembretesRoute,
@@ -339,6 +400,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
+  PrivacidadeRoute: PrivacidadeRoute,
+  TermosRoute: TermosRoute,
   DashboardLayoutRoute: DashboardLayoutRouteWithChildren,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
 }
