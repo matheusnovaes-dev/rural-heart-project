@@ -42,6 +42,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { Watchlist } from "@/components/dashboard/Watchlist";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buscarPrevisao, type Previsao } from "@/lib/clima";
+import { precoLiquido, type FreteRef } from "@/lib/frete";
 
 export const Route = createFileRoute("/dashboard/_layout/")({
   component: DashboardHome,
@@ -220,6 +221,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
     [],
   );
   const [previsao, setPrevisao] = useState<Previsao | null | undefined>(undefined);
+  const [frete, setFrete] = useState<FreteRef | null | undefined>(undefined);
 
   useEffect(() => {
     if (!supabase) return;
@@ -235,8 +237,20 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
         .gte("data_referencia", desde.toISOString().slice(0, 10))
         .order("data_referencia", { ascending: true })
         .then(({ data }) => setSerie(data ?? []));
+
+      // A Sifreca só cobre ~10 rotas "selecionadas" por cultura, não toda
+      // UF — quando não bate, mostra o preço bruto em vez de inventar frete.
+      supabase
+        .from("fretes")
+        .select("cultura, municipio_origem, uf_origem, municipio_destino, uf_destino, frete_rt")
+        .eq("cultura", produtor.cultura_principal)
+        .eq("uf_origem", produtor.uf)
+        .limit(1)
+        .maybeSingle()
+        .then(({ data }) => setFrete(data ?? null));
     } else {
       setSerie([]);
+      setFrete(null);
     }
 
     supabase
@@ -263,6 +277,8 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
     atual && anterior && anterior.preco !== 0
       ? ((atual.preco - anterior.preco) / anterior.preco) * 100
       : null;
+  const precoExibido =
+    atual && frete ? precoLiquido(atual.preco, frete.frete_rt) : (atual?.preco ?? null);
 
   return (
     <div className="flex flex-col gap-5">
@@ -289,9 +305,9 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-              {serie === null ? (
+              {serie === null || frete === undefined ? (
                 <Skeleton className="h-14 w-56 bg-primary-foreground/15" />
-              ) : atual ? (
+              ) : atual && precoExibido != null ? (
                 <div className="flex flex-wrap items-end justify-between gap-4">
                   <div>
                     <div className="flex items-end gap-2">
@@ -299,7 +315,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                         <span className="mr-1 align-top text-xl font-sans font-semibold opacity-70">
                           R$
                         </span>
-                        {atual.preco.toFixed(2).replace(".", ",")}
+                        {precoExibido.toFixed(2).replace(".", ",")}
                       </p>
                       {variacao != null && Math.abs(variacao) >= 0.05 && (
                         <span
@@ -326,6 +342,16 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                       </span>
                       <TrocarCulturaDialog produtor={produtor} />
                     </div>
+                    <p className="mt-1 text-xs opacity-70">
+                      {frete ? (
+                        <>
+                          Líquido de frete · rota de referência {frete.municipio_origem}/
+                          {frete.uf_origem} → {frete.municipio_destino}/{frete.uf_destino}
+                        </>
+                      ) : (
+                        <>Preço de mercado (bruto) — sem rota de frete pra essa cultura/UF ainda</>
+                      )}
+                    </p>
                   </div>
                   {serie.length >= 2 && (
                     <div className="w-full max-w-56">
