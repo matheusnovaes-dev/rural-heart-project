@@ -83,6 +83,7 @@ function PrecosPage() {
     supabase
       .from("precos")
       .select("uf, preco, data_referencia")
+      .ilike("produto", "%soja%")
       .order("data_referencia", { ascending: true })
       .then(({ data }) => setRows(data ?? []));
   }, []);
