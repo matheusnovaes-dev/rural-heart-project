@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ExternalLink, Newspaper } from "lucide-react";
+import { Newspaper } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,7 +11,6 @@ type Boletim = {
   id: string;
   titulo: string;
   data_publicacao: string;
-  url_leitura: string;
   manchete: string | null;
   resumo: string | null;
 };
@@ -32,32 +31,20 @@ function formatarData(iso: string) {
   return `${dia}/${mes}/${ano}`;
 }
 
-function LinkBoletim({ titulo, data, url }: { titulo: string; data: string; url: string }) {
+function LinhaBoletim({ titulo, data }: { titulo: string; data: string }) {
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex items-center gap-3 rounded-lg border border-border p-2.5 transition-colors hover:bg-secondary/60"
-    >
+    <div className="flex items-center gap-3 rounded-lg border border-border p-2.5">
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-foreground">{titulo}</p>
         <p className="text-xs text-muted-foreground">{formatarData(data)}</p>
       </div>
-      <ExternalLink className="size-3.5 shrink-0 text-muted-foreground" />
-    </a>
+    </div>
   );
 }
 
 function CardDestaque({ boletim }: { boletim: Boletim }) {
   if (!boletim.manchete || !boletim.resumo) {
-    return (
-      <LinkBoletim
-        titulo={boletim.titulo}
-        data={boletim.data_publicacao}
-        url={boletim.url_leitura}
-      />
-    );
+    return <LinhaBoletim titulo={boletim.titulo} data={boletim.data_publicacao} />;
   }
   return (
     <div className="rounded-lg border border-border p-3.5">
@@ -89,7 +76,7 @@ export function BoletimSemanal({ produtor }: { produtor: Produtor }) {
     if (!supabase || !cadeia) return;
     supabase
       .from("imea_boletins")
-      .select("id, titulo, data_publicacao, url_leitura, manchete, resumo")
+      .select("id, titulo, data_publicacao, manchete, resumo")
       .eq("cadeia", cadeia)
       .order("data_publicacao", { ascending: false })
       .limit(5)
@@ -125,11 +112,10 @@ export function BoletimSemanal({ produtor }: { produtor: Produtor }) {
             {boletins.length > 1 && (
               <div className="flex flex-col gap-1.5">
                 {boletins.slice(1).map((b) => (
-                  <LinkBoletim
+                  <LinhaBoletim
                     key={b.id}
                     titulo={b.manchete ?? b.titulo}
                     data={b.data_publicacao}
-                    url={b.url_leitura}
                   />
                 ))}
               </div>
