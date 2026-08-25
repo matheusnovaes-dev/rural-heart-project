@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
-import { Bell, CloudRain, Gauge, Loader2, TrendingDown, TrendingUp } from "lucide-react";
+import {
+  AlertTriangle,
+  Bell,
+  CloudRain,
+  Gauge,
+  Loader2,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +17,7 @@ import { buscarPrevisao } from "@/lib/clima";
 import { temAcessoPrata, useAssinatura } from "@/lib/planos";
 import type { Produtor } from "@/lib/auth";
 
-type PrecoPonto = { preco: number; data_referencia: string; produto: string };
+type PrecoPonto = { preco: number; data_referencia: string; produto: string; uf: string };
 
 // Mesma proteção usada em precos.tsx: a busca por substring pode casar mais
 // de uma variante de embalagem da mesma cultura — fica só com a mais
@@ -28,6 +36,58 @@ function serieUnica(rows: PrecoPonto[]) {
   return rows
     .filter((r) => r.produto === principal)
     .sort((a, b) => a.data_referencia.localeCompare(b.data_referencia));
+}
+
+function variacaoDuasSemanas(serie: PrecoPonto[]) {
+  const atual = serie.at(-1);
+  if (!atual) return null;
+  const limite = new Date(atual.data_referencia);
+  limite.setDate(limite.getDate() - 14);
+  const limiteIso = limite.toISOString().slice(0, 10);
+  const referencia = [...serie].reverse().find((p) => p.data_referencia <= limiteIso);
+  if (!referencia) return null;
+  return {
+    atual,
+    referencia,
+    variacao: ((atual.preco - referencia.preco) / referencia.preco) * 100,
+  };
+}
+
+function mediana(valores: number[]) {
+  if (valores.length === 0) return null;
+  const ordenados = [...valores].sort((a, b) => a - b);
+  const meio = Math.floor(ordenados.length / 2);
+  return ordenados.length % 2 === 0
+    ? (ordenados[meio - 1]! + ordenados[meio]!) / 2
+    : ordenados[meio]!;
+}
+
+// Duas checagens sem IA pra separar "movimento de mercado real" de "erro de
+// dado na fonte", sem esconder o número em nenhum dos dois casos:
+// (1) erro clássico de vírgula/casa decimal — a razão bate quase exato em
+//     10x/100x; (2) o UF anda descolado dos vizinhos — commodity costuma se
+//     mover junto entre estados, se só um UF disparou é bandeira vermelha.
+function detectarAnomalia(
+  atual: number,
+  referencia: number,
+  variacao: number,
+  variacoesOutrasUfs: number[],
+) {
+  const razao = atual / referencia;
+  const fatorSuspeito = [10, 0.1, 100, 0.01].some((f) => Math.abs(razao / f - 1) < 0.05);
+  if (fatorSuspeito) {
+    return "Variação bate com um erro clássico de casa decimal na fonte — confira antes de decidir.";
+  }
+
+  if (variacoesOutrasUfs.length >= 3) {
+    const medianaOutras = Math.abs(mediana(variacoesOutrasUfs) ?? 0);
+    const destoante = Math.abs(variacao) > 15 && Math.abs(variacao) > medianaOutras * 3 + 5;
+    if (destoante) {
+      return "Os outros estados não mostraram movimento parecido essa semana — pode ser atualização pontual do dado, vale conferir.";
+    }
+  }
+
+  return null;
 }
 
 function InsightCard({
@@ -66,6 +126,7 @@ function InsightCard({
 export function InsightsPanel({ produtor }: { produtor: Produtor }) {
   const { plano, loading: loadingPlano } = useAssinatura();
   const [serie, setSerie] = useState<PrecoPonto[] | null>(null);
+  const [todasUfs, setTodasUfs] = useState<PrecoPonto[]>([]);
   const [temAlertaAtivo, setTemAlertaAtivo] = useState<boolean | null>(null);
   const [diasDeChuva, setDiasDeChuva] = useState<number | null>(null);
 
@@ -77,14 +138,21 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
     const desde = new Date();
     desde.setDate(desde.getDate() - 90);
 
+    // Sem filtro de UF de propósito: além da série do próprio produtor,
+    // precisamos do preço da mesma cultura nos outros estados pra checar se
+    // uma variação grande é um evento de mercado real (todo mundo se move
+    // junto) ou só um dado estranho desse UF específico.
     supabase
       .from("precos")
-      .select("preco, data_referencia, produto")
+      .select("preco, data_referencia, produto, uf")
       .ilike("produto", `%${cultura}%`)
-      .eq("uf", uf)
       .gte("data_referencia", desde.toISOString().slice(0, 10))
       .order("data_referencia", { ascending: true })
-      .then(({ data }) => setSerie(serieUnica(data ?? [])));
+      .then(({ data }) => {
+        const deduped = serieUnica(data ?? []);
+        setSerie(deduped.filter((r) => r.uf === uf));
+        setTodasUfs(deduped);
+      });
 
     supabase
       .from("alertas_preco")
@@ -120,38 +188,54 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
   }
   if (serie.length === 0) return null;
 
-  const atual = serie.at(-1)!;
-  const duasSemanasAtras = new Date(atual.data_referencia);
-  duasSemanasAtras.setDate(duasSemanasAtras.getDate() - 14);
-  const referencia = [...serie]
-    .reverse()
-    .find((p) => p.data_referencia <= duasSemanasAtras.toISOString().slice(0, 10));
-
-  const variacao = referencia ? ((atual.preco - referencia.preco) / referencia.preco) * 100 : null;
+  const tendencia = variacaoDuasSemanas(serie);
   const precos = serie.map((p) => p.preco);
   const min = Math.min(...precos);
   const max = Math.max(...precos);
-  const posicao = max > min ? ((atual.preco - min) / (max - min)) * 100 : null;
+  const posicao = max > min ? ((serie.at(-1)!.preco - min) / (max - min)) * 100 : null;
+
+  let anomalia: string | null = null;
+  if (tendencia) {
+    const outrasUfs = [...new Set(todasUfs.map((r) => r.uf))].filter((u) => u !== uf);
+    const variacoesOutrasUfs = outrasUfs
+      .map((u) => variacaoDuasSemanas(todasUfs.filter((r) => r.uf === u))?.variacao)
+      .filter((v): v is number => v != null);
+    anomalia = detectarAnomalia(
+      tendencia.atual.preco,
+      tendencia.referencia.preco,
+      tendencia.variacao,
+      variacoesOutrasUfs,
+    );
+  }
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      {variacao != null && (
+      {tendencia && (
         <InsightCard
-          icon={variacao >= 0 ? TrendingUp : TrendingDown}
-          tone={variacao > 0.5 ? "up" : variacao < -0.5 ? "down" : "neutral"}
+          icon={anomalia ? AlertTriangle : tendencia.variacao >= 0 ? TrendingUp : TrendingDown}
+          tone={
+            anomalia
+              ? "warn"
+              : tendencia.variacao > 0.5
+                ? "up"
+                : tendencia.variacao < -0.5
+                  ? "down"
+                  : "neutral"
+          }
           title="Tendência (2 semanas)"
         >
-          {Math.abs(variacao) < 0.5 ? (
+          {Math.abs(tendencia.variacao) < 0.5 ? (
             "Preço estável, sem variação relevante."
           ) : (
             <>
-              {variacao > 0 ? "Subiu" : "Caiu"}{" "}
+              {tendencia.variacao > 0 ? "Subiu" : "Caiu"}{" "}
               <span className="font-mono font-semibold tabular-nums">
-                {Math.abs(variacao).toFixed(1)}%
+                {Math.abs(tendencia.variacao).toFixed(1)}%
               </span>{" "}
               nas últimas 2 semanas.
             </>
           )}
+          {anomalia && <p className="mt-1.5 text-xs text-cta-foreground/80">{anomalia}</p>}
         </InsightCard>
       )}
 
