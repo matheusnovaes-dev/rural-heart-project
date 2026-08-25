@@ -155,13 +155,19 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
       </div>
     );
   }
-  if (serie.length === 0) return null;
 
-  const tendencia = variacaoDuasSemanas(serie);
+  // Nem toda combinação cultura+UF tem preço publicado ainda (a Conab não
+  // cobre as 77 culturas em todos os 27 estados). Sem histórico não dá pra
+  // calcular tendência/faixa, mas o painel inteiro sumir deixa a home vazia
+  // à toa — os cards de alerta e clima abaixo não dependem de preço, e um
+  // aviso explicando o motivo é melhor que nada aparecer.
+  const semHistorico = serie.length === 0;
+  const tendencia = semHistorico ? null : variacaoDuasSemanas(serie);
   const precos = serie.map((p) => p.preco);
   const min = Math.min(...precos);
   const max = Math.max(...precos);
-  const posicao = max > min ? ((serie.at(-1)!.preco - min) / (max - min)) * 100 : null;
+  const posicao =
+    !semHistorico && max > min ? ((serie.at(-1)!.preco - min) / (max - min)) * 100 : null;
 
   let anomalia: string | null = null;
   if (tendencia) {
@@ -179,6 +185,13 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
+      {semHistorico && (
+        <InsightCard icon={Gauge} tone="neutral" title="Sem histórico ainda">
+          Ainda não temos preço registrado pra <strong>{cultura}</strong> em <strong>{uf}</strong>.
+          Assim que a Conab publicar, a tendência aparece aqui automaticamente.
+        </InsightCard>
+      )}
+
       {tendencia && (
         <InsightCard
           icon={anomalia ? AlertTriangle : tendencia.variacao >= 0 ? TrendingUp : TrendingDown}
