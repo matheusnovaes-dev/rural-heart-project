@@ -1,0 +1,290 @@
+{
+  "name": "Bot WhatsApp - Responder preços",
+  "nodes": [
+    {
+      "id": "95509054-14c1-41f6-8ce5-ad07f89748cf",
+      "name": "Mensagem recebida",
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [-1800, 0],
+      "webhookId": "bot-whatsapp-precos",
+      "parameters": {
+        "updates": ["messages"],
+        "options": {}
+      },
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "",
+          "name": "A CONFIGURAR - criar/selecionar credencial WhatsApp Trigger"
+        }
+      }
+    },
+    {
+      "id": "d8f49303-c945-40c5-bd14-a878bf78abfc",
+      "name": "Extrair telefone e texto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1560, 0],
+      "parameters": {
+        "jsCode": "const msg = ($json.messages || [])[0];\nif (!msg || !msg.text) {\n  return [];\n}\nconst telefoneCompleto = msg.from;\nconst telefoneNacional = telefoneCompleto.startsWith('55') ? telefoneCompleto.slice(2) : telefoneCompleto;\nreturn [{\n  json: {\n    telefone_completo: telefoneCompleto,\n    telefone_nacional: telefoneNacional,\n    texto: msg.text.body || '',\n    nome_contato: (($json.contacts || [])[0] || {}).profile?.name || ''\n  }\n}];"
+      }
+    },
+    {
+      "id": "a21ee0d1-2bea-4b7e-832d-4856934f600a",
+      "name": "Buscar produtor",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [-1320, 0],
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "produtores",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "whatsapp",
+              "condition": "eq",
+              "keyValue": "={{ $json.telefone_nacional }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "YSmWdfgdWlJwik1V", "name": "Supabase account" }
+      }
+    },
+    {
+      "id": "9e3d2ad0-2c95-40be-adab-c1a19646c002",
+      "name": "Normalizar produtor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1080, 0],
+      "parameters": {
+        "jsCode": "const rows = $input.all();\nconst origem = $('Extrair telefone e texto').first().json;\nif (rows.length === 0) {\n  return [{ json: { ...origem, encontrado: false } }];\n}\nconst p = rows[0].json;\nreturn [{ json: {\n  ...origem,\n  encontrado: true,\n  produtor_id: p.id,\n  produtor_nome: p.nome,\n  produtor_uf: p.uf,\n  produtor_cultura: (p.cultura_principal || '').toUpperCase()\n} }];"
+      }
+    },
+    {
+      "id": "4ecf79ae-0f82-4e57-ad67-4fe1cda6d58c",
+      "name": "Produtor encontrado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [-840, 0],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose", "version": 3 },
+          "conditions": [
+            {
+              "id": "83781e64-eccd-4802-a80e-8425da21cfed",
+              "leftValue": "={{ $json.encontrado }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "9bdbaac9-b53c-42c7-840d-bb4e8e32ab4c",
+      "name": "Enviar msg cadastro",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [-600, 250],
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1275863362276413",
+        "recipientPhoneNumber": "={{ $json.telefone_completo }}",
+        "textBody": "Oi! Não te encontrei cadastrado no Safralume ainda. Cadastre-se em safralume.com.br pra eu poder te ajudar com preços 🌾",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "whatsAppApi": { "id": "1UHIY29WobUMEpTw", "name": "WhatsApp account" }
+      }
+    },
+    {
+      "id": "f7973428-ca9d-405e-82d7-6240d1dbee0a",
+      "name": "Extrair cultura e UF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-600, -150],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: \"gpt-4o-mini\", response_format: { type: \"json_object\" }, messages: [ { role: \"system\", content: \"Você extrai, de uma pergunta de um produtor rural brasileiro sobre preço agrícola, duas informações: 1) produto_keyword: uma palavra-chave em português MAIÚSCULA que apareceria dentro do nome oficial do produto (ex: SOJA, MILHO, BOI, CAFÉ, ALGODÃO, TRIGO, ARROZ, FEIJÃO, CANA DE AÇÚCAR). 2) uf: a sigla de 2 letras do estado brasileiro mencionado. Se a pergunta não especificar produto ou estado, use os valores padrão informados. Responda APENAS com JSON válido no formato {\\\"produto_keyword\\\": \\\"...\\\", \\\"uf\\\": \\\"...\\\"}, sem nenhum texto adicional.\" }, { role: \"user\", content: `Pergunta do produtor: \"${$json.texto}\"\\nPadrão do produtor (usar só se a pergunta não especificar): cultura=${$json.produtor_cultura}, uf=${$json.produtor_uf}` } ] }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "openAiApi": { "id": "3Df8xGWSSFuLc1ym", "name": "OpenAI account" }
+      }
+    },
+    {
+      "id": "b1f9a677-a94e-47bf-95d4-a84d46936407",
+      "name": "Parsear resposta da IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-360, -150],
+      "parameters": {
+        "jsCode": "const raw = $json.choices?.[0]?.message?.content ?? '';\nlet parsed = {};\ntry {\n  parsed = JSON.parse(raw);\n} catch (e) {\n  parsed = {};\n}\nconst origem = $('Normalizar produtor').first().json;\nreturn [{ json: {\n  ...origem,\n  produto_keyword: (parsed.produto_keyword || origem.produtor_cultura || '').toString().toUpperCase(),\n  uf: (parsed.uf || origem.produtor_uf || '').toString().toUpperCase()\n} }];"
+      }
+    },
+    {
+      "id": "d53cb3b6-578d-4417-a276-a0eb7635b80a",
+      "name": "Buscar preços",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [-120, -150],
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "precos",
+        "returnAll": false,
+        "limit": 5,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "produto",
+              "condition": "ilike",
+              "keyValue": "=%{{ $json.produto_keyword }}%"
+            },
+            {
+              "keyName": "uf",
+              "condition": "eq",
+              "keyValue": "={{ $json.uf }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "YSmWdfgdWlJwik1V", "name": "Supabase account" }
+      }
+    },
+    {
+      "id": "b326663f-73fc-49e0-b582-627f72a4ca28",
+      "name": "Normalizar preços",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [120, -150],
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(r => r.json);\nconst origem = $('Parsear resposta da IA').first().json;\nreturn [{ json: { ...origem, precos_encontrados: rows.length > 0, precos: rows } }];"
+      }
+    },
+    {
+      "id": "4a8a9839-1300-481d-a87c-cab4fce16017",
+      "name": "Preço encontrado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [360, -150],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose", "version": 3 },
+          "conditions": [
+            {
+              "id": "c2402f29-3ee6-41e6-a60a-e03b472c75e3",
+              "leftValue": "={{ $json.precos_encontrados }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "1bb27316-1dae-48db-8dfa-9f908b6241e3",
+      "name": "Enviar msg sem dado",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [600, 100],
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1275863362276413",
+        "recipientPhoneNumber": "={{ $json.telefone_completo }}",
+        "textBody": "=Ainda não tenho preço de {{ $json.produto_keyword }} em {{ $json.uf }} nos meus dados. Tenta outra cultura ou outro estado?",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "whatsAppApi": { "id": "1UHIY29WobUMEpTw", "name": "WhatsApp account" }
+      }
+    },
+    {
+      "id": "3b0843ff-922b-436b-9152-b6290f5599e0",
+      "name": "Gerar resposta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [600, -300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: \"gpt-4o-mini\", messages: [ { role: \"system\", content: \"Você é o assistente do Safralume, respondendo produtores rurais brasileiros no WhatsApp sobre preços agrícolas. Use APENAS os dados fornecidos em JSON - nunca invente números. Se houver mais de uma unidade de medida para o mesmo produto, prefira citar a saca de 60kg quando existir. Sempre inclua a data de referência (data_referencia) e a fonte (fonte). Responda em português, tom direto e amigável, sem markdown, no máximo 400 caracteres.\" }, { role: \"user\", content: `Pergunta original: \"${$json.texto}\"\\nDados encontrados: ${JSON.stringify($json.precos)}` } ] }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "openAiApi": { "id": "3Df8xGWSSFuLc1ym", "name": "OpenAI account" }
+      }
+    },
+    {
+      "id": "f7339a8b-5b4e-4ae4-9880-5d7d5ff4b360",
+      "name": "Parsear resposta final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [840, -300],
+      "parameters": {
+        "jsCode": "const raw = $json.choices?.[0]?.message?.content ?? '';\nconst origem = $('Normalizar preços').first().json;\nreturn [{ json: { ...origem, resposta_final: raw } }];"
+      }
+    },
+    {
+      "id": "5a4a514d-1883-40d1-85dd-f782a9ccff89",
+      "name": "Enviar resposta",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [1080, -300],
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1275863362276413",
+        "recipientPhoneNumber": "={{ $json.telefone_completo }}",
+        "textBody": "={{ $json.resposta_final }}",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "whatsAppApi": { "id": "1UHIY29WobUMEpTw", "name": "WhatsApp account" }
+      }
+    }
+  ],
+  "connections": {
+    "Mensagem recebida": { "main": [[{ "node": "Extrair telefone e texto", "type": "main", "index": 0 }]] },
+    "Extrair telefone e texto": { "main": [[{ "node": "Buscar produtor", "type": "main", "index": 0 }]] },
+    "Buscar produtor": { "main": [[{ "node": "Normalizar produtor", "type": "main", "index": 0 }]] },
+    "Normalizar produtor": { "main": [[{ "node": "Produtor encontrado?", "type": "main", "index": 0 }]] },
+    "Produtor encontrado?": {
+      "main": [
+        [{ "node": "Extrair cultura e UF", "type": "main", "index": 0 }],
+        [{ "node": "Enviar msg cadastro", "type": "main", "index": 0 }]
+      ]
+    },
+    "Extrair cultura e UF": { "main": [[{ "node": "Parsear resposta da IA", "type": "main", "index": 0 }]] },
+    "Parsear resposta da IA": { "main": [[{ "node": "Buscar preços", "type": "main", "index": 0 }]] },
+    "Buscar preços": { "main": [[{ "node": "Normalizar preços", "type": "main", "index": 0 }]] },
+    "Normalizar preços": { "main": [[{ "node": "Preço encontrado?", "type": "main", "index": 0 }]] },
+    "Preço encontrado?": {
+      "main": [
+        [{ "node": "Gerar resposta", "type": "main", "index": 0 }],
+        [{ "node": "Enviar msg sem dado", "type": "main", "index": 0 }]
+      ]
+    },
+    "Gerar resposta": { "main": [[{ "node": "Parsear resposta final", "type": "main", "index": 0 }]] },
+    "Parsear resposta final": { "main": [[{ "node": "Enviar resposta", "type": "main", "index": 0 }]] }
+  },
+  "settings": {}
+}
