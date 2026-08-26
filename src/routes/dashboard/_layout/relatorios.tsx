@@ -67,7 +67,7 @@ function RelatorioDocument({
           {logoUrl && <Image src={logoUrl} style={styles.logo} />}
           <Text style={[styles.coopNome, { color: cor }]}>{coopNome}</Text>
         </View>
-        <Text style={styles.titulo}>Relatório de preços — {culturaLabel}</Text>
+        <Text style={styles.titulo}>Relatório de preços · {culturaLabel}</Text>
         <Text style={styles.subtitulo}>
           Fonte: Conab · Gerado em {new Date().toLocaleDateString("pt-BR")}
         </Text>
@@ -92,7 +92,7 @@ function RelatorioDocument({
           ))}
         </View>
         <Text style={styles.footer}>
-          {coopNome} via {siteConfig.name} — cenários de mercado com base em dados públicos da
+          {coopNome} via {siteConfig.name}: cenários de mercado com base em dados públicos da
           Conab. Não constitui recomendação de investimento.
         </Text>
       </Page>

@@ -90,14 +90,14 @@ function detectarAnomalia(
   const razao = atual / referencia;
   const fatorSuspeito = [10, 0.1, 100, 0.01].some((f) => Math.abs(razao / f - 1) < 0.05);
   if (fatorSuspeito) {
-    return "Variação bate com um erro clássico de casa decimal na fonte — confira antes de decidir.";
+    return "Variação bate com um erro clássico de casa decimal na fonte. Confira antes de decidir.";
   }
 
   if (variacoesOutrasUfs.length >= 3) {
     const medianaOutras = Math.abs(mediana(variacoesOutrasUfs) ?? 0);
     const destoante = Math.abs(variacao) > 15 && Math.abs(variacao) > medianaOutras * 3 + 5;
     if (destoante) {
-      return "Os outros estados não mostraram movimento parecido essa semana — pode ser atualização pontual do dado, vale conferir.";
+      return "Os outros estados não mostraram movimento parecido essa semana. Pode ser atualização pontual do dado, vale conferir.";
     }
   }
 
@@ -281,7 +281,7 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
           <span className="font-mono font-semibold tabular-nums">
             R$ {divergenciaFonte.imea.toFixed(2)}
           </span>{" "}
-          — diferença de{" "}
+          , uma diferença de{" "}
           <span className="font-mono font-semibold tabular-nums">
             {Math.abs(divergenciaFonte.diferenca).toFixed(1)}%
           </span>
@@ -315,7 +315,7 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
         <InsightCard icon={CloudRain} tone="warn" title="Atenção ao clima">
           Chuva prevista em{" "}
           <span className="font-mono font-semibold tabular-nums">{diasDeChuva}</span> dos próximos 5
-          dias em {uf} — pode afetar colheita ou transporte.
+          dias em {uf}. Pode afetar colheita ou transporte.
         </InsightCard>
       )}
     </div>

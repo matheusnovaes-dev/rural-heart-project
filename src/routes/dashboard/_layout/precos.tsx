@@ -261,7 +261,7 @@ function PrecosPage() {
       <Card>
         <CardHeader>
           <CardTitle className="font-display text-lg font-semibold">
-            Histórico de preço — {culturaLabel}
+            Histórico de preço · {culturaLabel}
           </CardTitle>
           <CardDescription>
             Fonte: Conab, últimos 6 meses

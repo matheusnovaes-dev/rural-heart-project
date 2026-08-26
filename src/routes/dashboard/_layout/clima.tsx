@@ -72,7 +72,7 @@ function insightDoUf(previsao: Previsao) {
 
   if (maxChuva >= 60) {
     return {
-      texto: `Risco de chuva forte ${diaLabel} (${Math.round(maxChuva)}%) — pode atrapalhar colheita e escoamento.`,
+      texto: `Risco de chuva forte ${diaLabel} (${Math.round(maxChuva)}%): pode atrapalhar colheita e escoamento.`,
       tone: "chuva-alta" as const,
     };
   }

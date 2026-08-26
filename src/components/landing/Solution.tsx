@@ -15,7 +15,7 @@ export function Solution() {
             Você pergunta. O Safralume responde com o preço líquido.
           </h2>
           <p className="mt-4 max-w-md text-muted-foreground">
-            Cruzamos os dados oficiais da Conab e da Imea com o frete da sua região na hora — sem
+            Cruzamos os dados oficiais da Conab e da Imea com o frete da sua região na hora, sem
             você abrir planilha nenhuma.
           </p>
           <ul className="mt-6 space-y-3">

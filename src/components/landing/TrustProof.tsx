@@ -27,12 +27,12 @@ export function TrustProof() {
 
           <p className="mt-4 max-w-lg text-primary-foreground/85">
             Todo preço mostrado no Safralume vem da Conab ou da Imea, com data de referência visível
-            na resposta. O Safralume apresenta cenários de mercado com base em dados públicos — não
+            na resposta. O Safralume apresenta cenários de mercado com base em dados públicos, não
             é recomendação de investimento nem consultoria financeira.
           </p>
 
           <p className="mt-3 max-w-lg text-sm text-primary-foreground/70">
-            Grãos (soja, milho, algodão) e agora também pecuária (boi) — quando as duas fontes
+            Grãos (soja, milho, algodão) e agora também pecuária (boi): quando as duas fontes
             cobrem a mesma cultura e estado, cruzamos uma com a outra antes de mostrar o número.
           </p>
 

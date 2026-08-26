@@ -16,7 +16,7 @@ const steps = [
   {
     icon: BadgeCheck,
     title: "3. Você recebe o número certo",
-    description: "Preço líquido, com fonte e data — pronto para decidir sem depender de planilha.",
+    description: "Preço líquido, com fonte e data, pronto para decidir sem depender de planilha.",
   },
 ];
 

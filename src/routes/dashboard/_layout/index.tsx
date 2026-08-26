@@ -115,7 +115,7 @@ function AssinaturaBanner({
   if (assinatura.status === "inadimplente") {
     return (
       <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-2.5 text-sm text-destructive">
-        Pagamento do plano {planoLabel[assinatura.plano]} não foi confirmado — verifique seu cartão
+        Pagamento do plano {planoLabel[assinatura.plano]} não foi confirmado. Verifique seu cartão
         pra não perder o acesso.
       </div>
     );
@@ -136,7 +136,7 @@ function AssinaturaBanner({
 
   return (
     <div className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm text-foreground">
-      Teste grátis do plano <span className="font-semibold">{planoLabel[assinatura.plano]}</span> —{" "}
+      Teste grátis do plano <span className="font-semibold">{planoLabel[assinatura.plano]}</span>:{" "}
       {diasRestantes === 0
         ? "expira hoje"
         : `${diasRestantes} dia${diasRestantes === 1 ? "" : "s"} restante${diasRestantes === 1 ? "" : "s"}`}
@@ -350,7 +350,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                           {frete.uf_origem} → {frete.municipio_destino}/{frete.uf_destino}
                         </>
                       ) : (
-                        <>Preço de mercado (bruto) — sem rota de frete pra essa cultura/UF ainda</>
+                        <>Preço de mercado (bruto), sem rota de frete pra essa cultura/UF ainda</>
                       )}
                     </p>
                   </div>

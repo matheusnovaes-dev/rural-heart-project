@@ -79,22 +79,33 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Safralume — Preço líquido da sua saca, direto no WhatsApp" },
+      { title: "Safralume: preço líquido da sua saca, direto no WhatsApp" },
       {
         name: "description",
         content:
           "Safralume traduz os relatórios da Conab e da Imea em respostas simples, para grãos e pecuária, com frete já descontado, direto no WhatsApp do produtor.",
       },
-      { property: "og:title", content: "Safralume" },
+      { property: "og:title", content: "Safralume: preço líquido da sua saca, direto no WhatsApp" },
       {
         property: "og:description",
         content: "O preço líquido da sua saca, direto no WhatsApp.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:locale", content: "pt_BR" },
+      { property: "og:url", content: "https://www.safralume.com.br" },
+      { property: "og:site_name", content: "Safralume" },
       { property: "og:image", content: "/images/og-image.jpg" },
       { property: "og:image:width", content: "1200" },
       { property: "og:image:height", content: "630" },
       { name: "twitter:card", content: "summary_large_image" },
+      {
+        name: "twitter:title",
+        content: "Safralume: preço líquido da sua saca, direto no WhatsApp",
+      },
+      {
+        name: "twitter:description",
+        content: "O preço líquido da sua saca, direto no WhatsApp.",
+      },
       { name: "twitter:image", content: "/images/og-image.jpg" },
     ],
     links: [
@@ -111,6 +122,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
       { rel: "icon", href: "/favicon.png", type: "image/png", sizes: "32x32" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+      { rel: "canonical", href: "https://www.safralume.com.br" },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "Safralume",
+          url: "https://www.safralume.com.br",
+          logo: "https://www.safralume.com.br/favicon.png",
+          description:
+            "Assistente via WhatsApp que traduz preços agrícolas oficiais (Conab, Imea) em respostas com frete já descontado.",
+        }),
+      },
     ],
   }),
   shellComponent: RootShell,
@@ -121,7 +147,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <head>
         <HeadContent />
       </head>

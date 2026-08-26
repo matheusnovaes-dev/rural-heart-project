@@ -11,7 +11,7 @@ const pains = [
   {
     icon: Truck,
     title: "Frete não calculado",
-    description: "O preço da bolsa não é o que cai na sua conta — o frete muda tudo.",
+    description: "O preço da bolsa não é o que cai na sua conta: o frete muda tudo.",
   },
   {
     icon: FileWarning,

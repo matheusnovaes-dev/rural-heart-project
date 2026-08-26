@@ -37,6 +37,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/dashboard/_layout")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
   component: DashboardGuard,
 });
 
