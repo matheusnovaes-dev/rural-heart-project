@@ -87,10 +87,7 @@ function LembretesPage() {
   async function cancelar(id: string) {
     if (!supabase) return;
     setCancelandoId(id);
-    const { error } = await supabase
-      .from("lembretes")
-      .update({ status: "cancelado" })
-      .eq("id", id);
+    const { error } = await supabase.from("lembretes").update({ status: "cancelado" }).eq("id", id);
     setCancelandoId(null);
     if (error) {
       toast.error("Não foi possível cancelar o lembrete.");

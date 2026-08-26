@@ -71,7 +71,12 @@
       "position": [-840, 0],
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose", "version": 3 },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
           "conditions": [
             {
               "id": "83781e64-eccd-4802-a80e-8425da21cfed",
@@ -182,7 +187,12 @@
       "position": [360, -150],
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose", "version": 3 },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
           "conditions": [
             {
               "id": "c2402f29-3ee6-41e6-a60a-e03b472c75e3",
@@ -263,28 +273,46 @@
     }
   ],
   "connections": {
-    "Mensagem recebida": { "main": [[{ "node": "Extrair telefone e texto", "type": "main", "index": 0 }]] },
-    "Extrair telefone e texto": { "main": [[{ "node": "Buscar produtor", "type": "main", "index": 0 }]] },
-    "Buscar produtor": { "main": [[{ "node": "Normalizar produtor", "type": "main", "index": 0 }]] },
-    "Normalizar produtor": { "main": [[{ "node": "Produtor encontrado?", "type": "main", "index": 0 }]] },
+    "Mensagem recebida": {
+      "main": [[{ "node": "Extrair telefone e texto", "type": "main", "index": 0 }]]
+    },
+    "Extrair telefone e texto": {
+      "main": [[{ "node": "Buscar produtor", "type": "main", "index": 0 }]]
+    },
+    "Buscar produtor": {
+      "main": [[{ "node": "Normalizar produtor", "type": "main", "index": 0 }]]
+    },
+    "Normalizar produtor": {
+      "main": [[{ "node": "Produtor encontrado?", "type": "main", "index": 0 }]]
+    },
     "Produtor encontrado?": {
       "main": [
         [{ "node": "Extrair cultura e UF", "type": "main", "index": 0 }],
         [{ "node": "Enviar msg cadastro", "type": "main", "index": 0 }]
       ]
     },
-    "Extrair cultura e UF": { "main": [[{ "node": "Parsear resposta da IA", "type": "main", "index": 0 }]] },
-    "Parsear resposta da IA": { "main": [[{ "node": "Buscar preços", "type": "main", "index": 0 }]] },
+    "Extrair cultura e UF": {
+      "main": [[{ "node": "Parsear resposta da IA", "type": "main", "index": 0 }]]
+    },
+    "Parsear resposta da IA": {
+      "main": [[{ "node": "Buscar preços", "type": "main", "index": 0 }]]
+    },
     "Buscar preços": { "main": [[{ "node": "Normalizar preços", "type": "main", "index": 0 }]] },
-    "Normalizar preços": { "main": [[{ "node": "Preço encontrado?", "type": "main", "index": 0 }]] },
+    "Normalizar preços": {
+      "main": [[{ "node": "Preço encontrado?", "type": "main", "index": 0 }]]
+    },
     "Preço encontrado?": {
       "main": [
         [{ "node": "Gerar resposta", "type": "main", "index": 0 }],
         [{ "node": "Enviar msg sem dado", "type": "main", "index": 0 }]
       ]
     },
-    "Gerar resposta": { "main": [[{ "node": "Parsear resposta final", "type": "main", "index": 0 }]] },
-    "Parsear resposta final": { "main": [[{ "node": "Enviar resposta", "type": "main", "index": 0 }]] }
+    "Gerar resposta": {
+      "main": [[{ "node": "Parsear resposta final", "type": "main", "index": 0 }]]
+    },
+    "Parsear resposta final": {
+      "main": [[{ "node": "Enviar resposta", "type": "main", "index": 0 }]]
+    }
   },
   "settings": {}
 }

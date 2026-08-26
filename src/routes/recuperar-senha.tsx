@@ -68,9 +68,7 @@ function RecuperarSenhaPage() {
           </div>
         ) : (
           <>
-            <h1 className="text-center text-xl font-semibold text-foreground">
-              Recuperar senha
-            </h1>
+            <h1 className="text-center text-xl font-semibold text-foreground">Recuperar senha</h1>
             <p className="mt-2 text-center text-sm text-muted-foreground">
               Digite seu e-mail e mandamos um link pra você criar uma senha nova.
             </p>

@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
+import { enviarEmailBoasVindas } from "@/lib/email";
+
 export const Route = createFileRoute("/api/stripe/webhook")({
   server: {
     handlers: {
@@ -56,6 +58,16 @@ export const Route = createFileRoute("/api/stripe/webhook")({
                   updated_at: new Date().toISOString(),
                 })
                 .eq("id", assinaturaId);
+
+              const email = session.customer_details?.email;
+              const plano = session.metadata?.["plano"];
+              if (email && plano) {
+                await enviarEmailBoasVindas({
+                  to: email,
+                  nome: session.customer_details?.name?.split(" ")[0] || "produtor",
+                  plano,
+                });
+              }
             }
             break;
           }

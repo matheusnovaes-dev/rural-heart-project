@@ -92,8 +92,8 @@ function RelatorioDocument({
           ))}
         </View>
         <Text style={styles.footer}>
-          {coopNome} via {siteConfig.name}: cenários de mercado com base em dados públicos da
-          Conab. Não constitui recomendação de investimento.
+          {coopNome} via {siteConfig.name}: cenários de mercado com base em dados públicos da Conab.
+          Não constitui recomendação de investimento.
         </Text>
       </Page>
     </Document>
