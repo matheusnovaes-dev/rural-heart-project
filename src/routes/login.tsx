@@ -15,6 +15,7 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/login")({
   validateSearch: searchSchema,
+  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
   component: LoginPage,
 });
 
@@ -112,6 +113,15 @@ function LoginPage() {
               onChange={(e) => setSenha(e.target.value)}
             />
           </div>
+
+          {mode === "entrar" && (
+            <Link
+              to="/recuperar-senha"
+              className="-mt-2 text-right text-sm text-muted-foreground hover:underline"
+            >
+              Esqueci minha senha
+            </Link>
+          )}
 
           {status === "error" && <p className="text-sm text-destructive">{errorMsg}</p>}
 

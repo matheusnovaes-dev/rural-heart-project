@@ -13,6 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
+import { Route as RecuperarSenhaRouteImport } from './routes/recuperar-senha'
+import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as DashboardLayoutRouteImport } from './routes/dashboard/_layout'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
@@ -45,6 +47,16 @@ const OnboardingRoute = OnboardingRouteImport.update({
 const PrivacidadeRoute = PrivacidadeRouteImport.update({
   id: '/privacidade',
   path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecuperarSenhaRoute = RecuperarSenhaRouteImport.update({
+  id: '/recuperar-senha',
+  path: '/recuperar-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
+  id: '/redefinir-senha',
+  path: '/redefinir-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermosRoute = TermosRouteImport.update({
@@ -121,6 +133,8 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/privacidade': typeof PrivacidadeRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/termos': typeof TermosRoute
   '/dashboard': typeof DashboardLayoutRouteWithChildren
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
@@ -140,6 +154,8 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/privacidade': typeof PrivacidadeRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/termos': typeof TermosRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
@@ -159,6 +175,8 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/privacidade': typeof PrivacidadeRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/termos': typeof TermosRoute
   '/dashboard/_layout': typeof DashboardLayoutRouteWithChildren
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
@@ -180,6 +198,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/privacidade'
+    | '/recuperar-senha'
+    | '/redefinir-senha'
     | '/termos'
     | '/dashboard'
     | '/api/stripe/webhook'
@@ -199,6 +219,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/privacidade'
+    | '/recuperar-senha'
+    | '/redefinir-senha'
     | '/termos'
     | '/api/stripe/webhook'
     | '/dashboard/alertas'
@@ -217,6 +239,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/privacidade'
+    | '/recuperar-senha'
+    | '/redefinir-senha'
     | '/termos'
     | '/dashboard/_layout'
     | '/api/stripe/webhook'
@@ -237,6 +261,8 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
+  RecuperarSenhaRoute: typeof RecuperarSenhaRoute
+  RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   TermosRoute: typeof TermosRoute
   DashboardLayoutRoute: typeof DashboardLayoutRouteWithChildren
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
@@ -270,6 +296,20 @@ declare module '@tanstack/react-router' {
       path: '/privacidade'
       fullPath: '/privacidade'
       preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recuperar-senha': {
+      id: '/recuperar-senha'
+      path: '/recuperar-senha'
+      fullPath: '/recuperar-senha'
+      preLoaderRoute: typeof RecuperarSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/redefinir-senha': {
+      id: '/redefinir-senha'
+      path: '/redefinir-senha'
+      fullPath: '/redefinir-senha'
+      preLoaderRoute: typeof RedefinirSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/termos': {
@@ -401,6 +441,8 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   PrivacidadeRoute: PrivacidadeRoute,
+  RecuperarSenhaRoute: RecuperarSenhaRoute,
+  RedefinirSenhaRoute: RedefinirSenhaRoute,
   TermosRoute: TermosRoute,
   DashboardLayoutRoute: DashboardLayoutRouteWithChildren,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
