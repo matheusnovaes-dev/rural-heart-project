@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { TrendingUp, Loader2, Plus, ArrowDown, ArrowUp } from "lucide-react";
+import { TrendingUp, Loader2, Plus, ArrowDown, ArrowUp, X } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/dashboard/PageHeader";
@@ -77,6 +77,21 @@ function AlertasPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [produtor, cooperativa]);
 
+  const [cancelandoId, setCancelandoId] = useState<string | null>(null);
+
+  async function cancelar(id: string) {
+    if (!supabase) return;
+    setCancelandoId(id);
+    const { error } = await supabase.from("alertas_preco").update({ ativo: false }).eq("id", id);
+    setCancelandoId(null);
+    if (error) {
+      toast.error("Não foi possível cancelar o alerta.");
+      return;
+    }
+    toast.success("Alerta cancelado.");
+    load();
+  }
+
   const destinatarios = produtor
     ? [
         {
@@ -147,14 +162,36 @@ function AlertasPage() {
                   </span>
                 </span>
               </div>
-              <Badge
-                variant={a.disparado_em ? "default" : "secondary"}
-                className="font-mono text-[11px] tabular-nums"
-              >
-                {a.disparado_em
-                  ? `Disparado em ${new Date(a.disparado_em).toLocaleDateString("pt-BR")}`
-                  : "Ativo, aguardando"}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant={a.disparado_em ? "default" : "secondary"}
+                  className="font-mono text-[11px] tabular-nums"
+                >
+                  {a.disparado_em
+                    ? `Disparado em ${new Date(a.disparado_em).toLocaleDateString("pt-BR")}`
+                    : a.ativo
+                      ? "Ativo, aguardando"
+                      : "Cancelado"}
+                </Badge>
+                {a.ativo && !a.disparado_em && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-muted-foreground hover:text-destructive"
+                    disabled={cancelandoId === a.id}
+                    onClick={() => cancelar(a.id)}
+                  >
+                    {cancelandoId === a.id ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <>
+                        <X className="size-4" />
+                        Cancelar
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
             </div>
           ))}
         </CardContent>

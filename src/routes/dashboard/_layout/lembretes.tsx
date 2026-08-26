@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Bell, Loader2, Plus, Clock } from "lucide-react";
+import { Bell, Loader2, Plus, Clock, X } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/dashboard/PageHeader";
@@ -82,6 +82,24 @@ function LembretesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [produtor, cooperativa]);
 
+  const [cancelandoId, setCancelandoId] = useState<string | null>(null);
+
+  async function cancelar(id: string) {
+    if (!supabase) return;
+    setCancelandoId(id);
+    const { error } = await supabase
+      .from("lembretes")
+      .update({ status: "cancelado" })
+      .eq("id", id);
+    setCancelandoId(null);
+    if (error) {
+      toast.error("Não foi possível cancelar o lembrete.");
+      return;
+    }
+    toast.success("Lembrete cancelado.");
+    load();
+  }
+
   const destinatarios = produtor
     ? [{ id: produtor.id, nome: "Você mesmo", whatsapp: produtor.whatsapp }]
     : produtoresOpcoes;
@@ -148,9 +166,32 @@ function LembretesPage() {
                     ` · repete ${l.recorrencia === "diaria" ? "todo dia" : "toda semana"}`}
                 </p>
               </div>
-              <Badge variant={statusLabel[l.status].variant} className="text-[11px] font-semibold">
-                {statusLabel[l.status].label}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant={statusLabel[l.status].variant}
+                  className="text-[11px] font-semibold"
+                >
+                  {statusLabel[l.status].label}
+                </Badge>
+                {l.status === "pendente" && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-muted-foreground hover:text-destructive"
+                    disabled={cancelandoId === l.id}
+                    onClick={() => cancelar(l.id)}
+                  >
+                    {cancelandoId === l.id ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <>
+                        <X className="size-4" />
+                        Cancelar
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
             </div>
           ))}
         </CardContent>
