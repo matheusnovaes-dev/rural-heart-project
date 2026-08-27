@@ -6,6 +6,7 @@ import { FileDown, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { EmptyState } from "@/components/dashboard/EmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -104,17 +105,22 @@ function RelatoriosPage() {
   const cooperativa = useRequireCooperativa();
   const [cultura, setCultura] = useState("soja");
   const [precos, setPrecos] = useState<PrecoRow[]>([]);
+  const [carregando, setCarregando] = useState(true);
   const [gerando, setGerando] = useState(false);
 
   useEffect(() => {
     if (!supabase) return;
+    setCarregando(true);
     supabase
       .from("precos")
       .select("produto, uf, preco, data_referencia")
       .ilike("produto", `%${cultura}%`)
       .order("data_referencia", { ascending: false })
       .limit(50)
-      .then(({ data }) => setPrecos(data ?? []));
+      .then(({ data }) => {
+        setPrecos(data ?? []);
+        setCarregando(false);
+      });
   }, [cultura]);
 
   const culturaLabel = culturas.find((c) => c.value === cultura)?.label ?? cultura;
@@ -169,7 +175,9 @@ function RelatoriosPage() {
       />
       <Card>
         <CardContent className="pt-6">
-          {precos.length === 0 ? (
+          {carregando ? (
+            <Skeleton className="h-10 w-48" />
+          ) : precos.length === 0 ? (
             <EmptyState
               icon={FileDown}
               title="Sem dados pra essa cultura"
