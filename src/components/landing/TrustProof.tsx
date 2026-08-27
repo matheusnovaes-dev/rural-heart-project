@@ -7,12 +7,15 @@ export function TrustProof() {
     <section className="bg-primary py-20 text-primary-foreground">
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2">
         <Reveal className="overflow-hidden rounded-2xl">
-          <img
-            src="/images/soybean-field.jpg"
-            alt="Lavoura de soja"
-            className="h-72 w-full object-cover sm:h-96"
-            loading="lazy"
-          />
+          <picture>
+            <source srcSet="/images/soybean-field.webp" type="image/webp" />
+            <img
+              src="/images/soybean-field.jpg"
+              alt="Lavoura de soja"
+              className="h-72 w-full object-cover sm:h-96"
+              loading="lazy"
+            />
+          </picture>
         </Reveal>
 
         <Reveal delay={0.1}>

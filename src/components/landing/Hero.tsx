@@ -7,12 +7,15 @@ export function Hero() {
   return (
     <section id="topo" className="relative overflow-hidden">
       <div className="absolute inset-0">
-        <img
-          src="/images/hero-field.jpg"
-          alt="Lavoura ao entardecer"
-          className="size-full object-cover"
-          fetchPriority="high"
-        />
+        <picture>
+          <source srcSet="/images/hero-field.webp" type="image/webp" />
+          <img
+            src="/images/hero-field.jpg"
+            alt="Lavoura ao entardecer"
+            className="size-full object-cover"
+            fetchPriority="high"
+          />
+        </picture>
         <div className="absolute inset-0 bg-gradient-to-b from-[oklch(0.16_0.03_158/0.88)] via-[oklch(0.16_0.03_158/0.78)] to-[oklch(0.988_0.005_95.1)]" />
       </div>
 

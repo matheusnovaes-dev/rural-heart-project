@@ -32,8 +32,8 @@ export function PainPoints() {
       <div className="mt-12 grid gap-6 sm:grid-cols-3">
         {pains.map((pain, index) => (
           <Reveal key={pain.title} delay={index * 0.1}>
-            <div className="flex h-full flex-col items-start gap-4 rounded-xl border border-border bg-card p-6">
-              <span className="flex size-11 items-center justify-center rounded-lg bg-secondary text-primary">
+            <div className="flex h-full flex-col items-start gap-4 rounded-xl border border-border bg-card p-6 shadow-sm transition-shadow hover:shadow-md">
+              <span className="flex size-11 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                 <pain.icon className="size-5" />
               </span>
               <h3 className="text-lg font-semibold text-foreground">{pain.title}</h3>

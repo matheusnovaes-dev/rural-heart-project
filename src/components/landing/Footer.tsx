@@ -20,7 +20,10 @@ export function Footer() {
             <span className="font-display font-semibold text-foreground">{siteConfig.name}</span>
           </div>
 
-          <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium text-muted-foreground">
+          <nav
+            aria-label="Navegação do rodapé"
+            className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium text-muted-foreground"
+          >
             {links.map((link) => (
               <Link key={link.to} to={link.to} className="hover:text-foreground hover:underline">
                 {link.label}
@@ -47,7 +50,7 @@ export function Footer() {
           © {new Date().getFullYear()} {siteConfig.name}. Todos os direitos reservados.
         </p>
 
-        <p className="text-[10px] text-muted-foreground/60">
+        <p className="text-[10px] text-muted-foreground">
           CNPJ 68.802.997/0001-37 (68.802.997 MATHEUS NOVAES DE MOURA)
         </p>
       </div>
