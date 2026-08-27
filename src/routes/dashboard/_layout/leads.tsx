@@ -161,6 +161,7 @@ function LeadsPage() {
                           onClick={() => toggleContatado(lead)}
                           className="cursor-pointer"
                           title="Marcar como contatado/pendente"
+                          aria-label={`Marcar ${lead.name} como ${lead.contatado ? "pendente" : "contatado"}`}
                         >
                           <Badge variant={lead.contatado ? "default" : "outline"}>
                             {lead.contatado ? "Contatado" : "Pendente"}
@@ -170,7 +171,12 @@ function LeadsPage() {
                       <TableCell className="text-right">
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="size-8">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
+                              aria-label={`Remover ${lead.name}`}
+                            >
                               <Trash2 className="size-3.5 text-destructive" />
                             </Button>
                           </AlertDialogTrigger>

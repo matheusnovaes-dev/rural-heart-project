@@ -186,12 +186,18 @@ function ProdutoresPage() {
                             size="icon"
                             className="size-8"
                             onClick={() => setEditando(p)}
+                            aria-label={`Editar ${p.nome}`}
                           >
                             <Pencil className="size-3.5" />
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="size-8">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-8"
+                                aria-label={`Remover ${p.nome}`}
+                              >
                                 <Trash2 className="size-3.5 text-destructive" />
                               </Button>
                             </AlertDialogTrigger>

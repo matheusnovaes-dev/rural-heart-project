@@ -4,6 +4,7 @@ import { CloudRain, CloudSun, Lock, MapPin, Thermometer } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { EmptyState } from "@/components/dashboard/EmptyState";
@@ -11,6 +12,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { temAcessoPrata, useAssinatura } from "@/lib/planos";
 import { buscarPrevisao, type Previsao } from "@/lib/clima";
+import { buildWhatsAppLink } from "@/config/site";
 
 export const Route = createFileRoute("/dashboard/_layout/clima")({
   component: ClimaPage,
@@ -40,6 +42,15 @@ function ClimaPage() {
             Disponível a partir do plano Prata. Faça upgrade pra ver a previsão de chuva e
             temperatura das próximas 5 dias na sua região.
           </CardDescription>
+          <Button asChild size="sm" className="mt-1 bg-cta text-cta-foreground hover:bg-cta/90">
+            <a
+              href={buildWhatsAppLink("Quero fazer upgrade pro plano Prata do Safralume.")}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Fazer upgrade
+            </a>
+          </Button>
         </CardContent>
       </Card>
     );
