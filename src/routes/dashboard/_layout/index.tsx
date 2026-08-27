@@ -7,6 +7,7 @@ import {
   CloudSun,
   ListChecks,
   Loader2,
+  Lock,
   Minus,
   Pencil,
   TrendingUp,
@@ -44,6 +45,8 @@ import { BoletimSemanal } from "@/components/dashboard/BoletimSemanal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buscarPrevisao, type Previsao } from "@/lib/clima";
 import { precoLiquido, type FreteRef } from "@/lib/frete";
+import { temAcessoPrata, useAssinatura } from "@/lib/planos";
+import { buildWhatsAppLink } from "@/config/site";
 
 export const Route = createFileRoute("/dashboard/_layout/")({
   component: DashboardHome,
@@ -217,6 +220,7 @@ function TrocarCulturaDialog({ produtor }: { produtor: Produtor }) {
 type PrecoHistorico = { preco: number; data_referencia: string; updated_at: string | null };
 
 function ProdutorHome({ produtor }: { produtor: Produtor }) {
+  const { plano, loading: loadingPlano } = useAssinatura();
   const [serie, setSerie] = useState<PrecoHistorico[] | null>(null);
   const [lembretes, setLembretes] = useState<{ id: string; titulo: string; enviar_em: string }[]>(
     [],
@@ -265,12 +269,12 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
   }, [produtor]);
 
   useEffect(() => {
-    if (!produtor.uf) {
+    if (!produtor.uf || !temAcessoPrata(plano)) {
       setPrevisao(null);
       return;
     }
     buscarPrevisao(produtor.uf).then(setPrevisao);
-  }, [produtor.uf]);
+  }, [produtor.uf, plano]);
 
   const atual = serie?.at(-1) ?? null;
   const anterior = serie?.at(-2) ?? null;
@@ -399,7 +403,31 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {previsao === undefined ? (
+              {loadingPlano ? (
+                <div className="grid grid-cols-5 gap-1.5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
+                  ))}
+                </div>
+              ) : !temAcessoPrata(plano) ? (
+                <div className="flex flex-col items-center gap-2 py-2 text-center">
+                  <span className="flex size-8 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+                    <Lock className="size-3.5" />
+                  </span>
+                  <p className="text-xs text-muted-foreground">
+                    Previsão de chuva e temperatura disponível a partir do plano Prata.
+                  </p>
+                  <Button asChild size="sm" variant="outline" className="mt-1">
+                    <a
+                      href={buildWhatsAppLink("Quero fazer upgrade pro plano Prata do Safralume.")}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Fazer upgrade
+                    </a>
+                  </Button>
+                </div>
+              ) : previsao === undefined ? (
                 <div className="grid grid-cols-5 gap-1.5">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Skeleton key={i} className="h-16 w-full" />
