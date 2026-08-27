@@ -75,6 +75,14 @@ function TermosPage() {
               serão avisadas com antecedência pelo WhatsApp cadastrado.
             </p>
           </section>
+
+          <section>
+            <h2 className="font-display text-lg font-semibold">7. Titularidade</h2>
+            <p className="mt-2 text-muted-foreground">
+              O {siteConfig.name} é operado sob o CNPJ 68.802.997/0001-37 (razão social 68.802.997
+              MATHEUS NOVAES DE MOURA).
+            </p>
+          </section>
         </div>
       </main>
       <Footer />
