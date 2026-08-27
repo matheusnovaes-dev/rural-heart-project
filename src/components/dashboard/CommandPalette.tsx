@@ -40,7 +40,6 @@ const DESTINOS_COOPERATIVA: Destino[] = [
   { to: "/dashboard/precos", label: "Preços", icon: LineChart },
   { to: "/dashboard/alertas", label: "Alertas de preço", icon: TrendingUp },
   { to: "/dashboard/produtores", label: "Produtores", icon: Users },
-  { to: "/dashboard/leads", label: "Leads", icon: ListChecks },
   { to: "/dashboard/lembretes", label: "Lembretes", icon: Bell },
   { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
 ];
