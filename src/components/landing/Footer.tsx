@@ -46,6 +46,10 @@ export function Footer() {
         <p className="text-xs text-muted-foreground">
           © {new Date().getFullYear()} {siteConfig.name}. Todos os direitos reservados.
         </p>
+
+        <p className="text-[10px] text-muted-foreground/60">
+          CNPJ 68.802.997/0001-37 (68.802.997 MATHEUS NOVAES DE MOURA)
+        </p>
       </div>
     </footer>
   );
