@@ -22,6 +22,7 @@ import { culturas } from "@/config/culturas";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { Sparkline } from "@/components/dashboard/Sparkline";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/dashboard/_layout/precos")({
   component: PrecosPage,
@@ -58,11 +59,13 @@ function formatBRL(v: number) {
 function PrecosPage() {
   const [cultura, setCultura] = useState("soja");
   const [rawRows, setRawRows] = useState<PrecoRow[]>([]);
+  const [carregando, setCarregando] = useState(true);
   const [visiveis, setVisiveis] = useState<Set<string> | null>(null);
 
   useEffect(() => {
     if (!supabase) return;
     setVisiveis(null);
+    setCarregando(true);
     const desde = new Date();
     desde.setDate(desde.getDate() - JANELA_DIAS);
     supabase
@@ -71,7 +74,10 @@ function PrecosPage() {
       .ilike("produto", `%${cultura}%`)
       .gte("data_referencia", desde.toISOString().slice(0, 10))
       .order("data_referencia", { ascending: true })
-      .then(({ data }) => setRawRows(data ?? []));
+      .then(({ data }) => {
+        setRawRows(data ?? []);
+        setCarregando(false);
+      });
   }, [cultura]);
 
   // A busca por substring pode casar mais de uma variante de embalagem da
@@ -194,68 +200,76 @@ function PrecosPage() {
         }
       />
 
-      {stats.length > 0 && (
-        <div className="@container">
-          <div className="grid gap-4 @lg:grid-cols-2 @2xl:grid-cols-3">
-            {stats.map((s) => (
-              <Card key={s.uf} className="gap-3 py-4">
-                <CardHeader className="gap-1 pb-0">
-                  <CardDescription className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                    <span
-                      className="size-2 shrink-0 rounded-full"
-                      style={{ backgroundColor: s.color }}
-                    />
-                    {culturaLabel} · {s.uf}
-                  </CardDescription>
-                  <CardTitle className="font-mono text-3xl font-semibold tabular-nums tracking-tight">
-                    {s.atual != null ? (
-                      <>
-                        <span className="mr-0.5 align-top text-base font-sans font-semibold text-muted-foreground">
-                          R$
-                        </span>
-                        {formatBRL(s.atual)}
-                      </>
-                    ) : (
-                      "—"
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-2 pb-0">
-                  <div className="flex items-center justify-between">
-                    {s.variacao != null ? (
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
-                          s.variacao > 0
-                            ? "bg-primary/10 text-primary"
-                            : s.variacao < 0
-                              ? "bg-destructive/10 text-destructive"
-                              : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {s.variacao > 0 ? (
-                          <ArrowUp className="size-3" />
-                        ) : s.variacao < 0 ? (
-                          <ArrowDown className="size-3" />
-                        ) : (
-                          <Minus className="size-3" />
-                        )}
-                        {Math.abs(s.variacao).toFixed(1)}% sem.
-                      </span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">Sem histórico</span>
-                    )}
-                    {s.min != null && s.max != null && (
-                      <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
-                        {formatBRL(s.min)} – {formatBRL(s.max)}
-                      </span>
-                    )}
-                  </div>
-                  <Sparkline data={s.sparkline} color={s.color} />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+      {carregando ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-32 w-full" />
+          ))}
         </div>
+      ) : (
+        stats.length > 0 && (
+          <div className="@container">
+            <div className="grid gap-4 @lg:grid-cols-2 @2xl:grid-cols-3">
+              {stats.map((s) => (
+                <Card key={s.uf} className="gap-3 py-4">
+                  <CardHeader className="gap-1 pb-0">
+                    <CardDescription className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                      <span
+                        className="size-2 shrink-0 rounded-full"
+                        style={{ backgroundColor: s.color }}
+                      />
+                      {culturaLabel} · {s.uf}
+                    </CardDescription>
+                    <CardTitle className="font-mono text-3xl font-semibold tabular-nums tracking-tight">
+                      {s.atual != null ? (
+                        <>
+                          <span className="mr-0.5 align-top text-base font-sans font-semibold text-muted-foreground">
+                            R$
+                          </span>
+                          {formatBRL(s.atual)}
+                        </>
+                      ) : (
+                        "—"
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-2 pb-0">
+                    <div className="flex items-center justify-between">
+                      {s.variacao != null ? (
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            s.variacao > 0
+                              ? "bg-primary/10 text-primary"
+                              : s.variacao < 0
+                                ? "bg-destructive/10 text-destructive"
+                                : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {s.variacao > 0 ? (
+                            <ArrowUp className="size-3" />
+                          ) : s.variacao < 0 ? (
+                            <ArrowDown className="size-3" />
+                          ) : (
+                            <Minus className="size-3" />
+                          )}
+                          {Math.abs(s.variacao).toFixed(1)}% sem.
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Sem histórico</span>
+                      )}
+                      {s.min != null && s.max != null && (
+                        <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
+                          {formatBRL(s.min)} – {formatBRL(s.max)}
+                        </span>
+                      )}
+                    </div>
+                    <Sparkline data={s.sparkline} color={s.color} />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )
       )}
 
       <Card>
@@ -298,7 +312,9 @@ function PrecosPage() {
             </div>
           )}
 
-          {chartData.length === 0 ? (
+          {carregando ? (
+            <Skeleton className="h-80 w-full" />
+          ) : chartData.length === 0 ? (
             <EmptyState
               icon={LineChartIcon}
               title="Sem dados pra essa cultura"
