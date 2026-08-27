@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { EmptyState } from "@/components/dashboard/EmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -47,6 +48,7 @@ type Lead = {
 function LeadsPage() {
   const cooperativa = useRequireCooperativa();
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [carregando, setCarregando] = useState(true);
   const [busca, setBusca] = useState("");
 
   async function load() {
@@ -56,6 +58,7 @@ function LeadsPage() {
       .select("id, name, whatsapp, crop, created_at, contatado")
       .order("created_at", { ascending: false });
     setLeads(data ?? []);
+    setCarregando(false);
   }
 
   useEffect(() => {
@@ -120,7 +123,13 @@ function LeadsPage() {
             </div>
           )}
 
-          {leads.length === 0 ? (
+          {carregando ? (
+            <div className="flex flex-col gap-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : leads.length === 0 ? (
             <EmptyState
               icon={ListChecks}
               title="Nenhum lead ainda"

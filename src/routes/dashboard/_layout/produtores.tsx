@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { EmptyState } from "@/components/dashboard/EmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -53,6 +54,7 @@ type ProdutorRow = {
 function ProdutoresPage() {
   const cooperativa = useRequireCooperativa();
   const [produtores, setProdutores] = useState<ProdutorRow[]>([]);
+  const [carregando, setCarregando] = useState(true);
   const [busca, setBusca] = useState("");
   const [open, setOpen] = useState(false);
   const [editando, setEditando] = useState<ProdutorRow | null>(null);
@@ -65,6 +67,7 @@ function ProdutoresPage() {
       .eq("cooperativa_id", cooperativa.id)
       .order("nome");
     setProdutores(data ?? []);
+    setCarregando(false);
   }
 
   useEffect(() => {
@@ -148,7 +151,13 @@ function ProdutoresPage() {
             </div>
           )}
 
-          {produtores.length === 0 ? (
+          {carregando ? (
+            <div className="flex flex-col gap-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : produtores.length === 0 ? (
             <EmptyState
               icon={Users}
               title="Nenhum produtor cadastrado"

@@ -5,6 +5,7 @@ import { TrendingUp, Loader2, Plus, ArrowDown, ArrowUp, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { EmptyState } from "@/components/dashboard/EmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +45,7 @@ type Alerta = {
 function AlertasPage() {
   const { produtor, cooperativa } = useAuth();
   const [alertas, setAlertas] = useState<Alerta[]>([]);
+  const [carregando, setCarregando] = useState(true);
   const [produtoresOpcoes, setProdutoresOpcoes] = useState<
     {
       id: string;
@@ -62,6 +64,7 @@ function AlertasPage() {
       .select("id, cultura, uf, limite, direcao, ativo, disparado_em")
       .order("created_at", { ascending: false });
     setAlertas(data ?? []);
+    setCarregando(false);
 
     if (cooperativa) {
       const { data: prods } = await supabase
@@ -137,63 +140,73 @@ function AlertasPage() {
       />
       <Card>
         <CardContent className="flex flex-col gap-3 pt-6">
-          {alertas.length === 0 && (
-            <EmptyState
-              icon={TrendingUp}
-              title="Nenhum alerta ainda"
-              description="Crie um alerta pra ser avisado assim que a saca passar (ou cair abaixo) do valor que te interessa."
-            />
-          )}
-          {alertas.map((a) => (
-            <div
-              key={a.id}
-              className="flex flex-col gap-1 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div className="flex items-center gap-2 text-sm">
-                {a.direcao === "acima" ? (
-                  <ArrowUp className="size-4 text-primary" />
-                ) : (
-                  <ArrowDown className="size-4 text-destructive" />
-                )}
-                <span className="font-medium text-foreground">
-                  {a.cultura} · {a.uf} {a.direcao} de{" "}
-                  <span className="font-mono tabular-nums">
-                    R${a.limite.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                  </span>
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge
-                  variant={a.disparado_em ? "default" : "secondary"}
-                  className="font-mono text-[11px] tabular-nums"
-                >
-                  {a.disparado_em
-                    ? `Disparado em ${new Date(a.disparado_em).toLocaleDateString("pt-BR")}`
-                    : a.ativo
-                      ? "Ativo, aguardando"
-                      : "Cancelado"}
-                </Badge>
-                {a.ativo && !a.disparado_em && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-muted-foreground hover:text-destructive"
-                    disabled={cancelandoId === a.id}
-                    onClick={() => cancelar(a.id)}
-                  >
-                    {cancelandoId === a.id ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <>
-                        <X className="size-4" />
-                        Cancelar
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
+          {carregando ? (
+            <div className="flex flex-col gap-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
             </div>
-          ))}
+          ) : (
+            <>
+              {alertas.length === 0 && (
+                <EmptyState
+                  icon={TrendingUp}
+                  title="Nenhum alerta ainda"
+                  description="Crie um alerta pra ser avisado assim que a saca passar (ou cair abaixo) do valor que te interessa."
+                />
+              )}
+              {alertas.map((a) => (
+                <div
+                  key={a.id}
+                  className="flex flex-col gap-1 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="flex items-center gap-2 text-sm">
+                    {a.direcao === "acima" ? (
+                      <ArrowUp className="size-4 text-primary" />
+                    ) : (
+                      <ArrowDown className="size-4 text-destructive" />
+                    )}
+                    <span className="font-medium text-foreground">
+                      {a.cultura} · {a.uf} {a.direcao} de{" "}
+                      <span className="font-mono tabular-nums">
+                        R${a.limite.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </span>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant={a.disparado_em ? "default" : "secondary"}
+                      className="font-mono text-[11px] tabular-nums"
+                    >
+                      {a.disparado_em
+                        ? `Disparado em ${new Date(a.disparado_em).toLocaleDateString("pt-BR")}`
+                        : a.ativo
+                          ? "Ativo, aguardando"
+                          : "Cancelado"}
+                    </Badge>
+                    {a.ativo && !a.disparado_em && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-muted-foreground hover:text-destructive"
+                        disabled={cancelandoId === a.id}
+                        onClick={() => cancelar(a.id)}
+                      >
+                        {cancelandoId === a.id ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <>
+                            <X className="size-4" />
+                            Cancelar
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

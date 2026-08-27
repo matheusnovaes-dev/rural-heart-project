@@ -5,6 +5,7 @@ import { Bell, Loader2, Plus, Clock, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { EmptyState } from "@/components/dashboard/EmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,6 +56,7 @@ const statusLabel: Record<
 function LembretesPage() {
   const { produtor, cooperativa } = useAuth();
   const [lembretes, setLembretes] = useState<Lembrete[]>([]);
+  const [carregando, setCarregando] = useState(true);
   const [produtoresOpcoes, setProdutoresOpcoes] = useState<
     { id: string; nome: string; whatsapp: string }[]
   >([]);
@@ -67,6 +69,7 @@ function LembretesPage() {
       .select("id, titulo, descricao, enviar_em, status, recorrencia, produtor_id")
       .order("enviar_em", { ascending: true });
     setLembretes(data ?? []);
+    setCarregando(false);
 
     if (cooperativa) {
       const { data: prods } = await supabase
@@ -134,63 +137,73 @@ function LembretesPage() {
       />
       <Card>
         <CardContent className="flex flex-col gap-3 pt-6">
-          {lembretes.length === 0 && (
-            <EmptyState
-              icon={Bell}
-              title="Nenhum lembrete ainda"
-              description="Agende tarefas da lavoura (aplicação, manutenção, vistoria) pra não depender da memória."
-            />
-          )}
-          {lembretes.map((l) => (
-            <div
-              key={l.id}
-              className="flex flex-col gap-1 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div>
-                <p className="font-medium text-foreground">{l.titulo}</p>
-                {l.descricao && <p className="text-sm text-muted-foreground">{l.descricao}</p>}
-                <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock className="size-3" />
-                  <span className="font-mono tabular-nums">
-                    {new Date(l.enviar_em).toLocaleString("pt-BR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                  {l.recorrencia &&
-                    ` · repete ${l.recorrencia === "diaria" ? "todo dia" : "toda semana"}`}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge
-                  variant={statusLabel[l.status].variant}
-                  className="text-[11px] font-semibold"
-                >
-                  {statusLabel[l.status].label}
-                </Badge>
-                {l.status === "pendente" && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-muted-foreground hover:text-destructive"
-                    disabled={cancelandoId === l.id}
-                    onClick={() => cancelar(l.id)}
-                  >
-                    {cancelandoId === l.id ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <>
-                        <X className="size-4" />
-                        Cancelar
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
+          {carregando ? (
+            <div className="flex flex-col gap-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
             </div>
-          ))}
+          ) : (
+            <>
+              {lembretes.length === 0 && (
+                <EmptyState
+                  icon={Bell}
+                  title="Nenhum lembrete ainda"
+                  description="Agende tarefas da lavoura (aplicação, manutenção, vistoria) pra não depender da memória."
+                />
+              )}
+              {lembretes.map((l) => (
+                <div
+                  key={l.id}
+                  className="flex flex-col gap-1 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <p className="font-medium text-foreground">{l.titulo}</p>
+                    {l.descricao && <p className="text-sm text-muted-foreground">{l.descricao}</p>}
+                    <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="size-3" />
+                      <span className="font-mono tabular-nums">
+                        {new Date(l.enviar_em).toLocaleString("pt-BR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                      {l.recorrencia &&
+                        ` · repete ${l.recorrencia === "diaria" ? "todo dia" : "toda semana"}`}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant={statusLabel[l.status].variant}
+                      className="text-[11px] font-semibold"
+                    >
+                      {statusLabel[l.status].label}
+                    </Badge>
+                    {l.status === "pendente" && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-muted-foreground hover:text-destructive"
+                        disabled={cancelandoId === l.id}
+                        onClick={() => cancelar(l.id)}
+                      >
+                        {cancelandoId === l.id ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <>
+                            <X className="size-4" />
+                            Cancelar
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
         </CardContent>
       </Card>
     </div>
