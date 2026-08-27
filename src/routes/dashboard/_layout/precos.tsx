@@ -280,7 +280,7 @@ function PrecosPage() {
           <CardDescription>
             Fonte: Conab, últimos 6 meses
             {ufs.length > QTD_VISIVEL_PADRAO &&
-              ` · mostrando os ${QTD_VISIVEL_PADRAO} UFs com mais histórico, clique pra ver outros`}
+              ` · mostrando os ${QTD_VISIVEL_PADRAO} estados com mais histórico, clique pra ver outros`}
             .
           </CardDescription>
         </CardHeader>

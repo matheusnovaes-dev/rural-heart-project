@@ -144,7 +144,7 @@ function ClimaConteudo() {
             <EmptyState
               icon={MapPin}
               title="Nenhum estado pra acompanhar"
-              description="A previsão sai da UF dos produtores cadastrados. Cadastre um produtor com estado preenchido pra ver o clima da região aqui."
+              description="A previsão sai do estado dos produtores cadastrados. Cadastre um produtor com estado preenchido pra ver o clima da região aqui."
             />
           </CardContent>
         </Card>

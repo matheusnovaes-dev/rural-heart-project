@@ -170,7 +170,7 @@ function RelatoriosPage() {
       <PageHeader
         icon={FileDown}
         title="Relatórios"
-        description="PDF com a marca da sua cooperativa e os preços mais recentes por UF."
+        description="PDF com a marca da sua cooperativa e os preços mais recentes por estado."
         action={seletorCultura}
       />
       <Card>

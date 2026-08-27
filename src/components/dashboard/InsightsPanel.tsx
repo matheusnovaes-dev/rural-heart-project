@@ -90,14 +90,14 @@ function detectarAnomalia(
   const razao = atual / referencia;
   const fatorSuspeito = [10, 0.1, 100, 0.01].some((f) => Math.abs(razao / f - 1) < 0.05);
   if (fatorSuspeito) {
-    return "Variação bate com um erro clássico de casa decimal na fonte. Confira antes de decidir.";
+    return "Esse número parece ter vírgula ou zero fora do lugar na fonte oficial. Confira antes de decidir com ele.";
   }
 
   if (variacoesOutrasUfs.length >= 3) {
     const medianaOutras = Math.abs(mediana(variacoesOutrasUfs) ?? 0);
     const destoante = Math.abs(variacao) > 15 && Math.abs(variacao) > medianaOutras * 3 + 5;
     if (destoante) {
-      return "Os outros estados não mostraram movimento parecido essa semana. Pode ser atualização pontual do dado, vale conferir.";
+      return "Os outros estados não subiram ou caíram parecido essa semana. Pode ter sido um erro só nesse número, vale conferir.";
     }
   }
 
@@ -290,12 +290,16 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
       )}
 
       {posicao != null && (
-        <InsightCard icon={Gauge} tone="neutral" title="Faixa de 90 dias">
-          Preço atual está{" "}
-          <span className="font-mono font-semibold tabular-nums">{posicao.toFixed(0)}%</span> do
-          caminho entre a mínima (
-          <span className="font-mono tabular-nums">R$ {min.toFixed(2)}</span>) e a máxima (
-          <span className="font-mono tabular-nums">R$ {max.toFixed(2)}</span>) do período.
+        <InsightCard icon={Gauge} tone="neutral" title="Variação dos últimos 90 dias">
+          Nesse período, o preço ficou entre{" "}
+          <span className="font-mono font-semibold tabular-nums">R$ {min.toFixed(2)}</span> e{" "}
+          <span className="font-mono font-semibold tabular-nums">R$ {max.toFixed(2)}</span>. Hoje
+          está{" "}
+          {posicao <= 25
+            ? "perto do menor preço desse período."
+            : posicao >= 75
+              ? "perto do maior preço desse período."
+              : "mais ou menos no meio, nem no menor nem no maior preço."}
         </InsightCard>
       )}
 

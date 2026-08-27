@@ -115,7 +115,7 @@ export function Watchlist({ produtor }: { produtor: Produtor }) {
             <CardTitle className="font-display text-base">Lista de acompanhamento</CardTitle>
             <CardDescription className="mx-auto max-w-sm">
               Exclusivo do plano Ouro. Acompanhe o preço de outras culturas e estados além do seu,
-              pra comparar região e planejar diversificação.
+              pra comparar com sua região e decidir se vale plantar outra coisa também.
             </CardDescription>
           </div>
           <Button asChild size="sm" className="bg-cta text-cta-foreground hover:bg-cta/90">

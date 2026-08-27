@@ -350,11 +350,15 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                     <p className="mt-1 text-xs opacity-70">
                       {frete ? (
                         <>
-                          Líquido de frete · rota de referência {frete.municipio_origem}/
-                          {frete.uf_origem} → {frete.municipio_destino}/{frete.uf_destino}
+                          Já com o frete descontado · rota usada como referência:{" "}
+                          {frete.municipio_origem}/{frete.uf_origem} → {frete.municipio_destino}/
+                          {frete.uf_destino}
                         </>
                       ) : (
-                        <>Preço de mercado (bruto), sem rota de frete pra essa cultura/UF ainda</>
+                        <>
+                          Preço sem desconto de frete — ainda não temos uma rota de referência pra
+                          essa cultura na sua região
+                        </>
                       )}
                     </p>
                   </div>

@@ -42,7 +42,11 @@ export const pricingPlans: PricingPlan[] = [
     name: "Prata",
     audience: "Médios produtores",
     price: 129,
-    features: ["Tudo do Bronze, mais:", "Tendências climáticas", "Cruzamento Conab × Imea"],
+    features: [
+      "Tudo do Bronze, mais:",
+      "Tendências climáticas",
+      "Compara o preço da Conab com o da Imea",
+    ],
     highlighted: true,
   },
   {
@@ -52,7 +56,7 @@ export const pricingPlans: PricingPlan[] = [
     price: 399,
     features: [
       "Tudo do Prata, mais:",
-      "Lista de acompanhamento (outras culturas e UFs)",
+      "Lista de acompanhamento (outras culturas e estados)",
       "Suporte prioritário",
     ],
   },
