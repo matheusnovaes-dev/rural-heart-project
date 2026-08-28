@@ -46,6 +46,12 @@ function OnboardingPage() {
   const [cpfCnpj, setCpfCnpj] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [erroMsg, setErroMsg] = useState("Algo deu errado. Confira os dados e tente de novo.");
+  // Cadastro (produtor/cooperativa) já foi criado, mas a cobrança na Asaas
+  // falhou — não dá pra deixar isso passar batido pro dashboard, senão a
+  // pessoa acha que assinou e nunca vai ser cobrada. Guarda o id pra poder
+  // tentar de novo sem duplicar o cadastro.
+  const [assinaturaPendenteId, setAssinaturaPendenteId] = useState<string | null>(null);
+  const [erroCheckout, setErroCheckout] = useState("");
 
   const planoEscolhido = plano ?? "bronze";
 
@@ -176,29 +182,66 @@ function OnboardingPage() {
     await refresh();
 
     if (novaAssinaturaId) {
-      try {
-        const checkout = await criarAssinaturaAsaas({
-          data: {
-            plano: planoEscolhido,
-            assinaturaId: novaAssinaturaId,
-            nome: tipo === "produtor" ? nome : nomeCooperativa,
-            cpfCnpj,
-            email: session.user.email,
-            whatsapp: tipo === "produtor" ? whatsapp : undefined,
-          },
-        });
-        window.location.href = checkout.url;
-        return;
-      } catch (err) {
-        // Checkout indisponível não deve travar o cadastro — segue pro
-        // dashboard, a assinatura fica "trial" até tentar de novo depois.
-        // Loga o motivo real pra dar pra diagnosticar (antes falhava 100%
-        // silencioso, sem nenhum rastro de por que o checkout não abriu).
-        console.error("Falha ao criar assinatura na Asaas:", err);
-      }
+      setAssinaturaPendenteId(novaAssinaturaId);
+      await abrirCheckout(novaAssinaturaId);
+      return;
     }
 
     navigate({ to: "/dashboard" });
+  }
+
+  async function abrirCheckout(assinaturaId: string) {
+    setStatus("loading");
+    setErroCheckout("");
+    try {
+      const checkout = await criarAssinaturaAsaas({
+        data: {
+          plano: planoEscolhido,
+          assinaturaId,
+          nome: tipo === "produtor" ? nome : nomeCooperativa,
+          cpfCnpj,
+          email: session?.user.email,
+          whatsapp: tipo === "produtor" ? whatsapp : undefined,
+        },
+      });
+      window.location.href = checkout.url;
+    } catch (err) {
+      // Não pode deixar isso passar batido pro dashboard: o cadastro (produtor/
+      // cooperativa) já foi criado, mas sem a cobrança configurada a pessoa
+      // nunca seria cobrada e pareceria que assinou com sucesso. Mostra o
+      // motivo real (a Asaas já devolve mensagem em português, tipo "CPF
+      // inválido") e deixa tentar de novo sem duplicar o cadastro.
+      setErroCheckout(err instanceof Error ? err.message : "Erro desconhecido.");
+      setStatus("error");
+    }
+  }
+
+  if (assinaturaPendenteId) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-secondary/40 px-4 py-12">
+        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+          <h1 className="text-xl font-semibold text-foreground">Cadastro criado</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Seu cadastro foi salvo, mas não conseguimos configurar a cobrança da assinatura.
+          </p>
+          {erroCheckout && (
+            <p className="mt-3 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+              {erroCheckout}
+            </p>
+          )}
+          <Button
+            className="mt-5 w-full"
+            disabled={status === "loading"}
+            onClick={() => abrirCheckout(assinaturaPendenteId)}
+          >
+            {status === "loading" ? <Loader2 className="size-4 animate-spin" /> : "Tentar de novo"}
+          </Button>
+          <p className="mt-4 text-xs text-muted-foreground">
+            Se o erro continuar, chama no WhatsApp: +55 31 9004-0215
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
