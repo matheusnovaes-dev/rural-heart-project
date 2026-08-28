@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/lib/supabase";
 import { useRequireCooperativa } from "@/lib/auth";
+import { normalizarWhatsapp } from "@/lib/telefone";
 
 export const Route = createFileRoute("/dashboard/_layout/produtores")({
   component: ProdutoresPage,
@@ -262,7 +263,7 @@ function ProdutorForm({
 
     const payload = {
       nome,
-      whatsapp,
+      whatsapp: normalizarWhatsapp(whatsapp),
       cultura_principal: cultura || null,
       uf: uf || null,
     };
@@ -273,7 +274,11 @@ function ProdutorForm({
 
     setLoading(false);
     if (error) {
-      toast.error("Não foi possível salvar o produtor.");
+      toast.error(
+        error.code === "23505"
+          ? "Esse número de WhatsApp já está cadastrado em outro produtor."
+          : "Não foi possível salvar o produtor.",
+      );
       return;
     }
     toast.success(produtor ? "Produtor atualizado." : "Produtor adicionado.");

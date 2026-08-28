@@ -18,6 +18,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { criarSessaoCheckout } from "@/lib/stripe.server";
 import { culturas } from "@/config/culturas";
+import { normalizarWhatsapp } from "@/lib/telefone";
 
 const searchSchema = z.object({
   convite: z.string().uuid().optional(),
@@ -43,6 +44,9 @@ function OnboardingPage() {
   const [uf, setUf] = useState("");
   const [nomeCooperativa, setNomeCooperativa] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [erroMsg, setErroMsg] = useState(
+    "Algo deu errado. Confira os dados e tente de novo.",
+  );
 
   const planoEscolhido = plano ?? "bronze";
 
@@ -100,7 +104,7 @@ function OnboardingPage() {
         .insert({
           user_id: session.user.id,
           nome,
-          whatsapp,
+          whatsapp: normalizarWhatsapp(whatsapp),
           cultura_principal: cultura || null,
           uf: uf || null,
           cooperativa_id: convite ?? null,
@@ -108,6 +112,11 @@ function OnboardingPage() {
         .select("id")
         .single();
       if (error) {
+        setErroMsg(
+          error.code === "23505"
+            ? "Esse número de WhatsApp já está cadastrado."
+            : "Algo deu errado. Confira os dados e tente de novo.",
+        );
         setStatus("error");
         return;
       }
@@ -267,11 +276,7 @@ function OnboardingPage() {
             </div>
           )}
 
-          {status === "error" && (
-            <p className="text-sm text-destructive">
-              Algo deu errado. Confira os dados e tente de novo.
-            </p>
-          )}
+          {status === "error" && <p className="text-sm text-destructive">{erroMsg}</p>}
 
           <Button type="submit" size="lg" disabled={status === "loading"}>
             {status === "loading" ? <Loader2 className="size-4 animate-spin" /> : "Concluir"}
