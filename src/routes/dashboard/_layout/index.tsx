@@ -449,7 +449,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                             : "border-transparent bg-secondary text-muted-foreground"
                         }`}
                       >
-                        <span className="text-[10px] font-semibold uppercase opacity-80">
+                        <span className="text-[10px] font-semibold uppercase">
                           {i === 0
                             ? "hoje"
                             : new Date(`${dia}T00:00:00`).toLocaleDateString("pt-BR", {
@@ -457,7 +457,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                               })}
                         </span>
                         <span className="font-mono text-xs font-semibold tabular-nums">{pct}%</span>
-                        <span className="font-mono text-[10px] tabular-nums opacity-70">
+                        <span className="font-mono text-[10px] tabular-nums">
                           {Math.round(previsao.tempMax[i] ?? 0)}°
                         </span>
                       </div>

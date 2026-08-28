@@ -64,8 +64,13 @@ function EquipePage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex gap-2">
-          <Input readOnly value={inviteLink} className="font-mono text-xs" />
-          <Button variant="outline" onClick={copyLink}>
+          <Input
+            readOnly
+            aria-label="Link de convite"
+            value={inviteLink}
+            className="font-mono text-xs"
+          />
+          <Button variant="outline" onClick={copyLink} aria-label="Copiar link de convite">
             {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
           </Button>
         </CardContent>

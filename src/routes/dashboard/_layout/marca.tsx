@@ -119,6 +119,7 @@ function MarcaPage() {
         <CardContent className="flex items-center gap-3">
           <input
             type="color"
+            aria-label="Cor principal"
             value={cor}
             onChange={(e) => setCor(e.target.value)}
             className="size-10 cursor-pointer rounded border border-border"

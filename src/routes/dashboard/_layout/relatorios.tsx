@@ -152,8 +152,8 @@ function RelatoriosPage() {
 
   const seletorCultura = (
     <Select value={cultura} onValueChange={setCultura}>
-      <SelectTrigger className="w-55">
-        <SelectValue />
+      <SelectTrigger className="w-55" aria-label="Cultura">
+        <SelectValue placeholder="Cultura" />
       </SelectTrigger>
       <SelectContent>
         {culturas.map((c) => (

@@ -105,7 +105,7 @@ function AtalhoBusca() {
     <span className="ml-auto hidden items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground sm:flex">
       <Search className="size-3" />
       Buscar
-      <kbd className="ml-1 font-mono text-[10px] opacity-70">⌘K</kbd>
+      <kbd className="ml-1 font-mono text-[10px]">⌘K</kbd>
     </span>
   );
 }
