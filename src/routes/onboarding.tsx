@@ -187,13 +187,6 @@ function OnboardingPage() {
             whatsapp: tipo === "produtor" ? whatsapp : undefined,
           },
         });
-        await supabase
-          .from("assinaturas")
-          .update({
-            asaas_customer_id: checkout.asaasCustomerId,
-            asaas_subscription_id: checkout.asaasSubscriptionId,
-          })
-          .eq("id", novaAssinaturaId);
         window.location.href = checkout.url;
         return;
       } catch (err) {

@@ -1,7 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { createClient } from "@supabase/supabase-js";
 
 import { pricingPlans } from "@/config/site";
+
+function supabaseServiceRole() {
+  const supabaseUrl = process.env["SB_URL"];
+  const serviceRoleKey = process.env["SB_SERVICE_ROLE_KEY"];
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("SB_URL/SB_SERVICE_ROLE_KEY não configuradas.");
+  }
+  return createClient(supabaseUrl, serviceRoleKey);
+}
 
 const ASAAS_API_BASE = "https://api.asaas.com/v3";
 
@@ -103,6 +113,14 @@ export const criarAssinaturaAsaas = createServerFn({ method: "POST" })
       throw new Error("Asaas não retornou um link de pagamento.");
     }
 
+    // Grava os IDs direto aqui (com a service role) porque o cliente não
+    // tem permissão de UPDATE em `assinaturas` via RLS — só o webhook (que
+    // também roda com service role) deveria poder mexer nesses campos.
+    await supabaseServiceRole()
+      .from("assinaturas")
+      .update({ asaas_customer_id: customer.id, asaas_subscription_id: subscription.id })
+      .eq("id", data.assinaturaId);
+
     return {
       url: invoiceUrl,
       asaasCustomerId: customer.id,
@@ -138,6 +156,15 @@ export const atualizarPlanoAsaas = createServerFn({ method: "POST" })
       method: "PUT",
       body: JSON.stringify({ value: plano.price }),
     });
+
+    // Atualiza o plano local na hora — não dá pra esperar o próximo evento
+    // de pagamento do webhook pra liberar o recurso que o produtor acabou
+    // de pagar pra desbloquear (Pix/boleto só gera cobrança nova no
+    // próximo ciclo, que pode ser semanas depois).
+    await supabaseServiceRole()
+      .from("assinaturas")
+      .update({ plano: data.novoPlano })
+      .eq("asaas_subscription_id", data.asaasSubscriptionId);
 
     return { ok: true as const };
   });
