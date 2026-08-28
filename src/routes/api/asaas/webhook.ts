@@ -121,7 +121,7 @@ async function enviarEmailBoasVindasAsaas({
   if (!apiKey) return;
   try {
     const res = await fetch(`https://api.asaas.com/v3/customers/${customerId}`, {
-      headers: { access_token: apiKey },
+      headers: { access_token: apiKey, "User-Agent": "Safralume/1.0" },
     });
     const customer = (await res.json()) as { name?: string; email?: string };
     if (customer.email) {

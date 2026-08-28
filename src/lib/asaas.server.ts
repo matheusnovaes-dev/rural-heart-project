@@ -9,6 +9,9 @@ function headers(apiKey: string) {
   return {
     "Content-Type": "application/json",
     access_token: apiKey,
+    // A Asaas rejeita requisições sem User-Agent — o fetch do Cloudflare
+    // Workers não manda um por padrão como um navegador manda.
+    "User-Agent": "Safralume/1.0",
   };
 }
 
