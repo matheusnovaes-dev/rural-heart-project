@@ -26,7 +26,7 @@ import { EmptyState } from "@/components/dashboard/EmptyState";
 import { supabase } from "@/lib/supabase";
 import { culturas } from "@/config/culturas";
 import { temAcessoOuro, useAssinatura } from "@/lib/planos";
-import { buildWhatsAppLink } from "@/config/site";
+import { UpgradeButton } from "@/components/dashboard/UpgradeButton";
 import type { Produtor } from "@/lib/auth";
 
 type ItemWatchlist = { id: string; cultura: string; uf: string };
@@ -38,7 +38,7 @@ type Cotacao = { atual: number | null; variacao: number | null; serie: number[] 
  * ingest da Conab já cobre. É o padrão "watchlist" dos terminais de commodity.
  */
 export function Watchlist({ produtor }: { produtor: Produtor }) {
-  const { plano, loading: loadingPlano } = useAssinatura();
+  const { plano, asaasSubscriptionId, loading: loadingPlano } = useAssinatura();
   const [itens, setItens] = useState<ItemWatchlist[] | null>(null);
   const [cotacoes, setCotacoes] = useState<Record<string, Cotacao>>({});
   const [open, setOpen] = useState(false);
@@ -118,15 +118,11 @@ export function Watchlist({ produtor }: { produtor: Produtor }) {
               pra comparar com sua região e decidir se vale plantar outra coisa também.
             </CardDescription>
           </div>
-          <Button asChild size="sm" className="bg-cta text-cta-foreground hover:bg-cta/90">
-            <a
-              href={buildWhatsAppLink("Quero fazer upgrade pro plano Ouro do Safralume.")}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Fazer upgrade
-            </a>
-          </Button>
+          <UpgradeButton
+            planoAlvo="ouro"
+            asaasSubscriptionId={asaasSubscriptionId}
+            className="bg-cta text-cta-foreground hover:bg-cta/90"
+          />
         </CardContent>
       </Card>
     );

@@ -19,6 +19,8 @@ export function useAssinatura() {
   const produtorId = produtor?.id;
   const cooperativaId = cooperativa?.id;
   const [plano, setPlano] = useState<Plano | null>(null);
+  const [assinaturaId, setAssinaturaId] = useState<string | null>(null);
+  const [asaasSubscriptionId, setAsaasSubscriptionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,15 +29,17 @@ export function useAssinatura() {
       return;
     }
     setLoading(true);
-    let query = supabase.from("assinaturas").select("plano");
+    let query = supabase.from("assinaturas").select("id, plano, asaas_subscription_id");
     query = produtorId
       ? query.eq("produtor_id", produtorId)
       : query.eq("cooperativa_id", cooperativaId);
     query.maybeSingle().then(({ data }) => {
       setPlano((data?.plano as Plano | undefined) ?? null);
+      setAssinaturaId(data?.id ?? null);
+      setAsaasSubscriptionId(data?.asaas_subscription_id ?? null);
       setLoading(false);
     });
   }, [produtorId, cooperativaId]);
 
-  return { plano, loading };
+  return { plano, assinaturaId, asaasSubscriptionId, loading };
 }

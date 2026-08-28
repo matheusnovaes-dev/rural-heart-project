@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
-import { criarSessaoCheckout } from "@/lib/stripe.server";
+import { criarAssinaturaAsaas } from "@/lib/asaas.server";
 import { culturas } from "@/config/culturas";
 import { normalizarWhatsapp } from "@/lib/telefone";
 
@@ -43,10 +43,9 @@ function OnboardingPage() {
   const [cultura, setCultura] = useState("");
   const [uf, setUf] = useState("");
   const [nomeCooperativa, setNomeCooperativa] = useState("");
+  const [cpfCnpj, setCpfCnpj] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
-  const [erroMsg, setErroMsg] = useState(
-    "Algo deu errado. Confira os dados e tente de novo.",
-  );
+  const [erroMsg, setErroMsg] = useState("Algo deu errado. Confira os dados e tente de novo.");
 
   const planoEscolhido = plano ?? "bronze";
 
@@ -108,6 +107,7 @@ function OnboardingPage() {
           cultura_principal: cultura || null,
           uf: uf || null,
           cooperativa_id: convite ?? null,
+          cpf_cnpj: cpfCnpj.replace(/\D/g, ""),
         })
         .select("id")
         .single();
@@ -140,9 +140,11 @@ function OnboardingPage() {
       // cooperativa via RLS depois de virar membro dela, não dá pra inserir
       // com `.select()` (o SELECT de retorno falharia por RLS).
       const cooperativaId = crypto.randomUUID();
-      const { error: coopError } = await supabase
-        .from("cooperativas")
-        .insert({ id: cooperativaId, nome: nomeCooperativa });
+      const { error: coopError } = await supabase.from("cooperativas").insert({
+        id: cooperativaId,
+        nome: nomeCooperativa,
+        cpf_cnpj: cpfCnpj.replace(/\D/g, ""),
+      });
       if (coopError) {
         setStatus("error");
         return;
@@ -175,9 +177,23 @@ function OnboardingPage() {
 
     if (novaAssinaturaId) {
       try {
-        const checkout = await criarSessaoCheckout({
-          data: { plano: planoEscolhido, assinaturaId: novaAssinaturaId },
+        const checkout = await criarAssinaturaAsaas({
+          data: {
+            plano: planoEscolhido,
+            assinaturaId: novaAssinaturaId,
+            nome: tipo === "produtor" ? nome : nomeCooperativa,
+            cpfCnpj,
+            email: session.user.email,
+            whatsapp: tipo === "produtor" ? whatsapp : undefined,
+          },
         });
+        await supabase
+          .from("assinaturas")
+          .update({
+            asaas_customer_id: checkout.asaasCustomerId,
+            asaas_subscription_id: checkout.asaasSubscriptionId,
+          })
+          .eq("id", novaAssinaturaId);
         window.location.href = checkout.url;
         return;
       } catch {
@@ -275,6 +291,23 @@ function OnboardingPage() {
               />
             </div>
           )}
+
+          <div className="space-y-2">
+            <Label htmlFor="cpfCnpj">
+              {tipo === "produtor" ? "Seu CPF" : "CNPJ da cooperativa/corretora"}
+            </Label>
+            <Input
+              id="cpfCnpj"
+              inputMode="numeric"
+              placeholder={tipo === "produtor" ? "000.000.000-00" : "00.000.000/0000-00"}
+              required
+              value={cpfCnpj}
+              onChange={(e) => setCpfCnpj(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Exigido pra emitir a cobrança da assinatura.
+            </p>
+          </div>
 
           {status === "error" && <p className="text-sm text-destructive">{erroMsg}</p>}
 

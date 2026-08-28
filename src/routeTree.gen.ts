@@ -17,7 +17,7 @@ import { Route as RecuperarSenhaRouteImport } from './routes/recuperar-senha'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as DashboardLayoutRouteImport } from './routes/dashboard/_layout'
-import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
+import { Route as ApiAsaasWebhookRouteImport } from './routes/api/asaas/webhook'
 import { Route as DashboardLayoutIndexRouteImport } from './routes/dashboard/_layout/index'
 import { Route as DashboardLayoutAlertasRouteImport } from './routes/dashboard/_layout/alertas'
 import { Route as DashboardLayoutClimaRouteImport } from './routes/dashboard/_layout/clima'
@@ -69,9 +69,9 @@ const DashboardLayoutRoute = DashboardLayoutRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
-  id: '/api/stripe/webhook',
-  path: '/api/stripe/webhook',
+const ApiAsaasWebhookRoute = ApiAsaasWebhookRouteImport.update({
+  id: '/api/asaas/webhook',
+  path: '/api/asaas/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardLayoutIndexRoute = DashboardLayoutIndexRouteImport.update({
@@ -137,7 +137,7 @@ export interface FileRoutesByFullPath {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/termos': typeof TermosRoute
   '/dashboard': typeof DashboardLayoutRouteWithChildren
-  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/api/asaas/webhook': typeof ApiAsaasWebhookRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/clima': typeof DashboardLayoutClimaRoute
   '/dashboard/equipe': typeof DashboardLayoutEquipeRoute
@@ -157,7 +157,7 @@ export interface FileRoutesByTo {
   '/recuperar-senha': typeof RecuperarSenhaRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/termos': typeof TermosRoute
-  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/api/asaas/webhook': typeof ApiAsaasWebhookRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/clima': typeof DashboardLayoutClimaRoute
   '/dashboard/equipe': typeof DashboardLayoutEquipeRoute
@@ -179,7 +179,7 @@ export interface FileRoutesById {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/termos': typeof TermosRoute
   '/dashboard/_layout': typeof DashboardLayoutRouteWithChildren
-  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/api/asaas/webhook': typeof ApiAsaasWebhookRoute
   '/dashboard/_layout/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/_layout/clima': typeof DashboardLayoutClimaRoute
   '/dashboard/_layout/equipe': typeof DashboardLayoutEquipeRoute
@@ -202,7 +202,7 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/termos'
     | '/dashboard'
-    | '/api/stripe/webhook'
+    | '/api/asaas/webhook'
     | '/dashboard/alertas'
     | '/dashboard/clima'
     | '/dashboard/equipe'
@@ -222,7 +222,7 @@ export interface FileRouteTypes {
     | '/recuperar-senha'
     | '/redefinir-senha'
     | '/termos'
-    | '/api/stripe/webhook'
+    | '/api/asaas/webhook'
     | '/dashboard/alertas'
     | '/dashboard/clima'
     | '/dashboard/equipe'
@@ -243,7 +243,7 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/termos'
     | '/dashboard/_layout'
-    | '/api/stripe/webhook'
+    | '/api/asaas/webhook'
     | '/dashboard/_layout/alertas'
     | '/dashboard/_layout/clima'
     | '/dashboard/_layout/equipe'
@@ -265,7 +265,7 @@ export interface RootRouteChildren {
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   TermosRoute: typeof TermosRoute
   DashboardLayoutRoute: typeof DashboardLayoutRouteWithChildren
-  ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
+  ApiAsaasWebhookRoute: typeof ApiAsaasWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -326,11 +326,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLayoutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/stripe/webhook': {
-      id: '/api/stripe/webhook'
-      path: '/api/stripe/webhook'
-      fullPath: '/api/stripe/webhook'
-      preLoaderRoute: typeof ApiStripeWebhookRouteImport
+    '/api/asaas/webhook': {
+      id: '/api/asaas/webhook'
+      path: '/api/asaas/webhook'
+      fullPath: '/api/asaas/webhook'
+      preLoaderRoute: typeof ApiAsaasWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/_layout/': {
@@ -445,7 +445,7 @@ const rootRouteChildren: RootRouteChildren = {
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   TermosRoute: TermosRoute,
   DashboardLayoutRoute: DashboardLayoutRouteWithChildren,
-  ApiStripeWebhookRoute: ApiStripeWebhookRoute,
+  ApiAsaasWebhookRoute: ApiAsaasWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -46,7 +46,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { buscarPrevisao, type Previsao } from "@/lib/clima";
 import { precoLiquido, type FreteRef } from "@/lib/frete";
 import { temAcessoPrata, useAssinatura } from "@/lib/planos";
-import { buildWhatsAppLink } from "@/config/site";
+import { UpgradeButton } from "@/components/dashboard/UpgradeButton";
 
 export const Route = createFileRoute("/dashboard/_layout/")({
   component: DashboardHome,
@@ -220,7 +220,7 @@ function TrocarCulturaDialog({ produtor }: { produtor: Produtor }) {
 type PrecoHistorico = { preco: number; data_referencia: string; updated_at: string | null };
 
 function ProdutorHome({ produtor }: { produtor: Produtor }) {
-  const { plano, loading: loadingPlano } = useAssinatura();
+  const { plano, asaasSubscriptionId, loading: loadingPlano } = useAssinatura();
   const [serie, setSerie] = useState<PrecoHistorico[] | null>(null);
   const [lembretes, setLembretes] = useState<{ id: string; titulo: string; enviar_em: string }[]>(
     [],
@@ -421,15 +421,12 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                   <p className="text-xs text-muted-foreground">
                     Previsão de chuva e temperatura disponível a partir do plano Prata.
                   </p>
-                  <Button asChild size="sm" variant="outline" className="mt-1">
-                    <a
-                      href={buildWhatsAppLink("Quero fazer upgrade pro plano Prata do Safralume.")}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Fazer upgrade
-                    </a>
-                  </Button>
+                  <UpgradeButton
+                    planoAlvo="prata"
+                    asaasSubscriptionId={asaasSubscriptionId}
+                    variant="outline"
+                    className="mt-1"
+                  />
                 </div>
               ) : previsao === undefined ? (
                 <div className="grid grid-cols-5 gap-1.5">

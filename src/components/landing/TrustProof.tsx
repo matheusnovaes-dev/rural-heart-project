@@ -35,8 +35,8 @@ export function TrustProof() {
           </p>
 
           <p className="mt-3 max-w-lg text-sm text-primary-foreground/70">
-            Grãos (soja, milho, algodão) e agora também pecuária (boi) - quando as duas fontes cobrem
-            a mesma cultura e estado, cruzamos uma com a outra antes de mostrar o número.
+            Grãos (soja, milho, algodão) e agora também pecuária (boi) - quando as duas fontes
+            cobrem a mesma cultura e estado, cruzamos uma com a outra antes de mostrar o número.
           </p>
 
           <div className="mt-5 flex flex-wrap gap-2">
