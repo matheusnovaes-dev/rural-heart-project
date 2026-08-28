@@ -22,6 +22,7 @@ import { culturas } from "@/config/culturas";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { Sparkline } from "@/components/dashboard/Sparkline";
+import { ContextoMercado } from "@/components/dashboard/ContextoMercado";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/dashboard/_layout/precos")({
@@ -199,6 +200,8 @@ function PrecosPage() {
           </Select>
         }
       />
+
+      <ContextoMercado />
 
       {carregando ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
