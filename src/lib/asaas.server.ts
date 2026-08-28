@@ -168,3 +168,39 @@ export const atualizarPlanoAsaas = createServerFn({ method: "POST" })
 
     return { ok: true as const };
   });
+
+const listarCobrancasSchema = z.object({
+  asaasSubscriptionId: z.string().min(1),
+});
+
+export type Cobranca = {
+  id: string;
+  value: number;
+  status: string;
+  dueDate: string;
+  paymentDate: string | null;
+  billingType: string;
+  invoiceUrl: string;
+};
+
+/**
+ * Histórico de cobranças da assinatura, pra tela "Minha assinatura".
+ * O asaasSubscriptionId precisa vir de uma leitura que já passou pelo RLS
+ * (a própria página busca a assinatura do usuário logado antes de chamar
+ * isso) — essa function em si não reconfirma dono, só repassa pra Asaas.
+ */
+export const listarCobrancas = createServerFn({ method: "GET" })
+  .validator(listarCobrancasSchema)
+  .handler(async ({ data }) => {
+    const apiKey = process.env["ASAAS_API_KEY"];
+    if (!apiKey) {
+      throw new Error("ASAAS_API_KEY não configurada.");
+    }
+
+    const payments = (await asaasFetch(
+      apiKey,
+      `/payments?subscription=${data.asaasSubscriptionId}&limit=20&order=desc`,
+    )) as { data?: Cobranca[] };
+
+    return { cobrancas: payments.data ?? [] };
+  });

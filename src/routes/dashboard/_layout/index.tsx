@@ -118,7 +118,10 @@ function AssinaturaBanner({
   if (assinatura.status === "inadimplente") {
     return (
       <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-2.5 text-sm text-destructive">
-        Pagamento do plano {planoLabel[assinatura.plano]} não foi confirmado. Verifique seu cartão
+        Pagamento do plano {planoLabel[assinatura.plano]} não foi confirmado. Confira a fatura em{" "}
+        <Link to="/dashboard/assinatura" className="underline">
+          Assinatura
+        </Link>{" "}
         pra não perder o acesso.
       </div>
     );

@@ -14,6 +14,7 @@ import {
   Sprout,
   CloudSun,
   Search,
+  CreditCard,
 } from "lucide-react";
 
 import {
@@ -87,7 +88,7 @@ function DashboardGuard() {
   return (
     <TooltipProvider delayDuration={200}>
       <div className="min-h-screen bg-background">
-        <ProdutorHeader nome={produtor!.nome} />
+        <ProdutorHeader nome={produtor!.nome} temAssinaturaPropria={!produtor!.cooperativa_id} />
         {/* max-w-6xl, não max-w-lg: a coluna de 512px fazia o painel parecer
             um app de celular esticado no desktop. Mobile segue coluna única. */}
         <main className="mx-auto max-w-6xl px-4 py-6">
@@ -131,6 +132,7 @@ function CooperativaSidebar({
           { to: "/dashboard/equipe", label: "Equipe", icon: UsersRound },
           { to: "/dashboard/marca", label: "Marca própria", icon: Palette },
           { to: "/dashboard/relatorios", label: "Relatórios", icon: FileDown },
+          { to: "/dashboard/assinatura", label: "Assinatura", icon: CreditCard },
         ]
       : []),
   ];
@@ -172,15 +174,30 @@ function CooperativaSidebar({
   );
 }
 
-const produtorNavItems = [
+const produtorNavItemsBase = [
   { to: "/dashboard", label: "Início", icon: LayoutDashboard },
   { to: "/dashboard/alertas", label: "Alertas", icon: TrendingUp },
   { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
   { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
 ] as const;
 
-function ProdutorHeader({ nome }: { nome: string }) {
+const assinaturaNavItem = {
+  to: "/dashboard/assinatura",
+  label: "Assinatura",
+  icon: CreditCard,
+} as const;
+
+function ProdutorHeader({
+  nome,
+  temAssinaturaPropria,
+}: {
+  nome: string;
+  temAssinaturaPropria: boolean;
+}) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const produtorNavItems = temAssinaturaPropria
+    ? [...produtorNavItemsBase, assinaturaNavItem]
+    : produtorNavItemsBase;
 
   return (
     <header className="border-b border-border bg-card">

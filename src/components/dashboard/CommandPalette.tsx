@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import {
   Bell,
   CloudSun,
+  CreditCard,
   FileDown,
   LayoutDashboard,
   LineChart,
@@ -48,7 +49,14 @@ const DESTINOS_ADMIN: Destino[] = [
   { to: "/dashboard/equipe", label: "Equipe", icon: UsersRound },
   { to: "/dashboard/marca", label: "Marca própria", icon: Palette },
   { to: "/dashboard/relatorios", label: "Relatórios", icon: FileDown },
+  { to: "/dashboard/assinatura", label: "Assinatura", icon: CreditCard },
 ];
+
+const DESTINO_ASSINATURA: Destino = {
+  to: "/dashboard/assinatura",
+  label: "Assinatura",
+  icon: CreditCard,
+};
 
 /**
  * Paleta ⌘K — atalho de poder pra quem usa o painel todo dia, sem adicionar
@@ -74,7 +82,7 @@ export function CommandPalette() {
   const destinos = cooperativa
     ? [...DESTINOS_COOPERATIVA, ...(papel === "admin" ? DESTINOS_ADMIN : [])]
     : produtor
-      ? DESTINOS_PRODUTOR
+      ? [...DESTINOS_PRODUTOR, ...(produtor.cooperativa_id ? [] : [DESTINO_ASSINATURA])]
       : [];
 
   function ir(to: string) {
