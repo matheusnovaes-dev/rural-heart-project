@@ -136,3 +136,17 @@ export function useRequireCooperativa() {
 
   return cooperativa;
 }
+
+/** Redirects away pages that only make sense for a produtor (not a cooperativa member). */
+export function useRequireProdutor() {
+  const { loading, produtor } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !produtor) {
+      navigate({ to: "/dashboard" });
+    }
+  }, [loading, produtor, navigate]);
+
+  return produtor;
+}

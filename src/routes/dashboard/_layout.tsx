@@ -15,6 +15,7 @@ import {
   CloudSun,
   Search,
   CreditCard,
+  HardHat,
 } from "lucide-react";
 
 import {
@@ -178,6 +179,7 @@ const produtorNavItemsBase = [
   { to: "/dashboard", label: "Início", icon: LayoutDashboard },
   { to: "/dashboard/alertas", label: "Alertas", icon: TrendingUp },
   { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
+  { to: "/dashboard/funcionarios", label: "Funcionários", icon: HardHat },
   { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
 ] as const;
 

@@ -60,6 +60,9 @@ function LembretesPage() {
   const [produtoresOpcoes, setProdutoresOpcoes] = useState<
     { id: string; nome: string; whatsapp: string }[]
   >([]);
+  const [funcionarios, setFuncionarios] = useState<
+    { id: string; nome: string; whatsapp: string }[]
+  >([]);
   const [open, setOpen] = useState(false);
 
   async function load() {
@@ -77,6 +80,15 @@ function LembretesPage() {
         .select("id, nome, whatsapp")
         .eq("cooperativa_id", cooperativa.id);
       setProdutoresOpcoes(prods ?? []);
+    }
+
+    if (produtor) {
+      const { data: func } = await supabase
+        .from("funcionarios")
+        .select("id, nome, whatsapp")
+        .eq("produtor_id", produtor.id)
+        .order("nome");
+      setFuncionarios(func ?? []);
     }
   }
 
@@ -100,9 +112,21 @@ function LembretesPage() {
     load();
   }
 
-  const destinatarios = produtor
-    ? [{ id: produtor.id, nome: "Você mesmo", whatsapp: produtor.whatsapp }]
-    : produtoresOpcoes;
+  // produtorId é sempre o dono real da conta (pra RLS/histórico) — pode
+  // ser diferente de quem recebe a mensagem, quando o destino é um
+  // funcionário (que não tem linha própria em `produtores`).
+  const destinatarios: { id: string; nome: string; whatsapp: string; produtorId: string }[] =
+    produtor
+      ? [
+          {
+            id: produtor.id,
+            nome: "Você mesmo",
+            whatsapp: produtor.whatsapp,
+            produtorId: produtor.id,
+          },
+          ...funcionarios.map((f) => ({ ...f, produtorId: produtor.id })),
+        ]
+      : produtoresOpcoes.map((p) => ({ ...p, produtorId: p.id }));
 
   const dialogNovo = (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -214,11 +238,11 @@ function NovoLembreteForm({
   destinatarios,
   onDone,
 }: {
-  destinatarios: { id: string; nome: string; whatsapp: string }[];
+  destinatarios: { id: string; nome: string; whatsapp: string; produtorId: string }[];
   onDone: () => void;
 }) {
   const { session } = useAuth();
-  const [produtorId, setProdutorId] = useState(destinatarios[0]?.id ?? "");
+  const [destinatarioId, setDestinatarioId] = useState(destinatarios[0]?.id ?? "");
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [data, setData] = useState("");
@@ -229,12 +253,12 @@ function NovoLembreteForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!supabase || !session || !data) return;
-    const destinatario = destinatarios.find((d) => d.id === produtorId);
+    const destinatario = destinatarios.find((d) => d.id === destinatarioId);
     if (!destinatario) return;
 
     setLoading(true);
     const { error } = await supabase.from("lembretes").insert({
-      produtor_id: produtorId,
+      produtor_id: destinatario.produtorId,
       criado_por: session.user.id,
       titulo,
       descricao: descricao || null,
@@ -256,7 +280,7 @@ function NovoLembreteForm({
       {destinatarios.length > 1 && (
         <div className="space-y-1.5">
           <Label>Para quem</Label>
-          <Select value={produtorId} onValueChange={setProdutorId}>
+          <Select value={destinatarioId} onValueChange={setDestinatarioId}>
             <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>

@@ -23,6 +23,7 @@ import { Route as DashboardLayoutAlertasRouteImport } from './routes/dashboard/_
 import { Route as DashboardLayoutAssinaturaRouteImport } from './routes/dashboard/_layout/assinatura'
 import { Route as DashboardLayoutClimaRouteImport } from './routes/dashboard/_layout/clima'
 import { Route as DashboardLayoutEquipeRouteImport } from './routes/dashboard/_layout/equipe'
+import { Route as DashboardLayoutFuncionariosRouteImport } from './routes/dashboard/_layout/funcionarios'
 import { Route as DashboardLayoutLeadsRouteImport } from './routes/dashboard/_layout/leads'
 import { Route as DashboardLayoutLembretesRouteImport } from './routes/dashboard/_layout/lembretes'
 import { Route as DashboardLayoutMarcaRouteImport } from './routes/dashboard/_layout/marca'
@@ -101,6 +102,12 @@ const DashboardLayoutEquipeRoute = DashboardLayoutEquipeRouteImport.update({
   path: '/equipe',
   getParentRoute: () => DashboardLayoutRoute,
 } as any)
+const DashboardLayoutFuncionariosRoute =
+  DashboardLayoutFuncionariosRouteImport.update({
+    id: '/funcionarios',
+    path: '/funcionarios',
+    getParentRoute: () => DashboardLayoutRoute,
+  } as any)
 const DashboardLayoutLeadsRoute = DashboardLayoutLeadsRouteImport.update({
   id: '/leads',
   path: '/leads',
@@ -149,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/assinatura': typeof DashboardLayoutAssinaturaRoute
   '/dashboard/clima': typeof DashboardLayoutClimaRoute
   '/dashboard/equipe': typeof DashboardLayoutEquipeRoute
+  '/dashboard/funcionarios': typeof DashboardLayoutFuncionariosRoute
   '/dashboard/leads': typeof DashboardLayoutLeadsRoute
   '/dashboard/lembretes': typeof DashboardLayoutLembretesRoute
   '/dashboard/marca': typeof DashboardLayoutMarcaRoute
@@ -170,6 +178,7 @@ export interface FileRoutesByTo {
   '/dashboard/assinatura': typeof DashboardLayoutAssinaturaRoute
   '/dashboard/clima': typeof DashboardLayoutClimaRoute
   '/dashboard/equipe': typeof DashboardLayoutEquipeRoute
+  '/dashboard/funcionarios': typeof DashboardLayoutFuncionariosRoute
   '/dashboard/leads': typeof DashboardLayoutLeadsRoute
   '/dashboard/lembretes': typeof DashboardLayoutLembretesRoute
   '/dashboard/marca': typeof DashboardLayoutMarcaRoute
@@ -193,6 +202,7 @@ export interface FileRoutesById {
   '/dashboard/_layout/assinatura': typeof DashboardLayoutAssinaturaRoute
   '/dashboard/_layout/clima': typeof DashboardLayoutClimaRoute
   '/dashboard/_layout/equipe': typeof DashboardLayoutEquipeRoute
+  '/dashboard/_layout/funcionarios': typeof DashboardLayoutFuncionariosRoute
   '/dashboard/_layout/leads': typeof DashboardLayoutLeadsRoute
   '/dashboard/_layout/lembretes': typeof DashboardLayoutLembretesRoute
   '/dashboard/_layout/marca': typeof DashboardLayoutMarcaRoute
@@ -217,6 +227,7 @@ export interface FileRouteTypes {
     | '/dashboard/assinatura'
     | '/dashboard/clima'
     | '/dashboard/equipe'
+    | '/dashboard/funcionarios'
     | '/dashboard/leads'
     | '/dashboard/lembretes'
     | '/dashboard/marca'
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '/dashboard/assinatura'
     | '/dashboard/clima'
     | '/dashboard/equipe'
+    | '/dashboard/funcionarios'
     | '/dashboard/leads'
     | '/dashboard/lembretes'
     | '/dashboard/marca'
@@ -260,6 +272,7 @@ export interface FileRouteTypes {
     | '/dashboard/_layout/assinatura'
     | '/dashboard/_layout/clima'
     | '/dashboard/_layout/equipe'
+    | '/dashboard/_layout/funcionarios'
     | '/dashboard/_layout/leads'
     | '/dashboard/_layout/lembretes'
     | '/dashboard/_layout/marca'
@@ -381,6 +394,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLayoutEquipeRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
+    '/dashboard/_layout/funcionarios': {
+      id: '/dashboard/_layout/funcionarios'
+      path: '/funcionarios'
+      fullPath: '/dashboard/funcionarios'
+      preLoaderRoute: typeof DashboardLayoutFuncionariosRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
     '/dashboard/_layout/leads': {
       id: '/dashboard/_layout/leads'
       path: '/leads'
@@ -431,6 +451,7 @@ interface DashboardLayoutRouteChildren {
   DashboardLayoutAssinaturaRoute: typeof DashboardLayoutAssinaturaRoute
   DashboardLayoutClimaRoute: typeof DashboardLayoutClimaRoute
   DashboardLayoutEquipeRoute: typeof DashboardLayoutEquipeRoute
+  DashboardLayoutFuncionariosRoute: typeof DashboardLayoutFuncionariosRoute
   DashboardLayoutLeadsRoute: typeof DashboardLayoutLeadsRoute
   DashboardLayoutLembretesRoute: typeof DashboardLayoutLembretesRoute
   DashboardLayoutMarcaRoute: typeof DashboardLayoutMarcaRoute
@@ -445,6 +466,7 @@ const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
   DashboardLayoutAssinaturaRoute: DashboardLayoutAssinaturaRoute,
   DashboardLayoutClimaRoute: DashboardLayoutClimaRoute,
   DashboardLayoutEquipeRoute: DashboardLayoutEquipeRoute,
+  DashboardLayoutFuncionariosRoute: DashboardLayoutFuncionariosRoute,
   DashboardLayoutLeadsRoute: DashboardLayoutLeadsRoute,
   DashboardLayoutLembretesRoute: DashboardLayoutLembretesRoute,
   DashboardLayoutMarcaRoute: DashboardLayoutMarcaRoute,

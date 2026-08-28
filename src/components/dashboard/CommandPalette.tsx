@@ -5,6 +5,7 @@ import {
   CloudSun,
   CreditCard,
   FileDown,
+  HardHat,
   LayoutDashboard,
   LineChart,
   ListChecks,
@@ -33,6 +34,7 @@ const DESTINOS_PRODUTOR: Destino[] = [
   { to: "/dashboard", label: "Início", icon: LayoutDashboard },
   { to: "/dashboard/alertas", label: "Alertas de preço", icon: TrendingUp },
   { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
+  { to: "/dashboard/funcionarios", label: "Funcionários", icon: HardHat },
   { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
 ];
 
