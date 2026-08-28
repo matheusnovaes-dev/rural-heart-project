@@ -196,9 +196,12 @@ function OnboardingPage() {
           .eq("id", novaAssinaturaId);
         window.location.href = checkout.url;
         return;
-      } catch {
+      } catch (err) {
         // Checkout indisponível não deve travar o cadastro — segue pro
         // dashboard, a assinatura fica "trial" até tentar de novo depois.
+        // Loga o motivo real pra dar pra diagnosticar (antes falhava 100%
+        // silencioso, sem nenhum rastro de por que o checkout não abriu).
+        console.error("Falha ao criar assinatura na Asaas:", err);
       }
     }
 
