@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button, type ButtonProps } from "@/components/ui/button";
 import { atualizarPlanoAsaas } from "@/lib/asaas.server";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/lib/auth";
 import type { Plano } from "@/lib/planos";
 
 const planoLabel: Record<Plano, string> = { bronze: "Bronze", prata: "Prata", ouro: "Ouro" };
@@ -29,6 +30,7 @@ export function UpgradeButton({
   className?: string;
   variant?: ButtonProps["variant"];
 }) {
+  const { session } = useAuth();
   const [loading, setLoading] = useState(false);
 
   async function handleTrocaSemCobranca() {
@@ -48,10 +50,15 @@ export function UpgradeButton({
   }
 
   async function handleUpgradeComCobranca() {
+    if (!session) return;
     setLoading(true);
     try {
       await atualizarPlanoAsaas({
-        data: { asaasSubscriptionId: asaasSubscriptionId!, novoPlano: planoAlvo },
+        data: {
+          accessToken: session.access_token,
+          asaasSubscriptionId: asaasSubscriptionId!,
+          novoPlano: planoAlvo,
+        },
       });
       toast.success(
         `Plano atualizado pra ${planoLabel[planoAlvo]}. A próxima cobrança já sai com o novo valor.`,

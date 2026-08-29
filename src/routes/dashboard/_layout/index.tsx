@@ -6,7 +6,6 @@ import {
   ArrowUp,
   Bell,
   CloudSun,
-  ListChecks,
   Loader2,
   Lock,
   MessageCircle,
@@ -633,7 +632,7 @@ function CooperativaHome({
   cooperativaId: string;
   cooperativaNome: string;
 }) {
-  const [stats, setStats] = useState({ produtores: 0, leads: 0, lembretes: 0 });
+  const [stats, setStats] = useState({ produtores: 0, lembretes: 0 });
   const [precoRows, setPrecoRows] = useState<
     { uf: string; preco: number; data_referencia: string }[]
   >([]);
@@ -645,15 +644,13 @@ function CooperativaHome({
         .from("produtores")
         .select("id", { count: "exact", head: true })
         .eq("cooperativa_id", cooperativaId),
-      supabase.from("leads").select("id", { count: "exact", head: true }),
       supabase
         .from("lembretes")
         .select("id", { count: "exact", head: true })
         .eq("status", "pendente"),
-    ]).then(([produtoresRes, leadsRes, lembretesRes]) => {
+    ]).then(([produtoresRes, lembretesRes]) => {
       setStats({
         produtores: produtoresRes.count ?? 0,
-        leads: leadsRes.count ?? 0,
         lembretes: lembretesRes.count ?? 0,
       });
     });
@@ -696,13 +693,6 @@ function CooperativaHome({
       hint: "Na sua cooperativa",
       icon: Users,
       to: "/dashboard/produtores",
-    },
-    {
-      label: "Leads da landing",
-      value: stats.leads,
-      hint: "Vindos do site",
-      icon: ListChecks,
-      to: "/dashboard/leads",
     },
     {
       label: "Lembretes pendentes",

@@ -13,6 +13,55 @@ function supabaseServiceRole() {
   return createClient(supabaseUrl, serviceRoleKey);
 }
 
+/**
+ * As funções abaixo recebem `assinaturaId`/`asaasSubscriptionId` do próprio
+ * cliente — sem confirmar de quem é o token, qualquer um poderia chamar o
+ * server function direto (fora da UI) com o id de OUTRA pessoa e mudar o
+ * plano dela ou ler o histórico de cobrança dela. `getUser` valida a
+ * assinatura do JWT independente da key usada pra criar o client.
+ */
+async function usuarioAutenticado(accessToken: string) {
+  const { data, error } = await supabaseServiceRole().auth.getUser(accessToken);
+  if (error || !data.user) {
+    throw new Error("Sessão inválida ou expirada. Atualize a página e tente de novo.");
+  }
+  return data.user.id;
+}
+
+/** Confirma que o usuário logado é dono (direto, ou via cooperativa) da assinatura em questão. */
+async function confirmarDonoDaAssinatura(
+  userId: string,
+  filtro: { assinaturaId: string } | { asaasSubscriptionId: string },
+) {
+  const supabase = supabaseServiceRole();
+  const query = supabase.from("assinaturas").select("id, produtor_id, cooperativa_id");
+  const { data: assinatura } = await (
+    "assinaturaId" in filtro
+      ? query.eq("id", filtro.assinaturaId)
+      : query.eq("asaas_subscription_id", filtro.asaasSubscriptionId)
+  ).maybeSingle();
+  if (!assinatura) throw new Error("Assinatura não encontrada.");
+
+  if (assinatura.produtor_id) {
+    const { data: produtor } = await supabase
+      .from("produtores")
+      .select("user_id")
+      .eq("id", assinatura.produtor_id)
+      .maybeSingle();
+    if (produtor?.user_id === userId) return assinatura;
+  }
+  if (assinatura.cooperativa_id) {
+    const { data: membro } = await supabase
+      .from("cooperativa_membros")
+      .select("user_id")
+      .eq("cooperativa_id", assinatura.cooperativa_id)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (membro) return assinatura;
+  }
+  throw new Error("Você não tem permissão para acessar essa assinatura.");
+}
+
 const ASAAS_API_BASE = "https://api.asaas.com/v3";
 
 function headers(apiKey: string) {
@@ -46,6 +95,7 @@ function proximoVencimento(diasDeTrial: number) {
 }
 
 const criarAssinaturaSchema = z.object({
+  accessToken: z.string().min(1),
   plano: z.enum(["bronze", "prata", "ouro"]),
   assinaturaId: z.string().uuid(),
   nome: z.string().min(1),
@@ -73,6 +123,9 @@ export const criarAssinaturaAsaas = createServerFn({ method: "POST" })
     if (!apiKey) {
       throw new Error("ASAAS_API_KEY não configurada.");
     }
+
+    const userId = await usuarioAutenticado(data.accessToken);
+    await confirmarDonoDaAssinatura(userId, { assinaturaId: data.assinaturaId });
 
     const plano = pricingPlans.find((p) => p.id === data.plano);
     if (!plano) {
@@ -134,6 +187,7 @@ export const criarAssinaturaAsaas = createServerFn({ method: "POST" })
   });
 
 const atualizarPlanoSchema = z.object({
+  accessToken: z.string().min(1),
   asaasSubscriptionId: z.string().min(1),
   novoPlano: z.enum(["bronze", "prata", "ouro"]),
 });
@@ -151,6 +205,9 @@ export const atualizarPlanoAsaas = createServerFn({ method: "POST" })
     if (!apiKey) {
       throw new Error("ASAAS_API_KEY não configurada.");
     }
+
+    const userId = await usuarioAutenticado(data.accessToken);
+    await confirmarDonoDaAssinatura(userId, { asaasSubscriptionId: data.asaasSubscriptionId });
 
     const plano = pricingPlans.find((p) => p.id === data.novoPlano);
     if (!plano) {
@@ -175,6 +232,7 @@ export const atualizarPlanoAsaas = createServerFn({ method: "POST" })
   });
 
 const listarCobrancasSchema = z.object({
+  accessToken: z.string().min(1),
   asaasSubscriptionId: z.string().min(1),
 });
 
@@ -188,12 +246,7 @@ export type Cobranca = {
   invoiceUrl: string;
 };
 
-/**
- * Histórico de cobranças da assinatura, pra tela "Minha assinatura".
- * O asaasSubscriptionId precisa vir de uma leitura que já passou pelo RLS
- * (a própria página busca a assinatura do usuário logado antes de chamar
- * isso) — essa function em si não reconfirma dono, só repassa pra Asaas.
- */
+/** Histórico de cobranças da assinatura, pra tela "Minha assinatura". */
 export const listarCobrancas = createServerFn({ method: "GET" })
   .validator(listarCobrancasSchema)
   .handler(async ({ data }) => {
@@ -201,6 +254,9 @@ export const listarCobrancas = createServerFn({ method: "GET" })
     if (!apiKey) {
       throw new Error("ASAAS_API_KEY não configurada.");
     }
+
+    const userId = await usuarioAutenticado(data.accessToken);
+    await confirmarDonoDaAssinatura(userId, { asaasSubscriptionId: data.asaasSubscriptionId });
 
     const payments = (await asaasFetch(
       apiKey,

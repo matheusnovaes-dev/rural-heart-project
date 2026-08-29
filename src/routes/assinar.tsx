@@ -179,6 +179,7 @@ function AssinarPage() {
 
       const checkout = await criarAssinaturaAsaas({
         data: {
+          accessToken: session.access_token,
           plano: selecionado,
           assinaturaId: idAssinatura,
           nome: produtor?.nome ?? cooperativa?.nome ?? "",

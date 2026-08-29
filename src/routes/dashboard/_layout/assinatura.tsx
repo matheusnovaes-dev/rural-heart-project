@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { UpgradeButton } from "@/components/dashboard/UpgradeButton";
+import { useAuth } from "@/lib/auth";
 import { useAssinatura, type Plano } from "@/lib/planos";
 import { listarCobrancas, type Cobranca } from "@/lib/asaas.server";
 import { pricingPlans } from "@/config/site";
@@ -46,22 +47,23 @@ function formatData(data: string) {
 }
 
 function AssinaturaPage() {
+  const { session } = useAuth();
   const { plano, status, trialExpiraEm, assinaturaId, asaasSubscriptionId, loading } =
     useAssinatura();
   const [cobrancas, setCobrancas] = useState<Cobranca[] | null>(null);
   const [carregandoCobrancas, setCarregandoCobrancas] = useState(true);
 
   useEffect(() => {
-    if (!asaasSubscriptionId) {
+    if (!asaasSubscriptionId || !session) {
       setCarregandoCobrancas(false);
       return;
     }
     setCarregandoCobrancas(true);
-    listarCobrancas({ data: { asaasSubscriptionId } })
+    listarCobrancas({ data: { accessToken: session.access_token, asaasSubscriptionId } })
       .then((r) => setCobrancas(r.cobrancas))
       .catch(() => setCobrancas([]))
       .finally(() => setCarregandoCobrancas(false));
-  }, [asaasSubscriptionId]);
+  }, [asaasSubscriptionId, session]);
 
   if (loading) {
     return (

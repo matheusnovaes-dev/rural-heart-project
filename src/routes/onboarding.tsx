@@ -229,6 +229,7 @@ function OnboardingPage() {
     try {
       const checkout = await criarAssinaturaAsaas({
         data: {
+          accessToken: session!.access_token,
           plano: planoEscolhido,
           assinaturaId,
           nome: tipo === "produtor" ? nome : nomeCooperativa,
