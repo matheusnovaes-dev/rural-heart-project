@@ -2,16 +2,19 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowDown,
+  ArrowRight,
   ArrowUp,
   Bell,
   CloudSun,
   ListChecks,
   Loader2,
   Lock,
+  MessageCircle,
   Minus,
   Pencil,
   TrendingUp,
   Users,
+  X,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,6 +50,7 @@ import { buscarPrevisao, type Previsao } from "@/lib/clima";
 import { precoLiquido, type FreteRef } from "@/lib/frete";
 import { temAcessoPrata, useAssinatura } from "@/lib/planos";
 import { UpgradeButton } from "@/components/dashboard/UpgradeButton";
+import { buildWhatsAppLink } from "@/config/site";
 
 export const Route = createFileRoute("/dashboard/_layout/")({
   component: DashboardHome,
@@ -222,14 +226,34 @@ function TrocarCulturaDialog({ produtor }: { produtor: Produtor }) {
 
 type PrecoHistorico = { preco: number; data_referencia: string; updated_at: string | null };
 
+const CHAVE_BANNER_WHATSAPP = "safralume_banner_whatsapp_dispensado";
+
 function ProdutorHome({ produtor }: { produtor: Produtor }) {
   const { plano, assinaturaId, asaasSubscriptionId, loading: loadingPlano } = useAssinatura();
+  const [bannerWhatsappVisivel, setBannerWhatsappVisivel] = useState(false);
   const [serie, setSerie] = useState<PrecoHistorico[] | null>(null);
   const [lembretes, setLembretes] = useState<{ id: string; titulo: string; enviar_em: string }[]>(
     [],
   );
   const [previsao, setPrevisao] = useState<Previsao | null | undefined>(undefined);
   const [frete, setFrete] = useState<FreteRef | null | undefined>(undefined);
+
+  useEffect(() => {
+    try {
+      setBannerWhatsappVisivel(window.localStorage.getItem(CHAVE_BANNER_WHATSAPP) !== "true");
+    } catch {
+      setBannerWhatsappVisivel(true);
+    }
+  }, []);
+
+  function dispensarBannerWhatsapp() {
+    setBannerWhatsappVisivel(false);
+    try {
+      window.localStorage.setItem(CHAVE_BANNER_WHATSAPP, "true");
+    } catch {
+      // sem localStorage (modo privado, etc) — só não persiste, sem quebrar nada
+    }
+  }
 
   useEffect(() => {
     if (!supabase) return;
@@ -296,6 +320,38 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
           {greeting()}, {produtor.nome.split(" ")[0]}
         </h1>
       </div>
+
+      {bannerWhatsappVisivel && (
+        <div className="flex items-start gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white">
+            <MessageCircle className="size-4" />
+          </span>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-foreground">Fica de olho no seu WhatsApp</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              A gente te chama por lá em instantes, se apresentando e explicando seu plano. Se não
+              chegar, você também pode chamar primeiro.
+            </p>
+            <a
+              href={buildWhatsAppLink(`Olá! Sou ${produtor.nome} e já me cadastrei no Safralume.`)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+            >
+              Chamar agora
+              <ArrowRight className="size-3" />
+            </a>
+          </div>
+          <button
+            type="button"
+            onClick={dispensarBannerWhatsapp}
+            aria-label="Dispensar"
+            className="-mt-1 -mr-1 rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
+          >
+            <X className="size-3.5" />
+          </button>
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Coluna principal: preço herói + insights */}

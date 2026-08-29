@@ -17,8 +17,10 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { criarAssinaturaAsaas } from "@/lib/asaas.server";
+import { enviarBoasVindasWhatsApp } from "@/lib/notificacoes.server";
 import { culturas } from "@/config/culturas";
 import { normalizarWhatsapp } from "@/lib/telefone";
+import { pricingPlans } from "@/config/site";
 
 const searchSchema = z.object({
   convite: z.string().uuid().optional(),
@@ -152,6 +154,16 @@ function OnboardingPage() {
           return;
         }
         novaAssinaturaId = assinatura.id;
+
+        // Best-effort — o bot já chama primeiro no WhatsApp, se
+        // apresentando, em vez de a pessoa ter que descobrir o número.
+        void enviarBoasVindasWhatsApp({
+          data: {
+            nome,
+            whatsapp,
+            plano: pricingPlans.find((p) => p.id === planoEscolhido)?.name ?? planoEscolhido,
+          },
+        });
       }
     } else {
       // Gera o id no cliente: como o usuário só passa a enxergar a

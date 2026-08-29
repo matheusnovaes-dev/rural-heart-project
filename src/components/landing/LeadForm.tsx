@@ -26,6 +26,7 @@ import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { normalizarWhatsapp } from "@/lib/telefone";
 import { useAuth } from "@/lib/auth";
 import { pricingPlans } from "@/config/site";
+import { enviarBoasVindasWhatsApp } from "@/lib/notificacoes.server";
 
 const leadSchema = z.object({
   name: z.string().min(2, "Digite seu nome completo"),
@@ -125,6 +126,17 @@ export function LeadForm({ className }: { className?: string }) {
       name: values.name,
       whatsapp: values.whatsapp,
       crop: values.crop,
+    });
+
+    // Também best-effort: quem se cadastra precisa saber que existe um
+    // WhatsApp pra chamar — em vez de esperar ela descobrir sozinha, o bot
+    // já chama primeiro se apresentando.
+    void enviarBoasVindasWhatsApp({
+      data: {
+        nome: values.name,
+        whatsapp,
+        plano: pricingPlans.find((p) => p.id === values.plano)?.name ?? values.plano,
+      },
     });
 
     // O AuthProvider já buscou o perfil (produtor) reagindo ao signUp() —
