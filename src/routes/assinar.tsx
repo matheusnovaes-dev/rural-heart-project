@@ -112,7 +112,7 @@ function AssinarPage() {
   const pulouTrial =
     !!trialExpiraEm &&
     !!criadaEm &&
-    new Date(trialExpiraEm).getTime() - new Date(criadaEm).getTime() < 60_000;
+    Math.abs(new Date(trialExpiraEm).getTime() - new Date(criadaEm).getTime()) < 60_000;
 
   const mensagem = trialValido
     ? `Você ainda tem ${diasRestantes} dia${diasRestantes === 1 ? "" : "s"} de teste grátis. Se preferir, já dá pra escolher um plano e configurar o pagamento agora.`
