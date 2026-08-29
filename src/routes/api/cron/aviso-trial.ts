@@ -65,13 +65,16 @@ export const Route = createFileRoute("/api/cron/aviso-trial")({
                 await notificarWhatsAppTrial(produtor.whatsapp, produtor.nome, diasRestantes);
               }
             } else if (assinatura.cooperativa_id) {
-              const { data: admin } = await supabase
+              // Uma cooperativa pode ter mais de um admin — avisa todos, não
+              // só "o" admin (uma cooperativa com 2+ admins não pode ficar
+              // sem aviso nenhum).
+              const { data: admins } = await supabase
                 .from("cooperativa_membros")
                 .select("nome, email")
                 .eq("cooperativa_id", assinatura.cooperativa_id)
-                .eq("papel", "admin")
-                .maybeSingle();
-              if (admin?.email) {
+                .eq("papel", "admin");
+              for (const admin of admins ?? []) {
+                if (!admin.email) continue;
                 await enviarEmailTrialExpirando({
                   to: admin.email,
                   nome: admin.nome ?? "produtor",
