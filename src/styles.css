@@ -171,3 +171,25 @@
     }
   }
 }
+
+/* Faixa tipo "jornal/ticker" (ContextoMercado) — o conteúdo é duplicado uma
+   vez no componente, então -50% sempre corresponde a exatamente uma cópia,
+   dando um loop contínuo sem salto, não importa a largura real do conteúdo. */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@utility animate-marquee {
+  animation: marquee 32s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none;
+  }
+}

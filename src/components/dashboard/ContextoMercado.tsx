@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { DollarSign, Fuel, Globe, TrendingUp, Wheat } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -191,120 +191,148 @@ export function ContextoMercado({ cultura }: { cultura?: string }) {
     null,
   );
 
+  // cada item é um bloco independente — vira uma "matéria" da faixa de
+  // ticker abaixo, na ordem em que os dados existirem naquele momento.
+  const itens: { chave: string; icone: typeof DollarSign; label: string; valor: ReactNode }[] = [];
+
+  if (cambio) {
+    itens.push({
+      chave: "cambio",
+      icone: DollarSign,
+      label: `Dólar (PTAX) em ${formatData(cambio.data)}`,
+      valor: (
+        <span className="font-mono font-semibold tabular-nums">
+          R$ {formatNum(cambio.cotacao_venda)}
+        </span>
+      ),
+    });
+  }
+
+  for (const w of wasde) {
+    itens.push({
+      chave: `wasde-${w.cultura}`,
+      icone: Globe,
+      label: `${culturaLabel[w.cultura]} Brasil ${w.ano_safra} (USDA)`,
+      valor: (
+        <>
+          {w.producao_mi_ton != null && (
+            <>
+              <span className="font-semibold">{w.producao_mi_ton} mi t</span> produzidas
+            </>
+          )}
+          {w.exportacao_mi_ton != null && (
+            <>
+              {" · "}
+              <span className="font-semibold">{w.exportacao_mi_ton} mi t</span> exportadas
+            </>
+          )}
+        </>
+      ),
+    });
+  }
+
+  if (diesel.length > 0) {
+    itens.push({
+      chave: "diesel",
+      icone: Fuel,
+      label: `Diesel em ${produtor?.uf}${dataFinalDiesel ? ` (semana até ${formatData(dataFinalDiesel)})` : ""}`,
+      valor: (
+        <>
+          {diesel.map((d, i) => (
+            <span key={d.produto}>
+              {i > 0 && " · "}
+              {dieselLabel[d.produto] ?? d.produto}{" "}
+              <span className="font-semibold">R$ {formatNum(d.preco_medio)}</span>/L
+            </span>
+          ))}
+        </>
+      ),
+    });
+  }
+
+  for (const [produto, futuros] of Object.entries(
+    b3.reduce<Record<string, B3Futuro[]>>((acc, f) => {
+      (acc[f.produto] ??= []).push(f);
+      return acc;
+    }, {}),
+  )) {
+    itens.push({
+      chave: `b3-${produto}`,
+      icone: TrendingUp,
+      label: `${futuros[0]?.nome_produto} — futuro (B3)`,
+      valor: (
+        <>
+          {futuros.map((f, i) => (
+            <span key={f.mes_ano_vencimento}>
+              {i > 0 && " · "}
+              {formatMesAno(f.mes_ano_vencimento)}{" "}
+              <span className="font-semibold">
+                {f.moeda === "USD" ? "US$" : "R$"} {formatPrecoB3(f.preco_ajuste_atual, f.moeda)}
+              </span>
+            </span>
+          ))}
+        </>
+      ),
+    });
+  }
+
+  if (ibge) {
+    itens.push({
+      chave: "ibge",
+      icone: Wheat,
+      label: `Produção de ${ibge.produto} em ${produtor?.uf} (IBGE)`,
+      valor: (
+        <>
+          <span className="font-semibold">
+            {Number(ibge.producao_ton).toLocaleString("pt-BR")} t
+          </span>{" "}
+          em{" "}
+          {new Date(`${ibge.periodo}T00:00:00`).toLocaleDateString("pt-BR", {
+            month: "2-digit",
+            year: "numeric",
+          })}
+        </>
+      ),
+    });
+  }
+
+  function Bloco({ item, sufixo }: { item: (typeof itens)[number]; sufixo: string }) {
+    return (
+      <div key={`${item.chave}-${sufixo}`} className="flex shrink-0 items-center gap-2 pr-8">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+          <item.icone className="size-4" />
+        </span>
+        <div className="whitespace-nowrap">
+          <p className="text-xs text-muted-foreground">{item.label}</p>
+          <p className="text-sm">{item.valor}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // menos de ~4 itens não enche a faixa (a duplicata ficaria visível como
+  // "salto"), então nesse caso mostra parado, sem rolagem.
+  const rolar = itens.length >= 4;
+
   return (
-    <Card className="gap-3 py-4">
-      <CardContent className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-6">
-        {cambio && (
-          <div className="flex items-center gap-2">
-            <span className="flex size-8 items-center justify-center rounded-full bg-secondary text-muted-foreground">
-              <DollarSign className="size-4" />
-            </span>
-            <div>
-              <p className="text-xs text-muted-foreground">
-                Dólar (PTAX) em {formatData(cambio.data)}
-              </p>
-              <p className="font-mono text-sm font-semibold tabular-nums">
-                R$ {formatNum(cambio.cotacao_venda)}
-              </p>
+    <Card className="gap-3 overflow-hidden py-4">
+      <CardContent className="group px-0">
+        {rolar ? (
+          <div className="overflow-hidden px-4">
+            <div className="flex w-max animate-marquee group-hover:[animation-play-state:paused] group-focus-within:[animation-play-state:paused]">
+              {itens.map((item) => (
+                <Bloco key={`${item.chave}-a`} item={item} sufixo="a" />
+              ))}
+              {itens.map((item) => (
+                <Bloco key={`${item.chave}-b`} item={item} sufixo="b" />
+              ))}
             </div>
           </div>
-        )}
-        {wasde.map((w) => (
-          <div key={w.cultura} className="flex items-center gap-2">
-            <span className="flex size-8 items-center justify-center rounded-full bg-secondary text-muted-foreground">
-              <Globe className="size-4" />
-            </span>
-            <div>
-              <p className="text-xs text-muted-foreground">
-                {culturaLabel[w.cultura]} Brasil {w.ano_safra} (USDA)
-              </p>
-              <p className="text-sm">
-                {w.producao_mi_ton != null && (
-                  <>
-                    <span className="font-semibold">{w.producao_mi_ton} mi t</span> produzidas
-                  </>
-                )}
-                {w.exportacao_mi_ton != null && (
-                  <>
-                    {" · "}
-                    <span className="font-semibold">{w.exportacao_mi_ton} mi t</span> exportadas
-                  </>
-                )}
-              </p>
-            </div>
-          </div>
-        ))}
-        {diesel.length > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="flex size-8 items-center justify-center rounded-full bg-secondary text-muted-foreground">
-              <Fuel className="size-4" />
-            </span>
-            <div>
-              <p className="text-xs text-muted-foreground">
-                Diesel em {produtor?.uf}
-                {dataFinalDiesel && ` (semana até ${formatData(dataFinalDiesel)})`}
-              </p>
-              <p className="text-sm">
-                {diesel.map((d, i) => (
-                  <span key={d.produto}>
-                    {i > 0 && " · "}
-                    {dieselLabel[d.produto] ?? d.produto}{" "}
-                    <span className="font-semibold">R$ {formatNum(d.preco_medio)}</span>/L
-                  </span>
-                ))}
-              </p>
-            </div>
-          </div>
-        )}
-        {Object.entries(
-          b3.reduce<Record<string, B3Futuro[]>>((acc, f) => {
-            (acc[f.produto] ??= []).push(f);
-            return acc;
-          }, {}),
-        ).map(([produto, futuros]) => (
-          <div key={produto} className="flex items-center gap-2">
-            <span className="flex size-8 items-center justify-center rounded-full bg-secondary text-muted-foreground">
-              <TrendingUp className="size-4" />
-            </span>
-            <div>
-              <p className="text-xs text-muted-foreground">
-                {futuros[0]?.nome_produto} — futuro (B3)
-              </p>
-              <p className="text-sm">
-                {futuros.map((f, i) => (
-                  <span key={f.mes_ano_vencimento}>
-                    {i > 0 && " · "}
-                    {formatMesAno(f.mes_ano_vencimento)}{" "}
-                    <span className="font-semibold">
-                      {f.moeda === "USD" ? "US$" : "R$"}{" "}
-                      {formatPrecoB3(f.preco_ajuste_atual, f.moeda)}
-                    </span>
-                  </span>
-                ))}
-              </p>
-            </div>
-          </div>
-        ))}
-        {ibge && (
-          <div className="flex items-center gap-2">
-            <span className="flex size-8 items-center justify-center rounded-full bg-secondary text-muted-foreground">
-              <Wheat className="size-4" />
-            </span>
-            <div>
-              <p className="text-xs text-muted-foreground">
-                Produção de {ibge.produto} em {produtor?.uf} (IBGE)
-              </p>
-              <p className="text-sm">
-                <span className="font-semibold">
-                  {Number(ibge.producao_ton).toLocaleString("pt-BR")} t
-                </span>{" "}
-                em{" "}
-                {new Date(`${ibge.periodo}T00:00:00`).toLocaleDateString("pt-BR", {
-                  month: "2-digit",
-                  year: "numeric",
-                })}
-              </p>
-            </div>
+        ) : (
+          <div className="flex flex-col gap-3 px-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-6">
+            {itens.map((item) => (
+              <Bloco key={item.chave} item={item} sufixo="unico" />
+            ))}
           </div>
         )}
       </CardContent>
