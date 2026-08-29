@@ -5,6 +5,7 @@ import { Hero } from "@/components/landing/Hero";
 import { PainPoints } from "@/components/landing/PainPoints";
 import { Solution } from "@/components/landing/Solution";
 import { HowItWorks } from "@/components/landing/HowItWorks";
+import { DashboardPreview } from "@/components/landing/DashboardPreview";
 import { TrustProof } from "@/components/landing/TrustProof";
 import { Pricing } from "@/components/landing/Pricing";
 import { FinalCta } from "@/components/landing/FinalCta";
@@ -23,6 +24,7 @@ function Index() {
         <PainPoints />
         <Solution />
         <HowItWorks />
+        <DashboardPreview />
         <TrustProof />
         <Pricing />
         <FinalCta />

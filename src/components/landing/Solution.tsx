@@ -114,6 +114,41 @@ function PhoneMockup() {
             </p>
             <p className="mt-1 text-xs text-[#667781]">Fonte: Conab + Imea · atualizado às 08:15</p>
           </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 1.6, duration: 0.4 }}
+            className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-[#d9fdd3] px-3 py-2 text-sm text-[#111b21]"
+          >
+            Vale mais vender a soja agora ou esperar um pouco?
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 1.9, duration: 0.4 }}
+            className="mr-auto max-w-[88%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-sm text-[#111b21] shadow-sm"
+          >
+            <p>💵 Dólar hoje (PTAX): R$ 5,20</p>
+            <p className="mt-1">
+              📈 Mercado futuro (B3) — Soja FOB Santos: nov. R$525 · mar. R$471 · mai. R$473
+            </p>
+            <p className="mt-1 text-xs text-[#667781]">Fonte: BCB + B3 · atualizado agora</p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 2.2, duration: 0.4 }}
+            className="mr-auto max-w-[88%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-sm text-[#111b21] shadow-sm"
+          >
+            ☁️ Alerta de clima: geada prevista em MT nos próximos dias. Fique de olho antes de
+            planejar a atividade de campo.
+          </motion.div>
         </div>
       </div>
     </div>
