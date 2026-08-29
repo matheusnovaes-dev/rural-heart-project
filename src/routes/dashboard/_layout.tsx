@@ -35,6 +35,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CommandPalette } from "@/components/dashboard/CommandPalette";
+import { DashboardTour } from "@/components/dashboard/DashboardTour";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
@@ -81,6 +82,7 @@ function DashboardGuard() {
             </div>
           </SidebarInset>
           <CommandPalette />
+          <DashboardTour />
         </SidebarProvider>
       </TooltipProvider>
     );
@@ -97,6 +99,7 @@ function DashboardGuard() {
         </main>
       </div>
       <CommandPalette />
+      <DashboardTour />
     </TooltipProvider>
   );
 }
@@ -157,7 +160,7 @@ function CooperativaSidebar({
               {items.map((item) => (
                 <SidebarMenuItem key={item.to}>
                   <SidebarMenuButton asChild isActive={pathname === item.to}>
-                    <Link to={item.to}>
+                    <Link to={item.to} data-tour={item.to}>
                       <item.icon />
                       <span>{item.label}</span>
                     </Link>
@@ -222,6 +225,7 @@ function ProdutorHeader({
             <Link
               key={item.to}
               to={item.to}
+              data-tour={item.to}
               className={`flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
                 active
                   ? "bg-primary text-primary-foreground"
