@@ -6,6 +6,7 @@ export const siteConfig = {
   whatsapp: {
     number: "5531990040215",
     defaultMessage: "Olá! Quero testar o Safralume grátis por 7 dias.",
+    supportMessage: "Oi! Tenho uma dúvida sobre o Safralume.",
   },
 } as const;
 

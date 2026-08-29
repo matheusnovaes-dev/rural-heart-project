@@ -24,6 +24,10 @@ const searchSchema = z.object({
   convite: z.string().uuid().optional(),
   equipe: z.string().uuid().optional(),
   plano: z.enum(["bronze", "prata", "ouro"]).optional(),
+  // "1" = veio do fluxo "prefere assinar direto" (pulou o teste grátis de
+  // propósito) — string em vez de boolean pra não depender de coerção de
+  // query param.
+  semTrial: z.literal("1").optional(),
 });
 
 export const Route = createFileRoute("/onboarding")({
@@ -33,7 +37,8 @@ export const Route = createFileRoute("/onboarding")({
 });
 
 function OnboardingPage() {
-  const { convite, equipe, plano } = Route.useSearch();
+  const { convite, equipe, plano, semTrial } = Route.useSearch();
+  const semTrialAtivo = semTrial === "1";
   const { session, refresh } = useAuth();
   const navigate = useNavigate();
 
@@ -202,6 +207,7 @@ function OnboardingPage() {
           cpfCnpj,
           email: session?.user.email,
           whatsapp: tipo === "produtor" ? whatsapp : undefined,
+          semTrial: semTrialAtivo,
         },
       });
       window.location.href = checkout.url;
@@ -347,6 +353,12 @@ function OnboardingPage() {
               Exigido pra emitir a cobrança da assinatura.
             </p>
           </div>
+
+          <p className="rounded-lg bg-secondary/50 p-3 text-xs text-muted-foreground">
+            {semTrialAtivo
+              ? "Sem teste grátis: ao concluir, você já cai na página de pagamento e a cobrança do plano começa hoje."
+              : "7 dias grátis antes da primeira cobrança. Cancele quando quiser."}
+          </p>
 
           {status === "error" && <p className="text-sm text-destructive">{erroMsg}</p>}
 

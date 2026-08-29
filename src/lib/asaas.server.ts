@@ -52,11 +52,16 @@ const criarAssinaturaSchema = z.object({
   cpfCnpj: z.string().min(11),
   email: z.string().email().optional(),
   whatsapp: z.string().optional(),
+  // true = quem veio do fluxo "prefere assinar direto" (sem passar pelo
+  // formulário de lead) e topou pular o teste grátis — cobrança vence hoje
+  // em vez de em 7 dias.
+  semTrial: z.boolean().optional(),
 });
 
 /**
  * Cria (ou reaproveita) o cliente na Asaas e a assinatura recorrente,
- * com trial de 7 dias (primeira cobrança só vence depois disso).
+ * com trial de 7 dias por padrão (primeira cobrança só vence depois disso) —
+ * ou cobrança imediata se `semTrial` for true.
  * billingType "UNDEFINED" deixa o produtor escolher Pix, cartão ou boleto
  * na página da fatura — se escolher cartão, os ciclos seguintes debitam
  * sozinhos; Pix/boleto geram uma cobrança nova a cada ciclo.
@@ -95,7 +100,7 @@ export const criarAssinaturaAsaas = createServerFn({ method: "POST" })
         customer: customer.id,
         billingType: "UNDEFINED",
         value: plano.price,
-        nextDueDate: proximoVencimento(7),
+        nextDueDate: proximoVencimento(data.semTrial ? 0 : 7),
         cycle: "MONTHLY",
         description: `Safralume - Plano ${plano.name}`,
         externalReference: data.assinaturaId,

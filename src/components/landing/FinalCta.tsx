@@ -1,8 +1,8 @@
-import { MessageCircle } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 import { Reveal } from "@/components/landing/Reveal";
 import { LeadForm } from "@/components/landing/LeadForm";
-import { buildWhatsAppLink } from "@/config/site";
 
 export function FinalCta() {
   return (
@@ -17,15 +17,15 @@ export function FinalCta() {
             crédito, sem burocracia.
           </p>
 
-          <a
-            href={buildWhatsAppLink()}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            to="/"
+            search={{ semTrial: "1" }}
+            hash="planos"
             className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
           >
-            <MessageCircle className="size-4" />
-            Prefere ir direto? Fale com a gente no WhatsApp
-          </a>
+            <ArrowRight className="size-4" />
+            Prefere assinar direto, sem esperar contato? Veja os planos
+          </Link>
         </Reveal>
 
         <Reveal delay={0.15}>

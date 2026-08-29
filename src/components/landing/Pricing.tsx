@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { pricingPlans } from "@/config/site";
 
-export function Pricing() {
+export function Pricing({ semTrial = false }: { semTrial?: boolean }) {
   return (
     <section id="planos" className="mx-auto max-w-6xl scroll-mt-16 px-4 py-20 sm:px-6">
       <Reveal className="mx-auto max-w-2xl text-center">
@@ -73,10 +73,21 @@ export function Pricing() {
                   )}
                   variant={plan.highlighted || isOuro ? "default" : "outline"}
                 >
-                  <Link to="/login" search={{ plano: plan.id as "bronze" | "prata" | "ouro" }}>
-                    Testar grátis
+                  <Link
+                    to="/login"
+                    search={{
+                      plano: plan.id as "bronze" | "prata" | "ouro",
+                      ...(semTrial ? { semTrial: "1" as const } : {}),
+                    }}
+                  >
+                    {semTrial ? "Assinar agora" : "Testar grátis"}
                   </Link>
                 </Button>
+                {semTrial && (
+                  <p className="mt-2 text-center text-xs text-muted-foreground">
+                    Cobrança imediata, sem período de teste.
+                  </p>
+                )}
               </div>
             </Reveal>
           );

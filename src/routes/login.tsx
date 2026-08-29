@@ -11,6 +11,7 @@ import { siteConfig } from "@/config/site";
 
 const searchSchema = z.object({
   plano: z.enum(["bronze", "prata", "ouro"]).optional(),
+  semTrial: z.literal("1").optional(),
 });
 
 export const Route = createFileRoute("/login")({
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const { plano } = Route.useSearch();
+  const { plano, semTrial } = Route.useSearch();
   const navigate = useNavigate();
   // Quem chega com um plano na URL veio da página de preços — já abre no
   // modo de criar conta, não faz sentido pedir pra ele achar o botão.
@@ -59,7 +60,7 @@ function LoginPage() {
     // indo pro /dashboard, que redireciona sozinho pro onboarding se for
     // conta nova sem perfil ainda.
     if (plano && mode === "criar") {
-      navigate({ to: "/onboarding", search: { plano } });
+      navigate({ to: "/onboarding", search: { plano, semTrial } });
       return;
     }
     navigate({ to: "/dashboard" });
