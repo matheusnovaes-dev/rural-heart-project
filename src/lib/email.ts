@@ -78,6 +78,67 @@ export async function enviarEmailCobranca({
   }
 }
 
+/**
+ * Aviso de teste grátis acabando — pra cooperativa (que não tem WhatsApp
+ * cadastrado, só e-mail do admin). Produtor solo recebe o equivalente por
+ * WhatsApp via n8n, não por aqui.
+ */
+export async function enviarEmailTrialExpirando({
+  to,
+  nome,
+  plano,
+  diasRestantes,
+}: {
+  to: string;
+  nome: string;
+  plano: string;
+  diasRestantes: number;
+}) {
+  const apiKey = process.env["RESEND_API_KEY"];
+  if (!apiKey) return;
+
+  const appUrl = process.env["APP_URL"] ?? "https://www.safralume.com.br";
+  const escuro = "#16241B";
+  const primaria = "#1F3D2B";
+  const creme = "#F1EBDD";
+  const primeiroNome = nome.split(" ")[0] || nome;
+  const prazo =
+    diasRestantes <= 0 ? "hoje" : `em ${diasRestantes} dia${diasRestantes === 1 ? "" : "s"}`;
+
+  try {
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "Safralume <financeiro@safralume.com.br>",
+        to,
+        subject: `Seu teste grátis do Safralume acaba ${prazo}`,
+        html: `<!DOCTYPE html><html lang="pt-BR"><body style="margin:0;padding:0;background-color:${creme};font-family:Arial,Helvetica,sans-serif;">
+<table role="presentation" width="100%" style="background-color:${creme};"><tr><td align="center" style="padding:32px 12px;">
+<table role="presentation" width="480" style="width:480px;max-width:100%;background-color:#FFFFFF;border:1px solid #E2DCC9;">
+<tr><td style="background-color:${escuro};padding:20px 28px;">
+<span style="font-family:Georgia,serif;font-size:16px;letter-spacing:4px;color:#F6F2E7;text-transform:uppercase;">Safralume</span>
+</td></tr>
+<tr><td style="padding:28px;">
+<p style="font-size:15px;color:${primaria};margin:0 0 12px 0;">Olá, ${primeiroNome}.</p>
+<p style="font-size:14px;line-height:22px;color:#3A3F35;margin:0 0 20px 0;">Seu teste grátis do plano ${planoLabel[plano] ?? plano} acaba ${prazo}. Escolha um plano e configure o pagamento pra não perder o acesso.</p>
+<a href="${appUrl}/assinar" style="display:inline-block;background-color:${primaria};color:#F6F2E7;font-size:13px;font-weight:bold;text-decoration:none;padding:12px 24px;border-radius:6px;">Escolher plano</a>
+</td></tr>
+<tr><td style="padding:16px 28px;border-top:1px solid #E2DCC9;">
+<p style="font-size:11px;color:#8A9280;margin:0;">Dúvidas? Chama no WhatsApp: +55 31 9004-0215</p>
+</td></tr>
+</table></td></tr></table>
+</body></html>`,
+      }),
+    });
+  } catch (err) {
+    console.error("Falha ao enviar e-mail de trial expirando:", err);
+  }
+}
+
 export async function enviarEmailBoasVindas({
   to,
   nome,

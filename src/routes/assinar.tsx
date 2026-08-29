@@ -72,15 +72,16 @@ function AssinarPage() {
       navigate({ to: "/onboarding" });
       return;
     }
-    // Já tem acesso liberado (ex: veio parar aqui por engano, ou o webhook
-    // confirmou o pagamento entre uma checagem e outra) — não faz sentido
-    // segurar no muro.
-    if (status === "ativa" || trialValido) {
+    // Já paga e ativa: não tem o que fazer aqui, não faz sentido segurar no
+    // muro. Trial ainda válido é diferente — pode ser visita voluntária (ex:
+    // veio do aviso de "seu teste acaba em 2 dias" querendo adiantar o
+    // pagamento), então deixa continuar, só muda a mensagem mais abaixo.
+    if (status === "ativa") {
       navigate({ to: "/dashboard" });
     }
-  }, [carregando, session, produtor, cooperativa, status, trialValido, navigate]);
+  }, [carregando, session, produtor, cooperativa, status, navigate]);
 
-  if (carregando || !session || (!produtor && !cooperativa) || status === "ativa" || trialValido) {
+  if (carregando || !session || (!produtor && !cooperativa) || status === "ativa") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="size-6 animate-spin text-muted-foreground" />
@@ -88,8 +89,13 @@ function AssinarPage() {
     );
   }
 
-  const mensagem =
-    status === "inadimplente"
+  const diasRestantes = trialExpiraEm
+    ? Math.max(0, Math.ceil((new Date(trialExpiraEm).getTime() - Date.now()) / 86_400_000))
+    : null;
+
+  const mensagem = trialValido
+    ? `Você ainda tem ${diasRestantes} dia${diasRestantes === 1 ? "" : "s"} de teste grátis. Se preferir, já dá pra escolher um plano e configurar o pagamento agora.`
+    : status === "inadimplente"
       ? "O pagamento da sua assinatura não foi confirmado. Escolha um plano (pode ser o mesmo de antes) pra regularizar e continuar."
       : status === "cancelada"
         ? "Sua assinatura foi cancelada. Escolha um plano pra reativar o acesso."

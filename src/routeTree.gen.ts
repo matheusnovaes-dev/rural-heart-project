@@ -19,6 +19,7 @@ import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as DashboardLayoutRouteImport } from './routes/dashboard/_layout'
 import { Route as ApiAsaasWebhookRouteImport } from './routes/api/asaas/webhook'
+import { Route as ApiCronAvisoTrialRouteImport } from './routes/api/cron/aviso-trial'
 import { Route as DashboardLayoutIndexRouteImport } from './routes/dashboard/_layout/index'
 import { Route as DashboardLayoutAlertasRouteImport } from './routes/dashboard/_layout/alertas'
 import { Route as DashboardLayoutAssinaturaRouteImport } from './routes/dashboard/_layout/assinatura'
@@ -80,6 +81,11 @@ const DashboardLayoutRoute = DashboardLayoutRouteImport.update({
 const ApiAsaasWebhookRoute = ApiAsaasWebhookRouteImport.update({
   id: '/api/asaas/webhook',
   path: '/api/asaas/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCronAvisoTrialRoute = ApiCronAvisoTrialRouteImport.update({
+  id: '/api/cron/aviso-trial',
+  path: '/api/cron/aviso-trial',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardLayoutIndexRoute = DashboardLayoutIndexRouteImport.update({
@@ -159,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/termos': typeof TermosRoute
   '/dashboard': typeof DashboardLayoutRouteWithChildren
   '/api/asaas/webhook': typeof ApiAsaasWebhookRoute
+  '/api/cron/aviso-trial': typeof ApiCronAvisoTrialRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/assinatura': typeof DashboardLayoutAssinaturaRoute
   '/dashboard/clima': typeof DashboardLayoutClimaRoute
@@ -182,6 +189,7 @@ export interface FileRoutesByTo {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/termos': typeof TermosRoute
   '/api/asaas/webhook': typeof ApiAsaasWebhookRoute
+  '/api/cron/aviso-trial': typeof ApiCronAvisoTrialRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/assinatura': typeof DashboardLayoutAssinaturaRoute
   '/dashboard/clima': typeof DashboardLayoutClimaRoute
@@ -207,6 +215,7 @@ export interface FileRoutesById {
   '/termos': typeof TermosRoute
   '/dashboard/_layout': typeof DashboardLayoutRouteWithChildren
   '/api/asaas/webhook': typeof ApiAsaasWebhookRoute
+  '/api/cron/aviso-trial': typeof ApiCronAvisoTrialRoute
   '/dashboard/_layout/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/_layout/assinatura': typeof DashboardLayoutAssinaturaRoute
   '/dashboard/_layout/clima': typeof DashboardLayoutClimaRoute
@@ -233,6 +242,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/dashboard'
     | '/api/asaas/webhook'
+    | '/api/cron/aviso-trial'
     | '/dashboard/alertas'
     | '/dashboard/assinatura'
     | '/dashboard/clima'
@@ -256,6 +266,7 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/termos'
     | '/api/asaas/webhook'
+    | '/api/cron/aviso-trial'
     | '/dashboard/alertas'
     | '/dashboard/assinatura'
     | '/dashboard/clima'
@@ -280,6 +291,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/dashboard/_layout'
     | '/api/asaas/webhook'
+    | '/api/cron/aviso-trial'
     | '/dashboard/_layout/alertas'
     | '/dashboard/_layout/assinatura'
     | '/dashboard/_layout/clima'
@@ -305,6 +317,7 @@ export interface RootRouteChildren {
   TermosRoute: typeof TermosRoute
   DashboardLayoutRoute: typeof DashboardLayoutRouteWithChildren
   ApiAsaasWebhookRoute: typeof ApiAsaasWebhookRoute
+  ApiCronAvisoTrialRoute: typeof ApiCronAvisoTrialRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -377,6 +390,13 @@ declare module '@tanstack/react-router' {
       path: '/api/asaas/webhook'
       fullPath: '/api/asaas/webhook'
       preLoaderRoute: typeof ApiAsaasWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cron/aviso-trial': {
+      id: '/api/cron/aviso-trial'
+      path: '/api/cron/aviso-trial'
+      fullPath: '/api/cron/aviso-trial'
+      preLoaderRoute: typeof ApiCronAvisoTrialRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/_layout/': {
@@ -511,6 +531,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermosRoute: TermosRoute,
   DashboardLayoutRoute: DashboardLayoutRouteWithChildren,
   ApiAsaasWebhookRoute: ApiAsaasWebhookRoute,
+  ApiCronAvisoTrialRoute: ApiCronAvisoTrialRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
