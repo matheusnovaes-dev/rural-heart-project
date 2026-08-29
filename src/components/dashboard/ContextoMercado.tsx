@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { DollarSign, Fuel, Globe, Wheat } from "lucide-react";
+import { DollarSign, Fuel, Globe, TrendingUp, Wheat } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,6 +15,13 @@ type Wasde = {
 };
 type Diesel = { produto: string; preco_medio: number; data_final: string };
 type IbgeProducao = { produto: string; producao_ton: number | null; periodo: string };
+type B3Futuro = {
+  produto: string;
+  nome_produto: string;
+  mes_ano_vencimento: string;
+  preco_ajuste_atual: number;
+  moeda: "BRL" | "USD";
+};
 
 const culturaLabel: Record<Wasde["cultura"], string> = {
   soja: "Soja",
@@ -22,6 +29,35 @@ const culturaLabel: Record<Wasde["cultura"], string> = {
   algodao: "Algodão",
 };
 const dieselLabel: Record<string, string> = { "OLEO DIESEL": "Comum", "OLEO DIESEL S10": "S10" };
+
+// Nem toda cultura do catálogo da Conab tem contrato futuro na B3 (só 7
+// commodities agro têm) — mapeamento explícito em vez de tentar bater
+// substring, porque "soja" tem 2 contratos genuinamente diferentes (SJC
+// referencia CME, SOY referencia o preço FOB Santos direto — vale mostrar
+// os dois) e "cana de açúcar" não tem contrato próprio, só o de etanol
+// (proxy declarado, não é a mesma coisa e o rótulo deixa isso claro).
+const CULTURA_PARA_B3: Record<string, string[]> = {
+  boi: ["BGI"],
+  milho: ["CCM"],
+  "café arábica": ["ICF"],
+  "café conillon": ["CNL"],
+  soja: ["SJC", "SOY"],
+  "cana de açúcar": ["ETH"],
+};
+
+const QTD_VENCIMENTOS_POR_PRODUTO = 3;
+
+function formatPrecoB3(v: number, moeda: string) {
+  const casas = moeda === "USD" && v < 100 ? 4 : 2;
+  return v.toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas });
+}
+
+function formatMesAno(iso: string) {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("pt-BR", {
+    month: "short",
+    year: "2-digit",
+  });
+}
 
 function formatData(data: string) {
   return new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR");
@@ -47,6 +83,7 @@ export function ContextoMercado({ cultura }: { cultura?: string }) {
   const [wasde, setWasde] = useState<Wasde[]>([]);
   const [diesel, setDiesel] = useState<Diesel[]>([]);
   const [ibge, setIbge] = useState<IbgeProducao | null>(null);
+  const [b3, setB3] = useState<B3Futuro[]>([]);
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
@@ -113,8 +150,41 @@ export function ContextoMercado({ cultura }: { cultura?: string }) {
       });
   }, [produtor?.uf, cultura]);
 
+  useEffect(() => {
+    const codigos = cultura ? CULTURA_PARA_B3[cultura] : undefined;
+    if (!supabase || !codigos || codigos.length === 0) {
+      setB3([]);
+      return;
+    }
+    const inicioMesAtual = new Date();
+    inicioMesAtual.setDate(1);
+    supabase
+      .from("b3_futuros")
+      .select("produto, nome_produto, mes_ano_vencimento, preco_ajuste_atual, moeda, data_pregao")
+      .in("produto", codigos)
+      .gte("mes_ano_vencimento", inicioMesAtual.toISOString().slice(0, 10))
+      .order("data_pregao", { ascending: false })
+      .order("mes_ano_vencimento", { ascending: true })
+      .limit(60)
+      .then(({ data }) => {
+        const rows = data ?? [];
+        // o pregão mais recente é o primeiro (order data_pregao desc) —
+        // descarta qualquer pregão anterior que ainda esteja no resultado,
+        // pra nunca misturar preço de ajuste de dias diferentes.
+        const pregaoMaisRecente = rows[0]?.data_pregao;
+        const doDiaCerto = rows.filter((r) => r.data_pregao === pregaoMaisRecente);
+        const porProduto = new Map<string, B3Futuro[]>();
+        for (const row of doDiaCerto) {
+          const lista = porProduto.get(row.produto) ?? [];
+          if (lista.length < QTD_VENCIMENTOS_POR_PRODUTO) lista.push(row);
+          porProduto.set(row.produto, lista);
+        }
+        setB3([...porProduto.values()].flat());
+      });
+  }, [cultura]);
+
   if (carregando) return <Skeleton className="h-20 w-full" />;
-  if (!cambio && wasde.length === 0 && diesel.length === 0 && !ibge) return null;
+  if (!cambio && wasde.length === 0 && diesel.length === 0 && !ibge && b3.length === 0) return null;
 
   const dataFinalDiesel = diesel.reduce<string | null>(
     (max, d) => (max == null || d.data_final > max ? d.data_final : max),
@@ -186,6 +256,35 @@ export function ContextoMercado({ cultura }: { cultura?: string }) {
             </div>
           </div>
         )}
+        {Object.entries(
+          b3.reduce<Record<string, B3Futuro[]>>((acc, f) => {
+            (acc[f.produto] ??= []).push(f);
+            return acc;
+          }, {}),
+        ).map(([produto, futuros]) => (
+          <div key={produto} className="flex items-center gap-2">
+            <span className="flex size-8 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+              <TrendingUp className="size-4" />
+            </span>
+            <div>
+              <p className="text-xs text-muted-foreground">
+                {futuros[0]?.nome_produto} — futuro (B3)
+              </p>
+              <p className="text-sm">
+                {futuros.map((f, i) => (
+                  <span key={f.mes_ano_vencimento}>
+                    {i > 0 && " · "}
+                    {formatMesAno(f.mes_ano_vencimento)}{" "}
+                    <span className="font-semibold">
+                      {f.moeda === "USD" ? "US$" : "R$"}{" "}
+                      {formatPrecoB3(f.preco_ajuste_atual, f.moeda)}
+                    </span>
+                  </span>
+                ))}
+              </p>
+            </div>
+          </div>
+        ))}
         {ibge && (
           <div className="flex items-center gap-2">
             <span className="flex size-8 items-center justify-center rounded-full bg-secondary text-muted-foreground">
