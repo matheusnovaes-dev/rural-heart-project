@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AssinarRouteImport } from './routes/assinar'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
@@ -34,6 +35,11 @@ import { Route as DashboardLayoutRelatoriosRouteImport } from './routes/dashboar
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssinarRoute = AssinarRouteImport.update({
+  id: '/assinar',
+  path: '/assinar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -144,6 +150,7 @@ const DashboardLayoutRelatoriosRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/assinar': typeof AssinarRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/privacidade': typeof PrivacidadeRoute
@@ -167,6 +174,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/assinar': typeof AssinarRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/privacidade': typeof PrivacidadeRoute
@@ -190,6 +198,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/assinar': typeof AssinarRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/privacidade': typeof PrivacidadeRoute
@@ -215,6 +224,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/assinar'
     | '/login'
     | '/onboarding'
     | '/privacidade'
@@ -238,6 +248,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/assinar'
     | '/login'
     | '/onboarding'
     | '/privacidade'
@@ -260,6 +271,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/assinar'
     | '/login'
     | '/onboarding'
     | '/privacidade'
@@ -284,6 +296,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AssinarRoute: typeof AssinarRoute
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
@@ -301,6 +314,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assinar': {
+      id: '/assinar'
+      path: '/assinar'
+      fullPath: '/assinar'
+      preLoaderRoute: typeof AssinarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -482,6 +502,7 @@ const DashboardLayoutRouteWithChildren = DashboardLayoutRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AssinarRoute: AssinarRoute,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   PrivacidadeRoute: PrivacidadeRoute,

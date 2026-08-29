@@ -35,9 +35,15 @@ export function useAssinatura() {
     let query = supabase
       .from("assinaturas")
       .select("id, plano, status, trial_expira_em, asaas_subscription_id");
-    query = produtorId
-      ? query.eq("produtor_id", produtorId)
-      : query.eq("cooperativa_id", cooperativaId);
+    // Cooperativa tem prioridade: numa conta dupla-função (admin de
+    // cooperativa que também é produtor solo), a visão renderizada é a da
+    // cooperativa (ver _layout.tsx), então o gating tem que seguir a
+    // assinatura DELA, não a pessoal — senão um trial pessoal vencido
+    // travaria o admin fora do painel da própria cooperativa, mesmo com o
+    // plano da cooperativa ativo.
+    query = cooperativaId
+      ? query.eq("cooperativa_id", cooperativaId)
+      : query.eq("produtor_id", produtorId);
     query.maybeSingle().then(({ data }) => {
       setPlano((data?.plano as Plano | undefined) ?? null);
       setStatus((data?.status as StatusAssinatura | undefined) ?? null);
@@ -49,4 +55,26 @@ export function useAssinatura() {
   }, [produtorId, cooperativaId]);
 
   return { plano, status, trialExpiraEm, assinaturaId, asaasSubscriptionId, loading };
+}
+
+/**
+ * Decide se a conta pode usar o painel agora: assinatura ativa, ou trial
+ * ainda dentro do prazo. Produtor convidado por cooperativa (tem
+ * `cooperativa_id` mas não é ele mesmo um membro dela) nunca tem assinatura
+ * própria — quem paga é a cooperativa, então sempre libera pra esse caso.
+ */
+export function useAcessoDashboard() {
+  const { produtor, cooperativa } = useAuth();
+  const cobertoPelaCooperativa = !cooperativa && !!produtor?.cooperativa_id;
+  const { status, trialExpiraEm, loading } = useAssinatura();
+
+  if (cobertoPelaCooperativa) {
+    return { liberado: true, carregando: false };
+  }
+  if (loading) {
+    return { liberado: true, carregando: true };
+  }
+
+  const trialValido = status === "trial" && !!trialExpiraEm && new Date(trialExpiraEm) > new Date();
+  return { liberado: status === "ativa" || trialValido, carregando: false };
 }

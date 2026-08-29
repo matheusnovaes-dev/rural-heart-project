@@ -37,6 +37,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { CommandPalette } from "@/components/dashboard/CommandPalette";
 import { DashboardTour } from "@/components/dashboard/DashboardTour";
 import { useAuth } from "@/lib/auth";
+import { useAcessoDashboard } from "@/lib/planos";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/dashboard/_layout")({
@@ -46,7 +47,15 @@ export const Route = createFileRoute("/dashboard/_layout")({
 
 function DashboardGuard() {
   const { loading, session, produtor, cooperativa, papel } = useAuth();
+  const { liberado, carregando: carregandoAcesso } = useAcessoDashboard();
   const navigate = useNavigate();
+  // A Asaas manda de volta pra cá logo depois do checkout — o webhook que
+  // confirma o pagamento (e libera de verdade) pode levar alguns segundos
+  // pra chegar, então esse retorno não pode ser barrado na hora, senão
+  // parece um erro pra quem acabou de pagar.
+  const voltandoDoCheckout =
+    (useRouterState({ select: (s) => s.location.search }) as { checkout?: string }).checkout ===
+    "success";
 
   useEffect(() => {
     if (loading) return;
@@ -56,10 +65,29 @@ function DashboardGuard() {
     }
     if (!produtor && !cooperativa) {
       navigate({ to: "/onboarding" });
+      return;
     }
-  }, [loading, session, produtor, cooperativa, navigate]);
+    if (!carregandoAcesso && !liberado && !voltandoDoCheckout) {
+      navigate({ to: "/assinar" });
+    }
+  }, [
+    loading,
+    session,
+    produtor,
+    cooperativa,
+    carregandoAcesso,
+    liberado,
+    voltandoDoCheckout,
+    navigate,
+  ]);
 
-  if (loading || !session || (!produtor && !cooperativa)) {
+  if (
+    loading ||
+    !session ||
+    (!produtor && !cooperativa) ||
+    carregandoAcesso ||
+    (!liberado && !voltandoDoCheckout)
+  ) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="size-6 animate-spin text-muted-foreground" />

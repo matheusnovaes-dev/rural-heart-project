@@ -137,7 +137,14 @@ function OnboardingPage() {
       if (!convite) {
         const { data: assinatura, error: assinaturaError } = await supabase
           .from("assinaturas")
-          .insert({ produtor_id: produtor.id, plano: planoEscolhido })
+          .insert({
+            produtor_id: produtor.id,
+            plano: planoEscolhido,
+            // Quem escolheu pular o teste grátis não ganha os 7 dias de
+            // acesso de graça se abandonar o checkout da Asaas sem pagar —
+            // o trial já nasce vencido pra esse caso.
+            ...(semTrialAtivo ? { trial_expira_em: new Date().toISOString() } : {}),
+          })
           .select("id")
           .single();
         if (assinaturaError) {
@@ -174,7 +181,11 @@ function OnboardingPage() {
 
       const { data: assinatura, error: assinaturaError } = await supabase
         .from("assinaturas")
-        .insert({ cooperativa_id: cooperativaId, plano: planoEscolhido })
+        .insert({
+          cooperativa_id: cooperativaId,
+          plano: planoEscolhido,
+          ...(semTrialAtivo ? { trial_expira_em: new Date().toISOString() } : {}),
+        })
         .select("id")
         .single();
       if (assinaturaError) {
@@ -186,7 +197,12 @@ function OnboardingPage() {
 
     await refresh();
 
-    if (novaAssinaturaId) {
+    // Fluxo normal (com teste grátis): cai direto no painel, sem cartão —
+    // os 7 dias já estão contando (trial_expira_em, default do banco), e o
+    // guard do /dashboard manda pro /assinar sozinho quando vencer. Só quem
+    // escolheu pular o teste grátis ("prefere assinar direto") é obrigado a
+    // configurar o pagamento agora, na hora.
+    if (novaAssinaturaId && semTrialAtivo) {
       setAssinaturaPendenteId(novaAssinaturaId);
       await abrirCheckout(novaAssinaturaId);
       return;
