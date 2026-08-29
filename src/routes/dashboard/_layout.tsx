@@ -124,7 +124,7 @@ function CooperativaSidebar({
   const items = [
     { to: "/dashboard", label: "Visão geral", icon: LayoutDashboard },
     { to: "/dashboard/precos", label: "Preços", icon: LineChart },
-    { to: "/dashboard/alertas", label: "Alertas de preço", icon: TrendingUp },
+    { to: "/dashboard/alertas", label: "Alertas", icon: TrendingUp },
     { to: "/dashboard/produtores", label: "Produtores", icon: Users },
     { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
     { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
