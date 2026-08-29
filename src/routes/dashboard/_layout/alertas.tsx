@@ -171,7 +171,11 @@ function AlertasPage() {
   // produtorId é sempre o dono real da conta (pra RLS/histórico) — pode ser
   // diferente de quem recebe a mensagem, quando o destino é um funcionário
   // (que não tem linha própria em `produtores`). Mesmo padrão já usado em
-  // lembretes.tsx.
+  // lembretes.tsx. Uma conta pode ter os dois papéis ao mesmo tempo (admin
+  // de cooperativa que também tem cadastro próprio de produtor) — por isso
+  // as duas listas se somam em vez de uma excluir a outra; senão os
+  // produtores da cooperativa somem da lista sempre que a conta também for
+  // produtor (bug real, achado testando).
   const destinatarios: {
     id: string;
     nome: string;
@@ -179,24 +183,29 @@ function AlertasPage() {
     cultura_principal: string | null;
     uf: string | null;
     produtorId: string;
-  }[] = produtor
-    ? [
-        {
-          id: produtor.id,
-          nome: "Você mesmo",
-          whatsapp: produtor.whatsapp,
-          cultura_principal: produtor.cultura_principal,
-          uf: produtor.uf,
-          produtorId: produtor.id,
-        },
-        ...funcionarios.map((f) => ({
-          ...f,
-          cultura_principal: produtor.cultura_principal,
-          uf: produtor.uf,
-          produtorId: produtor.id,
-        })),
-      ]
-    : produtoresOpcoes.map((p) => ({ ...p, produtorId: p.id }));
+  }[] = [
+    ...(produtor
+      ? [
+          {
+            id: produtor.id,
+            nome: "Você mesmo",
+            whatsapp: produtor.whatsapp,
+            cultura_principal: produtor.cultura_principal,
+            uf: produtor.uf,
+            produtorId: produtor.id,
+          },
+          ...funcionarios.map((f) => ({
+            ...f,
+            cultura_principal: produtor.cultura_principal,
+            uf: produtor.uf,
+            produtorId: produtor.id,
+          })),
+        ]
+      : []),
+    ...produtoresOpcoes
+      .filter((p) => p.id !== produtor?.id)
+      .map((p) => ({ ...p, produtorId: p.id })),
+  ];
 
   const [openClima, setOpenClima] = useState(false);
 
@@ -452,9 +461,9 @@ function NovoAlertaForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-      {destinatarios.length > 1 && (
-        <div className="space-y-1.5">
-          <Label>Para quem</Label>
+      <div className="space-y-1.5">
+        <Label>Para quem</Label>
+        {destinatarios.length > 1 ? (
           <Select value={destinatarioId} onValueChange={setDestinatarioId}>
             <SelectTrigger className="w-full">
               <SelectValue />
@@ -467,8 +476,12 @@ function NovoAlertaForm({
               ))}
             </SelectContent>
           </Select>
-        </div>
-      )}
+        ) : (
+          <p className="rounded-md border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground">
+            {destinatarios[0]?.nome ?? "—"}
+          </p>
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="a-cultura">Cultura</Label>
@@ -574,9 +587,9 @@ function NovoAlertaClimaForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-      {destinatarios.length > 1 && (
-        <div className="space-y-1.5">
-          <Label>Para quem</Label>
+      <div className="space-y-1.5">
+        <Label>Para quem</Label>
+        {destinatarios.length > 1 ? (
           <Select value={destinatarioId} onValueChange={setDestinatarioId}>
             <SelectTrigger className="w-full">
               <SelectValue />
@@ -589,8 +602,12 @@ function NovoAlertaClimaForm({
               ))}
             </SelectContent>
           </Select>
-        </div>
-      )}
+        ) : (
+          <p className="rounded-md border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground">
+            {destinatarios[0]?.nome ?? "—"}
+          </p>
+        )}
+      </div>
       <div className="space-y-1.5">
         <Label>Condição</Label>
         <Select value={condicao} onValueChange={(v) => trocarCondicao(v as CondicaoClima)}>

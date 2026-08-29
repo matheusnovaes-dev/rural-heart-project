@@ -114,9 +114,14 @@ function LembretesPage() {
 
   // produtorId é sempre o dono real da conta (pra RLS/histórico) — pode
   // ser diferente de quem recebe a mensagem, quando o destino é um
-  // funcionário (que não tem linha própria em `produtores`).
-  const destinatarios: { id: string; nome: string; whatsapp: string; produtorId: string }[] =
-    produtor
+  // funcionário (que não tem linha própria em `produtores`). Uma conta pode
+  // ter os dois papéis ao mesmo tempo (admin de cooperativa que também tem
+  // cadastro próprio de produtor) — por isso as duas listas se somam em vez
+  // de uma excluir a outra; senão os produtores da cooperativa (como a
+  // Daniele) somem da lista sempre que a conta também for produtor (bug
+  // real, achado testando).
+  const destinatarios: { id: string; nome: string; whatsapp: string; produtorId: string }[] = [
+    ...(produtor
       ? [
           {
             id: produtor.id,
@@ -126,7 +131,11 @@ function LembretesPage() {
           },
           ...funcionarios.map((f) => ({ ...f, produtorId: produtor.id })),
         ]
-      : produtoresOpcoes.map((p) => ({ ...p, produtorId: p.id }));
+      : []),
+    ...produtoresOpcoes
+      .filter((p) => p.id !== produtor?.id)
+      .map((p) => ({ ...p, produtorId: p.id })),
+  ];
 
   const dialogNovo = (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -277,9 +286,9 @@ function NovoLembreteForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-      {destinatarios.length > 1 && (
-        <div className="space-y-1.5">
-          <Label>Para quem</Label>
+      <div className="space-y-1.5">
+        <Label>Para quem</Label>
+        {destinatarios.length > 1 ? (
           <Select value={destinatarioId} onValueChange={setDestinatarioId}>
             <SelectTrigger className="w-full">
               <SelectValue />
@@ -292,8 +301,12 @@ function NovoLembreteForm({
               ))}
             </SelectContent>
           </Select>
-        </div>
-      )}
+        ) : (
+          <p className="rounded-md border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground">
+            {destinatarios[0]?.nome ?? "—"}
+          </p>
+        )}
+      </div>
       <div className="space-y-1.5">
         <Label htmlFor="l-titulo">Título</Label>
         <Input
