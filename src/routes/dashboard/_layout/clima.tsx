@@ -18,7 +18,7 @@ export const Route = createFileRoute("/dashboard/_layout/clima")({
 });
 
 function ClimaPage() {
-  const { plano, asaasSubscriptionId, loading: loadingPlano } = useAssinatura();
+  const { plano, assinaturaId, asaasSubscriptionId, loading: loadingPlano } = useAssinatura();
 
   if (loadingPlano) {
     return (
@@ -43,6 +43,7 @@ function ClimaPage() {
           </CardDescription>
           <UpgradeButton
             planoAlvo="prata"
+            assinaturaId={assinaturaId}
             asaasSubscriptionId={asaasSubscriptionId}
             className="mt-1 bg-cta text-cta-foreground hover:bg-cta/90"
           />

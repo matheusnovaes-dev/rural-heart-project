@@ -38,7 +38,7 @@ type Cotacao = { atual: number | null; variacao: number | null; serie: number[] 
  * ingest da Conab já cobre. É o padrão "watchlist" dos terminais de commodity.
  */
 export function Watchlist({ produtor }: { produtor: Produtor }) {
-  const { plano, asaasSubscriptionId, loading: loadingPlano } = useAssinatura();
+  const { plano, assinaturaId, asaasSubscriptionId, loading: loadingPlano } = useAssinatura();
   const [itens, setItens] = useState<ItemWatchlist[] | null>(null);
   const [cotacoes, setCotacoes] = useState<Record<string, Cotacao>>({});
   const [open, setOpen] = useState(false);
@@ -120,6 +120,7 @@ export function Watchlist({ produtor }: { produtor: Produtor }) {
           </div>
           <UpgradeButton
             planoAlvo="ouro"
+            assinaturaId={assinaturaId}
             asaasSubscriptionId={asaasSubscriptionId}
             className="bg-cta text-cta-foreground hover:bg-cta/90"
           />

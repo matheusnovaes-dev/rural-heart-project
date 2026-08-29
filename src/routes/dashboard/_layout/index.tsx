@@ -223,7 +223,7 @@ function TrocarCulturaDialog({ produtor }: { produtor: Produtor }) {
 type PrecoHistorico = { preco: number; data_referencia: string; updated_at: string | null };
 
 function ProdutorHome({ produtor }: { produtor: Produtor }) {
-  const { plano, asaasSubscriptionId, loading: loadingPlano } = useAssinatura();
+  const { plano, assinaturaId, asaasSubscriptionId, loading: loadingPlano } = useAssinatura();
   const [serie, setSerie] = useState<PrecoHistorico[] | null>(null);
   const [lembretes, setLembretes] = useState<{ id: string; titulo: string; enviar_em: string }[]>(
     [],
@@ -426,6 +426,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                   </p>
                   <UpgradeButton
                     planoAlvo="prata"
+                    assinaturaId={assinaturaId}
                     asaasSubscriptionId={asaasSubscriptionId}
                     variant="outline"
                     className="mt-1"

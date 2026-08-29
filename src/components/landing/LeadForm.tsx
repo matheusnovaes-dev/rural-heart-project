@@ -25,6 +25,7 @@ import {
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { normalizarWhatsapp } from "@/lib/telefone";
 import { useAuth } from "@/lib/auth";
+import { pricingPlans } from "@/config/site";
 
 const leadSchema = z.object({
   name: z.string().min(2, "Digite seu nome completo"),
@@ -33,6 +34,7 @@ const leadSchema = z.object({
     .min(10, "Digite um WhatsApp válido com DDD")
     .regex(/^[\d\s()+-]+$/, "Use apenas números, espaços e símbolos de telefone"),
   crop: z.string().min(1, "Selecione sua cultura principal"),
+  plano: z.enum(["bronze", "prata", "ouro"]),
 });
 
 type LeadFormValues = z.infer<typeof leadSchema>;
@@ -51,7 +53,7 @@ export function LeadForm({ className }: { className?: string }) {
 
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(leadSchema),
-    defaultValues: { name: "", whatsapp: "", crop: "" },
+    defaultValues: { name: "", whatsapp: "", crop: "", plano: "bronze" },
   });
 
   async function onSubmit(values: LeadFormValues) {
@@ -110,7 +112,7 @@ export function LeadForm({ className }: { className?: string }) {
 
     const { error: assinaturaError } = await supabase
       .from("assinaturas")
-      .insert({ produtor_id: produtor.id, plano: "bronze" });
+      .insert({ produtor_id: produtor.id, plano: values.plano });
     if (assinaturaError) {
       setErroMsg("Não conseguimos configurar seu teste agora. Chama no WhatsApp pra gente ajudar.");
       setStatus("error");
@@ -183,6 +185,31 @@ export function LeadForm({ className }: { className?: string }) {
                   {cropOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="plano"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Plano pra testar</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione o plano" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {pricingPlans.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name} — R$ {p.price}/mês
                     </SelectItem>
                   ))}
                 </SelectContent>

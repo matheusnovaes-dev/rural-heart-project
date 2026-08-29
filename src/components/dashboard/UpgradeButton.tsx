@@ -3,47 +3,51 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button, type ButtonProps } from "@/components/ui/button";
-import { buildWhatsAppLink } from "@/config/site";
 import { atualizarPlanoAsaas } from "@/lib/asaas.server";
+import { supabase } from "@/lib/supabase";
 import type { Plano } from "@/lib/planos";
 
 const planoLabel: Record<Plano, string> = { bronze: "Bronze", prata: "Prata", ouro: "Ouro" };
 
 /**
- * Se já existe assinatura na Asaas, faz o upgrade de verdade (sem pedir
- * cartão de novo — próxima cobrança já sai com o valor novo). Sem isso
- * (ex: produtor coberto pela assinatura da cooperativa), cai pro WhatsApp.
+ * Quando ainda não existe assinatura na Asaas (teste grátis em andamento,
+ * nunca foi cobrado) trocar de plano é só uma troca local — não tem
+ * cobrança nenhuma envolvida até o trial acabar. Só quando já existe uma
+ * assinatura real na Asaas (já pagando) é que o upgrade precisa passar
+ * por ela, pra próxima cobrança já sair com o valor novo.
  */
 export function UpgradeButton({
   planoAlvo,
+  assinaturaId,
   asaasSubscriptionId,
   className,
   variant,
 }: {
   planoAlvo: Plano;
+  assinaturaId: string | null;
   asaasSubscriptionId: string | null;
   className?: string;
   variant?: ButtonProps["variant"];
 }) {
   const [loading, setLoading] = useState(false);
 
-  if (!asaasSubscriptionId) {
-    return (
-      <Button asChild size="sm" variant={variant} className={className}>
-        <a
-          href={buildWhatsAppLink(
-            `Quero fazer upgrade pro plano ${planoLabel[planoAlvo]} do Safralume.`,
-          )}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Fazer upgrade
-        </a>
-      </Button>
-    );
+  async function handleTrocaSemCobranca() {
+    if (!supabase || !assinaturaId) return;
+    setLoading(true);
+    const { error } = await supabase
+      .from("assinaturas")
+      .update({ plano: planoAlvo })
+      .eq("id", assinaturaId);
+    if (error) {
+      toast.error("Não foi possível trocar de plano agora. Tenta de novo.");
+      setLoading(false);
+      return;
+    }
+    toast.success(`Seu teste grátis agora é do plano ${planoLabel[planoAlvo]}.`);
+    window.location.reload();
   }
 
-  async function handleUpgrade() {
+  async function handleUpgradeComCobranca() {
     setLoading(true);
     try {
       await atualizarPlanoAsaas({
@@ -65,12 +69,14 @@ export function UpgradeButton({
       variant={variant}
       className={className}
       disabled={loading}
-      onClick={handleUpgrade}
+      onClick={asaasSubscriptionId ? handleUpgradeComCobranca : handleTrocaSemCobranca}
     >
       {loading ? (
         <Loader2 className="size-4 animate-spin" />
-      ) : (
+      ) : asaasSubscriptionId ? (
         `Fazer upgrade pro ${planoLabel[planoAlvo]}`
+      ) : (
+        `Trocar pro ${planoLabel[planoAlvo]}`
       )}
     </Button>
   );

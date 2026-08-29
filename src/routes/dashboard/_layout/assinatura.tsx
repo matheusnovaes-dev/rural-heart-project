@@ -46,7 +46,8 @@ function formatData(data: string) {
 }
 
 function AssinaturaPage() {
-  const { plano, status, trialExpiraEm, asaasSubscriptionId, loading } = useAssinatura();
+  const { plano, status, trialExpiraEm, assinaturaId, asaasSubscriptionId, loading } =
+    useAssinatura();
   const [cobrancas, setCobrancas] = useState<Cobranca[] | null>(null);
   const [carregandoCobrancas, setCarregandoCobrancas] = useState(true);
 
@@ -131,6 +132,7 @@ function AssinaturaPage() {
                   <UpgradeButton
                     key={p}
                     planoAlvo={p}
+                    assinaturaId={assinaturaId}
                     asaasSubscriptionId={asaasSubscriptionId}
                     variant="outline"
                   />
