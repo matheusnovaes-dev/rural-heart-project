@@ -55,6 +55,9 @@ function AlertasPage() {
       uf: string | null;
     }[]
   >([]);
+  const [funcionarios, setFuncionarios] = useState<
+    { id: string; nome: string; whatsapp: string }[]
+  >([]);
   const [open, setOpen] = useState(false);
 
   async function load() {
@@ -72,6 +75,15 @@ function AlertasPage() {
         .select("id, nome, whatsapp, cultura_principal, uf")
         .eq("cooperativa_id", cooperativa.id);
       setProdutoresOpcoes(prods ?? []);
+    }
+
+    if (produtor) {
+      const { data: func } = await supabase
+        .from("funcionarios")
+        .select("id, nome, whatsapp")
+        .eq("produtor_id", produtor.id)
+        .order("nome");
+      setFuncionarios(func ?? []);
     }
   }
 
@@ -95,7 +107,18 @@ function AlertasPage() {
     load();
   }
 
-  const destinatarios = produtor
+  // produtorId é sempre o dono real da conta (pra RLS/histórico) — pode ser
+  // diferente de quem recebe a mensagem, quando o destino é um funcionário
+  // (que não tem linha própria em `produtores`). Mesmo padrão já usado em
+  // lembretes.tsx.
+  const destinatarios: {
+    id: string;
+    nome: string;
+    whatsapp: string;
+    cultura_principal: string | null;
+    uf: string | null;
+    produtorId: string;
+  }[] = produtor
     ? [
         {
           id: produtor.id,
@@ -103,9 +126,16 @@ function AlertasPage() {
           whatsapp: produtor.whatsapp,
           cultura_principal: produtor.cultura_principal,
           uf: produtor.uf,
+          produtorId: produtor.id,
         },
+        ...funcionarios.map((f) => ({
+          ...f,
+          cultura_principal: produtor.cultura_principal,
+          uf: produtor.uf,
+          produtorId: produtor.id,
+        })),
       ]
-    : produtoresOpcoes;
+    : produtoresOpcoes.map((p) => ({ ...p, produtorId: p.id }));
 
   const dialogNovo = (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -223,12 +253,13 @@ function NovoAlertaForm({
     whatsapp: string;
     cultura_principal: string | null;
     uf: string | null;
+    produtorId: string;
   }[];
   onDone: () => void;
 }) {
   const { session } = useAuth();
-  const [produtorId, setProdutorId] = useState(destinatarios[0]?.id ?? "");
-  const selecionado = destinatarios.find((d) => d.id === produtorId) ?? destinatarios[0];
+  const [destinatarioId, setDestinatarioId] = useState(destinatarios[0]?.id ?? "");
+  const selecionado = destinatarios.find((d) => d.id === destinatarioId) ?? destinatarios[0];
 
   const [cultura, setCultura] = useState(selecionado?.cultura_principal ?? "soja");
   const [uf, setUf] = useState(selecionado?.uf ?? "");
@@ -239,12 +270,12 @@ function NovoAlertaForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!supabase || !session || !limite || !uf) return;
-    const destinatario = destinatarios.find((d) => d.id === produtorId);
+    const destinatario = destinatarios.find((d) => d.id === destinatarioId);
     if (!destinatario) return;
 
     setLoading(true);
     const { error } = await supabase.from("alertas_preco").insert({
-      produtor_id: produtorId,
+      produtor_id: destinatario.produtorId,
       criado_por: session.user.id,
       cultura,
       uf: uf.toUpperCase(),
@@ -266,7 +297,7 @@ function NovoAlertaForm({
       {destinatarios.length > 1 && (
         <div className="space-y-1.5">
           <Label>Para quem</Label>
-          <Select value={produtorId} onValueChange={setProdutorId}>
+          <Select value={destinatarioId} onValueChange={setDestinatarioId}>
             <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
