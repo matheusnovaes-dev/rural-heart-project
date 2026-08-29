@@ -20,10 +20,16 @@ export const enviarBoasVindasWhatsApp = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const webhookUrl = process.env["N8N_BOAS_VINDAS_WEBHOOK_URL"];
     const token = process.env["N8N_BOAS_VINDAS_TOKEN"];
-    if (!webhookUrl || !token) return { ok: false as const };
+    // DIAGNÓSTICO TEMPORÁRIO — reverter depois de confirmar a causa.
+    if (!webhookUrl || !token) {
+      return {
+        ok: false as const,
+        diag: `env ausente: webhookUrl=${!!webhookUrl} token=${!!token}`,
+      };
+    }
 
     try {
-      await fetch(webhookUrl, {
+      const res = await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-safralume-token": token },
         body: JSON.stringify({
@@ -32,9 +38,15 @@ export const enviarBoasVindasWhatsApp = createServerFn({ method: "POST" })
           plano: data.plano,
         }),
       });
-      return { ok: true as const };
+      const corpo = await res.text();
+      return {
+        ok: res.ok,
+        diag: `status=${res.status} corpo=${corpo.slice(0, 200)} url=${webhookUrl.slice(0, 60)}`,
+      };
     } catch (err) {
-      console.error("Falha ao enviar boas-vindas por WhatsApp:", err);
-      return { ok: false as const };
+      return {
+        ok: false as const,
+        diag: `erro: ${err instanceof Error ? err.message : String(err)}`,
+      };
     }
   });

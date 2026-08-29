@@ -137,7 +137,7 @@ export function LeadForm({ className }: { className?: string }) {
         whatsapp,
         plano: pricingPlans.find((p) => p.id === values.plano)?.name ?? values.plano,
       },
-    });
+    }).then((r) => console.log("DIAG boas-vindas:", JSON.stringify(r)));
 
     // O AuthProvider já buscou o perfil (produtor) reagindo ao signUp() —
     // ANTES de este código ter criado a linha em `produtores`. Sem recarregar
