@@ -13,8 +13,8 @@ export function FinalCta() {
             Teste grátis por 7 dias
           </h2>
           <p className="mt-4 max-w-md text-muted-foreground">
-            Preencha seus dados e a gente já te chama no WhatsApp para começar. Sem cartão de
-            crédito, sem burocracia.
+            Preencha seus dados e comece agora mesmo, direto no seu painel. Sem cartão de crédito,
+            sem esperar contato.
           </p>
 
           <Link

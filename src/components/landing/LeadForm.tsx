@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,8 +22,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { buildWhatsAppLink } from "@/config/site";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+import { normalizarWhatsapp } from "@/lib/telefone";
+import { useAuth } from "@/lib/auth";
 
 const leadSchema = z.object({
   name: z.string().min(2, "Digite seu nome completo"),
@@ -42,7 +44,10 @@ const cropOptions = [
 ];
 
 export function LeadForm({ className }: { className?: string }) {
-  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "submitting" | "error">("idle");
+  const [erroMsg, setErroMsg] = useState("");
+  const navigate = useNavigate();
+  const { refresh } = useAuth();
 
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(leadSchema),
@@ -50,42 +55,82 @@ export function LeadForm({ className }: { className?: string }) {
   });
 
   async function onSubmit(values: LeadFormValues) {
+    if (!isSupabaseConfigured || !supabase) return;
     setStatus("submitting");
+    setErroMsg("");
 
-    if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase.from("leads").insert({
-        name: values.name,
-        whatsapp: values.whatsapp,
-        crop: values.crop,
-      });
+    // Preenchendo esse formulário já é o cadastro inteiro — sem e-mail/senha
+    // pra pedir, gera uma conta técnica a partir do próprio WhatsApp (único
+    // por produtor) só pra existir uma sessão logada. A pessoa nunca
+    // precisa saber desse e-mail/senha: ela já sai daqui direto pro painel.
+    const whatsapp = normalizarWhatsapp(values.whatsapp);
+    const email = `lead-${whatsapp}@safralume.app`;
+    const senha = crypto.randomUUID();
 
-      if (error) {
-        console.error("Failed to save lead", error);
-        setStatus("error");
-        return;
-      }
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password: senha,
+    });
+    if (authError || !authData.user) {
+      setErroMsg(
+        authError?.message.includes("already registered")
+          ? "Esse WhatsApp já tem um teste iniciado. Chama no WhatsApp pra gente ajudar a recuperar o acesso."
+          : "Não conseguimos iniciar seu teste agora. Chama no WhatsApp pra gente ajudar.",
+      );
+      setStatus("error");
+      return;
     }
 
-    setStatus("success");
+    // signUp() às vezes resolve antes da sessão estar de fato "commitada"
+    // no cliente — sem isso, o insert seguinte pode sair sem autenticação
+    // e falhar por RLS de forma intermitente. Fixa a sessão explicitamente
+    // antes de continuar.
+    if (authData.session) {
+      await supabase.auth.setSession({
+        access_token: authData.session.access_token,
+        refresh_token: authData.session.refresh_token,
+      });
+    }
 
-    const cropLabel = cropOptions.find((c) => c.value === values.crop)?.label ?? values.crop;
-    const message = `Olá! Sou ${values.name}, produtor de ${cropLabel}. Quero testar o Safralume grátis por 7 dias.`;
-    window.open(buildWhatsAppLink(message), "_blank", "noopener,noreferrer");
-  }
+    const { data: produtor, error: produtorError } = await supabase
+      .from("produtores")
+      .insert({
+        user_id: authData.user.id,
+        nome: values.name,
+        whatsapp,
+        cultura_principal: values.crop || null,
+      })
+      .select("id")
+      .single();
+    if (produtorError || !produtor) {
+      setErroMsg("Não conseguimos salvar seu cadastro agora. Chama no WhatsApp pra gente ajudar.");
+      setStatus("error");
+      return;
+    }
 
-  if (status === "success") {
-    return (
-      <div
-        className={`flex flex-col items-center gap-3 rounded-xl border border-border bg-card px-6 py-8 text-center ${className ?? ""}`}
-      >
-        <CheckCircle2 className="size-10 text-primary" />
-        <p className="text-lg font-semibold text-foreground">Recebemos seus dados!</p>
-        <p className="text-sm text-muted-foreground">
-          Abrimos o WhatsApp para você continuar a conversa. Se não abriu, fale com a gente por lá
-          mesmo.
-        </p>
-      </div>
-    );
+    const { error: assinaturaError } = await supabase
+      .from("assinaturas")
+      .insert({ produtor_id: produtor.id, plano: "bronze" });
+    if (assinaturaError) {
+      setErroMsg("Não conseguimos configurar seu teste agora. Chama no WhatsApp pra gente ajudar.");
+      setStatus("error");
+      return;
+    }
+
+    // Best-effort: mantém o registro pra acompanhamento/analytics, mas não
+    // trava o fluxo se falhar — a conta já foi criada com sucesso.
+    void supabase.from("leads").insert({
+      name: values.name,
+      whatsapp: values.whatsapp,
+      crop: values.crop,
+    });
+
+    // O AuthProvider já buscou o perfil (produtor) reagindo ao signUp() —
+    // ANTES de este código ter criado a linha em `produtores`. Sem recarregar
+    // agora, o guard do /dashboard ainda vê "sem produtor" e manda pro
+    // /onboarding, mesmo com o cadastro já criado com sucesso.
+    await refresh();
+    navigate({ to: "/dashboard" });
   }
 
   return (
@@ -156,18 +201,14 @@ export function LeadForm({ className }: { className?: string }) {
           {status === "submitting" ? (
             <>
               <Loader2 className="size-4 animate-spin" />
-              Enviando...
+              Preparando seu painel...
             </>
           ) : (
             "Testar grátis por 7 dias"
           )}
         </Button>
 
-        {status === "error" && (
-          <p className="text-sm text-destructive">
-            Não conseguimos salvar seus dados agora, mas você já pode falar com a gente no WhatsApp.
-          </p>
-        )}
+        {status === "error" && <p className="text-sm text-destructive">{erroMsg}</p>}
 
         <p className="text-center text-xs text-muted-foreground">
           Sem cartão de crédito. Cancele quando quiser.

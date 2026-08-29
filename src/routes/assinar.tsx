@@ -3,6 +3,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Check, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { useAssinatura, type Plano } from "@/lib/planos";
@@ -33,6 +35,8 @@ function AssinarPage() {
   const navigate = useNavigate();
 
   const [cpfCnpj, setCpfCnpj] = useState<string | null>(null);
+  const [cpfCarregado, setCpfCarregado] = useState(false);
+  const [cpfDigitado, setCpfDigitado] = useState("");
   const [selecionado, setSelecionado] = useState<Plano>("bronze");
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
@@ -49,14 +53,20 @@ function AssinarPage() {
         .select("cpf_cnpj")
         .eq("id", produtor.id)
         .maybeSingle()
-        .then(({ data }) => setCpfCnpj(data?.cpf_cnpj ?? null));
+        .then(({ data }) => {
+          setCpfCnpj(data?.cpf_cnpj ?? null);
+          setCpfCarregado(true);
+        });
     } else if (cooperativa) {
       supabase
         .from("cooperativas")
         .select("cpf_cnpj")
         .eq("id", cooperativa.id)
         .maybeSingle()
-        .then(({ data }) => setCpfCnpj(data?.cpf_cnpj ?? null));
+        .then(({ data }) => {
+          setCpfCnpj(data?.cpf_cnpj ?? null);
+          setCpfCarregado(true);
+        });
     }
   }, [produtor, cooperativa]);
 
@@ -116,13 +126,31 @@ function AssinarPage() {
 
   async function continuar() {
     if (!supabase || !session) return;
-    if (!cpfCnpj) {
-      setErro("Não encontramos seu CPF/CNPJ cadastrado. Chama no WhatsApp pra gente ajustar.");
+    const cpfCnpjFinal = cpfCnpj ?? cpfDigitado.replace(/\D/g, "");
+    if (!cpfCnpjFinal || cpfCnpjFinal.length < 11) {
+      setErro("Informe um CPF ou CNPJ válido pra emitir a cobrança.");
       return;
     }
     setEnviando(true);
     setErro("");
     try {
+      // Quem se cadastrou pelo formulário rápido da landing nunca informou
+      // CPF/CNPJ (só nome/WhatsApp/cultura) — grava agora, na hora que
+      // realmente precisa pra faturar.
+      if (!cpfCnpj) {
+        if (produtor) {
+          await supabase
+            .from("produtores")
+            .update({ cpf_cnpj: cpfCnpjFinal })
+            .eq("id", produtor.id);
+        } else if (cooperativa) {
+          await supabase
+            .from("cooperativas")
+            .update({ cpf_cnpj: cpfCnpjFinal })
+            .eq("id", cooperativa.id);
+        }
+      }
+
       let idAssinatura = assinaturaId;
       if (!idAssinatura) {
         const { data, error } = await supabase
@@ -154,7 +182,7 @@ function AssinarPage() {
           plano: selecionado,
           assinaturaId: idAssinatura,
           nome: produtor?.nome ?? cooperativa?.nome ?? "",
-          cpfCnpj,
+          cpfCnpj: cpfCnpjFinal,
           email: session.user.email,
           whatsapp: produtor?.whatsapp,
           semTrial: true,
@@ -207,6 +235,22 @@ function AssinarPage() {
             </button>
           ))}
         </div>
+
+        {cpfCarregado && !cpfCnpj && (
+          <div className="mx-auto mt-6 max-w-xs space-y-2">
+            <Label htmlFor="cpfCnpjAssinar">
+              {produtor ? "Seu CPF" : "CNPJ da cooperativa/corretora"}
+            </Label>
+            <Input
+              id="cpfCnpjAssinar"
+              inputMode="numeric"
+              placeholder={produtor ? "000.000.000-00" : "00.000.000/0000-00"}
+              value={cpfDigitado}
+              onChange={(e) => setCpfDigitado(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">Exigido pra emitir a cobrança.</p>
+          </div>
+        )}
 
         {erro && <p className="mt-4 text-center text-sm text-destructive">{erro}</p>}
 
