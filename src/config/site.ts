@@ -35,6 +35,7 @@ export const pricingPlans: PricingPlan[] = [
       "Boletim Semanal (Imea)",
       "Alertas de preço",
       "Relatórios em PDF",
+      "Contexto de mercado: câmbio, diesel e safra segundo a USDA",
     ],
   },
   {
@@ -46,6 +47,7 @@ export const pricingPlans: PricingPlan[] = [
       "Tudo do Bronze, mais:",
       "Tendências climáticas",
       "Compara o preço da Conab com o da Imea",
+      "Produção da sua cultura por estado (IBGE)",
     ],
     highlighted: true,
   },
@@ -57,6 +59,7 @@ export const pricingPlans: PricingPlan[] = [
     features: [
       "Tudo do Prata, mais:",
       "Lista de acompanhamento (outras culturas e estados)",
+      "Mercado futuro da B3: a curva de preço pra decidir vender agora ou mais pra frente",
       "Suporte prioritário",
     ],
   },
