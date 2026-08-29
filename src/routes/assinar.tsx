@@ -26,6 +26,7 @@ function AssinarPage() {
     plano,
     status,
     trialExpiraEm,
+    criadaEm,
     assinaturaId,
     loading: assinaturaLoading,
   } = useAssinatura();
@@ -93,13 +94,25 @@ function AssinarPage() {
     ? Math.max(0, Math.ceil((new Date(trialExpiraEm).getTime() - Date.now()) / 86_400_000))
     : null;
 
+  // Quem escolheu "prefere assinar direto" (pulou o teste grátis) tem o
+  // trial marcado como já vencido desde a criação (ver onboarding.tsx) —
+  // ou seja, trial_expira_em cai bem perto de created_at, bem diferente
+  // do padrão de +7 dias. Sem essa distinção, quem nunca teve teste grátis
+  // veria "seu teste de 7 dias acabou", o que é falso pra esse caso.
+  const pulouTrial =
+    !!trialExpiraEm &&
+    !!criadaEm &&
+    new Date(trialExpiraEm).getTime() - new Date(criadaEm).getTime() < 60_000;
+
   const mensagem = trialValido
     ? `Você ainda tem ${diasRestantes} dia${diasRestantes === 1 ? "" : "s"} de teste grátis. Se preferir, já dá pra escolher um plano e configurar o pagamento agora.`
     : status === "inadimplente"
       ? "O pagamento da sua assinatura não foi confirmado. Escolha um plano (pode ser o mesmo de antes) pra regularizar e continuar."
       : status === "cancelada"
         ? "Sua assinatura foi cancelada. Escolha um plano pra reativar o acesso."
-        : "Seu teste grátis de 7 dias acabou. Escolha um plano pra continuar usando o Safralume.";
+        : pulouTrial
+          ? "Você escolheu assinar direto, sem teste grátis. Falta só escolher um plano e concluir o pagamento pra liberar o acesso."
+          : "Seu teste grátis de 7 dias acabou. Escolha um plano pra continuar usando o Safralume.";
 
   async function continuar() {
     if (!supabase || !session) return;

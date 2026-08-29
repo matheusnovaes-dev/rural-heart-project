@@ -22,6 +22,7 @@ export function useAssinatura() {
   const [plano, setPlano] = useState<Plano | null>(null);
   const [status, setStatus] = useState<StatusAssinatura | null>(null);
   const [trialExpiraEm, setTrialExpiraEm] = useState<string | null>(null);
+  const [criadaEm, setCriadaEm] = useState<string | null>(null);
   const [assinaturaId, setAssinaturaId] = useState<string | null>(null);
   const [asaasSubscriptionId, setAsaasSubscriptionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,7 +35,7 @@ export function useAssinatura() {
     setLoading(true);
     let query = supabase
       .from("assinaturas")
-      .select("id, plano, status, trial_expira_em, asaas_subscription_id");
+      .select("id, plano, status, trial_expira_em, asaas_subscription_id, created_at");
     // Cooperativa tem prioridade: numa conta dupla-função (admin de
     // cooperativa que também é produtor solo), a visão renderizada é a da
     // cooperativa (ver _layout.tsx), então o gating tem que seguir a
@@ -48,13 +49,14 @@ export function useAssinatura() {
       setPlano((data?.plano as Plano | undefined) ?? null);
       setStatus((data?.status as StatusAssinatura | undefined) ?? null);
       setTrialExpiraEm(data?.trial_expira_em ?? null);
+      setCriadaEm(data?.created_at ?? null);
       setAssinaturaId(data?.id ?? null);
       setAsaasSubscriptionId(data?.asaas_subscription_id ?? null);
       setLoading(false);
     });
   }, [produtorId, cooperativaId]);
 
-  return { plano, status, trialExpiraEm, assinaturaId, asaasSubscriptionId, loading };
+  return { plano, status, trialExpiraEm, criadaEm, assinaturaId, asaasSubscriptionId, loading };
 }
 
 /**
