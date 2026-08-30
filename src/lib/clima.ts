@@ -37,10 +37,16 @@ export type Previsao = {
   tempMin: number[];
 };
 
-export async function buscarPrevisao(uf: string): Promise<Previsao | null> {
-  const coords = capitalPorUf[uf];
-  if (!coords) return null;
-  const [lat, lon] = coords;
+/**
+ * Previsão pra uma coordenada exata (cidade do produtor) em vez da capital
+ * do estado — mesma fonte, só que sem a aproximação de "toda a UF tem o
+ * clima da capital dela", que é imprecisa de verdade (BETO, concorrente
+ * direto nesse recurso, já usa coordenada da propriedade).
+ */
+export async function buscarPrevisaoPorCoordenadas(
+  lat: number,
+  lon: number,
+): Promise<Previsao | null> {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=precipitation_probability_max,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=5`;
   const res = await fetch(url);
   if (!res.ok) return null;
@@ -51,4 +57,38 @@ export async function buscarPrevisao(uf: string): Promise<Previsao | null> {
     tempMax: json.daily.temperature_2m_max,
     tempMin: json.daily.temperature_2m_min,
   };
+}
+
+export async function buscarPrevisao(uf: string): Promise<Previsao | null> {
+  const coords = capitalPorUf[uf];
+  if (!coords) return null;
+  const [lat, lon] = coords;
+  return buscarPrevisaoPorCoordenadas(lat, lon);
+}
+
+export type MunicipioEncontrado = { nome: string; lat: number; lon: number };
+
+/**
+ * Geocodifica um nome de cidade dentro de uma UF (mesma fonte gratuita da
+ * previsão, Open-Meteo). Precisa da UF pra desambiguar — várias cidades
+ * brasileiras têm o mesmo nome em estados diferentes (ex: 3 "Bambuí": MG,
+ * PA, RJ) — sem esse filtro, pegaria a primeira da lista sem critério.
+ */
+export async function buscarMunicipio(
+  nome: string,
+  nomeCompletoUf: string,
+): Promise<MunicipioEncontrado | null> {
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(nome)}&count=10&language=pt&countryCode=BR`;
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const json = await res.json();
+  const resultados: { name: string; latitude: number; longitude: number; admin1?: string }[] =
+    json.results ?? [];
+  // Sem fallback pro primeiro resultado se a UF não bater: melhor dizer
+  // "não encontrei" do que devolver silenciosamente a coordenada de uma
+  // cidade homônima em outro estado (achado testando com "Bambuí" + UF
+  // errada de propósito — caía direto numa cidade de outro estado).
+  const match = resultados.find((r) => r.admin1 === nomeCompletoUf);
+  if (!match) return null;
+  return { nome: match.name, lat: match.latitude, lon: match.longitude };
 }

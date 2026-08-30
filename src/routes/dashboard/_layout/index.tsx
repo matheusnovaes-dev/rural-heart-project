@@ -25,7 +25,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { Watchlist } from "@/components/dashboard/Watchlist";
 import { BoletimSemanal } from "@/components/dashboard/BoletimSemanal";
 import { Skeleton } from "@/components/ui/skeleton";
-import { buscarPrevisao, type Previsao } from "@/lib/clima";
+import { buscarPrevisao, buscarPrevisaoPorCoordenadas, type Previsao } from "@/lib/clima";
 import { precoLiquido, type FreteRef } from "@/lib/frete";
 import { buildWhatsAppLink } from "@/config/site";
 
@@ -207,8 +207,12 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
       setPrevisao(null);
       return;
     }
-    buscarPrevisao(produtor.uf).then(setPrevisao);
-  }, [produtor.uf]);
+    const busca =
+      produtor.lat != null && produtor.lon != null
+        ? buscarPrevisaoPorCoordenadas(produtor.lat, produtor.lon)
+        : buscarPrevisao(produtor.uf);
+    busca.then(setPrevisao);
+  }, [produtor.uf, produtor.lat, produtor.lon]);
 
   const atual = serie?.at(-1) ?? null;
   const anterior = serie?.at(-2) ?? null;
@@ -369,7 +373,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
             <CardHeader className="pb-0">
               <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <CloudSun className="size-4" />
-                Clima em {produtor.uf ?? "sua região"}
+                Clima em {produtor.municipio ?? produtor.uf ?? "sua região"}
               </CardTitle>
             </CardHeader>
             <CardContent>

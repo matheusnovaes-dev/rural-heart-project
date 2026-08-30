@@ -12,6 +12,9 @@ export type Produtor = {
   whatsapp: string;
   cultura_principal: string | null;
   uf: string | null;
+  municipio: string | null;
+  lat: number | null;
+  lon: number | null;
 };
 
 export type Cooperativa = {
