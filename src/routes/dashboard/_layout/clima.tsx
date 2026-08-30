@@ -1,10 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { CloudRain, CloudSun, MapPin, Thermometer } from "lucide-react";
+import { CloudRain, CloudSun, Loader2, MapPin, Plus, Thermometer, X } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { EmptyState } from "@/components/dashboard/EmptyState";
@@ -12,6 +27,8 @@ import { TrocarCulturaDialog } from "@/components/dashboard/TrocarCulturaDialog"
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { buscarPrevisao, type Previsao } from "@/lib/clima";
+import { ufs as todasUfsBrasil } from "@/config/ufs";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/_layout/clima")({
   component: ClimaConteudo,
@@ -56,13 +73,24 @@ function insightDoUf(previsao: Previsao) {
 
 function ClimaConteudo() {
   const { produtor, cooperativa } = useAuth();
-  const [ufs, setUfs] = useState<string[]>([]);
+  const [ufsPrimarias, setUfsPrimarias] = useState<string[]>([]);
+  const [ufsExtras, setUfsExtras] = useState<string[]>([]);
   const [previsoes, setPrevisoes] = useState<Record<string, Previsao | null>>({});
+  const [open, setOpen] = useState(false);
+
+  async function carregarExtras() {
+    if (!supabase) return;
+    const query = supabase.from("clima_watchlist").select("id, uf");
+    const { data } = await (cooperativa
+      ? query.eq("cooperativa_id", cooperativa.id)
+      : query.eq("produtor_id", produtor!.id));
+    setUfsExtras((data ?? []).map((r) => r.uf));
+  }
 
   useEffect(() => {
-    async function resolveUfs() {
+    async function resolveUfsPrimarias() {
       if (produtor?.uf) {
-        setUfs([produtor.uf]);
+        setUfsPrimarias([produtor.uf]);
         return;
       }
       if (supabase && cooperativa) {
@@ -72,11 +100,15 @@ function ClimaConteudo() {
           .eq("cooperativa_id", cooperativa.id)
           .not("uf", "is", null);
         const unicas = [...new Set((data ?? []).map((p) => p.uf as string))].sort();
-        setUfs(unicas);
+        setUfsPrimarias(unicas);
       }
     }
-    resolveUfs();
+    resolveUfsPrimarias();
+    if (produtor || cooperativa) carregarExtras();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [produtor, cooperativa]);
+
+  const ufs = [...ufsPrimarias, ...ufsExtras.filter((u) => !ufsPrimarias.includes(u))];
 
   useEffect(() => {
     ufs.forEach((uf) => {
@@ -88,12 +120,51 @@ function ClimaConteudo() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ufs]);
 
+  async function removerExtra(uf: string) {
+    if (!supabase) return;
+    const query = supabase.from("clima_watchlist").delete().eq("uf", uf);
+    const { error } = await (cooperativa
+      ? query.eq("cooperativa_id", cooperativa.id)
+      : query.eq("produtor_id", produtor!.id));
+    if (error) {
+      toast.error("Não foi possível remover o estado.");
+      return;
+    }
+    carregarExtras();
+  }
+
+  const dialogAdicionarUf = (produtor || cooperativa) && (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          <Plus className="size-4" />
+          Acompanhar outro estado
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Acompanhar outro estado</DialogTitle>
+        </DialogHeader>
+        <AdicionarUfForm
+          ufsJaAcompanhados={ufs}
+          produtorId={cooperativa ? null : (produtor?.id ?? null)}
+          cooperativaId={cooperativa?.id ?? null}
+          onDone={() => {
+            setOpen(false);
+            carregarExtras();
+          }}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         icon={CloudSun}
         title="Tendências climáticas"
         description="Previsão de chuva e temperatura pros próximos 5 dias, por estado."
+        action={dialogAdicionarUf}
       />
 
       {ufs.length === 0 && (
@@ -103,7 +174,7 @@ function ClimaConteudo() {
               <EmptyState
                 icon={MapPin}
                 title="Nenhum estado pra acompanhar"
-                description="A previsão sai do estado dos produtores cadastrados. Cadastre um produtor com estado preenchido pra ver o clima da região aqui."
+                description="A previsão sai do estado dos produtores cadastrados. Cadastre um produtor com estado preenchido, ou acompanhe outro estado direto pelo botão acima."
               />
             ) : (
               <EmptyState
@@ -128,11 +199,24 @@ function ClimaConteudo() {
         {ufs.map((uf) => {
           const previsao = previsoes[uf];
           const insight = previsao ? insightDoUf(previsao) : null;
+          const ehExtra = !ufsPrimarias.includes(uf);
 
           return (
             <Card key={uf} className="gap-3">
               <CardHeader className="flex items-center justify-between gap-2">
-                <CardTitle className="font-display text-lg font-semibold">{uf}</CardTitle>
+                <CardTitle className="flex items-center gap-2 font-display text-lg font-semibold">
+                  {uf}
+                  {ehExtra && (
+                    <button
+                      type="button"
+                      onClick={() => removerExtra(uf)}
+                      aria-label={`Parar de acompanhar ${uf}`}
+                      className="text-muted-foreground opacity-60 transition-opacity hover:text-destructive hover:opacity-100"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  )}
+                </CardTitle>
                 {insight && (
                   <Badge variant="outline" className={`border ${toneClasses[insight.tone]}`}>
                     {insight.tone === "chuva-alta"
@@ -199,5 +283,70 @@ function ClimaConteudo() {
         })}
       </div>
     </div>
+  );
+}
+
+function AdicionarUfForm({
+  ufsJaAcompanhados,
+  produtorId,
+  cooperativaId,
+  onDone,
+}: {
+  ufsJaAcompanhados: string[];
+  produtorId: string | null;
+  cooperativaId: string | null;
+  onDone: () => void;
+}) {
+  const disponiveis = todasUfsBrasil.filter((u) => !ufsJaAcompanhados.includes(u.value));
+  const [uf, setUf] = useState(disponiveis[0]?.value ?? "");
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!supabase || !uf) return;
+    setLoading(true);
+    const { error } = await supabase
+      .from("clima_watchlist")
+      .insert({ produtor_id: produtorId, cooperativa_id: cooperativaId, uf });
+    setLoading(false);
+    if (error) {
+      toast.error(
+        error.code === "23505"
+          ? "Esse estado já está sendo acompanhado."
+          : "Não foi possível adicionar.",
+      );
+      return;
+    }
+    toast.success("Estado adicionado.");
+    onDone();
+  }
+
+  if (disponiveis.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">Todos os estados já estão sendo acompanhados.</p>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      <div className="space-y-1.5">
+        <Label>Estado</Label>
+        <Select value={uf} onValueChange={setUf}>
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {disponiveis.map((u) => (
+              <SelectItem key={u.value} value={u.value}>
+                {u.label} ({u.value})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <Button type="submit" disabled={loading} className="mt-2">
+        {loading ? <Loader2 className="size-4 animate-spin" /> : "Acompanhar"}
+      </Button>
+    </form>
   );
 }
