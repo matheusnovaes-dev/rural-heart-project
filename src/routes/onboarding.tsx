@@ -20,7 +20,6 @@ import { criarAssinaturaAsaas } from "@/lib/asaas.server";
 import { enviarBoasVindasWhatsApp } from "@/lib/notificacoes.server";
 import { culturas } from "@/config/culturas";
 import { normalizarWhatsapp } from "@/lib/telefone";
-import { pricingPlans } from "@/config/site";
 
 const searchSchema = z.object({
   convite: z.string().uuid().optional(),
@@ -136,7 +135,11 @@ function OnboardingPage() {
 
       // Produtor convidado por uma cooperativa já está coberto pelo plano
       // dela — só produtor solo (sem convite) assina o próprio plano.
-      if (!convite) {
+      if (convite) {
+        // Best-effort — mesmo sem assinatura própria, quem entra convidado
+        // também precisa saber que existe um WhatsApp pra chamar.
+        void enviarBoasVindasWhatsApp({ data: { nome, whatsapp, cooperativaId: convite } });
+      } else {
         const { data: assinatura, error: assinaturaError } = await supabase
           .from("assinaturas")
           .insert({
@@ -157,13 +160,7 @@ function OnboardingPage() {
 
         // Best-effort — o bot já chama primeiro no WhatsApp, se
         // apresentando, em vez de a pessoa ter que descobrir o número.
-        void enviarBoasVindasWhatsApp({
-          data: {
-            nome,
-            whatsapp,
-            plano: pricingPlans.find((p) => p.id === planoEscolhido)?.name ?? planoEscolhido,
-          },
-        });
+        void enviarBoasVindasWhatsApp({ data: { nome, whatsapp, plano: planoEscolhido } });
       }
     } else {
       // Gera o id no cliente: como o usuário só passa a enxergar a

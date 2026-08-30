@@ -132,11 +132,7 @@ export function LeadForm({ className }: { className?: string }) {
     // WhatsApp pra chamar — em vez de esperar ela descobrir sozinha, o bot
     // já chama primeiro se apresentando.
     void enviarBoasVindasWhatsApp({
-      data: {
-        nome: values.name,
-        whatsapp,
-        plano: pricingPlans.find((p) => p.id === values.plano)?.name ?? values.plano,
-      },
+      data: { nome: values.name, whatsapp, plano: values.plano },
     });
 
     // O AuthProvider já buscou o perfil (produtor) reagindo ao signUp() —
