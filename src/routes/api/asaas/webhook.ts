@@ -220,14 +220,14 @@ async function notificarWhatsApp(
   const valor = payment.value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const vencimento = new Date(`${payment.dueDate}T00:00:00`).toLocaleDateString("pt-BR");
   const primeiroNome = nome.split(" ")[0] || nome;
-  const mensagem =
-    tipo === "vencendo"
-      ? `Olá, ${primeiroNome}! A cobrança do seu plano Safralume (${valor}) vence em ${vencimento}. Fatura: ${payment.invoiceUrl}`
-      : `Olá, ${primeiroNome}. A cobrança do seu plano Safralume (${valor}, venceu em ${vencimento}) ainda não foi paga. Regularize pra não perder o acesso: ${payment.invoiceUrl}`;
+  // Mensagem de negócio pra quem não mandou mensagem recentemente exige
+  // template aprovado pela Meta — texto livre não entrega fora da janela
+  // de 24h de uma conversa iniciada pelo cliente.
+  const template = tipo === "vencendo" ? "cobranca_vencendo_safralu" : "cobranca_vencida_safralu";
 
   await fetch(webhookUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-safralume-token": token },
-    body: JSON.stringify({ telefone: `55${whatsapp}`, mensagem }),
+    body: JSON.stringify({ telefone: `55${whatsapp}`, template, nome: primeiroNome, valor, vencimento }),
   });
 }

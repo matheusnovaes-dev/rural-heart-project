@@ -108,11 +108,15 @@ async function notificarWhatsAppTrial(whatsapp: string, nome: string, diasRestan
   const primeiroNome = nome.split(" ")[0] || nome;
   const prazo =
     diasRestantes <= 0 ? "hoje" : `em ${diasRestantes} dia${diasRestantes === 1 ? "" : "s"}`;
-  const mensagem = `Olá, ${primeiroNome}! Seu teste grátis do Safralume acaba ${prazo}. Escolha um plano em safralume.com.br/assinar pra não perder o acesso.`;
 
   await fetch(webhookUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-safralume-token": token },
-    body: JSON.stringify({ telefone: `55${whatsapp}`, mensagem }),
+    body: JSON.stringify({
+      telefone: `55${whatsapp}`,
+      template: "trial_expirando_safralu",
+      nome: primeiroNome,
+      prazo,
+    }),
   });
 }
