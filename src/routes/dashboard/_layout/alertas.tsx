@@ -1,6 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { TrendingUp, Loader2, Plus, ArrowDown, ArrowUp, X, CloudRain } from "lucide-react";
+import {
+  TrendingUp,
+  Loader2,
+  Plus,
+  ArrowDown,
+  ArrowUp,
+  Pencil,
+  Trash2,
+  X,
+  CloudRain,
+} from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/dashboard/PageHeader";
@@ -24,6 +34,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
@@ -40,6 +61,8 @@ type Alerta = {
   direcao: "acima" | "abaixo";
   ativo: boolean;
   disparado_em: string | null;
+  produtor_id: string;
+  whatsapp_destino: string;
 };
 
 type CondicaoClima = "chuva_forte" | "geada" | "seca_prolongada" | "vento_forte";
@@ -51,6 +74,8 @@ type AlertaClima = {
   limite: number;
   ativo: boolean;
   ultimo_disparo_data: string | null;
+  produtor_id: string;
+  whatsapp_destino: string;
 };
 
 const condicaoInfo: Record<
@@ -99,18 +124,21 @@ function AlertasPage() {
     { id: string; nome: string; whatsapp: string }[]
   >([]);
   const [open, setOpen] = useState(false);
+  const [editando, setEditando] = useState<Alerta | null>(null);
 
   async function load() {
     if (!supabase) return;
     const { data } = await supabase
       .from("alertas_preco")
-      .select("id, cultura, uf, limite, direcao, ativo, disparado_em")
+      .select(
+        "id, cultura, uf, limite, direcao, ativo, disparado_em, produtor_id, whatsapp_destino",
+      )
       .order("created_at", { ascending: false });
     setAlertas(data ?? []);
 
     const { data: dataClima } = await supabase
       .from("alertas_clima")
-      .select("id, uf, condicao, limite, ativo, ultimo_disparo_data")
+      .select("id, uf, condicao, limite, ativo, ultimo_disparo_data, produtor_id, whatsapp_destino")
       .order("created_at", { ascending: false });
     setAlertasClima(dataClima ?? []);
     setCarregando(false);
@@ -153,6 +181,21 @@ function AlertasPage() {
     load();
   }
 
+  const [excluindoId, setExcluindoId] = useState<string | null>(null);
+
+  async function excluir(id: string) {
+    if (!supabase) return;
+    setExcluindoId(id);
+    const { error } = await supabase.from("alertas_preco").delete().eq("id", id);
+    setExcluindoId(null);
+    if (error) {
+      toast.error("Não foi possível excluir o alerta.");
+      return;
+    }
+    toast.success("Alerta excluído.");
+    load();
+  }
+
   const [cancelandoClimaId, setCancelandoClimaId] = useState<string | null>(null);
 
   async function cancelarClima(id: string) {
@@ -165,6 +208,21 @@ function AlertasPage() {
       return;
     }
     toast.success("Alerta cancelado.");
+    load();
+  }
+
+  const [excluindoClimaId, setExcluindoClimaId] = useState<string | null>(null);
+
+  async function excluirClima(id: string) {
+    if (!supabase) return;
+    setExcluindoClimaId(id);
+    const { error } = await supabase.from("alertas_clima").delete().eq("id", id);
+    setExcluindoClimaId(null);
+    if (error) {
+      toast.error("Não foi possível excluir o alerta.");
+      return;
+    }
+    toast.success("Alerta excluído.");
     load();
   }
 
@@ -208,23 +266,34 @@ function AlertasPage() {
   ];
 
   const [openClima, setOpenClima] = useState(false);
+  const [editandoClima, setEditandoClima] = useState<AlertaClima | null>(null);
 
   const dialogNovo = (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open || !!editando}
+      onOpenChange={(v) => {
+        if (!v) {
+          setOpen(false);
+          setEditando(null);
+        }
+      }}
+    >
       <DialogTrigger asChild>
-        <Button size="sm" disabled={destinatarios.length === 0}>
+        <Button size="sm" disabled={destinatarios.length === 0} onClick={() => setOpen(true)}>
           <Plus className="size-4" />
           Novo alerta de preço
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Novo alerta de preço</DialogTitle>
+          <DialogTitle>{editando ? "Editar alerta de preço" : "Novo alerta de preço"}</DialogTitle>
         </DialogHeader>
-        <NovoAlertaForm
+        <AlertaForm
           destinatarios={destinatarios}
+          alerta={editando}
           onDone={() => {
             setOpen(false);
+            setEditando(null);
             load();
           }}
         />
@@ -233,21 +302,38 @@ function AlertasPage() {
   );
 
   const dialogNovoClima = (
-    <Dialog open={openClima} onOpenChange={setOpenClima}>
+    <Dialog
+      open={openClima || !!editandoClima}
+      onOpenChange={(v) => {
+        if (!v) {
+          setOpenClima(false);
+          setEditandoClima(null);
+        }
+      }}
+    >
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline" disabled={destinatarios.length === 0}>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={destinatarios.length === 0}
+          onClick={() => setOpenClima(true)}
+        >
           <Plus className="size-4" />
           Novo alerta de clima
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Novo alerta de clima</DialogTitle>
+          <DialogTitle>
+            {editandoClima ? "Editar alerta de clima" : "Novo alerta de clima"}
+          </DialogTitle>
         </DialogHeader>
-        <NovoAlertaClimaForm
+        <AlertaClimaForm
           destinatarios={destinatarios}
+          alerta={editandoClima}
           onDone={() => {
             setOpenClima(false);
+            setEditandoClima(null);
             load();
           }}
         />
@@ -304,10 +390,10 @@ function AlertasPage() {
                       </span>
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <Badge
                       variant={a.disparado_em ? "default" : "secondary"}
-                      className="font-mono text-[11px] tabular-nums"
+                      className="mr-1 font-mono text-[11px] tabular-nums"
                     >
                       {a.disparado_em
                         ? `Disparado em ${new Date(a.disparado_em).toLocaleDateString("pt-BR")}`
@@ -316,23 +402,68 @@ function AlertasPage() {
                           : "Cancelado"}
                     </Badge>
                     {a.ativo && !a.disparado_em && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-muted-foreground hover:text-destructive"
-                        disabled={cancelandoId === a.id}
-                        onClick={() => cancelar(a.id)}
-                      >
-                        {cancelandoId === a.id ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                          <>
-                            <X className="size-4" />
-                            Cancelar
-                          </>
-                        )}
-                      </Button>
+                      <>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="size-8 p-0 text-muted-foreground hover:text-foreground"
+                          aria-label={`Editar alerta ${a.cultura} ${a.uf}`}
+                          onClick={() => setEditando(a)}
+                        >
+                          <Pencil className="size-3.5" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="size-8 p-0 text-muted-foreground hover:text-destructive"
+                          disabled={cancelandoId === a.id}
+                          title="Cancelar (mantém no histórico)"
+                          aria-label={`Cancelar alerta ${a.cultura} ${a.uf}`}
+                          onClick={() => cancelar(a.id)}
+                        >
+                          {cancelandoId === a.id ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : (
+                            <X className="size-3.5" />
+                          )}
+                        </Button>
+                      </>
                     )}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="size-8 p-0 text-muted-foreground hover:text-destructive"
+                          disabled={excluindoId === a.id}
+                          title="Excluir (remove do histórico)"
+                          aria-label={`Excluir alerta ${a.cultura} ${a.uf}`}
+                        >
+                          {excluindoId === a.id ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="size-3.5" />
+                          )}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            Excluir alerta de {a.cultura} · {a.uf}?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Essa ação não pode ser desfeita — diferente de cancelar, remove o alerta
+                            do histórico por completo.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => excluir(a.id)}>
+                            Excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               ))}
@@ -370,10 +501,10 @@ function AlertasPage() {
                       {condicaoInfo[a.condicao].label} — {descreverCondicaoClima(a)}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <Badge
                       variant={a.ultimo_disparo_data ? "default" : "secondary"}
-                      className="font-mono text-[11px] tabular-nums"
+                      className="mr-1 font-mono text-[11px] tabular-nums"
                     >
                       {!a.ativo
                         ? "Cancelado"
@@ -382,23 +513,68 @@ function AlertasPage() {
                           : "Ativo, monitorando"}
                     </Badge>
                     {a.ativo && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-muted-foreground hover:text-destructive"
-                        disabled={cancelandoClimaId === a.id}
-                        onClick={() => cancelarClima(a.id)}
-                      >
-                        {cancelandoClimaId === a.id ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                          <>
-                            <X className="size-4" />
-                            Cancelar
-                          </>
-                        )}
-                      </Button>
+                      <>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="size-8 p-0 text-muted-foreground hover:text-foreground"
+                          aria-label={`Editar alerta de clima ${a.uf}`}
+                          onClick={() => setEditandoClima(a)}
+                        >
+                          <Pencil className="size-3.5" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="size-8 p-0 text-muted-foreground hover:text-destructive"
+                          disabled={cancelandoClimaId === a.id}
+                          title="Cancelar (mantém no histórico)"
+                          aria-label={`Cancelar alerta de clima ${a.uf}`}
+                          onClick={() => cancelarClima(a.id)}
+                        >
+                          {cancelandoClimaId === a.id ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : (
+                            <X className="size-3.5" />
+                          )}
+                        </Button>
+                      </>
                     )}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="size-8 p-0 text-muted-foreground hover:text-destructive"
+                          disabled={excluindoClimaId === a.id}
+                          title="Excluir (remove do histórico)"
+                          aria-label={`Excluir alerta de clima ${a.uf}`}
+                        >
+                          {excluindoClimaId === a.id ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="size-3.5" />
+                          )}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            Excluir alerta de {condicaoInfo[a.condicao].label} · {a.uf}?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Essa ação não pode ser desfeita — diferente de cancelar, remove o alerta
+                            do histórico por completo.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => excluirClima(a.id)}>
+                            Excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               ))}
@@ -410,8 +586,9 @@ function AlertasPage() {
   );
 }
 
-function NovoAlertaForm({
+function AlertaForm({
   destinatarios,
+  alerta,
   onDone,
 }: {
   destinatarios: {
@@ -422,16 +599,23 @@ function NovoAlertaForm({
     uf: string | null;
     produtorId: string;
   }[];
+  alerta: Alerta | null;
   onDone: () => void;
 }) {
   const { session } = useAuth();
-  const [destinatarioId, setDestinatarioId] = useState(destinatarios[0]?.id ?? "");
+  const destinatarioInicial =
+    destinatarios.find((d) => d.whatsapp === alerta?.whatsapp_destino)?.id ??
+    destinatarios[0]?.id ??
+    "";
+  const [destinatarioId, setDestinatarioId] = useState(destinatarioInicial);
   const selecionado = destinatarios.find((d) => d.id === destinatarioId) ?? destinatarios[0];
 
-  const [cultura, setCultura] = useState(selecionado?.cultura_principal ?? "soja");
-  const [uf, setUf] = useState(selecionado?.uf ?? "");
-  const [limite, setLimite] = useState("");
-  const [direcao, setDirecao] = useState<"acima" | "abaixo">("acima");
+  const [cultura, setCultura] = useState(
+    alerta?.cultura ?? selecionado?.cultura_principal ?? "soja",
+  );
+  const [uf, setUf] = useState(alerta?.uf ?? selecionado?.uf ?? "");
+  const [limite, setLimite] = useState(alerta ? String(alerta.limite).replace(".", ",") : "");
+  const [direcao, setDirecao] = useState<"acima" | "abaixo">(alerta?.direcao ?? "acima");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -441,21 +625,25 @@ function NovoAlertaForm({
     if (!destinatario) return;
 
     setLoading(true);
-    const { error } = await supabase.from("alertas_preco").insert({
+    const payload = {
       produtor_id: destinatario.produtorId,
-      criado_por: session.user.id,
       cultura,
       uf: uf.toUpperCase(),
       limite: parseFloat(limite.replace(",", ".")),
       direcao,
       whatsapp_destino: destinatario.whatsapp,
-    });
+    };
+    const { error } = alerta
+      ? await supabase.from("alertas_preco").update(payload).eq("id", alerta.id)
+      : await supabase.from("alertas_preco").insert({ ...payload, criado_por: session.user.id });
     setLoading(false);
     if (error) {
-      toast.error("Não foi possível criar o alerta.");
+      toast.error(
+        alerta ? "Não foi possível salvar as alterações." : "Não foi possível criar o alerta.",
+      );
       return;
     }
-    toast.success("Alerta criado.");
+    toast.success(alerta ? "Alerta atualizado." : "Alerta criado.");
     onDone();
   }
 
@@ -527,14 +715,21 @@ function NovoAlertaForm({
         />
       </div>
       <Button type="submit" disabled={loading} className="mt-2">
-        {loading ? <Loader2 className="size-4 animate-spin" /> : "Criar alerta"}
+        {loading ? (
+          <Loader2 className="size-4 animate-spin" />
+        ) : alerta ? (
+          "Salvar alterações"
+        ) : (
+          "Criar alerta"
+        )}
       </Button>
     </form>
   );
 }
 
-function NovoAlertaClimaForm({
+function AlertaClimaForm({
   destinatarios,
+  alerta,
   onDone,
 }: {
   destinatarios: {
@@ -545,15 +740,22 @@ function NovoAlertaClimaForm({
     uf: string | null;
     produtorId: string;
   }[];
+  alerta: AlertaClima | null;
   onDone: () => void;
 }) {
   const { session } = useAuth();
-  const [destinatarioId, setDestinatarioId] = useState(destinatarios[0]?.id ?? "");
+  const destinatarioInicial =
+    destinatarios.find((d) => d.whatsapp === alerta?.whatsapp_destino)?.id ??
+    destinatarios[0]?.id ??
+    "";
+  const [destinatarioId, setDestinatarioId] = useState(destinatarioInicial);
   const selecionado = destinatarios.find((d) => d.id === destinatarioId) ?? destinatarios[0];
 
-  const [uf, setUf] = useState(selecionado?.uf ?? "");
-  const [condicao, setCondicao] = useState<CondicaoClima>("chuva_forte");
-  const [limite, setLimite] = useState(String(condicaoInfo.chuva_forte.limitePadrao));
+  const [uf, setUf] = useState(alerta?.uf ?? selecionado?.uf ?? "");
+  const [condicao, setCondicao] = useState<CondicaoClima>(alerta?.condicao ?? "chuva_forte");
+  const [limite, setLimite] = useState(
+    alerta ? String(alerta.limite) : String(condicaoInfo.chuva_forte.limitePadrao),
+  );
   const [loading, setLoading] = useState(false);
 
   function trocarCondicao(nova: CondicaoClima) {
@@ -568,20 +770,24 @@ function NovoAlertaClimaForm({
     if (!destinatario) return;
 
     setLoading(true);
-    const { error } = await supabase.from("alertas_clima").insert({
+    const payload = {
       produtor_id: destinatario.produtorId,
-      criado_por: session.user.id,
       uf: uf.toUpperCase(),
       condicao,
       limite: parseFloat(limite.replace(",", ".")),
       whatsapp_destino: destinatario.whatsapp,
-    });
+    };
+    const { error } = alerta
+      ? await supabase.from("alertas_clima").update(payload).eq("id", alerta.id)
+      : await supabase.from("alertas_clima").insert({ ...payload, criado_por: session.user.id });
     setLoading(false);
     if (error) {
-      toast.error("Não foi possível criar o alerta.");
+      toast.error(
+        alerta ? "Não foi possível salvar as alterações." : "Não foi possível criar o alerta.",
+      );
       return;
     }
-    toast.success("Alerta criado.");
+    toast.success(alerta ? "Alerta atualizado." : "Alerta criado.");
     onDone();
   }
 
@@ -646,7 +852,13 @@ function NovoAlertaClimaForm({
         </div>
       </div>
       <Button type="submit" disabled={loading} className="mt-2">
-        {loading ? <Loader2 className="size-4 animate-spin" /> : "Criar alerta"}
+        {loading ? (
+          <Loader2 className="size-4 animate-spin" />
+        ) : alerta ? (
+          "Salvar alterações"
+        ) : (
+          "Criar alerta"
+        )}
       </Button>
     </form>
   );

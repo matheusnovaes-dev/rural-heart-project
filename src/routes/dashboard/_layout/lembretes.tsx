@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Bell, Loader2, Plus, Clock, X } from "lucide-react";
+import { Bell, Loader2, Plus, Clock, Pencil, Trash2, X } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/dashboard/PageHeader";
@@ -25,6 +25,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
@@ -41,6 +52,7 @@ type Lembrete = {
   status: "pendente" | "enviado" | "erro" | "cancelado";
   recorrencia: "diaria" | "semanal" | null;
   produtor_id: string;
+  whatsapp_destino: string;
 };
 
 const statusLabel: Record<
@@ -64,12 +76,15 @@ function LembretesPage() {
     { id: string; nome: string; whatsapp: string }[]
   >([]);
   const [open, setOpen] = useState(false);
+  const [editando, setEditando] = useState<Lembrete | null>(null);
 
   async function load() {
     if (!supabase) return;
     const { data } = await supabase
       .from("lembretes")
-      .select("id, titulo, descricao, enviar_em, status, recorrencia, produtor_id")
+      .select(
+        "id, titulo, descricao, enviar_em, status, recorrencia, produtor_id, whatsapp_destino",
+      )
       .order("enviar_em", { ascending: true });
     setLembretes(data ?? []);
     setCarregando(false);
@@ -112,6 +127,21 @@ function LembretesPage() {
     load();
   }
 
+  const [excluindoId, setExcluindoId] = useState<string | null>(null);
+
+  async function excluir(id: string) {
+    if (!supabase) return;
+    setExcluindoId(id);
+    const { error } = await supabase.from("lembretes").delete().eq("id", id);
+    setExcluindoId(null);
+    if (error) {
+      toast.error("Não foi possível excluir o lembrete.");
+      return;
+    }
+    toast.success("Lembrete excluído.");
+    load();
+  }
+
   // produtorId é sempre o dono real da conta (pra RLS/histórico) — pode
   // ser diferente de quem recebe a mensagem, quando o destino é um
   // funcionário (que não tem linha própria em `produtores`). Uma conta pode
@@ -138,21 +168,31 @@ function LembretesPage() {
   ];
 
   const dialogNovo = (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open || !!editando}
+      onOpenChange={(v) => {
+        if (!v) {
+          setOpen(false);
+          setEditando(null);
+        }
+      }}
+    >
       <DialogTrigger asChild>
-        <Button size="sm" disabled={destinatarios.length === 0}>
+        <Button size="sm" disabled={destinatarios.length === 0} onClick={() => setOpen(true)}>
           <Plus className="size-4" />
           Novo lembrete
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Novo lembrete</DialogTitle>
+          <DialogTitle>{editando ? "Editar lembrete" : "Novo lembrete"}</DialogTitle>
         </DialogHeader>
-        <NovoLembreteForm
+        <LembreteForm
           destinatarios={destinatarios}
+          lembrete={editando}
           onDone={() => {
             setOpen(false);
+            setEditando(null);
             load();
           }}
         />
@@ -207,31 +247,74 @@ function LembretesPage() {
                         ` · repete ${l.recorrencia === "diaria" ? "todo dia" : "toda semana"}`}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <Badge
                       variant={statusLabel[l.status].variant}
-                      className="text-[11px] font-semibold"
+                      className="mr-1 text-[11px] font-semibold"
                     >
                       {statusLabel[l.status].label}
                     </Badge>
                     {l.status === "pendente" && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-muted-foreground hover:text-destructive"
-                        disabled={cancelandoId === l.id}
-                        onClick={() => cancelar(l.id)}
-                      >
-                        {cancelandoId === l.id ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                          <>
-                            <X className="size-4" />
-                            Cancelar
-                          </>
-                        )}
-                      </Button>
+                      <>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="size-8 p-0 text-muted-foreground hover:text-foreground"
+                          aria-label={`Editar ${l.titulo}`}
+                          onClick={() => setEditando(l)}
+                        >
+                          <Pencil className="size-3.5" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="size-8 p-0 text-muted-foreground hover:text-destructive"
+                          disabled={cancelandoId === l.id}
+                          aria-label={`Cancelar ${l.titulo}`}
+                          title="Cancelar (mantém no histórico)"
+                          onClick={() => cancelar(l.id)}
+                        >
+                          {cancelandoId === l.id ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : (
+                            <X className="size-3.5" />
+                          )}
+                        </Button>
+                      </>
                     )}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="size-8 p-0 text-muted-foreground hover:text-destructive"
+                          disabled={excluindoId === l.id}
+                          aria-label={`Excluir ${l.titulo}`}
+                          title="Excluir (remove do histórico)"
+                        >
+                          {excluindoId === l.id ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="size-3.5" />
+                          )}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir "{l.titulo}"?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Essa ação não pode ser desfeita — diferente de cancelar, remove o
+                            lembrete do histórico por completo.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => excluir(l.id)}>
+                            Excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               ))}
@@ -243,20 +326,31 @@ function LembretesPage() {
   );
 }
 
-function NovoLembreteForm({
+function LembreteForm({
   destinatarios,
+  lembrete,
   onDone,
 }: {
   destinatarios: { id: string; nome: string; whatsapp: string; produtorId: string }[];
+  lembrete: Lembrete | null;
   onDone: () => void;
 }) {
   const { session } = useAuth();
-  const [destinatarioId, setDestinatarioId] = useState(destinatarios[0]?.id ?? "");
-  const [titulo, setTitulo] = useState("");
-  const [descricao, setDescricao] = useState("");
-  const [data, setData] = useState("");
-  const [hora, setHora] = useState("08:00");
-  const [recorrencia, setRecorrencia] = useState<string>("nenhuma");
+  const destinatarioInicial =
+    destinatarios.find((d) => d.whatsapp === lembrete?.whatsapp_destino)?.id ??
+    destinatarios[0]?.id ??
+    "";
+  const [destinatarioId, setDestinatarioId] = useState(destinatarioInicial);
+  const [titulo, setTitulo] = useState(lembrete?.titulo ?? "");
+  const [descricao, setDescricao] = useState(lembrete?.descricao ?? "");
+  const dataInicial = lembrete ? new Date(lembrete.enviar_em) : null;
+  const [data, setData] = useState(dataInicial ? dataInicial.toISOString().slice(0, 10) : "");
+  const [hora, setHora] = useState(
+    dataInicial
+      ? `${String(dataInicial.getHours()).padStart(2, "0")}:${String(dataInicial.getMinutes()).padStart(2, "0")}`
+      : "08:00",
+  );
+  const [recorrencia, setRecorrencia] = useState<string>(lembrete?.recorrencia ?? "nenhuma");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -266,21 +360,27 @@ function NovoLembreteForm({
     if (!destinatario) return;
 
     setLoading(true);
-    const { error } = await supabase.from("lembretes").insert({
+    const payload = {
       produtor_id: destinatario.produtorId,
-      criado_por: session.user.id,
       titulo,
       descricao: descricao || null,
       enviar_em: new Date(`${data}T${hora}:00`).toISOString(),
       whatsapp_destino: destinatario.whatsapp,
       recorrencia: recorrencia === "nenhuma" ? null : recorrencia,
-    });
+    };
+    const { error } = lembrete
+      ? await supabase.from("lembretes").update(payload).eq("id", lembrete.id)
+      : await supabase.from("lembretes").insert({ ...payload, criado_por: session.user.id });
     setLoading(false);
     if (error) {
-      toast.error("Não foi possível agendar o lembrete.");
+      toast.error(
+        lembrete
+          ? "Não foi possível salvar as alterações."
+          : "Não foi possível agendar o lembrete.",
+      );
       return;
     }
-    toast.success("Lembrete agendado.");
+    toast.success(lembrete ? "Lembrete atualizado." : "Lembrete agendado.");
     onDone();
   }
 
@@ -361,7 +461,13 @@ function NovoLembreteForm({
         </Select>
       </div>
       <Button type="submit" disabled={loading} className="mt-2">
-        {loading ? <Loader2 className="size-4 animate-spin" /> : "Agendar lembrete"}
+        {loading ? (
+          <Loader2 className="size-4 animate-spin" />
+        ) : lembrete ? (
+          "Salvar alterações"
+        ) : (
+          "Agendar lembrete"
+        )}
       </Button>
     </form>
   );
