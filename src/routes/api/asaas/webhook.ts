@@ -228,6 +228,12 @@ async function notificarWhatsApp(
   await fetch(webhookUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-safralume-token": token },
-    body: JSON.stringify({ telefone: `55${whatsapp}`, template, nome: primeiroNome, valor, vencimento }),
+    body: JSON.stringify({
+      telefone: `55${whatsapp}`,
+      template,
+      nome: primeiroNome,
+      valor,
+      vencimento,
+    }),
   });
 }
