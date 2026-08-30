@@ -115,3 +115,29 @@ export function combinarSinalVenda(
 
   return null;
 }
+
+const LIMITE_DIAS_CHUVA_RISCO = 2;
+
+/**
+ * Acrescenta o risco de clima ao sinal de venda já calculado — chuva forte
+ * prevista pesa a favor de não esperar (risco de atrapalhar colheita ou
+ * escoamento), mesmo quando preço/curva sozinhos sugeririam esperar. Não
+ * troca o motivo de preço, só soma o motivo climático por cima; por isso
+ * fica de fora de `combinarSinalVenda` — são dois cálculos independentes
+ * combinados depois, não um terceiro caso dentro da mesma matriz.
+ */
+export function combinarComClima(
+  sinal: SinalVenda | null,
+  diasDeChuva: number | null,
+): SinalVenda | null {
+  const riscoClima = diasDeChuva != null && diasDeChuva >= LIMITE_DIAS_CHUVA_RISCO;
+  if (!riscoClima) return sinal;
+
+  const nota = `Tem chuva forte prevista em ${diasDeChuva} dos próximos 5 dias — pode atrapalhar colheita ou escoamento, o que pesa a favor de não esperar demais pra vender.`;
+
+  if (!sinal) return { tone: "warn", texto: nota };
+  if (sinal.tone === "up") return { ...sinal, texto: `${sinal.texto} ${nota}` };
+  // Neutro ou desfavorável: o risco de clima pesa a favor de vender mesmo
+  // assim, por isso vira "warn" (chama atenção) em vez de manter "down".
+  return { tone: "warn", texto: `${sinal.texto} ${nota}` };
+}

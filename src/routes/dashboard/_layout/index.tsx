@@ -6,8 +6,6 @@ import {
   ArrowUp,
   Bell,
   CloudSun,
-  Loader2,
-  Lock,
   MessageCircle,
   Minus,
   TrendingUp,
@@ -29,8 +27,6 @@ import { BoletimSemanal } from "@/components/dashboard/BoletimSemanal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buscarPrevisao, type Previsao } from "@/lib/clima";
 import { precoLiquido, type FreteRef } from "@/lib/frete";
-import { temAcessoPrata, useAssinatura } from "@/lib/planos";
-import { UpgradeButton } from "@/components/dashboard/UpgradeButton";
 import { buildWhatsAppLink } from "@/config/site";
 
 export const Route = createFileRoute("/dashboard/_layout/")({
@@ -141,7 +137,6 @@ type PrecoHistorico = { preco: number; data_referencia: string; updated_at: stri
 const CHAVE_BANNER_WHATSAPP = "safralume_banner_whatsapp_dispensado";
 
 function ProdutorHome({ produtor }: { produtor: Produtor }) {
-  const { plano, assinaturaId, asaasSubscriptionId, loading: loadingPlano } = useAssinatura();
   const [bannerWhatsappVisivel, setBannerWhatsappVisivel] = useState(false);
   const [serie, setSerie] = useState<PrecoHistorico[] | null>(null);
   const [lembretes, setLembretes] = useState<{ id: string; titulo: string; enviar_em: string }[]>(
@@ -208,12 +203,12 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
   }, [produtor]);
 
   useEffect(() => {
-    if (!produtor.uf || !temAcessoPrata(plano)) {
+    if (!produtor.uf) {
       setPrevisao(null);
       return;
     }
     buscarPrevisao(produtor.uf).then(setPrevisao);
-  }, [produtor.uf, plano]);
+  }, [produtor.uf]);
 
   const atual = serie?.at(-1) ?? null;
   const anterior = serie?.at(-2) ?? null;
@@ -378,29 +373,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {loadingPlano ? (
-                <div className="grid grid-cols-5 gap-1.5">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Skeleton key={i} className="h-16 w-full" />
-                  ))}
-                </div>
-              ) : !temAcessoPrata(plano) ? (
-                <div className="flex flex-col items-center gap-2 py-2 text-center">
-                  <span className="flex size-8 items-center justify-center rounded-full bg-secondary text-muted-foreground">
-                    <Lock className="size-3.5" />
-                  </span>
-                  <p className="text-xs text-muted-foreground">
-                    Previsão de chuva e temperatura disponível a partir do plano Prata.
-                  </p>
-                  <UpgradeButton
-                    planoAlvo="prata"
-                    assinaturaId={assinaturaId}
-                    asaasSubscriptionId={asaasSubscriptionId}
-                    variant="outline"
-                    className="mt-1"
-                  />
-                </div>
-              ) : previsao === undefined ? (
+              {previsao === undefined ? (
                 <div className="grid grid-cols-5 gap-1.5">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Skeleton key={i} className="h-16 w-full" />

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   Bell,
-  CloudRain,
   Gauge,
   Loader2,
   Target,
@@ -18,7 +17,12 @@ import { temAcessoPrata, useAssinatura } from "@/lib/planos";
 import type { Produtor } from "@/lib/auth";
 import { InsightCard } from "@/components/dashboard/InsightCard";
 import { CULTURA_PARA_B3 } from "@/config/b3";
-import { combinarSinalVenda, sinalDaCurvaFuturos, sinalDaPosicao } from "@/lib/sinalVenda";
+import {
+  combinarComClima,
+  combinarSinalVenda,
+  sinalDaCurvaFuturos,
+  sinalDaPosicao,
+} from "@/lib/sinalVenda";
 
 type PrecoPonto = { preco: number; data_referencia: string; produto: string; uf: string };
 
@@ -217,13 +221,13 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
   }, [cultura]);
 
   useEffect(() => {
-    if (!uf || !temAcessoPrata(plano)) return;
+    if (!uf) return;
     buscarPrevisao(uf).then((previsao) => {
       if (!previsao) return;
       const riscosos = previsao.chuvaPct.filter((p) => p >= 60).length;
       setDiasDeChuva(riscosos);
     });
-  }, [uf, plano]);
+  }, [uf]);
 
   if (!cultura || !uf) return null;
   if (serie === null || loadingPlano) {
@@ -247,9 +251,9 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
   const posicao =
     !semHistorico && max > min ? ((serie.at(-1)!.preco - min) / (max - min)) * 100 : null;
 
-  const sinalVenda = combinarSinalVenda(
-    sinalDaPosicao(posicao),
-    futurosB3 ? sinalDaCurvaFuturos(futurosB3) : null,
+  const sinalVenda = combinarComClima(
+    combinarSinalVenda(sinalDaPosicao(posicao), futurosB3 ? sinalDaCurvaFuturos(futurosB3) : null),
+    diasDeChuva,
   );
 
   let anomalia: string | null = null;
@@ -292,8 +296,8 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
         <InsightCard icon={Target} tone={sinalVenda.tone} title="Sinal de venda">
           {sinalVenda.texto}
           <p className="mt-1.5 text-xs text-muted-foreground">
-            Cruza a posição do preço nos últimos 90 dias com a curva de futuros da B3 — não é
-            recomendação de investimento.
+            Cruza a posição do preço nos últimos 90 dias, a curva de futuros da B3 e o risco de
+            clima na sua região — não é recomendação de investimento.
           </p>
         </InsightCard>
       )}
@@ -368,14 +372,6 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
           <Button asChild size="sm" variant="outline">
             <Link to="/dashboard/alertas">Criar alerta</Link>
           </Button>
-        </InsightCard>
-      )}
-
-      {temAcessoPrata(plano) && diasDeChuva != null && diasDeChuva >= 2 && (
-        <InsightCard icon={CloudRain} tone="warn" title="Atenção ao clima">
-          Chuva prevista em{" "}
-          <span className="font-mono font-semibold tabular-nums">{diasDeChuva}</span> dos próximos 5
-          dias em {uf}. Pode afetar colheita ou transporte.
         </InsightCard>
       )}
     </div>

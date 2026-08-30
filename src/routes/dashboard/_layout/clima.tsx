@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { CloudRain, CloudSun, Lock, MapPin, Thermometer } from "lucide-react";
+import { CloudRain, CloudSun, MapPin, Thermometer } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,54 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { EmptyState } from "@/components/dashboard/EmptyState";
-import { UpgradeButton } from "@/components/dashboard/UpgradeButton";
 import { TrocarCulturaDialog } from "@/components/dashboard/TrocarCulturaDialog";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
-import { temAcessoPrata, useAssinatura } from "@/lib/planos";
 import { buscarPrevisao, type Previsao } from "@/lib/clima";
 
 export const Route = createFileRoute("/dashboard/_layout/clima")({
-  component: ClimaPage,
+  component: ClimaConteudo,
 });
-
-function ClimaPage() {
-  const { plano, assinaturaId, asaasSubscriptionId, loading: loadingPlano } = useAssinatura();
-
-  if (loadingPlano) {
-    return (
-      <div className="flex flex-col gap-4">
-        <Skeleton className="h-10 w-64" />
-        <Skeleton className="h-48 w-full" />
-      </div>
-    );
-  }
-
-  if (!temAcessoPrata(plano)) {
-    return (
-      <Card>
-        <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-          <span className="flex size-12 items-center justify-center rounded-full bg-secondary text-muted-foreground">
-            <Lock className="size-5" />
-          </span>
-          <CardTitle className="text-lg">Tendências climáticas</CardTitle>
-          <CardDescription className="max-w-sm">
-            Disponível a partir do plano Prata. Faça upgrade pra ver a previsão de chuva e
-            temperatura das próximas 5 dias na sua região.
-          </CardDescription>
-          <UpgradeButton
-            planoAlvo="prata"
-            assinaturaId={assinaturaId}
-            asaasSubscriptionId={asaasSubscriptionId}
-            className="mt-1 bg-cta text-cta-foreground hover:bg-cta/90"
-          />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return <ClimaConteudo />;
-}
 
 // Chuva alta é a leitura que mais importa pro produtor (risco de colheita
 // parada, estrada ruim pro escoamento) — três faixas simples em vez de só
