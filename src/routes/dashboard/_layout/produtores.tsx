@@ -39,6 +39,8 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useRequireCooperativa } from "@/lib/auth";
 import { normalizarWhatsapp } from "@/lib/telefone";
+import { ImportarProdutoresDialog } from "@/components/dashboard/ImportarProdutoresDialog";
+import { enviarBoasVindasWhatsApp } from "@/lib/notificacoes.server";
 
 export const Route = createFileRoute("/dashboard/_layout/produtores")({
   component: ProdutoresPage,
@@ -136,7 +138,12 @@ function ProdutoresPage() {
         icon={Users}
         title="Produtores"
         description="Produtores associados à sua cooperativa"
-        action={dialogAdicionar}
+        action={
+          <div className="flex gap-2">
+            <ImportarProdutoresDialog cooperativaId={cooperativa.id} onDone={load} />
+            {dialogAdicionar}
+          </div>
+        }
       />
       <Card>
         <CardContent className="flex flex-col gap-4 pt-6">
@@ -281,6 +288,15 @@ function ProdutorForm({
       );
       return;
     }
+
+    if (!produtor) {
+      // Best-effort — mesmo cadastrado pela cooperativa (não pelo próprio
+      // produtor), ele precisa saber que existe um WhatsApp pra chamar.
+      void enviarBoasVindasWhatsApp({
+        data: { nome, whatsapp: payload.whatsapp, cooperativaId },
+      });
+    }
+
     toast.success(produtor ? "Produtor atualizado." : "Produtor adicionado.");
     onDone();
   }
