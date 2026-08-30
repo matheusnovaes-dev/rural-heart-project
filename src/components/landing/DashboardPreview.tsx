@@ -8,7 +8,9 @@ import {
   Fuel,
   DollarSign,
   Globe,
-  Sprout,
+  Target,
+  Star,
+  Bell,
 } from "lucide-react";
 
 import { Reveal } from "@/components/landing/Reveal";
@@ -24,13 +26,14 @@ const planoBadge: Record<PlanoId, { label: string; className: string }> = {
   ouro: { label: "Ouro", className: "bg-gold text-gold-foreground" },
 };
 
-type AbaId = "precos" | "alertas" | "clima" | "futuro";
+type AbaId = "precos" | "sinal" | "alertas" | "clima" | "acompanhamento";
 
 const abas: { id: AbaId; label: string; icon: typeof LineChart; plano: PlanoId }[] = [
   { id: "precos", label: "Preços", icon: LineChart, plano: "bronze" },
-  { id: "alertas", label: "Alertas & câmbio", icon: TrendingUp, plano: "bronze" },
-  { id: "clima", label: "Clima & produção", icon: CloudSun, plano: "prata" },
-  { id: "futuro", label: "Mercado futuro (B3)", icon: Sprout, plano: "ouro" },
+  { id: "sinal", label: "Sinal de venda", icon: Target, plano: "bronze" },
+  { id: "alertas", label: "Alertas & lembretes", icon: Bell, plano: "bronze" },
+  { id: "clima", label: "Clima", icon: CloudSun, plano: "bronze" },
+  { id: "acompanhamento", label: "Acompanhamento", icon: Star, plano: "ouro" },
 ];
 
 const INTERVALO_AUTOPLAY = 3800;
@@ -69,8 +72,9 @@ export function DashboardPreview() {
           Um painel que cresce junto com sua operação
         </h2>
         <p className="mt-4 text-muted-foreground">
-          Preço e alerta em qualquer plano. Clima, produção regional e a curva do mercado futuro da
-          B3 conforme você sobe de plano — role o mouse pra pausar e explorar no seu ritmo.
+          Preço, sinal de venda, alertas, lembretes e clima (por estado ou cidade) em qualquer
+          plano, desde o Bronze. Acompanhar outras culturas e estados é do plano Ouro — role o mouse
+          pra pausar e explorar no seu ritmo.
         </p>
       </Reveal>
 
@@ -134,22 +138,19 @@ export function DashboardPreview() {
             {/* conteúdo, muda com a aba */}
             <div className="min-h-96 flex-1 bg-background p-4 sm:p-6">
               {aba === "precos" && <PreviewPrecos />}
+              {aba === "sinal" && <PreviewSinalVenda />}
               {aba === "alertas" && <PreviewAlertas />}
               {aba === "clima" && <PreviewClima />}
-              {aba === "futuro" && <PreviewFuturo />}
+              {aba === "acompanhamento" && <PreviewAcompanhamento />}
             </div>
           </div>
         </div>
         <p className="mt-3 text-center text-xs text-muted-foreground">
-          Prévia ilustrativa do painel — dados de exemplo. Recursos com selo{" "}
-          <span className="rounded-full bg-zinc-200 px-1.5 py-0.5 font-semibold text-zinc-700">
-            Prata
-          </span>{" "}
-          e{" "}
+          Prévia ilustrativa do painel — dados de exemplo. Recurso com selo{" "}
           <span className="rounded-full bg-gold px-1.5 py-0.5 font-semibold text-gold-foreground">
             Ouro
           </span>{" "}
-          fazem parte desses planos —{" "}
+          faz parte desse plano —{" "}
           <a href="#planos" className="font-medium text-primary underline underline-offset-2">
             veja a comparação completa
           </a>
@@ -251,12 +252,7 @@ function PreviewClima() {
   ];
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2">
-        <p className="text-sm font-semibold text-foreground">Previsão · MT</p>
-        <span className="rounded-full bg-zinc-200 px-1.5 py-0.5 text-[9px] font-semibold text-zinc-700">
-          Prata
-        </span>
-      </div>
+      <p className="text-sm font-semibold text-foreground">Previsão · Rio Verde/GO</p>
       <div className="grid gap-2 sm:grid-cols-3">
         {dias.map((d) => (
           <Card key={d.dia} className="gap-1.5 py-3">
@@ -273,44 +269,91 @@ function PreviewClima() {
       </div>
       <div className="flex items-center gap-2 rounded-lg border border-border p-3 text-sm text-foreground">
         <Globe className="size-4 shrink-0 text-primary" />
-        Produção de soja em MT (IBGE): <span className="font-semibold">50,6 mi t</span>
+        Produção de soja em GO (IBGE): <span className="font-semibold">50,6 mi t</span>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Além da sua cidade, acompanhe quantos outros estados quiser — útil pra quem opera em mais de
+        uma região.
+      </p>
+    </div>
+  );
+}
+
+function PreviewSinalVenda() {
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-sm font-semibold text-foreground">Sinal de venda</p>
+      <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+        <div className="flex items-start gap-2">
+          <Target className="mt-0.5 size-5 shrink-0 text-primary" />
+          <div>
+            <p className="text-sm text-foreground">
+              Preço bem posicionado nos últimos 90 dias e o mercado futuro não aponta mais alta —
+              pode ser um bom momento pra vender.
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Cruza a posição do preço nos últimos 90 dias, a curva de futuros da B3 e o risco de
+              clima na sua região.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 rounded-lg border border-border p-3 text-sm text-foreground">
+        <Bell className="size-4 shrink-0 text-primary" />
+        Quando o sinal muda pra "bom momento pra vender", você recebe também no WhatsApp.
       </div>
     </div>
   );
 }
 
-function PreviewFuturo() {
-  const curva = [
-    { mes: "jan.", preco: "377,30" },
-    { mes: "fev.", preco: "377,00" },
-    { mes: "mar.", preco: "376,45" },
+function PreviewAcompanhamento() {
+  const itens = [
+    { cultura: "Milho", uf: "MT", preco: "72,10", variacao: 1.4 },
+    { cultura: "Café Arábica", uf: "ES", preco: "1.773,33", variacao: -2.1 },
   ];
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-gold/50 bg-gold-soft/40 p-3">
       <div className="flex items-center gap-2">
-        <p className="text-sm font-semibold text-foreground">Boi Gordo — curva futura (B3)</p>
+        <p className="text-sm font-semibold text-foreground">Lista de acompanhamento</p>
         <span className="rounded-full bg-gold px-1.5 py-0.5 text-[9px] font-semibold text-gold-foreground">
           Ouro
         </span>
       </div>
       <p className="text-xs text-muted-foreground">
-        Vender agora ou esperar? A curva mostra o que o mercado já espera pra daqui a alguns meses.
+        Siga outras culturas e estados além do seu principal — útil pra consultor ou produtor que
+        opera em mais de uma frente.
       </p>
-      <div className="grid gap-2 sm:grid-cols-3">
-        {curva.map((c) => (
-          <Card key={c.mes} className="gap-1 border-gold/40 py-3">
-            <CardContent className="flex flex-col items-center gap-1 px-3 text-center">
-              <p className="text-xs font-semibold text-muted-foreground capitalize">{c.mes}</p>
-              <p className="font-mono text-lg font-semibold tabular-nums text-foreground">
-                R$ {c.preco}
-              </p>
+      <div className="flex flex-col gap-2">
+        {itens.map((item) => (
+          <Card key={item.cultura} className="gap-1 border-gold/40 py-3">
+            <CardContent className="flex items-center justify-between px-3">
+              <div className="flex items-center gap-2 text-sm text-foreground">
+                <Star className="size-4 shrink-0 text-gold-foreground" />
+                {item.cultura} · {item.uf}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
+                  R$ {item.preco}
+                </span>
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+                    item.variacao > 0
+                      ? "bg-primary/10 text-primary"
+                      : "bg-destructive/10 text-destructive",
+                  )}
+                >
+                  {item.variacao > 0 ? (
+                    <ArrowUp className="size-2.5" />
+                  ) : (
+                    <ArrowDown className="size-2.5" />
+                  )}
+                  {Math.abs(item.variacao)}%
+                </span>
+              </div>
             </CardContent>
           </Card>
         ))}
-      </div>
-      <div className="flex items-center gap-2 rounded-lg border border-gold/40 bg-card p-3 text-sm text-foreground">
-        <Sprout className="size-4 shrink-0 text-primary" />
-        Também cobre Milho, Café, Soja e Etanol — 7 commodities monitoradas.
       </div>
     </div>
   );
