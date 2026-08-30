@@ -4,10 +4,12 @@ import { CloudRain, CloudSun, Lock, MapPin, Thermometer } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { UpgradeButton } from "@/components/dashboard/UpgradeButton";
+import { TrocarCulturaDialog } from "@/components/dashboard/TrocarCulturaDialog";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { temAcessoPrata, useAssinatura } from "@/lib/planos";
@@ -137,11 +139,27 @@ function ClimaConteudo() {
       {ufs.length === 0 && (
         <Card>
           <CardContent className="pt-6">
-            <EmptyState
-              icon={MapPin}
-              title="Nenhum estado pra acompanhar"
-              description="A previsão sai do estado dos produtores cadastrados. Cadastre um produtor com estado preenchido pra ver o clima da região aqui."
-            />
+            {cooperativa ? (
+              <EmptyState
+                icon={MapPin}
+                title="Nenhum estado pra acompanhar"
+                description="A previsão sai do estado dos produtores cadastrados. Cadastre um produtor com estado preenchido pra ver o clima da região aqui."
+              />
+            ) : (
+              <EmptyState
+                icon={MapPin}
+                title="Você ainda não informou seu estado"
+                description="A previsão sai do seu estado (UF). Preencha pra ver o clima da sua região aqui."
+                action={
+                  produtor && (
+                    <TrocarCulturaDialog
+                      produtor={produtor}
+                      trigger={<Button size="sm">Definir meu estado</Button>}
+                    />
+                  )
+                }
+              />
+            )}
           </CardContent>
         </Card>
       )}
