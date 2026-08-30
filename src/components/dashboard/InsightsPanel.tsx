@@ -5,6 +5,7 @@ import {
   CloudRain,
   Gauge,
   Loader2,
+  Target,
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
@@ -16,6 +17,8 @@ import { buscarPrevisao } from "@/lib/clima";
 import { temAcessoPrata, useAssinatura } from "@/lib/planos";
 import type { Produtor } from "@/lib/auth";
 import { InsightCard } from "@/components/dashboard/InsightCard";
+import { CULTURA_PARA_B3 } from "@/config/b3";
+import { combinarSinalVenda, sinalDaCurvaFuturos, sinalDaPosicao } from "@/lib/sinalVenda";
 
 type PrecoPonto = { preco: number; data_referencia: string; produto: string; uf: string };
 
@@ -111,6 +114,9 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
   const [temAlertaAtivo, setTemAlertaAtivo] = useState<boolean | null>(null);
   const [diasDeChuva, setDiasDeChuva] = useState<number | null>(null);
   const [imeaPonto, setImeaPonto] = useState<ImeaPonto | null>(null);
+  const [futurosB3, setFuturosB3] = useState<{ mesAnoVencimento: string; preco: number }[] | null>(
+    null,
+  );
 
   const cultura = produtor.cultura_principal;
   const uf = produtor.uf;
@@ -176,6 +182,41 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
   }, [cultura, uf, plano]);
 
   useEffect(() => {
+    // Só o primeiro código mapeado por cultura (ex: soja usa SJC, não
+    // mistura com SOY) — evita cruzar contratos em moedas/referências
+    // diferentes na mesma curva.
+    const codigo = cultura ? CULTURA_PARA_B3[cultura]?.[0] : undefined;
+    if (!supabase || !codigo) {
+      setFuturosB3(null);
+      return;
+    }
+    const inicioMesAtual = new Date();
+    inicioMesAtual.setDate(1);
+    supabase
+      .from("b3_futuros")
+      .select("mes_ano_vencimento, preco_ajuste_atual, data_pregao")
+      .eq("produto", codigo)
+      .gte("mes_ano_vencimento", inicioMesAtual.toISOString().slice(0, 10))
+      .order("data_pregao", { ascending: false })
+      .order("mes_ano_vencimento", { ascending: true })
+      .limit(10)
+      .then(({ data }) => {
+        const rows = data ?? [];
+        const pregaoMaisRecente = rows[0]?.data_pregao;
+        const doDiaCerto = rows.filter((r) => r.data_pregao === pregaoMaisRecente);
+        // Só os 3 vencimentos mais próximos (mesmo padrão do ContextoMercado)
+        // — contratos de mais de um ano à frente distorcem o sinal pra quem
+        // está decidindo vender a safra atual, não uma safra futura.
+        setFuturosB3(
+          doDiaCerto.slice(0, 3).map((r) => ({
+            mesAnoVencimento: r.mes_ano_vencimento,
+            preco: r.preco_ajuste_atual,
+          })),
+        );
+      });
+  }, [cultura]);
+
+  useEffect(() => {
     if (!uf || !temAcessoPrata(plano)) return;
     buscarPrevisao(uf).then((previsao) => {
       if (!previsao) return;
@@ -205,6 +246,11 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
   const max = Math.max(...precos);
   const posicao =
     !semHistorico && max > min ? ((serie.at(-1)!.preco - min) / (max - min)) * 100 : null;
+
+  const sinalVenda = combinarSinalVenda(
+    sinalDaPosicao(posicao),
+    futurosB3 ? sinalDaCurvaFuturos(futurosB3) : null,
+  );
 
   let anomalia: string | null = null;
   if (tendencia) {
@@ -239,6 +285,16 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
         <InsightCard icon={Gauge} tone="neutral" title="Sem histórico ainda">
           Ainda não temos preço registrado pra <strong>{cultura}</strong> em <strong>{uf}</strong>.
           Assim que a Conab publicar, a tendência aparece aqui automaticamente.
+        </InsightCard>
+      )}
+
+      {sinalVenda && (
+        <InsightCard icon={Target} tone={sinalVenda.tone} title="Sinal de venda">
+          {sinalVenda.texto}
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            Cruza a posição do preço nos últimos 90 dias com a curva de futuros da B3 — não é
+            recomendação de investimento.
+          </p>
         </InsightCard>
       )}
 

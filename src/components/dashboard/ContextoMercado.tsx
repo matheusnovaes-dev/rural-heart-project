@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
+import { CULTURA_PARA_B3 } from "@/config/b3";
 
 type Cambio = { data: string; cotacao_compra: number; cotacao_venda: number };
 type Wasde = {
@@ -29,21 +30,6 @@ const culturaLabel: Record<Wasde["cultura"], string> = {
   algodao: "Algodão",
 };
 const dieselLabel: Record<string, string> = { "OLEO DIESEL": "Comum", "OLEO DIESEL S10": "S10" };
-
-// Nem toda cultura do catálogo da Conab tem contrato futuro na B3 (só 7
-// commodities agro têm) — mapeamento explícito em vez de tentar bater
-// substring, porque "soja" tem 2 contratos genuinamente diferentes (SJC
-// referencia CME, SOY referencia o preço FOB Santos direto — vale mostrar
-// os dois) e "cana de açúcar" não tem contrato próprio, só o de etanol
-// (proxy declarado, não é a mesma coisa e o rótulo deixa isso claro).
-const CULTURA_PARA_B3: Record<string, string[]> = {
-  boi: ["BGI"],
-  milho: ["CCM"],
-  "café arábica": ["ICF"],
-  "café conillon": ["CNL"],
-  soja: ["SJC", "SOY"],
-  "cana de açúcar": ["ETH"],
-};
 
 const QTD_VENCIMENTOS_POR_PRODUTO = 3;
 
