@@ -140,12 +140,13 @@ function AssinaturaPage() {
                     variant="outline"
                   />
                 ))}
-              {(status === "ativa" || status === "inadimplente") && assinaturaId && (
-                <CancelarAssinaturaDialog
-                  assinaturaId={assinaturaId}
-                  asaasSubscriptionId={asaasSubscriptionId}
-                />
-              )}
+              {(status === "ativa" || status === "inadimplente" || status === "trial") &&
+                assinaturaId && (
+                  <CancelarAssinaturaDialog
+                    assinaturaId={assinaturaId}
+                    asaasSubscriptionId={asaasSubscriptionId}
+                  />
+                )}
             </div>
           </CardContent>
         </Card>
