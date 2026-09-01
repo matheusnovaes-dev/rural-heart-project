@@ -42,16 +42,30 @@ function LinhaBoletim({ titulo, data }: { titulo: string; data: string }) {
   );
 }
 
-function CardDestaque({ boletim }: { boletim: Boletim }) {
+// Edição sem manchete/resumo extraído (falha pontual de leitura do PDF
+// daquela semana) cai pro título simples em vez de fingir que tem conteúdo
+// — toda edição nova já sai com o texto completo, isso só cobre o raro caso
+// de falha.
+function CardDestaque({ boletim, destaque }: { boletim: Boletim; destaque?: boolean }) {
   if (!boletim.manchete || !boletim.resumo) {
     return <LinhaBoletim titulo={boletim.titulo} data={boletim.data_publicacao} />;
   }
   return (
-    <div className="rounded-lg border border-border p-3.5">
+    <div
+      className={
+        destaque ? "rounded-lg border border-border p-3.5" : "rounded-lg border border-border p-3"
+      }
+    >
       <p className="text-xs text-muted-foreground">
         {boletim.titulo} · {formatarData(boletim.data_publicacao)}
       </p>
-      <p className="mt-1 font-display text-base font-semibold text-foreground">
+      <p
+        className={
+          destaque
+            ? "mt-1 font-display text-base font-semibold text-foreground"
+            : "mt-1 font-display text-sm font-semibold text-foreground"
+        }
+      >
         {boletim.manchete}
       </p>
       <p className="mt-1.5 text-sm text-muted-foreground">{boletim.resumo}</p>
@@ -108,15 +122,11 @@ export function BoletimSemanal({ produtor }: { produtor: Produtor }) {
           />
         ) : (
           <div className="flex flex-col gap-3">
-            <CardDestaque boletim={boletins[0]!} />
+            <CardDestaque boletim={boletins[0]!} destaque />
             {boletins.length > 1 && (
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-2">
                 {boletins.slice(1).map((b) => (
-                  <LinhaBoletim
-                    key={b.id}
-                    titulo={b.manchete ?? b.titulo}
-                    data={b.data_publicacao}
-                  />
+                  <CardDestaque key={b.id} boletim={b} />
                 ))}
               </div>
             )}
