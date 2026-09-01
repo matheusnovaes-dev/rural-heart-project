@@ -231,6 +231,60 @@ export const atualizarPlanoAsaas = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+const MOTIVOS_CANCELAMENTO = [
+  "muito_caro",
+  "nao_uso_o_suficiente",
+  "faltou_funcionalidade",
+  "vou_usar_outro_servico",
+  "problema_tecnico_ou_dados",
+  "outro",
+] as const;
+
+const cancelarAssinaturaSchema = z.object({
+  accessToken: z.string().min(1),
+  assinaturaId: z.string().uuid(),
+  asaasSubscriptionId: z.string().min(1).optional(),
+  motivo: z.enum(MOTIVOS_CANCELAMENTO),
+  motivoDetalhe: z.string().max(1000).optional(),
+});
+
+/**
+ * Cancelamento self-service: cancela na Asaas (se já tinha assinatura ativa
+ * lá — quem ainda tá no trial sem cartão configurado não tem
+ * asaasSubscriptionId) e marca `cancelada` localmente na hora, sem esperar
+ * webhook. É a troca de status pra `cancelada` que corta o acesso — o guard
+ * do `/dashboard/_layout` já lê `status` pra liberar ou não, então não
+ * precisa de nenhuma lógica extra de "cortar acesso".
+ */
+export const cancelarAssinaturaAsaas = createServerFn({ method: "POST" })
+  .validator(cancelarAssinaturaSchema)
+  .handler(async ({ data }) => {
+    const userId = await usuarioAutenticado(data.accessToken);
+    await confirmarDonoDaAssinatura(userId, { assinaturaId: data.assinaturaId });
+
+    if (data.asaasSubscriptionId) {
+      const apiKey = process.env["ASAAS_API_KEY"];
+      if (!apiKey) {
+        throw new Error("ASAAS_API_KEY não configurada.");
+      }
+      await asaasFetch(apiKey, `/subscriptions/${data.asaasSubscriptionId}`, {
+        method: "DELETE",
+      });
+    }
+
+    await supabaseServiceRole()
+      .from("assinaturas")
+      .update({
+        status: "cancelada",
+        motivo_cancelamento: data.motivo,
+        motivo_cancelamento_detalhe: data.motivoDetalhe || null,
+        cancelada_em: new Date().toISOString(),
+      })
+      .eq("id", data.assinaturaId);
+
+    return { ok: true as const };
+  });
+
 const listarCobrancasSchema = z.object({
   accessToken: z.string().min(1),
   asaasSubscriptionId: z.string().min(1),

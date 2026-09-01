@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { UpgradeButton } from "@/components/dashboard/UpgradeButton";
+import { CancelarAssinaturaDialog } from "@/components/dashboard/CancelarAssinaturaDialog";
 import { useAuth } from "@/lib/auth";
 import { useAssinatura, type Plano } from "@/lib/planos";
 import { listarCobrancas, type Cobranca } from "@/lib/asaas.server";
@@ -127,7 +128,7 @@ function AssinaturaPage() {
                 regularizar e não perder o acesso.
               </p>
             )}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {ordemPlanos
                 .filter((p) => p !== plano && ordemPlanos.indexOf(p) > ordemPlanos.indexOf(plano))
                 .map((p) => (
@@ -139,6 +140,12 @@ function AssinaturaPage() {
                     variant="outline"
                   />
                 ))}
+              {(status === "ativa" || status === "inadimplente") && assinaturaId && (
+                <CancelarAssinaturaDialog
+                  assinaturaId={assinaturaId}
+                  asaasSubscriptionId={asaasSubscriptionId}
+                />
+              )}
             </div>
           </CardContent>
         </Card>
