@@ -3,6 +3,40 @@ import type { InsightTone } from "@/components/dashboard/InsightCard";
 export type SinalPosicao = "alto" | "baixo" | "neutro";
 export type SinalCurva = "alta" | "baixa" | "neutro";
 
+export type PontoPreco = { preco: number; data_referencia: string; produto: string };
+
+/**
+ * A busca por produto costuma casar mais de uma variante de embalagem da
+ * mesma cultura (ex: "SOJA EM GRÃOS (50 kg)" e "(60 kg)") — fica só com a
+ * mais publicada, senão a série mistura unidades diferentes na mesma linha.
+ * Mesma proteção usada em precos.tsx e no InsightsPanel.
+ */
+export function serieUnica<T extends PontoPreco>(rows: T[]): T[] {
+  const counts = new Map<string, number>();
+  for (const r of rows) counts.set(r.produto, (counts.get(r.produto) ?? 0) + 1);
+  let principal: string | null = null;
+  let max = 0;
+  for (const [produto, count] of counts) {
+    if (count > max) {
+      max = count;
+      principal = produto;
+    }
+  }
+  return rows
+    .filter((r) => r.produto === principal)
+    .sort((a, b) => a.data_referencia.localeCompare(b.data_referencia));
+}
+
+/** Onde o preço mais recente da série está dentro da faixa mín-máx do período, em 0-100. */
+export function calcularPosicao(serie: PontoPreco[]): number | null {
+  if (serie.length === 0) return null;
+  const precos = serie.map((p) => p.preco);
+  const min = Math.min(...precos);
+  const max = Math.max(...precos);
+  if (max <= min) return null;
+  return ((serie.at(-1)!.preco - min) / (max - min)) * 100;
+}
+
 const LIMITE_POSICAO_ALTO = 70;
 const LIMITE_POSICAO_BAIXO = 30;
 // Curva de futuros sempre tem algum ruído dia a dia — variação menor que

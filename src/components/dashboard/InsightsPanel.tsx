@@ -18,8 +18,10 @@ import type { Produtor } from "@/lib/auth";
 import { InsightCard } from "@/components/dashboard/InsightCard";
 import { CULTURA_PARA_B3 } from "@/config/b3";
 import {
+  calcularPosicao,
   combinarComClima,
   combinarSinalVenda,
+  serieUnica,
   sinalDaCurvaFuturos,
   sinalDaPosicao,
 } from "@/lib/sinalVenda";
@@ -37,25 +39,6 @@ const IMEA_CULTURAS: Record<string, { cadeia: string; indicador: string }> = {
 };
 
 type ImeaPonto = { valor: number; data_referencia: string };
-
-// Mesma proteção usada em precos.tsx: a busca por substring pode casar mais
-// de uma variante de embalagem da mesma cultura — fica só com a mais
-// publicada, senão a tendência mistura séries diferentes.
-function serieUnica(rows: PrecoPonto[]) {
-  const counts = new Map<string, number>();
-  for (const r of rows) counts.set(r.produto, (counts.get(r.produto) ?? 0) + 1);
-  let principal: string | null = null;
-  let max = 0;
-  for (const [produto, count] of counts) {
-    if (count > max) {
-      max = count;
-      principal = produto;
-    }
-  }
-  return rows
-    .filter((r) => r.produto === principal)
-    .sort((a, b) => a.data_referencia.localeCompare(b.data_referencia));
-}
 
 function variacaoDuasSemanas(serie: PrecoPonto[]) {
   const atual = serie.at(-1);
@@ -248,8 +231,7 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
   const precos = serie.map((p) => p.preco);
   const min = Math.min(...precos);
   const max = Math.max(...precos);
-  const posicao =
-    !semHistorico && max > min ? ((serie.at(-1)!.preco - min) / (max - min)) * 100 : null;
+  const posicao = calcularPosicao(serie);
 
   const sinalVenda = combinarComClima(
     combinarSinalVenda(sinalDaPosicao(posicao), futurosB3 ? sinalDaCurvaFuturos(futurosB3) : null),
