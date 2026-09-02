@@ -42,15 +42,26 @@ export type Previsao = {
 // quando o bot do WhatsApp passou a chamar isso do lado servidor pela
 // primeira vez. Uma tentativa só é frágil demais pra virar "não consegui
 // buscar o clima" pro produtor por causa de uma falha de rede passageira.
-async function fetchComRetry(url: string, tentativas = 3): Promise<Response | null> {
+// IMPORTANTE: cada tentativa tem um timeout curto — sem isso, uma resposta
+// lenta (em vez de uma falha rápida) consome sozinha o orçamento de tempo
+// do agente inteiro (25s), e 2-3 tentativas lentas em sequência estouram
+// esse orçamento e derrubam a resposta inteira, não só o clima. Achado ao
+// vivo: a v1 desse retry (sem timeout por tentativa) piorou a situação.
+const TIMEOUT_POR_TENTATIVA_MS = 4000;
+
+async function fetchComRetry(url: string, tentativas = 2): Promise<Response | null> {
   for (let i = 0; i < tentativas; i++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), TIMEOUT_POR_TENTATIVA_MS);
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: controller.signal });
       if (res.ok) return res;
     } catch {
-      // tenta de novo
+      // tenta de novo (ou desiste, se essa já foi a última tentativa)
+    } finally {
+      clearTimeout(timeout);
     }
-    if (i < tentativas - 1) await new Promise((r) => setTimeout(r, 300 * (i + 1)));
+    if (i < tentativas - 1) await new Promise((r) => setTimeout(r, 250));
   }
   return null;
 }
