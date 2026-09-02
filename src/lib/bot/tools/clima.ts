@@ -1,7 +1,7 @@
 import {
-  buscarMunicipio,
   buscarPrevisao,
   buscarPrevisaoPorCoordenadas,
+  buscarPrevisaoPorNomeDeCidade,
   type Previsao,
 } from "@/lib/clima";
 import { ufs } from "@/config/ufs";
@@ -29,12 +29,14 @@ export async function buscarClima(
   if (cidade) {
     const nomeCompletoUf = ufs.find((u) => u.value === uf)?.label;
     if (nomeCompletoUf) {
-      const municipio = await buscarMunicipio(cidade, nomeCompletoUf);
-      if (municipio) {
-        const previsao = await buscarPrevisaoPorCoordenadas(municipio.lat, municipio.lon);
-        if (previsao) {
-          return { encontrado: true, local_usado: municipio.nome, fonte: "cidade", previsao };
-        }
+      const resultado = await buscarPrevisaoPorNomeDeCidade(cidade, uf, nomeCompletoUf);
+      if (resultado) {
+        return {
+          encontrado: true,
+          local_usado: resultado.nomeUsado,
+          fonte: "cidade",
+          previsao: resultado.previsao,
+        };
       }
     }
   }
