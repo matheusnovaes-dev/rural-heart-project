@@ -37,33 +37,27 @@ export type Previsao = {
   tempMin: number[];
 };
 
-// A Open-Meteo falha de forma intermitente (não é erro de lógica — o mesmo
-// request às vezes funciona, às vezes não), observado direto em produção
-// quando o bot do WhatsApp passou a chamar isso do lado servidor pela
-// primeira vez. Uma tentativa só é frágil demais pra virar "não consegui
-// buscar o clima" pro produtor por causa de uma falha de rede passageira.
-// IMPORTANTE: cada tentativa tem um timeout curto — sem isso, uma resposta
-// lenta (em vez de uma falha rápida) consome sozinha o orçamento de tempo
-// do agente inteiro (25s), e 2-3 tentativas lentas em sequência estouram
-// esse orçamento e derrubam a resposta inteira, não só o clima. Achado ao
-// vivo: a v1 desse retry (sem timeout por tentativa) piorou a situação.
-const TIMEOUT_POR_TENTATIVA_MS = 4000;
+// Medido ao vivo em produção: da Cloudflare Workers até a Open-Meteo, o
+// request legítimo (sem nada de errado) já leva bem mais que os 4s que a
+// v1 desse retry dava — com esse timeout curto, as duas tentativas batiam
+// o limite e matavam requests que ainda iam completar, o que é PIOR do que
+// não ter retry nenhum (dobra a espera sem nunca deixar completar). Uma
+// tentativa só, com timeout generoso o bastante pra essa latência real,
+// bate melhor que várias tentativas curtas — retry só ajuda quando a causa
+// é uma falha rápida passageira, não quando é lentidão consistente.
+const TIMEOUT_MS = 15000;
 
-async function fetchComRetry(url: string, tentativas = 2): Promise<Response | null> {
-  for (let i = 0; i < tentativas; i++) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), TIMEOUT_POR_TENTATIVA_MS);
-    try {
-      const res = await fetch(url, { signal: controller.signal });
-      if (res.ok) return res;
-    } catch {
-      // tenta de novo (ou desiste, se essa já foi a última tentativa)
-    } finally {
-      clearTimeout(timeout);
-    }
-    if (i < tentativas - 1) await new Promise((r) => setTimeout(r, 250));
+async function fetchComTimeout(url: string): Promise<Response | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    return res.ok ? res : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
   }
-  return null;
 }
 
 /**
@@ -77,7 +71,7 @@ export async function buscarPrevisaoPorCoordenadas(
   lon: number,
 ): Promise<Previsao | null> {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=precipitation_probability_max,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=5`;
-  const res = await fetchComRetry(url);
+  const res = await fetchComTimeout(url);
   if (!res) return null;
   const json = await res.json();
   return {
@@ -108,7 +102,7 @@ export async function buscarMunicipio(
   nomeCompletoUf: string,
 ): Promise<MunicipioEncontrado | null> {
   const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(nome)}&count=10&language=pt&countryCode=BR`;
-  const res = await fetchComRetry(url);
+  const res = await fetchComTimeout(url);
   if (!res) return null;
   const json = await res.json();
   const resultados: { name: string; latitude: number; longitude: number; admin1?: string }[] =
