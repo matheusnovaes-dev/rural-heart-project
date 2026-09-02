@@ -37,6 +37,24 @@ export type Previsao = {
   tempMin: number[];
 };
 
+// A Open-Meteo falha de forma intermitente (não é erro de lógica — o mesmo
+// request às vezes funciona, às vezes não), observado direto em produção
+// quando o bot do WhatsApp passou a chamar isso do lado servidor pela
+// primeira vez. Uma tentativa só é frágil demais pra virar "não consegui
+// buscar o clima" pro produtor por causa de uma falha de rede passageira.
+async function fetchComRetry(url: string, tentativas = 3): Promise<Response | null> {
+  for (let i = 0; i < tentativas; i++) {
+    try {
+      const res = await fetch(url);
+      if (res.ok) return res;
+    } catch {
+      // tenta de novo
+    }
+    if (i < tentativas - 1) await new Promise((r) => setTimeout(r, 300 * (i + 1)));
+  }
+  return null;
+}
+
 /**
  * Previsão pra uma coordenada exata (cidade do produtor) em vez da capital
  * do estado — mesma fonte, só que sem a aproximação de "toda a UF tem o
@@ -48,8 +66,8 @@ export async function buscarPrevisaoPorCoordenadas(
   lon: number,
 ): Promise<Previsao | null> {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=precipitation_probability_max,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=5`;
-  const res = await fetch(url);
-  if (!res.ok) return null;
+  const res = await fetchComRetry(url);
+  if (!res) return null;
   const json = await res.json();
   return {
     dias: json.daily.time,
@@ -79,8 +97,8 @@ export async function buscarMunicipio(
   nomeCompletoUf: string,
 ): Promise<MunicipioEncontrado | null> {
   const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(nome)}&count=10&language=pt&countryCode=BR`;
-  const res = await fetch(url);
-  if (!res.ok) return null;
+  const res = await fetchComRetry(url);
+  if (!res) return null;
   const json = await res.json();
   const resultados: { name: string; latitude: number; longitude: number; admin1?: string }[] =
     json.results ?? [];
