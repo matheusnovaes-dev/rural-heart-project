@@ -216,9 +216,17 @@ export async function buscarPrevisao(uf: string): Promise<Previsao | null> {
 
 export type MunicipioEncontrado = { nome: string; lat: number; lon: number };
 
+// A busca do CPTEC não aceita acento em UTF-8 percent-encoded — testado ao
+// vivo: "Rondon%C3%B3polis" (com ó) devolve lista vazia, "Rondonopolis"
+// (sem acento) acha certinho. Normaliza removendo os acentos antes de
+// buscar — nome do produtor real vem naturalmente acentuado.
+function semAcento(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
 async function buscarCodigoCidadeCptec(nome: string, uf: string): Promise<number | null> {
   const res = await fetchComTimeout(
-    `https://servicos.cptec.inpe.br/XML/listaCidades?city=${encodeURIComponent(nome)}`,
+    `https://servicos.cptec.inpe.br/XML/listaCidades?city=${encodeURIComponent(semAcento(nome))}`,
     TIMEOUT_CPTEC_MS,
   );
   if (!res) return null;
