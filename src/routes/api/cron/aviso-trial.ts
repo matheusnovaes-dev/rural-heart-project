@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createClient } from "@supabase/supabase-js";
 
 import { enviarEmailTrialExpirando } from "@/lib/email";
+import { supabaseServiceRole } from "@/lib/supabase.server";
 
 type AssinaturaTrial = {
   id: string;
@@ -35,7 +35,7 @@ export const Route = createFileRoute("/api/cron/aviso-trial")({
           return new Response("Token inválido", { status: 401 });
         }
 
-        const supabase = createClient(supabaseUrl, serviceRoleKey);
+        const supabase = supabaseServiceRole();
         const daquiA2Dias = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
 
         const { data: assinaturas } = await supabase

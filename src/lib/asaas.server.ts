@@ -1,17 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { createClient } from "@supabase/supabase-js";
 
 import { pricingPlans } from "@/config/site";
-
-function supabaseServiceRole() {
-  const supabaseUrl = process.env["SB_URL"];
-  const serviceRoleKey = process.env["SB_SERVICE_ROLE_KEY"];
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error("SB_URL/SB_SERVICE_ROLE_KEY não configuradas.");
-  }
-  return createClient(supabaseUrl, serviceRoleKey);
-}
+import { supabaseServiceRole } from "@/lib/supabase.server";
 
 /**
  * As funções abaixo recebem `assinaturaId`/`asaasSubscriptionId` do próprio
@@ -171,12 +162,21 @@ export const criarAssinaturaAsaas = createServerFn({ method: "POST" })
       throw new Error("Asaas não retornou um link de pagamento.");
     }
 
-    // Grava os IDs direto aqui (com a service role) porque o cliente não
-    // tem permissão de UPDATE em `assinaturas` via RLS — só o webhook (que
-    // também roda com service role) deveria poder mexer nesses campos.
+    // Grava os IDs (e o plano escolhido) direto aqui (com a service role)
+    // porque o cliente não tem permissão de UPDATE em `assinaturas` via RLS
+    // — só o webhook (que também roda com service role) deveria poder mexer
+    // nesses campos. `plano` entra aqui de propósito: sem isso, o update de
+    // `plano` que a tela de assinatura tentava fazer direto pelo client
+    // ficava silenciosamente bloqueado pelo RLS (Postgres não retorna erro
+    // num UPDATE que a RLS barra, só afeta 0 linhas) — o produtor pagava
+    // pelo plano novo na Asaas mas o banco ficava travado no plano antigo.
     await supabaseServiceRole()
       .from("assinaturas")
-      .update({ asaas_customer_id: customer.id, asaas_subscription_id: subscription.id })
+      .update({
+        asaas_customer_id: customer.id,
+        asaas_subscription_id: subscription.id,
+        plano: data.plano,
+      })
       .eq("id", data.assinaturaId);
 
     return {
@@ -227,6 +227,34 @@ export const atualizarPlanoAsaas = createServerFn({ method: "POST" })
       .from("assinaturas")
       .update({ plano: data.novoPlano })
       .eq("asaas_subscription_id", data.asaasSubscriptionId);
+
+    return { ok: true as const };
+  });
+
+const trocarPlanoTrialSchema = z.object({
+  accessToken: z.string().min(1),
+  assinaturaId: z.string().uuid(),
+  novoPlano: z.enum(["bronze", "prata", "ouro"]),
+});
+
+/**
+ * Troca de plano durante o trial (ainda sem assinatura na Asaas — nenhuma
+ * cobrança envolvida, então não chama a API da Asaas, só atualiza local).
+ * Precisa rodar aqui com service role pelo mesmo motivo de
+ * `atualizarPlanoAsaas`: RLS não tem policy de UPDATE de `plano` pra
+ * usuário autenticado (de propósito, ver billing-schema.sql) — uma tentativa
+ * de update direto pelo client fica presa em RLS sem erro nenhum.
+ */
+export const trocarPlanoTrial = createServerFn({ method: "POST" })
+  .validator(trocarPlanoTrialSchema)
+  .handler(async ({ data }) => {
+    const userId = await usuarioAutenticado(data.accessToken);
+    await confirmarDonoDaAssinatura(userId, { assinaturaId: data.assinaturaId });
+
+    await supabaseServiceRole()
+      .from("assinaturas")
+      .update({ plano: data.novoPlano })
+      .eq("id", data.assinaturaId);
 
     return { ok: true as const };
   });

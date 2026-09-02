@@ -3,8 +3,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button, type ButtonProps } from "@/components/ui/button";
-import { atualizarPlanoAsaas } from "@/lib/asaas.server";
-import { supabase } from "@/lib/supabase";
+import { atualizarPlanoAsaas, trocarPlanoTrial } from "@/lib/asaas.server";
 import { useAuth } from "@/lib/auth";
 import type { Plano } from "@/lib/planos";
 
@@ -34,19 +33,18 @@ export function UpgradeButton({
   const [loading, setLoading] = useState(false);
 
   async function handleTrocaSemCobranca() {
-    if (!supabase || !assinaturaId) return;
+    if (!session || !assinaturaId) return;
     setLoading(true);
-    const { error } = await supabase
-      .from("assinaturas")
-      .update({ plano: planoAlvo })
-      .eq("id", assinaturaId);
-    if (error) {
+    try {
+      await trocarPlanoTrial({
+        data: { accessToken: session.access_token, assinaturaId, novoPlano: planoAlvo },
+      });
+      toast.success(`Seu teste grátis agora é do plano ${planoLabel[planoAlvo]}.`);
+      window.location.reload();
+    } catch {
       toast.error("Não foi possível trocar de plano agora. Tenta de novo.");
       setLoading(false);
-      return;
     }
-    toast.success(`Seu teste grátis agora é do plano ${planoLabel[planoAlvo]}.`);
-    window.location.reload();
   }
 
   async function handleUpgradeComCobranca() {

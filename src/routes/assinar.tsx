@@ -172,9 +172,12 @@ function AssinarPage() {
           .single();
         if (error || !data) throw new Error("Não foi possível preparar a assinatura.");
         idAssinatura = data.id;
-      } else if (selecionado !== plano) {
-        await supabase.from("assinaturas").update({ plano: selecionado }).eq("id", idAssinatura);
       }
+      // Se `selecionado` for diferente do `plano` já gravado no registro
+      // existente, não precisa atualizar aqui — o RLS bloqueia UPDATE de
+      // `plano` pelo client de propósito (só o server function abaixo, com
+      // service role, pode); `criarAssinaturaAsaas` já grava o plano
+      // escolhido no mesmo update em que grava os IDs da Asaas.
       if (!idAssinatura) throw new Error("Não foi possível preparar a assinatura.");
 
       const checkout = await criarAssinaturaAsaas({

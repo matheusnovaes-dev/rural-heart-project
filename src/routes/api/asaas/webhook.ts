@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { enviarEmailBoasVindas, enviarEmailCobranca } from "@/lib/email";
+import { supabaseServiceRole } from "@/lib/supabase.server";
 
 type AsaasPayment = {
   id: string;
@@ -53,7 +54,12 @@ export const Route = createFileRoute("/api/asaas/webhook")({
           return new Response("Token inválido", { status: 401 });
         }
 
-        const body = (await request.json()) as AsaasWebhookBody;
+        let body: AsaasWebhookBody;
+        try {
+          body = (await request.json()) as AsaasWebhookBody;
+        } catch {
+          return new Response("JSON inválido", { status: 400 });
+        }
         const payment = body.payment;
         if (!payment) {
           return new Response(null, { status: 200 });
@@ -64,7 +70,7 @@ export const Route = createFileRoute("/api/asaas/webhook")({
         // motivo ele não vier no payload.
         const assinaturaId = payment.externalReference;
 
-        const supabase = createClient(supabaseUrl, serviceRoleKey);
+        const supabase = supabaseServiceRole();
 
         async function buscarAssinatura(): Promise<Assinatura | null> {
           const query = supabase
