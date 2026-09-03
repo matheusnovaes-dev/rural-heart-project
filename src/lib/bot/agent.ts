@@ -59,6 +59,22 @@ const FALLBACK_DURO: RespostaAgente = {
   precisa_humano: true,
 };
 
+// Mesma rede de segurança determinística de cima, agora pra escalada de
+// cobrança/reembolso — o prompt já pede pra escalar (precisa_humano=true)
+// qualquer pergunta sobre cobrança, erro de pagamento ou reembolso, mas
+// testando ao vivo isso às vezes não escala (ex: "fui cobrado errado, quero
+// reembolso" virou precisa_humano=false, respondendo só "cancele pelo
+// painel"). Diferente da frase de fechamento (só estética), aqui o risco de
+// deixar passar é dinheiro de verdade não indo pra revisão humana — por
+// isso força true quando a mensagem do produtor bate com esse padrão,
+// independente do que o modelo decidiu.
+const PADRAO_COBRANCA_SENSIVEL =
+  /cobr(an[çc]a|ado|aram|ei)|reembolso|estorno|fatura|dinheiro de volta|pagamento errado|cart[aã]o.*errado|valor errado/i;
+
+function precisaEscalarPorCobranca(textoProdutor: string): boolean {
+  return PADRAO_COBRANCA_SENSIVEL.test(textoProdutor);
+}
+
 type ToolCall = { id: string; type: "function"; function: { name: string; arguments: string } };
 
 type OpenAIMessage = {
@@ -151,7 +167,10 @@ export async function runAgent(input: {
 
       if (mensagem?.content) {
         const parsed = JSON.parse(mensagem.content) as RespostaAgente;
-        return { ...parsed, resposta: removerFechamentoGenerico(parsed.resposta) };
+        return {
+          resposta: removerFechamentoGenerico(parsed.resposta),
+          precisa_humano: parsed.precisa_humano || precisaEscalarPorCobranca(texto),
+        };
       }
 
       break;
@@ -163,7 +182,10 @@ export async function runAgent(input: {
     const conteudo = json.choices?.[0]?.message?.content;
     if (conteudo) {
       const parsed = JSON.parse(conteudo) as RespostaAgente;
-      return { ...parsed, resposta: removerFechamentoGenerico(parsed.resposta) };
+      return {
+        resposta: removerFechamentoGenerico(parsed.resposta),
+        precisa_humano: parsed.precisa_humano || precisaEscalarPorCobranca(texto),
+      };
     }
 
     return FALLBACK_DURO;
