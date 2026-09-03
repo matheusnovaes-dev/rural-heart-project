@@ -191,14 +191,23 @@ export async function buscarPrevisaoPorCoordenadas(
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=precipitation_probability_max,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=5`;
   const res = await fetchComTimeout(url);
   if (!res) return null;
-  const json = await res.json();
-  return {
-    dias: json.daily.time,
-    chuvaPct: json.daily.precipitation_probability_max,
-    tempMax: json.daily.temperature_2m_max,
-    tempMin: json.daily.temperature_2m_min,
-    fonte: "Open-Meteo",
-  };
+  // Mesma cautela do resto do arquivo: um 200 com corpo inesperado (ou
+  // truncado) não pode virar exceção não tratada — isso derrubaria a
+  // resposta inteira do bot (via Promise.all no agente) mesmo quando outra
+  // ferramenta chamada na mesma rodada funcionou normalmente.
+  try {
+    const json = await res.json();
+    if (!json?.daily) return null;
+    return {
+      dias: json.daily.time,
+      chuvaPct: json.daily.precipitation_probability_max,
+      tempMax: json.daily.temperature_2m_max,
+      tempMin: json.daily.temperature_2m_min,
+      fonte: "Open-Meteo",
+    };
+  } catch {
+    return null;
+  }
 }
 
 /** Previsão pra capital de uma UF — tenta o CPTEC (oficial) primeiro, cai pra Open-Meteo se falhar. */
@@ -280,14 +289,18 @@ export async function buscarMunicipio(
   const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(nome)}&count=10&language=pt&countryCode=BR`;
   const res = await fetchComTimeout(url);
   if (!res) return null;
-  const json = await res.json();
-  const resultados: { name: string; latitude: number; longitude: number; admin1?: string }[] =
-    json.results ?? [];
-  // Sem fallback pro primeiro resultado se a UF não bater: melhor dizer
-  // "não encontrei" do que devolver silenciosamente a coordenada de uma
-  // cidade homônima em outro estado (achado testando com "Bambuí" + UF
-  // errada de propósito — caía direto numa cidade de outro estado).
-  const match = resultados.find((r) => r.admin1 === nomeCompletoUf);
-  if (!match) return null;
-  return { nome: match.name, lat: match.latitude, lon: match.longitude };
+  try {
+    const json = await res.json();
+    const resultados: { name: string; latitude: number; longitude: number; admin1?: string }[] =
+      json.results ?? [];
+    // Sem fallback pro primeiro resultado se a UF não bater: melhor dizer
+    // "não encontrei" do que devolver silenciosamente a coordenada de uma
+    // cidade homônima em outro estado (achado testando com "Bambuí" + UF
+    // errada de propósito — caía direto numa cidade de outro estado).
+    const match = resultados.find((r) => r.admin1 === nomeCompletoUf);
+    if (!match) return null;
+    return { nome: match.name, lat: match.latitude, lon: match.longitude };
+  } catch {
+    return null;
+  }
 }
