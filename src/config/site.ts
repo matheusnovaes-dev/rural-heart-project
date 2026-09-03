@@ -31,7 +31,7 @@ export const pricingPlans: PricingPlan[] = [
     audience: "Pequenos produtores",
     price: 39,
     features: [
-      "Cotações diárias (Conab)",
+      "Cotações semanais (Conab)",
       "Preço líquido com frete",
       "Boletim Semanal (Imea)",
       "Sinal de venda: cruza preço, futuros da B3 e clima pra apontar a hora certa",
