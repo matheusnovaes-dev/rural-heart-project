@@ -6,6 +6,7 @@ type PrecoRow = {
   produto: string;
   preco: number;
   unidade: string | null;
+  regiao: string;
   data_referencia: string;
   fonte: string;
 };
@@ -41,9 +42,16 @@ export async function buscarPreco(
   if (!produto) return { encontrado: false, erro: "produto_ausente" };
   if (!uf) return { encontrado: false, erro: "uf_ausente" };
 
-  const { data: rows } = await supabase
+  // Primeiro tenta o número único do estado (regiao=''). Fontes como
+  // BBM/IEA-SP não publicam isso pra todo produto — só praça por praça
+  // (ex: soja em MG só existe como "Paracatú/Unaí" e "Uberlândia/Uberaba",
+  // nunca um "MG" genérico). Nesse caso cai pro fallback abaixo em vez de
+  // dizer "não encontrado" com o dado disponível — mostrar por região é
+  // mais honesto (e mais útil pro produtor) do que inventar uma média ou
+  // escolher uma região arbitrária sem avisar.
+  const { data: rowsEstado } = await supabase
     .from("precos")
-    .select("produto, preco, unidade, data_referencia, fonte")
+    .select("produto, preco, unidade, regiao, data_referencia, fonte")
     .ilike("produto", `%${produto}%`)
     .eq("uf", uf)
     .eq("regiao", "")
@@ -51,8 +59,21 @@ export async function buscarPreco(
     .limit(20)
     .returns<PrecoRow[]>();
 
-  const maisRecente = rows?.[0]?.data_referencia;
-  const atuais = (rows ?? []).filter((r) => r.data_referencia === maisRecente);
+  const maisRecenteEstado = rowsEstado?.[0]?.data_referencia;
+  let atuais = (rowsEstado ?? []).filter((r) => r.data_referencia === maisRecenteEstado);
+
+  if (atuais.length === 0) {
+    const { data: rowsRegionais } = await supabase
+      .from("precos")
+      .select("produto, preco, unidade, regiao, data_referencia, fonte")
+      .ilike("produto", `%${produto}%`)
+      .eq("uf", uf)
+      .order("data_referencia", { ascending: false })
+      .limit(20)
+      .returns<PrecoRow[]>();
+    const maisRecenteRegional = rowsRegionais?.[0]?.data_referencia;
+    atuais = (rowsRegionais ?? []).filter((r) => r.data_referencia === maisRecenteRegional);
+  }
 
   if (atuais.length === 0) {
     const desde = new Date();
