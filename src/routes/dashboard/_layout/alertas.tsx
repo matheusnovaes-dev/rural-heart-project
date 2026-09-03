@@ -48,6 +48,8 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
+import { limiteAlertas, useAssinatura, type Plano } from "@/lib/planos";
+import { UpgradeButton } from "@/components/dashboard/UpgradeButton";
 
 export const Route = createFileRoute("/dashboard/_layout/alertas")({
   component: AlertasPage,
@@ -108,6 +110,7 @@ function descreverCondicaoClima(a: AlertaClima) {
 
 function AlertasPage() {
   const { produtor, cooperativa } = useAuth();
+  const { plano, assinaturaId, asaasSubscriptionId } = useAssinatura();
   const [alertas, setAlertas] = useState<Alerta[]>([]);
   const [alertasClima, setAlertasClima] = useState<AlertaClima[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -268,6 +271,15 @@ function AlertasPage() {
   const [openClima, setOpenClima] = useState(false);
   const [editandoClima, setEditandoClima] = useState<AlertaClima | null>(null);
 
+  // Preço + clima somados contam pro mesmo teto — editar um alerta já
+  // existente continua liberado mesmo no teto (só criar um novo é que fica
+  // bloqueado), por isso o Dialog em si nunca some, só o botão de criar.
+  const alertasAtivos =
+    alertas.filter((a) => a.ativo).length + alertasClima.filter((a) => a.ativo).length;
+  const limite = limiteAlertas(plano);
+  const atingiuLimite = alertasAtivos >= limite;
+  const planoAlvo: Plano = "prata";
+
   const dialogNovo = (
     <Dialog
       open={open || !!editando}
@@ -278,12 +290,14 @@ function AlertasPage() {
         }
       }}
     >
-      <DialogTrigger asChild>
-        <Button size="sm" disabled={destinatarios.length === 0} onClick={() => setOpen(true)}>
-          <Plus className="size-4" />
-          Novo alerta de preço
-        </Button>
-      </DialogTrigger>
+      {!atingiuLimite && (
+        <DialogTrigger asChild>
+          <Button size="sm" disabled={destinatarios.length === 0} onClick={() => setOpen(true)}>
+            <Plus className="size-4" />
+            Novo alerta de preço
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{editando ? "Editar alerta de preço" : "Novo alerta de preço"}</DialogTitle>
@@ -311,17 +325,19 @@ function AlertasPage() {
         }
       }}
     >
-      <DialogTrigger asChild>
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={destinatarios.length === 0}
-          onClick={() => setOpenClima(true)}
-        >
-          <Plus className="size-4" />
-          Novo alerta de clima
-        </Button>
-      </DialogTrigger>
+      {!atingiuLimite && (
+        <DialogTrigger asChild>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={destinatarios.length === 0}
+            onClick={() => setOpenClima(true)}
+          >
+            <Plus className="size-4" />
+            Novo alerta de clima
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
@@ -351,9 +367,22 @@ function AlertasPage() {
           <div className="flex gap-2">
             {dialogNovoClima}
             {dialogNovo}
+            {atingiuLimite && (
+              <UpgradeButton
+                planoAlvo={planoAlvo}
+                assinaturaId={assinaturaId}
+                asaasSubscriptionId={asaasSubscriptionId}
+              />
+            )}
           </div>
         }
       />
+      {atingiuLimite && (
+        <p className="text-sm text-muted-foreground">
+          Você já usou os {limite} alertas do plano atual. Pra criar mais, é só fazer upgrade —
+          editar ou cancelar os que já existem continua liberado.
+        </p>
+      )}
       <p className="text-sm font-semibold text-foreground">Alertas de preço</p>
       <Card>
         <CardContent className="flex flex-col gap-3 pt-6">

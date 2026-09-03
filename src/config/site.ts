@@ -35,7 +35,7 @@ export const pricingPlans: PricingPlan[] = [
       "Preço líquido com frete",
       "Boletim Semanal (Imea)",
       "Sinal de venda: cruza preço, futuros da B3 e clima pra apontar a hora certa",
-      "Alertas de preço e de clima, com edição e exclusão",
+      "Até 3 alertas de preço e clima ao mesmo tempo (dá pra editar e apagar)",
       "Lembretes automáticos, recorrentes ou avulsos",
       "Previsão do clima por estado ou cidade — acompanhe quantos quiser",
       "Relatórios em PDF",
@@ -49,6 +49,8 @@ export const pricingPlans: PricingPlan[] = [
     price: 129,
     features: [
       "Tudo do Bronze, mais:",
+      "Alertas de preço e clima sem limite",
+      "Até 3 funcionários com acesso, pra dividir o trabalho",
       "Compara o preço da Conab com o da Imea (MT)",
       "Cooperativas: risco climático agregado entre todos os produtores",
     ],
@@ -61,7 +63,8 @@ export const pricingPlans: PricingPlan[] = [
     price: 399,
     features: [
       "Tudo do Prata, mais:",
-      "Lista de acompanhamento: siga outras culturas e estados além do seu",
+      "Acompanhe o preço de outras culturas e estados, não só o seu",
+      "Funcionários sem limite — ideal pra consultor com vários clientes",
       "Suporte prioritário",
     ],
   },

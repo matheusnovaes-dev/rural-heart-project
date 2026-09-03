@@ -39,6 +39,8 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useRequireProdutor } from "@/lib/auth";
 import { normalizarWhatsapp } from "@/lib/telefone";
+import { limiteFuncionarios, useAssinatura, type Plano } from "@/lib/planos";
+import { UpgradeButton } from "@/components/dashboard/UpgradeButton";
 
 export const Route = createFileRoute("/dashboard/_layout/funcionarios")({
   component: FuncionariosPage,
@@ -48,9 +50,17 @@ type FuncionarioRow = { id: string; nome: string; whatsapp: string };
 
 function FuncionariosPage() {
   const produtor = useRequireProdutor();
+  const { plano, assinaturaId, asaasSubscriptionId } = useAssinatura();
   const [funcionarios, setFuncionarios] = useState<FuncionarioRow[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [open, setOpen] = useState(false);
+
+  const limite = limiteFuncionarios(plano);
+  const atingiuLimite = funcionarios.length >= limite;
+  // Bronze não tem direito a nenhum funcionário (limite 0) — o próximo
+  // plano que já resolve é o Prata. Quem já é Prata e bateu no teto de 3
+  // precisa do Ouro (sem limite).
+  const planoAlvo: Plano = limite === 0 ? "prata" : "ouro";
 
   async function load() {
     if (!supabase || !produtor) return;
@@ -86,30 +96,48 @@ function FuncionariosPage() {
       <PageHeader
         icon={HardHat}
         title="Funcionários"
-        description="Quem trabalha com você e pode receber lembretes direcionados"
+        description={
+          limite === 0
+            ? "Adicionar funcionários é um recurso dos planos Prata e Ouro."
+            : "Quem trabalha com você e pode receber lembretes direcionados"
+        }
         action={
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="size-4" />
-                Adicionar
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Adicionar funcionário</DialogTitle>
-              </DialogHeader>
-              <FuncionarioForm
-                produtorId={produtor.id}
-                onDone={() => {
-                  setOpen(false);
-                  load();
-                }}
-              />
-            </DialogContent>
-          </Dialog>
+          atingiuLimite ? (
+            <UpgradeButton
+              planoAlvo={planoAlvo}
+              assinaturaId={assinaturaId}
+              asaasSubscriptionId={asaasSubscriptionId}
+            />
+          ) : (
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <Plus className="size-4" />
+                  Adicionar
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Adicionar funcionário</DialogTitle>
+                </DialogHeader>
+                <FuncionarioForm
+                  produtorId={produtor.id}
+                  onDone={() => {
+                    setOpen(false);
+                    load();
+                  }}
+                />
+              </DialogContent>
+            </Dialog>
+          )
         }
       />
+      {limite > 0 && atingiuLimite && (
+        <p className="text-sm text-muted-foreground">
+          Você já usou os {limite} funcionários do plano atual. Pra adicionar mais gente, é só
+          fazer upgrade.
+        </p>
+      )}
       <Card>
         <CardContent className="pt-6">
           {carregando ? (
@@ -122,7 +150,11 @@ function FuncionariosPage() {
             <EmptyState
               icon={HardHat}
               title="Nenhum funcionário cadastrado"
-              description='Adicione quem trabalha com você pra poder mandar um lembrete só pra essa pessoa (ex: "Jorge, checa o curral") em vez de pra todo mundo.'
+              description={
+                limite === 0
+                  ? 'No plano Prata ou Ouro, você pode adicionar quem trabalha com você pra mandar um lembrete só pra essa pessoa (ex: "Jorge, checa o curral") em vez de pra todo mundo.'
+                  : 'Adicione quem trabalha com você pra poder mandar um lembrete só pra essa pessoa (ex: "Jorge, checa o curral") em vez de pra todo mundo.'
+              }
             />
           ) : (
             <div className="overflow-x-auto">
