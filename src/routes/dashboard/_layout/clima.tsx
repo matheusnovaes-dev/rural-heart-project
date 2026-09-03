@@ -1,6 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { CloudRain, CloudSun, Loader2, MapPin, Plus, Thermometer, X } from "lucide-react";
+import {
+  AlertTriangle,
+  CloudRain,
+  CloudSun,
+  Loader2,
+  MapPin,
+  Plus,
+  Thermometer,
+  X,
+} from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -285,8 +294,10 @@ function ClimaConteudo() {
                 ) : (
                   <>
                     {insight && (
-                      <p className="text-sm text-foreground">
-                        {insight.tone === "chuva-baixa" ? "" : "⚠️ "}
+                      <p className="flex items-start gap-1.5 text-sm text-foreground">
+                        {insight.tone !== "chuva-baixa" && (
+                          <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-cta-foreground" />
+                        )}
                         {insight.texto}
                       </p>
                     )}
