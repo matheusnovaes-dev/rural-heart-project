@@ -41,7 +41,7 @@ export type RespostaAgente = { resposta: string; precisa_humano: boolean };
 // que instrução sozinha não elimina de forma confiável. Em vez de insistir
 // só no prompt, remove a frase de fechamento aqui, garantido por código.
 const PADRAO_FECHAMENTO_SE_PRECISAR =
-  /(?:^|[.!?]\s+)(?:se precisar|caso precise|precisando)[^.!?]*?\b(?:avis\w*|\bfala\b|\bfalar\b|\bfale\b|pergunt\w*|cham\w*|acess\w*|confer\w*|conf(?:ira|ere)|check\w*|clic\w*)[^.!?]*[.!?]?\s*$/i;
+  /(?:^|[.!?]\s+)(?:se precisar|caso precise|precisando)[^.!?]*?\b(?:avis\w*|\bfala\b|\bfalar\b|\bfale\b|pergunt\w*|cham\w*|acess\w*|confer\w*|conf(?:ira|ere)|check\w*|clic\w*|olh\w*)[^.!?]*[.!?]?\s*$/i;
 const PADRAO_FECHAMENTO_DISPOSICAO =
   /(?:^|[.!?]\s+)(?:qualquer\s+d[uú]vida[^.!?]*)?(?:fico|estou)\s+[aà]\s+disposi[cç][aã]o[^.!?]*[.!?]?\s*$/i;
 
