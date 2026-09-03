@@ -24,7 +24,13 @@ export const Route = createFileRoute("/dashboard/_layout/relatorios")({
   component: RelatoriosPage,
 });
 
-type PrecoRow = { produto: string; uf: string; preco: number; data_referencia: string };
+type PrecoRow = {
+  produto: string;
+  uf: string;
+  regiao: string;
+  preco: number;
+  data_referencia: string;
+};
 
 const styles = StyleSheet.create({
   page: { padding: 32, fontSize: 11, fontFamily: "Helvetica" },
@@ -70,7 +76,8 @@ function RelatorioDocument({
         </View>
         <Text style={styles.titulo}>Relatório de preços · {culturaLabel}</Text>
         <Text style={styles.subtitulo}>
-          Fonte: Conab · Gerado em {new Date().toLocaleDateString("pt-BR")}
+          Gerado em {new Date().toLocaleDateString("pt-BR")} · preço único do estado quando existe,
+          por região quando a fonte só publica assim
         </Text>
         <View style={styles.table}>
           <View style={[styles.row, styles.rowHeader]}>
@@ -82,7 +89,7 @@ function RelatorioDocument({
           {precos.map((p, i) => (
             <View style={styles.row} key={i}>
               <Text style={styles.cell}>{p.produto}</Text>
-              <Text style={styles.cell}>{p.uf}</Text>
+              <Text style={styles.cell}>{p.regiao ? `${p.uf} · ${p.regiao}` : p.uf}</Text>
               <Text style={styles.cell}>
                 {new Date(p.data_referencia).toLocaleDateString("pt-BR")}
               </Text>
@@ -111,11 +118,13 @@ function RelatoriosPage() {
   useEffect(() => {
     if (!supabase) return;
     setCarregando(true);
+    // Sem filtro de regiao de propósito: fontes como BBM/IEA-SP só publicam
+    // por praça em alguns estados (MG, SP...) — excluir isso fazia esses
+    // estados sumirem do relatório em silêncio, mesmo tendo dado real.
     supabase
       .from("precos")
-      .select("produto, uf, preco, data_referencia")
+      .select("produto, uf, regiao, preco, data_referencia")
       .ilike("produto", `%${cultura}%`)
-      .eq("regiao", "")
       .order("data_referencia", { ascending: false })
       .limit(50)
       .then(({ data }) => {
@@ -171,7 +180,7 @@ function RelatoriosPage() {
       <PageHeader
         icon={FileDown}
         title="Relatórios"
-        description="PDF com a marca da sua cooperativa e os preços mais recentes por estado."
+        description="PDF com a marca da sua cooperativa e os preços mais recentes — por estado, e por região onde só existir isso."
         action={seletorCultura}
       />
       <Card>
