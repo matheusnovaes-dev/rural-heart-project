@@ -10,7 +10,6 @@ import {
   Palette,
   FileDown,
   LogOut,
-  Loader2,
   Sprout,
   CloudSun,
   Search,
@@ -40,6 +39,7 @@ import { DashboardTour } from "@/components/dashboard/DashboardTour";
 import { useAuth } from "@/lib/auth";
 import { useAcessoDashboard } from "@/lib/planos";
 import { supabase } from "@/lib/supabase";
+import { LoadingScreen } from "@/components/LoadingScreen";
 
 export const Route = createFileRoute("/dashboard/_layout")({
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
@@ -89,11 +89,7 @@ function DashboardGuard() {
     carregandoAcesso ||
     (!liberado && !voltandoDoCheckout)
   ) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (cooperativa) {
