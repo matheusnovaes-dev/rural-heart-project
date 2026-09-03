@@ -2,7 +2,41 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { supabaseServiceRole } from "@/lib/supabase.server";
-import { enviarEmailTicket } from "@/lib/email";
+
+const planoLabel: Record<string, string> = { bronze: "Bronze", prata: "Prata", ouro: "Ouro" };
+
+/**
+ * Avisa por WhatsApp em vez de e-mail — reaproveita o mesmo número/credencial
+ * que o bot já usa pra "Notificar humano" (n8n, não duplicamos token do
+ * WhatsApp aqui). Se o n8n estiver fora do ar, o chamado já foi gravado no
+ * banco de qualquer forma — só o aviso em tempo real que falha.
+ */
+async function notificarChamadoWhatsApp(params: {
+  nome: string;
+  contato: string;
+  plano: string;
+  assunto: string;
+  mensagem: string;
+}) {
+  const token = process.env["N8N_CHAMADO_SUPORTE_TOKEN"];
+  if (!token) return;
+  try {
+    await fetch("https://n8n.safralume.com.br/webhook/chamado-suporte", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-safralume-token": token },
+      body: JSON.stringify({
+        nome: params.nome,
+        contato: params.contato,
+        plano: planoLabel[params.plano] ?? params.plano,
+        prefixo: params.plano === "ouro" ? "🔥 PRIORIDADE OURO — " : "",
+        assunto: params.assunto,
+        mensagem: params.mensagem,
+      }),
+    });
+  } catch (err) {
+    console.error("Falha ao notificar chamado via WhatsApp:", err);
+  }
+}
 
 /**
  * O plano de quem abriu o chamado é lido do banco aqui dentro (não confiado
@@ -65,7 +99,7 @@ export const abrirTicket = createServerFn({ method: "POST" })
     });
     if (insertError) throw new Error("Não foi possível registrar o chamado. Tenta de novo.");
 
-    await enviarEmailTicket({
+    await notificarChamadoWhatsApp({
       nome,
       contato,
       plano,

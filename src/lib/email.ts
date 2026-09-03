@@ -139,69 +139,6 @@ export async function enviarEmailTrialExpirando({
   }
 }
 
-/**
- * Notifica o suporte (Matheus) quando alguém abre um chamado. Ouro vem com
- * prefixo no assunto pra pular na frente da fila na hora de responder — é
- * só um sinal visual pra ele, não existe fila/SLA automatizado.
- */
-export async function enviarEmailTicket({
-  nome,
-  contato,
-  plano,
-  assunto,
-  mensagem,
-}: {
-  nome: string;
-  contato: string;
-  plano: string;
-  assunto: string;
-  mensagem: string;
-}) {
-  const apiKey = process.env["RESEND_API_KEY"];
-  // Fallback pro Gmail pessoal enquanto o encaminhamento de
-  // suporte@safralume.com.br não está configurado na GoDaddy — trocar via
-  // env var SUPORTE_EMAIL assim que estiver pronto, sem precisar mexer em código.
-  const destino = process.env["SUPORTE_EMAIL"] ?? "sirmatheus143@gmail.com";
-  if (!apiKey) return;
-
-  const escuro = "#16241B";
-  const primaria = "#1F3D2B";
-  const creme = "#F1EBDD";
-  const prefixo = plano === "ouro" ? "[PRIORIDADE OURO] " : "";
-
-  try {
-    await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: "Safralume <sistema@safralume.com.br>",
-        to: destino,
-        replyTo: contato.includes("@") ? contato : undefined,
-        subject: `${prefixo}Chamado: ${assunto}`,
-        html: `<!DOCTYPE html><html lang="pt-BR"><body style="margin:0;padding:0;background-color:${creme};font-family:Arial,Helvetica,sans-serif;">
-<table role="presentation" width="100%" style="background-color:${creme};"><tr><td align="center" style="padding:32px 12px;">
-<table role="presentation" width="480" style="width:480px;max-width:100%;background-color:#FFFFFF;border:1px solid #E2DCC9;">
-<tr><td style="background-color:${escuro};padding:20px 28px;">
-<span style="font-family:Georgia,serif;font-size:16px;letter-spacing:4px;color:#F6F2E7;text-transform:uppercase;">Safralume</span>
-</td></tr>
-<tr><td style="padding:28px;">
-<p style="font-size:15px;color:${primaria};margin:0 0 4px 0;"><strong>${nome}</strong> (plano ${planoLabel[plano] ?? plano})</p>
-<p style="font-size:13px;color:#8A9280;margin:0 0 20px 0;">Contato: ${contato}</p>
-<p style="font-size:14px;color:${primaria};margin:0 0 8px 0;"><strong>${assunto}</strong></p>
-<p style="font-size:14px;line-height:22px;color:#3A3F35;margin:0;white-space:pre-wrap;">${mensagem}</p>
-</td></tr>
-</table></td></tr></table>
-</body></html>`,
-      }),
-    });
-  } catch (err) {
-    console.error("Falha ao enviar e-mail de ticket:", err);
-  }
-}
-
 export async function enviarEmailBoasVindas({
   to,
   nome,
