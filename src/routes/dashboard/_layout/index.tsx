@@ -25,7 +25,8 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { Watchlist } from "@/components/dashboard/Watchlist";
 import { BoletimSemanal } from "@/components/dashboard/BoletimSemanal";
 import { Skeleton } from "@/components/ui/skeleton";
-import { buscarPrevisao, buscarPrevisaoPorCoordenadas, type Previsao } from "@/lib/clima";
+import type { Previsao } from "@/lib/clima";
+import { buscarPrevisaoPorCoordenadasServidor, buscarPrevisaoServidor } from "@/lib/clima.server";
 import { precoLiquido, type FreteRef } from "@/lib/frete";
 import { buildWhatsAppLink } from "@/config/site";
 
@@ -209,8 +210,8 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
     }
     const busca =
       produtor.lat != null && produtor.lon != null
-        ? buscarPrevisaoPorCoordenadas(produtor.lat, produtor.lon)
-        : buscarPrevisao(produtor.uf);
+        ? buscarPrevisaoPorCoordenadasServidor({ data: { lat: produtor.lat, lon: produtor.lon } })
+        : buscarPrevisaoServidor({ data: { uf: produtor.uf } });
     busca.then(setPrevisao);
   }, [produtor.uf, produtor.lat, produtor.lon]);
 

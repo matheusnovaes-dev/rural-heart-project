@@ -3,7 +3,7 @@ import { Bell, CloudRain, Loader2, MapPin } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 import { supabase } from "@/lib/supabase";
-import { buscarPrevisao } from "@/lib/clima";
+import { buscarPrevisaoServidor } from "@/lib/clima.server";
 import { temAcessoPrata, useAssinatura } from "@/lib/planos";
 import { InsightCard } from "@/components/dashboard/InsightCard";
 
@@ -41,10 +41,12 @@ export function CooperativaInsights({ cooperativaId }: { cooperativaId: string }
       setUfsComRisco(0);
       return;
     }
-    Promise.all(ufsUnicas.map((uf) => buscarPrevisao(uf))).then((previsoes) => {
-      const comRisco = previsoes.filter((p) => p && Math.max(...p.chuvaPct) >= 60).length;
-      setUfsComRisco(comRisco);
-    });
+    Promise.all(ufsUnicas.map((uf) => buscarPrevisaoServidor({ data: { uf } }))).then(
+      (previsoes) => {
+        const comRisco = previsoes.filter((p) => p && Math.max(...p.chuvaPct) >= 60).length;
+        setUfsComRisco(comRisco);
+      },
+    );
   }, [produtores, plano]);
 
   if (produtores === null) {

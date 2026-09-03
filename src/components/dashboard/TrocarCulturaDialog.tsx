@@ -23,7 +23,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth, type Produtor } from "@/lib/auth";
 import { culturas } from "@/config/culturas";
 import { ufs } from "@/config/ufs";
-import { buscarMunicipio } from "@/lib/clima";
+import { buscarMunicipioServidor } from "@/lib/clima.server";
 
 const gatilhoPadrao = (
   <button
@@ -72,7 +72,7 @@ export function TrocarCulturaDialog({
       } else {
         const nomeCompletoUf = ufs.find((u) => u.value === ufFinal)?.label;
         const encontrado = nomeCompletoUf
-          ? await buscarMunicipio(municipio.trim(), nomeCompletoUf)
+          ? await buscarMunicipioServidor({ data: { nome: municipio.trim(), nomeCompletoUf } })
           : null;
         if (!encontrado) {
           toast.error(

@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/lib/supabase";
-import { buscarPrevisao } from "@/lib/clima";
+import { buscarPrevisaoServidor } from "@/lib/clima.server";
 import { temAcessoPrata, useAssinatura } from "@/lib/planos";
 import type { Produtor } from "@/lib/auth";
 import { InsightCard } from "@/components/dashboard/InsightCard";
@@ -205,7 +205,7 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
 
   useEffect(() => {
     if (!uf) return;
-    buscarPrevisao(uf).then((previsao) => {
+    buscarPrevisaoServidor({ data: { uf } }).then((previsao) => {
       if (!previsao) return;
       const riscosos = previsao.chuvaPct.filter((p) => p >= 60).length;
       setDiasDeChuva(riscosos);

@@ -27,12 +27,12 @@ import { EmptyState } from "@/components/dashboard/EmptyState";
 import { TrocarCulturaDialog } from "@/components/dashboard/TrocarCulturaDialog";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
+import type { Previsao } from "@/lib/clima";
 import {
-  buscarMunicipio,
-  buscarPrevisao,
-  buscarPrevisaoPorCoordenadas,
-  type Previsao,
-} from "@/lib/clima";
+  buscarMunicipioServidor,
+  buscarPrevisaoPorCoordenadasServidor,
+  buscarPrevisaoServidor,
+} from "@/lib/clima.server";
 import { ufs as todasUfsBrasil } from "@/config/ufs";
 import { toast } from "sonner";
 
@@ -159,8 +159,8 @@ function ClimaConteudo() {
       if (local.chave in previsoes) return;
       const busca =
         local.lat != null && local.lon != null
-          ? buscarPrevisaoPorCoordenadas(local.lat, local.lon)
-          : buscarPrevisao(local.uf);
+          ? buscarPrevisaoPorCoordenadasServidor({ data: { lat: local.lat, lon: local.lon } })
+          : buscarPrevisaoServidor({ data: { uf: local.uf } });
       busca.then((previsao) => {
         setPrevisoes((prev) => ({ ...prev, [local.chave]: previsao }));
       });
@@ -356,7 +356,7 @@ function AdicionarLocalForm({
     if (municipio.trim()) {
       const nomeCompletoUf = todasUfsBrasil.find((u) => u.value === uf)?.label;
       const encontrado = nomeCompletoUf
-        ? await buscarMunicipio(municipio.trim(), nomeCompletoUf)
+        ? await buscarMunicipioServidor({ data: { nome: municipio.trim(), nomeCompletoUf } })
         : null;
       if (!encontrado) {
         toast.error(`Não encontrei "${municipio}" em ${uf}. Confira o nome e tente de novo.`);
