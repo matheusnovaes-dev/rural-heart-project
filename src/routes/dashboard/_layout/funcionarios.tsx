@@ -134,8 +134,8 @@ function FuncionariosPage() {
       />
       {limite > 0 && atingiuLimite && (
         <p className="text-sm text-muted-foreground">
-          Você já usou os {limite} funcionários do plano atual. Pra adicionar mais gente, é só
-          fazer upgrade.
+          Você já usou os {limite} funcionários do plano atual. Pra adicionar mais gente, é só fazer
+          upgrade.
         </p>
       )}
       <Card>
