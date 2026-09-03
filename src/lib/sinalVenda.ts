@@ -3,28 +3,45 @@ import type { InsightTone } from "@/components/dashboard/InsightCard";
 export type SinalPosicao = "alto" | "baixo" | "neutro";
 export type SinalCurva = "alta" | "baixa" | "neutro";
 
-export type PontoPreco = { preco: number; data_referencia: string; produto: string };
+export type PontoPreco = { preco: number; data_referencia: string; produto: string; uf?: string };
 
 /**
  * A busca por produto costuma casar mais de uma variante de embalagem da
- * mesma cultura (ex: "SOJA EM GRÃOS (50 kg)" e "(60 kg)") — fica só com a
- * mais publicada, senão a série mistura unidades diferentes na mesma linha.
- * Mesma proteção usada em precos.tsx e no InsightsPanel.
+ * mesma cultura (ex: "SOJA EM GRÃOS (50 kg)" em RR vs "(60 kg)" no resto do
+ * país, ou "TRIGO (DERAL-PR)" vs "TRIGO PÃO, PH 78" da Conab) — fica só com
+ * a mais publicada POR UF, senão a série mistura unidades diferentes na
+ * mesma linha. Importante: o corte é por UF, não global — bug real achado
+ * testando: cortar globalmente (a variante mais publicada em TODOS os
+ * estados somados) fazia o RS inteiro sumir do trigo, porque "TRIGO
+ * (DERAL-PR)" tinha mais linhas historicamente que qualquer variante do RS,
+ * mesmo sendo de um estado diferente. Quando as linhas não têm `uf` (quem
+ * já filtrou por UF antes de chamar), trata tudo como um grupo só — mesmo
+ * comportamento de antes.
  */
 export function serieUnica<T extends PontoPreco>(rows: T[]): T[] {
-  const counts = new Map<string, number>();
-  for (const r of rows) counts.set(r.produto, (counts.get(r.produto) ?? 0) + 1);
-  let principal: string | null = null;
-  let max = 0;
-  for (const [produto, count] of counts) {
-    if (count > max) {
-      max = count;
-      principal = produto;
-    }
+  const porGrupo = new Map<string, T[]>();
+  for (const r of rows) {
+    const grupo = r.uf ?? "";
+    const lista = porGrupo.get(grupo);
+    if (lista) lista.push(r);
+    else porGrupo.set(grupo, [r]);
   }
-  return rows
-    .filter((r) => r.produto === principal)
-    .sort((a, b) => a.data_referencia.localeCompare(b.data_referencia));
+
+  const resultado: T[] = [];
+  for (const linhasDoGrupo of porGrupo.values()) {
+    const counts = new Map<string, number>();
+    for (const r of linhasDoGrupo) counts.set(r.produto, (counts.get(r.produto) ?? 0) + 1);
+    let principal: string | null = null;
+    let max = 0;
+    for (const [produto, count] of counts) {
+      if (count > max) {
+        max = count;
+        principal = produto;
+      }
+    }
+    resultado.push(...linhasDoGrupo.filter((r) => r.produto === principal));
+  }
+  return resultado.sort((a, b) => a.data_referencia.localeCompare(b.data_referencia));
 }
 
 /** Onde o preço mais recente da série está dentro da faixa mín-máx do período, em 0-100. */

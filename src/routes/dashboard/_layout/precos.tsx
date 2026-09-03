@@ -97,20 +97,36 @@ function PrecosPage() {
 
   // A busca por substring pode casar mais de uma variante de embalagem da
   // mesma cultura (ex: "ALHO COMUM (10 kg)" e "ALHO EXTRA ROXO NOBRE 5
-  // (kg)") — misturar as duas no mesmo ponto do gráfico (por uf+data) faria
-  // o preço pular sem sentido. Fica só com a variante mais publicada.
+  // (kg)") — misturar as duas na mesma série faria o preço pular sem
+  // sentido. Fica só com a variante mais publicada POR SÉRIE (uf ou uf ·
+  // região), não globalmente — bug real achado testando: cortar
+  // globalmente fazia o RS inteiro sumir do gráfico de trigo, porque
+  // "TRIGO (DERAL-PR)" (373 linhas, PR) tinha mais histórico que qualquer
+  // variante de trigo do RS, mesmo sendo de outro estado.
   const rows = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const r of rawRows) counts.set(r.produto, (counts.get(r.produto) ?? 0) + 1);
-    let principal: string | null = null;
-    let max = 0;
-    for (const [produto, count] of counts) {
-      if (count > max) {
-        max = count;
-        principal = produto;
-      }
+    const porSerie = new Map<string, PrecoRow[]>();
+    for (const r of rawRows) {
+      const serie = chaveSerie(r);
+      const lista = porSerie.get(serie);
+      if (lista) lista.push(r);
+      else porSerie.set(serie, [r]);
     }
-    return rawRows.filter((r) => r.produto === principal);
+
+    const resultado: PrecoRow[] = [];
+    for (const linhasDaSerie of porSerie.values()) {
+      const counts = new Map<string, number>();
+      for (const r of linhasDaSerie) counts.set(r.produto, (counts.get(r.produto) ?? 0) + 1);
+      let principal: string | null = null;
+      let max = 0;
+      for (const [produto, count] of counts) {
+        if (count > max) {
+          max = count;
+          principal = produto;
+        }
+      }
+      resultado.push(...linhasDaSerie.filter((r) => r.produto === principal));
+    }
+    return resultado;
   }, [rawRows]);
 
   const culturaLabel = culturas.find((c) => c.value === cultura)?.label ?? cultura;
