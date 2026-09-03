@@ -29,7 +29,21 @@ export const Route = createFileRoute("/dashboard/_layout/precos")({
   component: PrecosPage,
 });
 
-type PrecoRow = { uf: string; preco: number; data_referencia: string; produto: string };
+type PrecoRow = {
+  uf: string;
+  regiao: string;
+  preco: number;
+  data_referencia: string;
+  produto: string;
+};
+
+/** Chave de série do gráfico: "PR" quando é preço único do estado, "MG ·
+ * Paracatú / Unaí" quando a fonte só publica por praça (BBM/IEA-SP) — nunca
+ * junta as duas coisas debaixo do mesmo "MG" nem inventa uma média entre
+ * regiões, só mostra a granularidade real que a fonte publica. */
+function chaveSerie(r: { uf: string; regiao: string }) {
+  return r.regiao ? `${r.uf} · ${r.regiao}` : r.uf;
+}
 
 const QTD_VISIVEL_PADRAO = 6;
 // 2 anos inteiros de semanas espremidas num gráfico só viram ruído
@@ -71,9 +85,8 @@ function PrecosPage() {
     desde.setDate(desde.getDate() - JANELA_DIAS);
     supabase
       .from("precos")
-      .select("uf, preco, data_referencia, produto")
+      .select("uf, regiao, preco, data_referencia, produto")
       .ilike("produto", `%${cultura}%`)
-      .eq("regiao", "")
       .gte("data_referencia", desde.toISOString().slice(0, 10))
       .order("data_referencia", { ascending: true })
       .then(({ data }) => {
@@ -103,35 +116,36 @@ function PrecosPage() {
   const culturaLabel = culturas.find((c) => c.value === cultura)?.label ?? cultura;
 
   // Ordenado por quantidade de pontos (série mais completa primeiro) — não
-  // é alfabético porque ordem de UF não carrega nenhum significado aqui.
-  const ufs = useMemo(() => {
+  // é alfabético porque ordem de série não carrega nenhum significado aqui.
+  const series = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const r of rows) counts.set(r.uf, (counts.get(r.uf) ?? 0) + 1);
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([uf]) => uf);
+    for (const r of rows) counts.set(chaveSerie(r), (counts.get(chaveSerie(r)) ?? 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([serie]) => serie);
   }, [rows]);
 
-  const corPorUf = useMemo(() => {
+  const corPorSerie = useMemo(() => {
     const map = new Map<string, string>();
-    ufs.forEach((uf, i) => map.set(uf, corDoUf(i)));
+    series.forEach((serie, i) => map.set(serie, corDoUf(i)));
     return map;
-  }, [ufs]);
+  }, [series]);
 
-  // Começa mostrando só os UFs com mais histórico — todo mundo junto de uma
-  // vez, com 15+ estados, vira espaguete ilegível independente de cor.
+  // Começa mostrando só as séries com mais histórico — todo mundo junto de
+  // uma vez, com 15+ estados/regiões, vira espaguete ilegível independente
+  // de cor.
   useEffect(() => {
-    if (visiveis !== null || ufs.length === 0) return;
-    setVisiveis(new Set(ufs.slice(0, QTD_VISIVEL_PADRAO)));
-  }, [ufs, visiveis]);
+    if (visiveis !== null || series.length === 0) return;
+    setVisiveis(new Set(series.slice(0, QTD_VISIVEL_PADRAO)));
+  }, [series, visiveis]);
 
   const chartConfig: ChartConfig = useMemo(() => {
     const config: ChartConfig = {};
-    ufs.forEach((uf, i) => {
-      config[uf] = { label: uf, color: corDoUf(i) };
+    series.forEach((serie, i) => {
+      config[serie] = { label: serie, color: corDoUf(i) };
     });
     return config;
-  }, [ufs]);
+  }, [series]);
 
-  // Pivota por data: cada ponto do gráfico vira { data, GO: 122.1, MT: 123.4, ... }
+  // Pivota por data: cada ponto do gráfico vira { data, GO: 122.1, "MG · Paracatú / Unaí": 143, ... }
   const chartData = useMemo(() => {
     const byDate = new Map<string, Record<string, string | number>>();
     for (const r of rows) {
@@ -142,40 +156,40 @@ function PrecosPage() {
       if (!byDate.has(r.data_referencia)) {
         byDate.set(r.data_referencia, { data: label, _iso: r.data_referencia });
       }
-      byDate.get(r.data_referencia)![r.uf] = r.preco;
+      byDate.get(r.data_referencia)![chaveSerie(r)] = r.preco;
     }
     return [...byDate.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, v]) => v);
   }, [rows]);
 
   const stats = useMemo(() => {
-    return ufs.map((uf) => {
-      const series = rows
-        .filter((r) => r.uf === uf)
+    return series.map((serie) => {
+      const pontos = rows
+        .filter((r) => chaveSerie(r) === serie)
         .sort((a, b) => a.data_referencia.localeCompare(b.data_referencia));
-      const atual = series.at(-1);
-      const semanaPassada = series.at(-2);
+      const atual = pontos.at(-1);
+      const semanaPassada = pontos.at(-2);
       const variacao =
         atual && semanaPassada && semanaPassada.preco !== 0
           ? ((atual.preco - semanaPassada.preco) / semanaPassada.preco) * 100
           : null;
-      const precos = series.map((s) => s.preco);
+      const precos = pontos.map((p) => p.preco);
       return {
-        uf,
+        serie,
         atual: atual?.preco ?? null,
         variacao,
         min: precos.length ? Math.min(...precos) : null,
         max: precos.length ? Math.max(...precos) : null,
         sparkline: precos.slice(-14),
-        color: corPorUf.get(uf) ?? corDoUf(0),
+        color: corPorSerie.get(serie) ?? corDoUf(0),
       };
     });
-  }, [rows, ufs, corPorUf]);
+  }, [rows, series, corPorSerie]);
 
-  function toggleUf(uf: string) {
+  function toggleSerie(serie: string) {
     setVisiveis((prev) => {
       const next = new Set(prev ?? []);
-      if (next.has(uf)) next.delete(uf);
-      else next.add(uf);
+      if (next.has(serie)) next.delete(serie);
+      else next.add(serie);
       return next;
     });
   }
@@ -185,7 +199,7 @@ function PrecosPage() {
       <PageHeader
         icon={LineChartIcon}
         title="Preços"
-        description="Cotação por estado, direto da Conab"
+        description="Cotação por estado — e por região, onde só existir isso"
         action={
           <Select value={cultura} onValueChange={setCultura}>
             <SelectTrigger className="w-55" aria-label="Cultura">
@@ -215,14 +229,14 @@ function PrecosPage() {
           <div className="@container">
             <div className="grid gap-4 @lg:grid-cols-2 @2xl:grid-cols-3">
               {stats.map((s) => (
-                <Card key={s.uf} className="gap-3 py-4">
+                <Card key={s.serie} className="gap-3 py-4">
                   <CardHeader className="gap-1 pb-0">
                     <CardDescription className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                       <span
                         className="size-2 shrink-0 rounded-full"
                         style={{ backgroundColor: s.color }}
                       />
-                      {culturaLabel} · {s.uf}
+                      {culturaLabel} · {s.serie}
                     </CardDescription>
                     <CardTitle className="font-mono text-3xl font-semibold tabular-nums tracking-tight">
                       {s.atual != null ? (
@@ -282,23 +296,23 @@ function PrecosPage() {
             Histórico de preço · {culturaLabel}
           </CardTitle>
           <CardDescription>
-            Fonte: Conab, últimos 6 meses
-            {ufs.length > QTD_VISIVEL_PADRAO &&
-              ` · mostrando os ${QTD_VISIVEL_PADRAO} estados com mais histórico, clique pra ver outros`}
+            Últimos 6 meses — estado inteiro quando tem, por região quando a fonte só publica assim
+            {series.length > QTD_VISIVEL_PADRAO &&
+              ` · mostrando as ${QTD_VISIVEL_PADRAO} séries com mais histórico, clique pra ver outras`}
             .
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          {ufs.length > 0 && (
+          {series.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              {ufs.map((uf) => {
-                const ativo = visiveis?.has(uf) ?? false;
-                const cor = corPorUf.get(uf) ?? corDoUf(0);
+              {series.map((serie) => {
+                const ativo = visiveis?.has(serie) ?? false;
+                const cor = corPorSerie.get(serie) ?? corDoUf(0);
                 return (
                   <button
-                    key={uf}
+                    key={serie}
                     type="button"
-                    onClick={() => toggleUf(uf)}
+                    onClick={() => toggleSerie(serie)}
                     className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
                       ativo
                         ? "border-transparent bg-secondary text-foreground"
@@ -309,7 +323,7 @@ function PrecosPage() {
                       className="size-2 shrink-0 rounded-full transition-opacity"
                       style={{ backgroundColor: cor, opacity: ativo ? 1 : 0.35 }}
                     />
-                    {uf}
+                    {serie}
                   </button>
                 );
               })}
@@ -322,7 +336,7 @@ function PrecosPage() {
             <EmptyState
               icon={LineChartIcon}
               title="Sem dados pra essa cultura"
-              description={`A Conab ainda não publicou preço de ${culturaLabel.toLowerCase()} nos últimos 6 meses. Tente outra cultura no seletor acima.`}
+              description={`Ainda não temos preço de ${culturaLabel.toLowerCase()} nos últimos 6 meses, nem por estado nem por região. Tente outra cultura no seletor acima.`}
             />
           ) : (
             <ChartContainer config={chartConfig} className="h-80 w-full">
@@ -353,7 +367,7 @@ function PrecosPage() {
                           <span className="flex items-center gap-1.5 text-muted-foreground">
                             <span
                               className="size-2 shrink-0 rounded-[2px]"
-                              style={{ backgroundColor: corPorUf.get(String(name)) }}
+                              style={{ backgroundColor: corPorSerie.get(String(name)) }}
                             />
                             {name}
                           </span>
@@ -365,16 +379,16 @@ function PrecosPage() {
                     />
                   }
                 />
-                {ufs.map((uf) => (
+                {series.map((serie) => (
                   <Line
-                    key={uf}
-                    dataKey={uf}
+                    key={serie}
+                    dataKey={serie}
                     type="monotone"
-                    stroke={corPorUf.get(uf)}
+                    stroke={corPorSerie.get(serie)}
                     strokeWidth={2.25}
                     dot={false}
                     activeDot={{ r: 4 }}
-                    hide={!(visiveis?.has(uf) ?? false)}
+                    hide={!(visiveis?.has(serie) ?? false)}
                     connectNulls
                   />
                 ))}

@@ -522,7 +522,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
   );
 }
 
-type TickerEntry = { uf: string; atual: number; variacao: number | null };
+type TickerEntry = { label: string; atual: number; variacao: number | null };
 
 function PriceTicker({ entries }: { entries: TickerEntry[] }) {
   if (entries.length === 0) return null;
@@ -534,10 +534,10 @@ function PriceTicker({ entries }: { entries: TickerEntry[] }) {
       </span>
       {entries.map((e) => (
         <span
-          key={e.uf}
+          key={e.label}
           className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium"
         >
-          <span className="font-semibold text-foreground">{e.uf}</span>
+          <span className="font-semibold text-foreground">{e.label}</span>
           <span className="font-mono tabular-nums text-foreground">
             R${" "}
             {e.atual.toLocaleString("pt-BR", {
@@ -580,7 +580,7 @@ function CooperativaHome({
 }) {
   const [stats, setStats] = useState({ produtores: 0, lembretes: 0 });
   const [precoRows, setPrecoRows] = useState<
-    { uf: string; preco: number; data_referencia: string }[]
+    { uf: string; regiao: string; preco: number; data_referencia: string }[]
   >([]);
 
   useEffect(() => {
@@ -601,36 +601,44 @@ function CooperativaHome({
       });
     });
 
+    // Sem filtro de regiao de propósito: fontes como BBM/IEA-SP só publicam
+    // soja por praça em alguns estados (MG, SP...), sem número único do
+    // estado — excluir isso do ticker fazia esses estados sumirem em
+    // silêncio. Limite maior que antes porque agora cobre mais séries
+    // (estado + região) na mesma janela.
     supabase
       .from("precos")
-      .select("uf, preco, data_referencia")
+      .select("uf, regiao, preco, data_referencia")
       .ilike("produto", "%soja%")
-      .eq("regiao", "")
       .order("data_referencia", { ascending: false })
-      .limit(60)
+      .limit(200)
       .then(({ data }) => setPrecoRows(data ?? []));
   }, [cooperativaId]);
 
   const ticker = useMemo<TickerEntry[]>(() => {
-    const byUf = new Map<string, { preco: number; data_referencia: string }[]>();
+    const porSerie = new Map<
+      string,
+      { label: string; pontos: { preco: number; data_referencia: string }[] }
+    >();
     for (const r of precoRows) {
-      const list = byUf.get(r.uf) ?? [];
-      list.push(r);
-      byUf.set(r.uf, list);
+      const label = r.regiao ? `${r.uf} · ${r.regiao}` : r.uf;
+      const entry = porSerie.get(label) ?? { label, pontos: [] };
+      entry.pontos.push(r);
+      porSerie.set(label, entry);
     }
-    return [...byUf.entries()]
-      .map(([uf, list]) => {
-        const sorted = list.sort((a, b) => b.data_referencia.localeCompare(a.data_referencia));
+    return [...porSerie.values()]
+      .map(({ label, pontos }) => {
+        const sorted = pontos.sort((a, b) => b.data_referencia.localeCompare(a.data_referencia));
         const atual = sorted[0]?.preco;
         const anterior = sorted[1]?.preco;
         const variacao =
           atual != null && anterior != null && anterior !== 0
             ? ((atual - anterior) / anterior) * 100
             : null;
-        return atual != null ? { uf, atual, variacao } : null;
+        return atual != null ? { label, atual, variacao } : null;
       })
       .filter((e): e is TickerEntry => e != null)
-      .sort((a, b) => a.uf.localeCompare(b.uf));
+      .sort((a, b) => a.label.localeCompare(b.label));
   }, [precoRows]);
 
   const cards = [
@@ -675,7 +683,7 @@ function CooperativaHome({
             <ArrowDown className="size-4 shrink-0 text-destructive" />
           )}
           <span>
-            Maior variação da semana: soja em <strong>{maiorVariacao.uf}</strong>{" "}
+            Maior variação da semana: soja em <strong>{maiorVariacao.label}</strong>{" "}
             {maiorVariacao.variacao! > 0 ? "subiu" : "caiu"}{" "}
             <span className="font-mono font-semibold tabular-nums">
               {Math.abs(maiorVariacao.variacao!).toFixed(1)}%
