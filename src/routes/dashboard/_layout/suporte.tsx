@@ -24,6 +24,7 @@ type Ticket = {
   id: string;
   assunto: string;
   mensagem: string;
+  resposta: string | null;
   status: string;
   created_at: string;
 };
@@ -45,7 +46,7 @@ function SuportePage() {
     if (!supabase) return;
     const query = supabase
       .from("tickets_suporte")
-      .select("id, assunto, mensagem, status, created_at")
+      .select("id, assunto, mensagem, resposta, status, created_at")
       .order("created_at", { ascending: false });
     const { data } = produtor
       ? await query.eq("produtor_id", produtor.id)
@@ -161,6 +162,12 @@ function SuportePage() {
                     minute: "2-digit",
                   })}
                 </span>
+                {t.resposta && (
+                  <div className="mt-2 rounded-md bg-muted p-2.5">
+                    <p className="text-xs font-medium text-foreground">Resposta do Safralume</p>
+                    <p className="mt-0.5 text-sm text-foreground">{t.resposta}</p>
+                  </div>
+                )}
               </div>
             ))
           )}
