@@ -16,6 +16,7 @@ import {
   Search,
   CreditCard,
   HardHat,
+  LifeBuoy,
 } from "lucide-react";
 
 import {
@@ -159,6 +160,7 @@ function CooperativaSidebar({
     { to: "/dashboard/produtores", label: "Produtores", icon: Users },
     { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
     { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
+    { to: "/dashboard/suporte", label: "Suporte", icon: LifeBuoy },
     ...(isAdmin
       ? [
           { to: "/dashboard/equipe", label: "Equipe", icon: UsersRound },
@@ -212,6 +214,7 @@ const produtorNavItemsBase = [
   { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
   { to: "/dashboard/funcionarios", label: "Funcionários", icon: HardHat },
   { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
+  { to: "/dashboard/suporte", label: "Suporte", icon: LifeBuoy },
 ] as const;
 
 const assinaturaNavItem = {
