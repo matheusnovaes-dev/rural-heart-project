@@ -34,7 +34,7 @@ export function limiteAlertas(plano: Plano | null | undefined): number {
 
 /** Assinatura (plano) do produtor ou cooperativa logado, pra gating de feature. */
 export function useAssinatura() {
-  const { produtor, cooperativa } = useAuth();
+  const { produtor, cooperativa, loading: authLoading } = useAuth();
   const produtorId = produtor?.id;
   const cooperativaId = cooperativa?.id;
   const [plano, setPlano] = useState<Plano | null>(null);
@@ -46,8 +46,20 @@ export function useAssinatura() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!supabase || (!produtorId && !cooperativaId)) {
+    if (!supabase) {
       setLoading(false);
+      return;
+    }
+    if (!produtorId && !cooperativaId) {
+      // "Ainda sem id" só quer dizer "sem assinatura" depois que o useAuth()
+      // já terminou de carregar — enquanto ele ainda está resolvendo,
+      // produtor/cooperativa ficam null por uma fração de segundo mesmo pra
+      // quem tem conta e trial válidos. Bug real achado testando: sem essa
+      // distinção, esse hook zerava `loading` cedo demais logo após um
+      // login (SIGNED_IN chega antes do loadProfile() resolver), e
+      // useAcessoDashboard() lia isso como "sem assinatura" e mandava um
+      // usuário com trial ativo pra /assinar por uma renderização inteira.
+      setLoading(authLoading);
       return;
     }
     setLoading(true);
@@ -72,7 +84,7 @@ export function useAssinatura() {
       setAsaasSubscriptionId(data?.asaas_subscription_id ?? null);
       setLoading(false);
     });
-  }, [produtorId, cooperativaId]);
+  }, [produtorId, cooperativaId, authLoading]);
 
   return { plano, status, trialExpiraEm, criadaEm, assinaturaId, asaasSubscriptionId, loading };
 }
