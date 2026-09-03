@@ -34,6 +34,26 @@ const RESPONSE_FORMAT = {
 
 export type RespostaAgente = { resposta: string; precisa_humano: boolean };
 
+// Rede de segurança determinística: o prompt já proíbe fechar a resposta
+// com uma oferta de ajuda genérica ("se precisar de algo, é só avisar"),
+// mas testando ao vivo isso ainda escapa em ~1/3 das respostas mesmo depois
+// de várias rodadas de reforço no texto do prompt — é um hábito do modelo
+// que instrução sozinha não elimina de forma confiável. Em vez de insistir
+// só no prompt, remove a frase de fechamento aqui, garantido por código.
+const PADRAO_FECHAMENTO_SE_PRECISAR =
+  /(?:^|[.!?]\s+)(?:se precisar|caso precise|precisando)[^.!?]*?\b(?:avis\w*|\bfala\b|\bfalar\b|\bfale\b|pergunt\w*|cham\w*)[^.!?]*[.!?]?\s*$/i;
+const PADRAO_FECHAMENTO_DISPOSICAO =
+  /(?:^|[.!?]\s+)(?:qualquer\s+d[uú]vida[^.!?]*)?(?:fico|estou)\s+[aà]\s+disposi[cç][aã]o[^.!?]*[.!?]?\s*$/i;
+
+function removerFechamentoGenerico(resposta: string): string {
+  const semSePrecisar = resposta.replace(PADRAO_FECHAMENTO_SE_PRECISAR, "").trimEnd();
+  const candidato = semSePrecisar || resposta;
+  const semDisposicao = candidato.replace(PADRAO_FECHAMENTO_DISPOSICAO, "").trimEnd();
+  // Se a resposta inteira era só a frase de fechamento, melhor manter o
+  // texto original do que devolver uma mensagem vazia pro produtor.
+  return semDisposicao || resposta;
+}
+
 const FALLBACK_DURO: RespostaAgente = {
   resposta: "Desculpa, não consegui pensar numa resposta agora. Pode tentar de novo em instantes?",
   precisa_humano: true,
@@ -131,7 +151,7 @@ export async function runAgent(input: {
 
       if (mensagem?.content) {
         const parsed = JSON.parse(mensagem.content) as RespostaAgente;
-        return parsed;
+        return { ...parsed, resposta: removerFechamentoGenerico(parsed.resposta) };
       }
 
       break;
@@ -141,7 +161,10 @@ export async function runAgent(input: {
     // que já foi buscado, sem oferecer mais nenhuma tool pra chamar.
     const json = await chamarOpenAI(apiKey, messages, { comTools: false, signal });
     const conteudo = json.choices?.[0]?.message?.content;
-    if (conteudo) return JSON.parse(conteudo) as RespostaAgente;
+    if (conteudo) {
+      const parsed = JSON.parse(conteudo) as RespostaAgente;
+      return { ...parsed, resposta: removerFechamentoGenerico(parsed.resposta) };
+    }
 
     return FALLBACK_DURO;
   } catch {
