@@ -134,12 +134,14 @@ function AssinaturaBanner({
 }
 
 type PrecoHistorico = { preco: number; data_referencia: string; updated_at: string | null };
+type PrecoRegional = { regiao: string; preco: number; data_referencia: string };
 
 const CHAVE_BANNER_WHATSAPP = "safralume_banner_whatsapp_dispensado";
 
 function ProdutorHome({ produtor }: { produtor: Produtor }) {
   const [bannerWhatsappVisivel, setBannerWhatsappVisivel] = useState(false);
   const [serie, setSerie] = useState<PrecoHistorico[] | null>(null);
+  const [precosRegionais, setPrecosRegionais] = useState<PrecoRegional[]>([]);
   const [lembretes, setLembretes] = useState<{ id: string; titulo: string; enviar_em: string }[]>(
     [],
   );
@@ -177,7 +179,33 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
         .eq("regiao", "")
         .gte("data_referencia", desde.toISOString().slice(0, 10))
         .order("data_referencia", { ascending: true })
-        .then(({ data }) => setSerie(data ?? []));
+        .then(({ data }) => {
+          const rows = data ?? [];
+          setSerie(rows);
+          if (rows.length > 0) {
+            setPrecosRegionais([]);
+            return;
+          }
+          // Sem preço único do estado — antes disso, o card mostrava
+          // "ainda não temos preço" mesmo quando tinha dado real, só que
+          // publicado por praça em vez de UF inteira (ex: milho em MG, só
+          // via BBM). Mesmo princípio já usado no bot: mostrar por região é
+          // mais honesto do que dizer "não temos" quando na verdade tem.
+          if (!supabase) return;
+          supabase
+            .from("precos")
+            .select("regiao, preco, data_referencia")
+            .ilike("produto", `%${produtor.cultura_principal}%`)
+            .eq("uf", produtor.uf)
+            .order("data_referencia", { ascending: false })
+            .limit(20)
+            .then(({ data: regionaisRaw }) => {
+              const maisRecente = regionaisRaw?.[0]?.data_referencia;
+              setPrecosRegionais(
+                (regionaisRaw ?? []).filter((r) => r.data_referencia === maisRecente),
+              );
+            });
+        });
 
       // A Sifreca só cobre ~10 rotas "selecionadas" por cultura, não toda
       // UF — quando não bate, mostra o preço bruto em vez de inventar frete.
@@ -191,6 +219,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
         .then(({ data }) => setFrete(data ?? null));
     } else {
       setSerie([]);
+      setPrecosRegionais([]);
       setFrete(null);
     }
 
@@ -343,6 +372,31 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                       />
                     </div>
                   )}
+                </div>
+              ) : precosRegionais.length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm opacity-80">
+                    {produtor.uf} não tem um preço único pro estado — só por região:
+                  </p>
+                  <div className="flex flex-col gap-1">
+                    {precosRegionais.map((r) => (
+                      <div
+                        key={r.regiao}
+                        className="flex items-baseline justify-between gap-3 text-sm"
+                      >
+                        <span className="opacity-90">{r.regiao}</span>
+                        <span className="font-mono font-semibold tabular-nums">
+                          R${r.preco.toFixed(2).replace(".", ",")}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-1 flex items-center gap-1.5 text-sm opacity-80">
+                    <span className="capitalize">
+                      {produtor.cultura_principal} · {produtor.uf}
+                    </span>
+                    <TrocarCulturaDialog produtor={produtor} />
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5 text-sm opacity-80">

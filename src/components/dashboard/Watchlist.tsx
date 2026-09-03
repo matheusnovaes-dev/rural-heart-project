@@ -30,7 +30,12 @@ import { UpgradeButton } from "@/components/dashboard/UpgradeButton";
 import type { Produtor } from "@/lib/auth";
 
 type ItemWatchlist = { id: string; cultura: string; uf: string };
-type Cotacao = { atual: number | null; variacao: number | null; serie: number[] };
+type Cotacao = {
+  atual: number | null;
+  variacao: number | null;
+  serie: number[];
+  soRegional: boolean;
+};
 
 /**
  * Lista de acompanhamento — exclusiva do plano Ouro. Segue culturas/UFs além
@@ -77,6 +82,23 @@ export function Watchlist({ produtor }: { produtor: Produtor }) {
       const serie = (data ?? []).map((d) => d.preco);
       const atual = serie.at(-1) ?? null;
       const anterior = serie.at(-2) ?? null;
+
+      // Sem preço único do estado não é o mesmo que "sem preço nenhum" —
+      // fontes como BBM/IEA-SP só publicam por praça (mesmo caso já
+      // resolvido no card "Seu preço hoje" da home). Aqui não dá pra
+      // mostrar um número único (seria escolher uma região arbitrária),
+      // mas "sem preço publicado" seria uma afirmação falsa.
+      let soRegional = false;
+      if (atual == null) {
+        const { count } = await supabase!
+          .from("precos")
+          .select("id", { count: "exact", head: true })
+          .ilike("produto", `%${item.cultura}%`)
+          .eq("uf", item.uf)
+          .neq("regiao", "");
+        soRegional = (count ?? 0) > 0;
+      }
+
       setCotacoes((prev) => ({
         ...prev,
         [chave]: {
@@ -86,6 +108,7 @@ export function Watchlist({ produtor }: { produtor: Produtor }) {
               ? ((atual - anterior) / anterior) * 100
               : null,
           serie: serie.slice(-14),
+          soRegional,
         },
       }));
     });
@@ -194,7 +217,11 @@ export function Watchlist({ produtor }: { produtor: Produtor }) {
                       </p>
                     ) : (
                       <p className="text-xs text-muted-foreground">
-                        {c ? "Sem preço publicado" : "Carregando..."}
+                        {!c
+                          ? "Carregando..."
+                          : c.soRegional
+                            ? "Só por região, sem preço único do estado"
+                            : "Sem preço publicado"}
                       </p>
                     )}
                   </div>

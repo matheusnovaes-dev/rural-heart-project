@@ -98,6 +98,7 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
   const { plano, loading: loadingPlano } = useAssinatura();
   const [serie, setSerie] = useState<PrecoPonto[] | null>(null);
   const [todasUfs, setTodasUfs] = useState<PrecoPonto[]>([]);
+  const [temDadoRegional, setTemDadoRegional] = useState(false);
   const [temAlertaAtivo, setTemAlertaAtivo] = useState<boolean | null>(null);
   const [diasDeChuva, setDiasDeChuva] = useState<number | null>(null);
   const [imeaPonto, setImeaPonto] = useState<ImeaPonto | null>(null);
@@ -126,8 +127,26 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
       .order("data_referencia", { ascending: true })
       .then(({ data }) => {
         const deduped = serieUnica(data ?? []);
-        setSerie(deduped.filter((r) => r.uf === uf));
+        const daUf = deduped.filter((r) => r.uf === uf);
+        setSerie(daUf);
         setTodasUfs(deduped);
+        if (daUf.length > 0) {
+          setTemDadoRegional(false);
+          return;
+        }
+        // Sem preço único do estado não é o mesmo que "sem preço nenhum" —
+        // fontes como BBM/IEA-SP só publicam por praça (ex: milho em MG).
+        // Não dá pra calcular tendência sem um preço único, mas o aviso
+        // final precisa dizer a verdade em vez de "ainda não temos preço"
+        // quando na verdade tem, só que dividido por região.
+        if (!supabase) return;
+        supabase
+          .from("precos")
+          .select("id", { count: "exact", head: true })
+          .ilike("produto", `%${cultura}%`)
+          .eq("uf", uf)
+          .neq("regiao", "")
+          .then(({ count }) => setTemDadoRegional((count ?? 0) > 0));
       });
 
     supabase
@@ -268,7 +287,14 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      {semHistorico && (
+      {semHistorico && temDadoRegional && (
+        <InsightCard icon={Gauge} tone="neutral" title="Sem histórico ainda">
+          <strong>{cultura}</strong> em <strong>{uf}</strong> só tem preço por região (não um número
+          único do estado) — dá pra ver isso no card "Seu preço hoje" acima. Ainda não dá pra
+          calcular tendência sem um preço único do estado.
+        </InsightCard>
+      )}
+      {semHistorico && !temDadoRegional && (
         <InsightCard icon={Gauge} tone="neutral" title="Sem histórico ainda">
           Ainda não temos preço registrado pra <strong>{cultura}</strong> em <strong>{uf}</strong>.
           Assim que a Conab publicar, a tendência aparece aqui automaticamente.
