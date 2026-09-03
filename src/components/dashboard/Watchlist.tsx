@@ -70,6 +70,7 @@ export function Watchlist({ produtor }: { produtor: Produtor }) {
         .select("preco, data_referencia")
         .ilike("produto", `%${item.cultura}%`)
         .eq("uf", item.uf)
+        .eq("regiao", "")
         .gte("data_referencia", desde.toISOString().slice(0, 10))
         .order("data_referencia", { ascending: true });
 

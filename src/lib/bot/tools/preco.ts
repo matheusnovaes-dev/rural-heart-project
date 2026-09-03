@@ -46,6 +46,7 @@ export async function buscarPreco(
     .select("produto, preco, unidade, data_referencia, fonte")
     .ilike("produto", `%${produto}%`)
     .eq("uf", uf)
+    .eq("regiao", "")
     .order("data_referencia", { ascending: false })
     .limit(20)
     .returns<PrecoRow[]>();

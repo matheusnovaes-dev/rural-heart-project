@@ -73,6 +73,7 @@ function PrecosPage() {
       .from("precos")
       .select("uf, preco, data_referencia, produto")
       .ilike("produto", `%${cultura}%`)
+      .eq("regiao", "")
       .gte("data_referencia", desde.toISOString().slice(0, 10))
       .order("data_referencia", { ascending: true })
       .then(({ data }) => {

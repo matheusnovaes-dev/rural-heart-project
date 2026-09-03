@@ -174,6 +174,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
         .select("preco, data_referencia, updated_at")
         .ilike("produto", `%${produtor.cultura_principal}%`)
         .eq("uf", produtor.uf)
+        .eq("regiao", "")
         .gte("data_referencia", desde.toISOString().slice(0, 10))
         .order("data_referencia", { ascending: true })
         .then(({ data }) => setSerie(data ?? []));
@@ -550,6 +551,7 @@ function CooperativaHome({
       .from("precos")
       .select("uf, preco, data_referencia")
       .ilike("produto", "%soja%")
+      .eq("regiao", "")
       .order("data_referencia", { ascending: false })
       .limit(60)
       .then(({ data }) => setPrecoRows(data ?? []));

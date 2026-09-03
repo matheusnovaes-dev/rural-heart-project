@@ -121,6 +121,7 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
       .from("precos")
       .select("preco, data_referencia, produto, uf")
       .ilike("produto", `%${cultura}%`)
+      .eq("regiao", "")
       .gte("data_referencia", desde.toISOString().slice(0, 10))
       .order("data_referencia", { ascending: true })
       .then(({ data }) => {

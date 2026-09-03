@@ -115,6 +115,7 @@ function RelatoriosPage() {
       .from("precos")
       .select("produto, uf, preco, data_referencia")
       .ilike("produto", `%${cultura}%`)
+      .eq("regiao", "")
       .order("data_referencia", { ascending: false })
       .limit(50)
       .then(({ data }) => {

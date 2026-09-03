@@ -31,6 +31,7 @@ export async function buscarSinalVenda(
     .select("preco, data_referencia, produto")
     .ilike("produto", `%${produto}%`)
     .eq("uf", uf)
+    .eq("regiao", "")
     .gte("data_referencia", desde.toISOString().slice(0, 10))
     .order("data_referencia", { ascending: true })
     .returns<PontoPreco[]>();
