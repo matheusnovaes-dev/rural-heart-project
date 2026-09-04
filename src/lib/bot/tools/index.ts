@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { ProdutorContexto } from "@/lib/bot/types";
+import type { HistoricoLinha } from "@/lib/bot/prompt";
 import { buscarPreco } from "@/lib/bot/tools/preco";
 import { buscarClima } from "@/lib/bot/tools/clima";
 import { buscarSinalVenda } from "@/lib/bot/tools/sinalVenda";
@@ -18,6 +19,7 @@ export type ToolContext = {
   supabase: SupabaseClient;
   produtor: ProdutorContexto;
   telefone: string;
+  historico: HistoricoLinha[];
 };
 
 /** Schema `tools` da OpenAI — descrições e argumentos de cada fonte de dado real disponível pro agente. */

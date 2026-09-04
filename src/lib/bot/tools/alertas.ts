@@ -1,11 +1,35 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { limiteAlertas, type Plano } from "@/lib/planos.shared";
+import type { HistoricoLinha } from "@/lib/bot/prompt";
 
 type ContextoProdutor = {
   id: string;
   user_id: string | null;
 };
+
+// Rede de segurança determinística, mesmo motivo das outras em agent.ts: o
+// prompt já exige 2 mensagens (pergunta de confirmação, depois criação) pra
+// qualquer alerta, mas testando ao vivo o modelo às vezes chama
+// criar_alerta_preco/criar_alerta_clima direto na primeira mensagem, sem
+// nunca ter perguntado "Confirma: ...?" antes — criando um alerta que o
+// produtor não pediu de forma inequívoca. Em vez de confiar só na
+// instrução, exige que a ÚLTIMA mensagem do assistente no histórico já
+// seja essa pergunta de confirmação (convenção usada no prompt: "Confirma:
+// alerta de ...?") antes de aceitar a criação de verdade.
+const PERGUNTA_DE_CONFIRMACAO_DE_ALERTA = /confirma/i;
+
+function ultimaMensagemDoAssistente(historico: HistoricoLinha[]): string | null {
+  const ordenado = [...historico].sort((a, b) => a.ordem - b.ordem);
+  const ultima = [...ordenado].reverse().find((h) => h.role === "assistant");
+  return ultima?.conteudo ?? null;
+}
+
+function aindaPrecisaConfirmar(historico: HistoricoLinha[]): boolean {
+  const ultima = ultimaMensagemDoAssistente(historico);
+  if (!ultima) return true;
+  return !(PERGUNTA_DE_CONFIRMACAO_DE_ALERTA.test(ultima) && /alerta/i.test(ultima));
+}
 
 /** Mesmo teto do plano usado no dashboard (alertas.tsx) — preço + clima
  * somados, contados por produtor_id. Consulta a assinatura por produtor_id
@@ -41,10 +65,13 @@ async function limiteDeAlertasAtingido(supabase: SupabaseClient, produtorId: str
 export async function criarAlertaPreco(
   supabase: SupabaseClient,
   args: { cultura: string; uf: string; limite: number; direcao: "acima" | "abaixo" },
-  ctx: { produtor: ContextoProdutor; telefone: string },
+  ctx: { produtor: ContextoProdutor; telefone: string; historico: HistoricoLinha[] },
 ) {
   if (!ctx.produtor.user_id) {
     return { sucesso: false, motivo: "conta_sem_login" };
+  }
+  if (aindaPrecisaConfirmar(ctx.historico)) {
+    return { sucesso: false, motivo: "precisa_confirmar_primeiro" };
   }
   if (await limiteDeAlertasAtingido(supabase, ctx.produtor.id)) {
     return { sucesso: false, motivo: "limite_atingido" };
@@ -69,10 +96,13 @@ export async function criarAlertaClima(
     condicao: "chuva_forte" | "geada" | "seca_prolongada" | "vento_forte";
     limite: number;
   },
-  ctx: { produtor: ContextoProdutor; telefone: string },
+  ctx: { produtor: ContextoProdutor; telefone: string; historico: HistoricoLinha[] },
 ) {
   if (!ctx.produtor.user_id) {
     return { sucesso: false, motivo: "conta_sem_login" };
+  }
+  if (aindaPrecisaConfirmar(ctx.historico)) {
+    return { sucesso: false, motivo: "precisa_confirmar_primeiro" };
   }
   if (await limiteDeAlertasAtingido(supabase, ctx.produtor.id)) {
     return { sucesso: false, motivo: "limite_atingido" };

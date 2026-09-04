@@ -131,7 +131,7 @@ export async function runAgent(input: {
     { role: "user", content: texto },
   ];
 
-  const ctx = { supabase, produtor, telefone };
+  const ctx = { supabase, produtor, telefone, historico };
 
   try {
     for (let rodada = 0; rodada < MAX_TOOL_ROUNDS; rodada++) {
