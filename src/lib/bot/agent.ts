@@ -94,6 +94,24 @@ function garantirOrigemFrete(resposta: string, frete: FreteCitado | null): strin
   return `${semPontuacaoFinal}${separador}Rota de frete considerada: ${frete.origem} até ${frete.destino}.`;
 }
 
+// Mesma rede de segurança determinística de novo: o prompt já proíbe
+// explicitamente lista com "-"/"*" no início da linha e "**negrito**" (o
+// WhatsApp mostra os caracteres literalmente, quebrado) — mas testando com
+// perguntas sobre planos/preço isso escapou (o modelo respondeu em lista
+// markdown mesmo assim). Em vez de insistir só no prompt, converte pra
+// prosa corrida separada por "·", igual a instrução já pede como alternativa.
+const PADRAO_LINHA_DE_LISTA = /^\s*[-*]\s+/;
+
+function removerMarkdownProibido(resposta: string): string {
+  const semNegrito = resposta.replace(/\*\*(.+?)\*\*/g, "$1");
+  const linhas = semNegrito.split("\n");
+  if (!linhas.some((l) => PADRAO_LINHA_DE_LISTA.test(l))) return semNegrito;
+  return linhas
+    .map((l) => l.replace(PADRAO_LINHA_DE_LISTA, "").trim())
+    .filter((l) => l.length > 0)
+    .join(" · ");
+}
+
 const FALLBACK_DURO: RespostaAgente = {
   resposta: "Desculpa, não consegui pensar numa resposta agora. Pode tentar de novo em instantes?",
   precisa_humano: true,
@@ -209,7 +227,7 @@ export async function runAgent(input: {
       if (mensagem?.content) {
         const parsed = JSON.parse(mensagem.content) as RespostaAgente;
         const comFrete = garantirOrigemFrete(
-          removerFechamentoGenerico(parsed.resposta),
+          removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
           extrairUltimoFreteCitado(messages),
         );
         return {
