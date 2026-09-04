@@ -11,11 +11,15 @@ import {
   Target,
   Star,
   Bell,
+  Clock,
+  LifeBuoy,
+  CheckCircle2,
 } from "lucide-react";
 
 import { Reveal } from "@/components/landing/Reveal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Sparkline } from "@/components/dashboard/Sparkline";
 import { cn } from "@/lib/utils";
 
 type PlanoId = "bronze" | "prata" | "ouro";
@@ -26,13 +30,14 @@ const planoBadge: Record<PlanoId, { label: string; className: string }> = {
   ouro: { label: "Ouro", className: "bg-gold text-gold-foreground" },
 };
 
-type AbaId = "precos" | "sinal" | "alertas" | "clima" | "acompanhamento";
+type AbaId = "precos" | "sinal" | "alertas" | "clima" | "suporte" | "acompanhamento";
 
 const abas: { id: AbaId; label: string; icon: typeof LineChart; plano: PlanoId }[] = [
   { id: "precos", label: "Preços", icon: LineChart, plano: "bronze" },
   { id: "sinal", label: "Sinal de venda", icon: Target, plano: "bronze" },
   { id: "alertas", label: "Alertas & lembretes", icon: Bell, plano: "bronze" },
   { id: "clima", label: "Clima", icon: CloudSun, plano: "bronze" },
+  { id: "suporte", label: "Suporte", icon: LifeBuoy, plano: "bronze" },
   { id: "acompanhamento", label: "Acompanhamento", icon: Star, plano: "ouro" },
 ];
 
@@ -72,9 +77,9 @@ export function DashboardPreview() {
           Um painel que cresce junto com sua operação
         </h2>
         <p className="mt-4 text-muted-foreground">
-          Preço, sinal de venda, alertas, lembretes e clima (por estado ou cidade) em qualquer
-          plano, desde o Bronze. Acompanhar outras culturas e estados é do plano Ouro — role o mouse
-          pra pausar e explorar no seu ritmo.
+          Preço, sinal de venda, alertas, lembretes, clima (por estado ou cidade) e suporte direto
+          no painel, em qualquer plano, desde o Bronze. Acompanhar outras culturas e estados é do
+          plano Ouro — role o mouse pra pausar e explorar no seu ritmo.
         </p>
       </Reveal>
 
@@ -141,6 +146,7 @@ export function DashboardPreview() {
               {aba === "sinal" && <PreviewSinalVenda />}
               {aba === "alertas" && <PreviewAlertas />}
               {aba === "clima" && <PreviewClima />}
+              {aba === "suporte" && <PreviewSuporte />}
               {aba === "acompanhamento" && <PreviewAcompanhamento />}
             </div>
           </div>
@@ -163,14 +169,39 @@ export function DashboardPreview() {
 
 function PreviewPrecos() {
   const ufs = [
-    { uf: "GO", preco: "127,00", variacao: 0.8, cor: "var(--chart-1)" },
     { uf: "MT", preco: "129,80", variacao: 3.4, cor: "var(--chart-2)" },
     { uf: "PR", preco: "130,80", variacao: -1.2, cor: "var(--chart-3)" },
   ];
+  const sparklineDados = [118, 120, 119, 122, 124, 123, 126, 125, 127, 127];
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-sm font-semibold text-foreground">Soja · últimos 6 meses</p>
-      <div className="grid gap-2 sm:grid-cols-3">
+      {/* cartão principal — o mesmo "Seu preço hoje" que abre o painel de verdade */}
+      <Card className="border-primary/30 bg-primary py-4 text-primary-foreground">
+        <CardContent className="flex flex-wrap items-end justify-between gap-3 px-4">
+          <div>
+            <p className="text-xs font-medium opacity-80">Seu preço hoje</p>
+            <div className="mt-1 flex items-end gap-2">
+              <p className="font-mono text-3xl font-bold tabular-nums">
+                <span className="mr-0.5 align-top text-sm font-sans font-semibold opacity-70">
+                  R$
+                </span>
+                127,00
+              </p>
+              <span className="mb-1 inline-flex items-center gap-0.5 rounded-full bg-primary-foreground/15 px-1.5 py-0.5 text-[10px] font-semibold">
+                <ArrowUp className="size-2.5" />
+                0.8%
+              </span>
+            </div>
+            <p className="mt-1 text-xs opacity-80">Soja · GO — já com frete descontado</p>
+          </div>
+          <div className="w-24">
+            <Sparkline data={sparklineDados} color="currentColor" className="h-9 w-full" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <p className="text-xs font-semibold text-muted-foreground">Compare com outros estados</p>
+      <div className="grid gap-2 sm:grid-cols-2">
         {ufs.map((item) => (
           <Card key={item.uf} className="gap-1.5 py-3">
             <CardContent className="px-3">
@@ -210,6 +241,10 @@ function PreviewAlertas() {
     { texto: "Soja · MT acima de R$ 130,00", status: "Ativo, aguardando" },
     { texto: "Milho · GO abaixo de R$ 60,00", status: "Disparado em 12/08" },
   ];
+  const lembretes = [
+    { titulo: "Aplicar fungicida na soja", quando: "Amanhã, 07:00" },
+    { titulo: "Renovar seguro da frota", quando: "Toda semana, seg." },
+  ];
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm font-semibold text-foreground">Alertas de preço</p>
@@ -229,6 +264,23 @@ function PreviewAlertas() {
           </div>
         ))}
       </div>
+
+      <p className="mt-1 text-sm font-semibold text-foreground">Lembretes</p>
+      <div className="flex flex-col gap-2">
+        {lembretes.map((l) => (
+          <div
+            key={l.titulo}
+            className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"
+          >
+            <div className="flex items-center gap-2 text-sm text-foreground">
+              <Clock className="size-4 shrink-0 text-primary" />
+              {l.titulo}
+            </div>
+            <span className="shrink-0 font-mono text-xs text-muted-foreground">{l.quando}</span>
+          </div>
+        ))}
+      </div>
+
       <p className="mt-1 text-sm font-semibold text-foreground">Contexto de mercado</p>
       <div className="grid gap-2 sm:grid-cols-2">
         <div className="flex items-center gap-2 rounded-lg border border-border p-3 text-sm text-foreground">
@@ -301,6 +353,38 @@ function PreviewSinalVenda() {
       <div className="flex items-center gap-2 rounded-lg border border-border p-3 text-sm text-foreground">
         <Bell className="size-4 shrink-0 text-primary" />
         Quando o sinal muda pra "bom momento pra vender", você recebe também no WhatsApp.
+      </div>
+    </div>
+  );
+}
+
+function PreviewSuporte() {
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-sm font-semibold text-foreground">Seus chamados</p>
+      <div className="flex flex-col gap-2">
+        <div className="rounded-lg border border-border p-3">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium text-foreground">Preço da soja não atualizou hoje</p>
+            <Badge className="shrink-0 gap-1 bg-primary/10 text-[10px] text-primary hover:bg-primary/10">
+              <CheckCircle2 className="size-3" />
+              Respondido
+            </Badge>
+          </div>
+          <p className="mt-2 rounded-md bg-secondary/60 p-2 text-xs text-muted-foreground">
+            Já corrigimos o problema, o preço da soja deve atualizar até amanhã de manhã.
+          </p>
+        </div>
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-border p-3">
+          <p className="text-sm text-foreground">Dúvida sobre o valor do frete calculado</p>
+          <Badge variant="secondary" className="shrink-0 text-[10px]">
+            Aberto
+          </Badge>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 rounded-lg border border-border p-3 text-sm text-foreground">
+        <LifeBuoy className="size-4 shrink-0 text-primary" />
+        Abra um chamado direto no painel — a resposta chega no WhatsApp.
       </div>
     </div>
   );
