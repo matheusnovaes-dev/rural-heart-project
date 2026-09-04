@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
+  buildContextoInstitucional,
   buildContextoPlanos,
   buildContextoProdutor,
   buildHistoryMessages,
@@ -186,6 +187,7 @@ export async function runAgent(input: {
     { role: "system", content: SYSTEM_PROMPT },
     { role: "system", content: buildContextoProdutor(produtor) },
     { role: "system", content: buildContextoPlanos() },
+    { role: "system", content: buildContextoInstitucional() },
     ...buildHistoryMessages(historico),
     { role: "user", content: texto },
   ];
