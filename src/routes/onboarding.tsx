@@ -20,6 +20,8 @@ import { criarAssinaturaAsaas } from "@/lib/asaas.server";
 import { enviarBoasVindasWhatsApp } from "@/lib/notificacoes.server";
 import { culturas } from "@/config/culturas";
 import { normalizarWhatsapp } from "@/lib/telefone";
+import { ufs } from "@/config/ufs";
+import { buscarMunicipioServidor } from "@/lib/clima.server";
 
 const searchSchema = z.object({
   convite: z.string().uuid().optional(),
@@ -48,6 +50,7 @@ function OnboardingPage() {
   const [whatsapp, setWhatsapp] = useState("");
   const [cultura, setCultura] = useState("");
   const [uf, setUf] = useState("");
+  const [municipio, setMunicipio] = useState("");
   const [nomeCooperativa, setNomeCooperativa] = useState("");
   const [cpfCnpj, setCpfCnpj] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
@@ -110,6 +113,27 @@ function OnboardingPage() {
     let novaAssinaturaId: string | null = null;
 
     if (tipo === "produtor") {
+      // Cidade é opcional — sem ela, clima cai na capital do estado e o
+      // frete líquido usa uma rota qualquer do mesmo estado (não a mais
+      // perto). Geocodifica antes de inserir, mesmo processo já usado pra
+      // trocar cultura/UF depois do cadastro (TrocarCulturaDialog).
+      let municipioFinal: string | null = null;
+      let lat: number | null = null;
+      let lon: number | null = null;
+      if (municipio.trim() && uf) {
+        const nomeCompletoUf = ufs.find((u) => u.value === uf)?.label;
+        const encontrado = nomeCompletoUf
+          ? await buscarMunicipioServidor({ data: { nome: municipio.trim(), nomeCompletoUf } })
+          : null;
+        if (encontrado) {
+          municipioFinal = encontrado.nome;
+          lat = encontrado.lat;
+          lon = encontrado.lon;
+        }
+        // Se não achar, segue o cadastro sem travar por causa da cidade —
+        // ela é opcional, o produtor pode corrigir depois pelo painel.
+      }
+
       const { data: produtor, error } = await supabase
         .from("produtores")
         .insert({
@@ -118,6 +142,9 @@ function OnboardingPage() {
           whatsapp: normalizarWhatsapp(whatsapp),
           cultura_principal: cultura || null,
           uf: uf || null,
+          municipio: municipioFinal,
+          lat,
+          lon,
           cooperativa_id: convite ?? null,
           cpf_cnpj: cpfCnpj.replace(/\D/g, ""),
         })
@@ -349,6 +376,19 @@ function OnboardingPage() {
                   value={uf}
                   onChange={(e) => setUf(e.target.value.toUpperCase())}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="municipio">Cidade (opcional)</Label>
+                <Input
+                  id="municipio"
+                  placeholder="Ex: Rio Verde"
+                  value={municipio}
+                  onChange={(e) => setMunicipio(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Deixa o clima e o frete descontado mais precisos, usando sua cidade em vez da
+                  capital do estado. Sem isso, continua funcionando pela UF.
+                </p>
               </div>
             </>
           ) : (

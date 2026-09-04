@@ -218,7 +218,10 @@ export async function executarTool(
 ): Promise<unknown> {
   switch (nome) {
     case "buscar_preco":
-      return buscarPreco(ctx.supabase, args as Parameters<typeof buscarPreco>[1]);
+      return buscarPreco(ctx.supabase, args as Parameters<typeof buscarPreco>[1], {
+        lat: ctx.produtor.lat,
+        lon: ctx.produtor.lon,
+      });
     case "buscar_clima":
       return buscarClima(args as Parameters<typeof buscarClima>[0], { produtor: ctx.produtor });
     case "buscar_sinal_venda":

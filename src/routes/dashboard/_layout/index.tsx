@@ -27,7 +27,7 @@ import { BoletimSemanal } from "@/components/dashboard/BoletimSemanal";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Previsao } from "@/lib/clima";
 import { buscarPrevisaoPorCoordenadasServidor, buscarPrevisaoServidor } from "@/lib/clima.server";
-import { precoLiquido, type FreteRef } from "@/lib/frete";
+import { precoLiquido, escolherRotaMaisProxima, type FreteRef } from "@/lib/frete";
 import { buildWhatsAppLink } from "@/config/site";
 
 export const Route = createFileRoute("/dashboard/_layout/")({
@@ -207,16 +207,23 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
             });
         });
 
-      // A Sifreca só cobre ~10 rotas "selecionadas" por cultura, não toda
-      // UF — quando não bate, mostra o preço bruto em vez de inventar frete.
+      // A Sifreca não cobre toda UF, só municípios de origem selecionados —
+      // quando não bate nenhuma rota, mostra o preço bruto em vez de
+      // inventar frete. Entre as rotas que batem, escolhe a origem mais
+      // perto da cidade cadastrada do produtor (se ele tiver uma), em vez
+      // de pegar qualquer rota do estado — ver escolherRotaMaisProxima.
       supabase
         .from("fretes")
-        .select("cultura, municipio_origem, uf_origem, municipio_destino, uf_destino, frete_rt")
+        .select(
+          "cultura, municipio_origem, uf_origem, municipio_destino, uf_destino, frete_rt, lat_origem, lon_origem",
+        )
         .eq("cultura", produtor.cultura_principal)
         .eq("uf_origem", produtor.uf)
-        .limit(1)
-        .maybeSingle()
-        .then(({ data }) => setFrete(data ?? null));
+        .returns<(FreteRef & { lat_origem: number | null; lon_origem: number | null })[]>()
+        .then(({ data }) => {
+          const rota = escolherRotaMaisProxima(data ?? [], produtor.lat, produtor.lon);
+          setFrete(rota);
+        });
     } else {
       setSerie([]);
       setPrecosRegionais([]);

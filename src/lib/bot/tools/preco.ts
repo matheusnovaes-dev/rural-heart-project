@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { precoLiquido } from "@/lib/frete";
+import { precoLiquido, escolherRotaMaisProxima } from "@/lib/frete";
 
 type PrecoRow = {
   produto: string;
@@ -31,6 +31,7 @@ export type ResultadoBuscarPreco = {
 export async function buscarPreco(
   supabase: SupabaseClient,
   args: { produto: string | null; uf: string | null; incluir_frete: boolean },
+  ctx?: { lat: number | null; lon: number | null },
 ): Promise<ResultadoBuscarPreco> {
   const { produto, uf, incluir_frete } = args;
 
@@ -94,16 +95,26 @@ export async function buscarPreco(
     return { encontrado: true, precos: atuais };
   }
 
+  // Entre as rotas cadastradas nesse estado, escolhe a origem mais perto da
+  // cidade cadastrada do produtor (quando ele tem uma) em vez de uma rota
+  // qualquer do estado — ver escolherRotaMaisProxima em lib/frete.ts.
   const { data: fretes } = await supabase
     .from("fretes")
-    .select("municipio_origem, uf_origem, municipio_destino, uf_destino, frete_rt, updated_at")
+    .select(
+      "municipio_origem, uf_origem, municipio_destino, uf_destino, frete_rt, lat_origem, lon_origem, updated_at",
+    )
     .ilike("cultura", `%${produto}%`)
     .eq("uf_origem", uf)
     .order("updated_at", { ascending: false })
-    .limit(1)
-    .returns<(FreteRow & { updated_at: string })[]>();
+    .returns<
+      (FreteRow & {
+        lat_origem: number | null;
+        lon_origem: number | null;
+        updated_at: string;
+      })[]
+    >();
 
-  const frete = fretes?.[0] ?? null;
+  const frete = escolherRotaMaisProxima(fretes ?? [], ctx?.lat ?? null, ctx?.lon ?? null);
   if (!frete) {
     return { encontrado: true, precos: atuais, frete: null, preco_liquido: null };
   }
