@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "../lib/auth";
 import { Toaster } from "../components/ui/sonner";
+import { pricingPlans } from "../config/site";
 
 function NotFoundComponent() {
   return (
@@ -135,6 +136,30 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           logo: "https://www.safralume.com.br/favicon.png",
           description:
             "Assistente via WhatsApp que traduz preços agrícolas oficiais (Conab e órgãos estaduais) em respostas com frete já descontado.",
+        }),
+      },
+      {
+        type: "application/ld+json",
+        // Preço real, extraído do mesmo pricingPlans que a seção de Preços
+        // da landing usa — nunca inventar/duplicar o número aqui, senão os
+        // dois lugares divergem no dia em que um plano mudar de preço.
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          name: "Safralume",
+          applicationCategory: "BusinessApplication",
+          operatingSystem: "Web, WhatsApp",
+          url: "https://www.safralume.com.br",
+          description:
+            "Assistente via WhatsApp e painel web que traduz preços agrícolas oficiais em respostas com frete já descontado, para produtores rurais e cooperativas.",
+          offers: pricingPlans.map((plano) => ({
+            "@type": "Offer",
+            name: `Plano ${plano.name}`,
+            price: plano.price.toString(),
+            priceCurrency: "BRL",
+            description: plano.audience,
+            url: "https://www.safralume.com.br/#planos",
+          })),
         }),
       },
     ],
