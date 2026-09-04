@@ -96,12 +96,13 @@ function garantirOrigemFrete(resposta: string, frete: FreteCitado | null): strin
 }
 
 // Mesma rede de segurança determinística de novo: o prompt já proíbe
-// explicitamente lista com "-"/"*" no início da linha e "**negrito**" (o
-// WhatsApp mostra os caracteres literalmente, quebrado) — mas testando com
-// perguntas sobre planos/preço isso escapou (o modelo respondeu em lista
-// markdown mesmo assim). Em vez de insistir só no prompt, converte pra
-// prosa corrida separada por "·", igual a instrução já pede como alternativa.
-const PADRAO_LINHA_DE_LISTA = /^\s*[-*]\s+/;
+// explicitamente lista com "-"/"*"/"1." no início da linha e "**negrito**"
+// (o WhatsApp mostra os caracteres literalmente, quebrado) — mas testando
+// com perguntas sobre planos/preço isso escapou de duas formas diferentes
+// (lista com traço numa resposta, numeração "1."/"2."/"3." em outra). Em
+// vez de insistir só no prompt, converte pra prosa corrida separada por
+// "·", igual a instrução já pede como alternativa.
+const PADRAO_LINHA_DE_LISTA = /^\s*(?:[-*]|\d+[.)])\s+/;
 
 function removerMarkdownProibido(resposta: string): string {
   const semNegrito = resposta.replace(/\*\*(.+?)\*\*/g, "$1");
