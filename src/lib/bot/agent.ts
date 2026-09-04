@@ -54,6 +54,45 @@ function removerFechamentoGenerico(resposta: string): string {
   return semDisposicao || resposta;
 }
 
+// Mesmo tipo de rede de segurança determinística, agora pra transparência
+// da rota de frete: o prompt já pede pra citar origem e destino numa frase
+// curta quando vem preço líquido, mas testando ao vivo isso escapou em ~1/5
+// das respostas (o modelo citava só o destino, ou nenhuma cidade). Em vez
+// de insistir só no prompt, pega a rota de verdade que a tool buscar_preco
+// devolveu e garante que a cidade de origem apareça na resposta.
+type FreteCitado = { origem: string; destino: string };
+
+function extrairUltimoFreteCitado(messages: OpenAIMessage[]): FreteCitado | null {
+  const nomePorToolCallId = new Map<string, string>();
+  for (const m of messages) {
+    if (m.role === "assistant" && m.tool_calls) {
+      for (const tc of m.tool_calls) nomePorToolCallId.set(tc.id, tc.function.name);
+    }
+  }
+  let ultimo: FreteCitado | null = null;
+  for (const m of messages) {
+    if (m.role !== "tool" || !m.tool_call_id) continue;
+    if (nomePorToolCallId.get(m.tool_call_id) !== "buscar_preco") continue;
+    try {
+      const parsed = JSON.parse(m.content ?? "{}");
+      const frete = parsed?.frete;
+      if (frete?.municipio_origem && frete?.municipio_destino) {
+        ultimo = { origem: frete.municipio_origem, destino: frete.municipio_destino };
+      }
+    } catch {
+      // resultado de tool malformado não pode derrubar a resposta — ignora.
+    }
+  }
+  return ultimo;
+}
+
+function garantirOrigemFrete(resposta: string, frete: FreteCitado | null): string {
+  if (!frete || resposta.includes(frete.origem)) return resposta;
+  const semPontuacaoFinal = resposta.trimEnd();
+  const separador = /[.!?]$/.test(semPontuacaoFinal) ? " " : ". ";
+  return `${semPontuacaoFinal}${separador}Rota de frete considerada: ${frete.origem} até ${frete.destino}.`;
+}
+
 const FALLBACK_DURO: RespostaAgente = {
   resposta: "Desculpa, não consegui pensar numa resposta agora. Pode tentar de novo em instantes?",
   precisa_humano: true,
@@ -167,8 +206,12 @@ export async function runAgent(input: {
 
       if (mensagem?.content) {
         const parsed = JSON.parse(mensagem.content) as RespostaAgente;
+        const comFrete = garantirOrigemFrete(
+          removerFechamentoGenerico(parsed.resposta),
+          extrairUltimoFreteCitado(messages),
+        );
         return {
-          resposta: removerFechamentoGenerico(parsed.resposta),
+          resposta: comFrete,
           precisa_humano: parsed.precisa_humano || precisaEscalarPorCobranca(texto),
         };
       }
@@ -182,8 +225,12 @@ export async function runAgent(input: {
     const conteudo = json.choices?.[0]?.message?.content;
     if (conteudo) {
       const parsed = JSON.parse(conteudo) as RespostaAgente;
+      const comFrete = garantirOrigemFrete(
+        removerFechamentoGenerico(parsed.resposta),
+        extrairUltimoFreteCitado(messages),
+      );
       return {
-        resposta: removerFechamentoGenerico(parsed.resposta),
+        resposta: comFrete,
         precisa_humano: parsed.precisa_humano || precisaEscalarPorCobranca(texto),
       };
     }
