@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
+  buildContextoPlanos,
   buildContextoProdutor,
   buildHistoryMessages,
   SYSTEM_PROMPT,
@@ -166,6 +167,7 @@ export async function runAgent(input: {
   const messages: OpenAIMessage[] = [
     { role: "system", content: SYSTEM_PROMPT },
     { role: "system", content: buildContextoProdutor(produtor) },
+    { role: "system", content: buildContextoPlanos() },
     ...buildHistoryMessages(historico),
     { role: "user", content: texto },
   ];
