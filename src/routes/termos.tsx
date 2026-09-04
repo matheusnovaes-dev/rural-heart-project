@@ -24,19 +24,19 @@ function TermosPage() {
           <section>
             <h2 className="font-display text-lg font-semibold">1. O serviço</h2>
             <p className="mt-2 text-muted-foreground">
-              O {siteConfig.name} é um assistente via WhatsApp que traduz relatórios públicos do
-              Cepea e da Conab em respostas de preço com frete já descontado. O acesso é feito por
-              assinatura mensal, com um período de teste gratuito de 7 dias no primeiro plano
-              contratado.
+              O {siteConfig.name} é um assistente via WhatsApp que traduz relatórios públicos da
+              Conab e de órgãos estaduais de agricultura em respostas de preço com frete já
+              descontado. O acesso é feito por assinatura mensal, com um período de teste gratuito
+              de 7 dias no primeiro plano contratado.
             </p>
           </section>
 
           <section>
             <h2 className="font-display text-lg font-semibold">2. Assinatura e cobrança</h2>
             <p className="mt-2 text-muted-foreground">
-              A cobrança é feita automaticamente pela Stripe, mensalmente, a partir do fim do
-              período de teste, no valor do plano escolhido. Você pode cancelar a qualquer momento;
-              o acesso permanece ativo até o fim do ciclo já pago.
+              A cobrança é feita automaticamente pela Asaas (Pix, boleto ou cartão), mensalmente, a
+              partir do fim do período de teste, no valor do plano escolhido. Você pode cancelar a
+              qualquer momento; o acesso permanece ativo até o fim do ciclo já pago.
             </p>
           </section>
 
@@ -53,9 +53,9 @@ function TermosPage() {
             <h2 className="font-display text-lg font-semibold">4. Natureza da informação</h2>
             <p className="mt-2 text-muted-foreground">
               As respostas do {siteConfig.name} apresentam cenários de mercado com base em dados
-              públicos do Cepea e da Conab. Isso tem caráter informativo e não constitui
-              recomendação de investimento, consultoria financeira ou garantia de preço futuro. A
-              decisão de compra e venda é sempre sua.
+              públicos oficiais (Conab e órgãos estaduais de agricultura). Isso tem caráter
+              informativo e não constitui recomendação de investimento, consultoria financeira ou
+              garantia de preço futuro. A decisão de compra e venda é sempre sua.
             </p>
           </section>
 

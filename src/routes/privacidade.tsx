@@ -33,10 +33,10 @@ function PrivacidadePage() {
           <section>
             <h2 className="font-display text-lg font-semibold">2. Dados que coletamos</h2>
             <p className="mt-2 text-muted-foreground">
-              Nome, número de WhatsApp, e-mail, cultura principal e estado (UF) informados no
-              cadastro ou no formulário de contato; histórico de mensagens trocadas com o bot no
-              WhatsApp; dados de uso do painel; e dados de pagamento processados diretamente pelo
-              Stripe (nós não armazenamos número de cartão).
+              Nome, número de WhatsApp, e-mail, CPF ou CNPJ, cultura principal e estado (UF)
+              informados no cadastro ou no formulário de contato; histórico de mensagens trocadas
+              com o bot no WhatsApp; dados de uso do painel; e dados de pagamento processados
+              diretamente pela Asaas (nós não armazenamos número de cartão).
             </p>
           </section>
 
@@ -52,7 +52,7 @@ function PrivacidadePage() {
           <section>
             <h2 className="font-display text-lg font-semibold">4. Com quem compartilhamos</h2>
             <p className="mt-2 text-muted-foreground">
-              Usamos a Meta (WhatsApp Business) para entregar mensagens, a Stripe para processar
+              Usamos a Meta (WhatsApp Business) para entregar mensagens, a Asaas para processar
               pagamentos e o Supabase para armazenar os dados com segurança. Cada um desses
               parceiros processa apenas o necessário para prestar seu serviço.
             </p>

@@ -31,7 +31,7 @@ export const pricingPlans: PricingPlan[] = [
     audience: "Pequenos produtores",
     price: 39,
     features: [
-      "Cotações semanais (Conab)",
+      "Cotações (Conab e órgãos estaduais, semanal ou mais rápido conforme a fonte)",
       "Preço líquido com frete",
       "Boletim Semanal (Imea)",
       "Sinal de venda: cruza preço, futuros da B3 e clima pra apontar a hora certa",
@@ -40,6 +40,7 @@ export const pricingPlans: PricingPlan[] = [
       "Previsão do clima por estado ou cidade — acompanhe quantos quiser",
       "Relatórios em PDF",
       "Contexto de mercado: câmbio, diesel, safra (USDA), futuros da B3 e produção do IBGE",
+      "Suporte por chamado, direto no painel",
     ],
   },
   {
@@ -65,7 +66,7 @@ export const pricingPlans: PricingPlan[] = [
       "Tudo do Prata, mais:",
       "Acompanhe o preço de outras culturas e estados, não só o seu",
       "Funcionários sem limite — ideal pra consultor com vários clientes",
-      "Suporte prioritário",
+      "Suporte prioritário — seu chamado é respondido primeiro",
     ],
   },
 ];

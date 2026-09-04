@@ -41,9 +41,10 @@ export function Footer() {
         </div>
 
         <p className="max-w-2xl text-xs leading-relaxed text-muted-foreground">
-          {siteConfig.name} apresenta cenários de mercado agrícola com base em dados públicos da
-          Conab e da Imea. As informações têm caráter informativo e não constituem recomendação de
-          investimento, consultoria financeira ou garantia de preço futuro.
+          {siteConfig.name} apresenta cenários de mercado agrícola com base em dados públicos
+          oficiais (Conab, Imea e órgãos estaduais de agricultura). As informações têm caráter
+          informativo e não constituem recomendação de investimento, consultoria financeira ou
+          garantia de preço futuro.
         </p>
 
         <p className="text-xs text-muted-foreground">
