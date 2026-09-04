@@ -162,11 +162,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           })),
         }),
       },
-      // Meta Pixel base — dataset "Safralume" já existente no Events
-      // Manager (ID 1241007721486432), criado mas nunca instalado no site
-      // até agora. PageView automático em toda rota; a conversão de
-      // verdade (CompleteRegistration) é disparada manualmente em
-      // onboarding.tsx quando o cadastro é concluído, ver metaPixel.ts.
+      // Meta Pixel base — dataset "Safralume Site" (ID 1610112627458029),
+      // criado direto dentro da conta de anúncios "Safralume" pra evitar o
+      // problema do pixel "Safralume" antigo (1241007721486432) nunca ter
+      // sincronizado como ativo conectado dessa conta — mesmo pertencendo
+      // ao mesmo Business Manager, a conta nova não o enxergava no seletor
+      // de evento de conversão da campanha. PageView automático em toda
+      // rota; a conversão de verdade (CompleteRegistration) é disparada
+      // manualmente em onboarding.tsx quando o cadastro é concluído, ver
+      // metaPixel.ts.
       {
         children: `!function(f,b,e,v,n,t,s)
 {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -176,7 +180,7 @@ n.queue=[];t=b.createElement(e);t.async=!0;
 t.src=v;s=b.getElementsByTagName(e)[0];
 s.parentNode.insertBefore(t,s)}(window, document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
-fbq('init', '1241007721486432');
+fbq('init', '1610112627458029');
 fbq('track', 'PageView');`,
       },
     ],
@@ -199,7 +203,7 @@ function RootShell({ children }: { children: ReactNode }) {
             height="1"
             width="1"
             style={{ display: "none" }}
-            src="https://www.facebook.com/tr?id=1241007721486432&ev=PageView&noscript=1"
+            src="https://www.facebook.com/tr?id=1610112627458029&ev=PageView&noscript=1"
             alt=""
           />
         </noscript>
