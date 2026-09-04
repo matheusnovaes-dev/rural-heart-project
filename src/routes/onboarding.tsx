@@ -22,6 +22,8 @@ import { culturas } from "@/config/culturas";
 import { normalizarWhatsapp } from "@/lib/telefone";
 import { ufs } from "@/config/ufs";
 import { buscarMunicipioServidor } from "@/lib/clima.server";
+import { pricingPlans } from "@/config/site";
+import { trackCadastroConcluido } from "@/lib/metaPixel";
 
 const searchSchema = z.object({
   convite: z.string().uuid().optional(),
@@ -232,6 +234,16 @@ function OnboardingPage() {
     }
 
     await refresh();
+
+    // Conversão de verdade pro Meta Ads: cadastro (produtor ou cooperativa)
+    // + assinatura já foram inseridos com sucesso nesse ponto, tanto no
+    // fluxo com trial quanto no "prefere assinar direto" — o pagamento em
+    // si (Asaas) pode falhar depois, mas o cadastro já aconteceu, que é o
+    // objetivo configurado na campanha.
+    trackCadastroConcluido({
+      plano: planoEscolhido,
+      valor: pricingPlans.find((p) => p.id === planoEscolhido)?.price,
+    });
 
     // Fluxo normal (com teste grátis): cai direto no painel, sem cartão —
     // os 7 dias já estão contando (trial_expira_em, default do banco), e o
