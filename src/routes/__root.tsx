@@ -83,7 +83,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "Safralume traduz os relatórios da Conab e da Imea em respostas simples, para grãos e pecuária, com frete já descontado, direto no WhatsApp do produtor.",
+          "Safralume traduz relatórios oficiais (Conab e órgãos estaduais) em respostas simples, para grãos e pecuária, com frete já descontado, direto no WhatsApp do produtor.",
       },
       { property: "og:title", content: "Safralume: preço líquido da sua saca, direto no WhatsApp" },
       {
@@ -134,7 +134,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           url: "https://www.safralume.com.br",
           logo: "https://www.safralume.com.br/favicon.png",
           description:
-            "Assistente via WhatsApp que traduz preços agrícolas oficiais (Conab, Imea) em respostas com frete já descontado.",
+            "Assistente via WhatsApp que traduz preços agrícolas oficiais (Conab e órgãos estaduais) em respostas com frete já descontado.",
         }),
       },
     ],
