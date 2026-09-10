@@ -139,6 +139,38 @@ async function fetchComTimeout(url: string, timeoutMs = TIMEOUT_MS): Promise<Res
   }
 }
 
+/**
+ * Só pra Open-Meteo (geocoding + forecast): sai pelo IP dedicado do VPS que
+ * já roda o n8n, em vez do IP compartilhado do Cloudflare Workers — achado
+ * real 2026-09-02 e confirmado de novo 2026-09-10 (CPTEC caiu, o fallback
+ * pra Open-Meteo direto do Workers falhava 100% das vezes, mesmo a API
+ * respondendo normal testada de qualquer outro lugar). O proxy só repassa
+ * pra host de Open-Meteo (allowlist do lado do n8n) e exige token — não é
+ * proxy aberto. Sem as env vars configuradas, cai pro fetch direto (dev
+ * local sem esse workflow disponível).
+ */
+async function fetchOpenMeteoComTimeout(url: string, timeoutMs = TIMEOUT_MS): Promise<Response | null> {
+  const proxyUrl = process.env["CLIMA_PROXY_URL"];
+  const proxyToken = process.env["CLIMA_PROXY_TOKEN"];
+  if (!proxyUrl || !proxyToken) return fetchComTimeout(url, timeoutMs);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(proxyUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-proxy-token": proxyToken },
+      body: JSON.stringify({ url }),
+      signal: controller.signal,
+    });
+    return res.ok ? res : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 /** Extrai os blocos <previsao>...</previsao> do XML do CPTEC sem depender de parser XML. */
 function parsePrevisaoCptec(xml: string): Previsao | null {
   const blocos = [...xml.matchAll(/<previsao>(.*?)<\/previsao>/g)];
@@ -189,7 +221,7 @@ export async function buscarPrevisaoPorCoordenadas(
   lon: number,
 ): Promise<Previsao | null> {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=precipitation_probability_max,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=5`;
-  const res = await fetchComTimeout(url);
+  const res = await fetchOpenMeteoComTimeout(url);
   if (!res) return null;
   // Mesma cautela do resto do arquivo: um 200 com corpo inesperado (ou
   // truncado) não pode virar exceção não tratada — isso derrubaria a
@@ -287,7 +319,7 @@ export async function buscarMunicipio(
   nomeCompletoUf: string,
 ): Promise<MunicipioEncontrado | null> {
   const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(nome)}&count=10&language=pt&countryCode=BR`;
-  const res = await fetchComTimeout(url);
+  const res = await fetchOpenMeteoComTimeout(url);
   if (!res) return null;
   try {
     const json = await res.json();
