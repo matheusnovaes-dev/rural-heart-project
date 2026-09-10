@@ -26,12 +26,17 @@ export async function buscarSinalVenda(
   const desde = new Date();
   desde.setDate(desde.getDate() - 90);
 
+  // Sem filtro de `regiao` aqui de propósito: em estados onde a fonte só
+  // publica preço por praça (ex: MG, sem número único pro estado inteiro —
+  // ver comentário em prompt.ts), um filtro `regiao = ''` zerava a série
+  // inteira e o sinal de venda ficava sempre "indisponível" mesmo com preço
+  // real no banco — bug real, achado 2026-09-10. `serieUnica` já lida bem
+  // com múltiplas praças no mesmo dia (mesmo produto, linhas extras na série).
   const { data: rows } = await supabase
     .from("precos")
     .select("preco, data_referencia, produto")
     .ilike("produto", `%${produto}%`)
     .eq("uf", uf)
-    .eq("regiao", "")
     .gte("data_referencia", desde.toISOString().slice(0, 10))
     .order("data_referencia", { ascending: true })
     .returns<PontoPreco[]>();

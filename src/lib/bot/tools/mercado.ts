@@ -67,7 +67,7 @@ export async function buscarFuturosB3(supabase: SupabaseClient, args: { produto:
   inicioMesAtual.setDate(1);
   const { data } = await supabase
     .from("b3_futuros")
-    .select("produto, nome_produto, mes_ano_vencimento, preco_ajuste_atual, moeda, data_pregao")
+    .select("produto, nome_produto, mes_ano_vencimento, preco_ajuste_atual, moeda, unidade, data_pregao")
     .in("produto", codigos)
     .gte("mes_ano_vencimento", inicioMesAtual.toISOString().slice(0, 10))
     .order("data_pregao", { ascending: false })
@@ -80,6 +80,7 @@ export async function buscarFuturosB3(supabase: SupabaseClient, args: { produto:
         mes_ano_vencimento: string;
         preco_ajuste_atual: number;
         moeda: string;
+        unidade: string;
         data_pregao: string;
       }[]
     >();
