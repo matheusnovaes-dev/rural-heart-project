@@ -17,6 +17,7 @@ const TIMEOUT_MS = 25_000;
 const FALLBACK_DURO: RespostaAgente = {
   resposta: "Desculpa, não consegui pensar numa resposta agora. Pode tentar de novo em instantes?",
   precisa_humano: true,
+  cadastro_criado: false,
 };
 
 /**

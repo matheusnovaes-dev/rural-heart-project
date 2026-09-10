@@ -34,7 +34,7 @@ const RESPONSE_FORMAT = {
   },
 };
 
-export type RespostaAgente = { resposta: string; precisa_humano: boolean };
+export type RespostaAgente = { resposta: string; precisa_humano: boolean; cadastro_criado: boolean };
 
 // Rede de segurança determinística: o prompt já proíbe fechar a resposta
 // com uma oferta de ajuda genérica ("se precisar de algo, é só avisar"),
@@ -117,6 +117,7 @@ function removerMarkdownProibido(resposta: string): string {
 const FALLBACK_DURO: RespostaAgente = {
   resposta: "Desculpa, não consegui pensar numa resposta agora. Pode tentar de novo em instantes?",
   precisa_humano: true,
+  cadastro_criado: false,
 };
 
 // Mesma rede de segurança determinística de cima, agora pra escalada de
@@ -194,6 +195,11 @@ export async function runAgent(input: {
   ];
 
   const ctx = { supabase, produtor, telefone, historico };
+  // Sinaliza pro n8n que a conta acabou de ser criada NESTA mensagem, pra ele
+  // não emendar o convite de cadastro (que só faz sentido pra quem ainda não
+  // tem conta) logo depois de "seu cadastro foi criado com sucesso" — sem
+  // isso o convite aparecia de forma redundante/confusa após um cadastro OK.
+  let cadastroCriado = false;
 
   try {
     for (let rodada = 0; rodada < MAX_TOOL_ROUNDS; rodada++) {
@@ -217,6 +223,12 @@ export async function runAgent(input: {
               args = {};
             }
             const resultado = await executarTool(tc.function.name, args, ctx);
+            if (
+              tc.function.name === "criar_conta_teste" &&
+              (resultado as { sucesso?: boolean })?.sucesso === true
+            ) {
+              cadastroCriado = true;
+            }
             return { tool_call_id: tc.id, content: JSON.stringify(resultado) };
           }),
         );
@@ -236,6 +248,7 @@ export async function runAgent(input: {
         return {
           resposta: comFrete,
           precisa_humano: parsed.precisa_humano || precisaEscalarPorCobranca(texto),
+          cadastro_criado: cadastroCriado,
         };
       }
 
@@ -255,6 +268,7 @@ export async function runAgent(input: {
       return {
         resposta: comFrete,
         precisa_humano: parsed.precisa_humano || precisaEscalarPorCobranca(texto),
+        cadastro_criado: cadastroCriado,
       };
     }
 
