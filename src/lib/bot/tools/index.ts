@@ -16,6 +16,7 @@ import {
 import { criarAlertaClima, criarAlertaPreco } from "@/lib/bot/tools/alertas";
 import { criarContaTeste } from "@/lib/bot/tools/conta";
 import { consultarAssinatura } from "@/lib/bot/tools/assinatura";
+import { consultarJanelaPlantio } from "@/lib/bot/tools/plantio";
 
 export type ToolContext = {
   supabase: SupabaseClient;
@@ -236,6 +237,30 @@ export const TOOLS = [
   {
     type: "function",
     function: {
+      name: "consultar_janela_plantio",
+      description:
+        "Consulta a janela de plantio oficial (ZARC/MAPA — Zoneamento Agrícola de Risco Climático) pra SOJA, MILHO, ALGODÃO, ARROZ ou FEIJÃO num município: diz se plantar agora (ou nas próximas semanas) está dentro da janela recomendada e com que risco climático oficial (%). NÃO cobre café, cana-de-açúcar (são perenes, não têm janela de plantio anual) nem boi. Precisa do nome do MUNICÍPIO (não só a UF) — se não tiver, pergunte antes de chamar. NUNCA estime produtividade (sacas/hectare) ou data de colheita a partir disso — a ferramenta só classifica risco climático da janela, não prevê safra.",
+      parameters: {
+        type: "object",
+        properties: {
+          produto: {
+            type: "string",
+            description: "SOJA, MILHO, ALGODÃO, ARROZ ou FEIJÃO — mesma palavra-chave de buscar_preco.",
+          },
+          uf: { type: "string" },
+          municipio: {
+            type: ["string", "null"],
+            description: "Nome do município. Use o cadastrado do produtor se ele não mencionar outro.",
+          },
+        },
+        required: ["produto", "uf", "municipio"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "consultar_assinatura",
       description:
         "Consulta o plano, status (trial/ativa/inadimplente/cancelada) e data de vencimento do trial da assinatura REAL do produtor. SEMPRE chame isto quando ele perguntar qual é o plano dele, se está ativo, quando o trial vence, ou quantos alertas/funcionários ele pode ter — nunca responda essas perguntas de cabeça ou supondo, mesmo que pareça óbvio pelo contexto da conversa.",
@@ -279,6 +304,8 @@ export async function executarTool(
       return criarContaTeste(ctx.supabase, args as Parameters<typeof criarContaTeste>[1], ctx);
     case "consultar_assinatura":
       return consultarAssinatura(ctx.supabase, ctx);
+    case "consultar_janela_plantio":
+      return consultarJanelaPlantio(ctx.supabase, args as Parameters<typeof consultarJanelaPlantio>[1]);
     default:
       return { erro: `Ferramenta desconhecida: ${nome}` };
   }
