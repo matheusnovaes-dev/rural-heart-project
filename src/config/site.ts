@@ -35,6 +35,7 @@ export const pricingPlans: PricingPlan[] = [
       "Preço líquido com frete",
       "Boletim Semanal (Imea)",
       "Sinal de venda: cruza preço, futuros da B3 e clima pra apontar a hora certa",
+      "Janela de plantio oficial (ZARC) pra soja, milho, algodão, arroz e feijão — sabe se vale plantar agora ou esperar",
       "Até 3 alertas de preço e clima ao mesmo tempo (dá pra editar e apagar)",
       "Lembretes automáticos, recorrentes ou avulsos",
       "Previsão do clima por estado ou cidade — acompanhe quantos quiser",

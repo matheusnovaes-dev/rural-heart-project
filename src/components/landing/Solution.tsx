@@ -149,6 +149,30 @@ function PhoneMockup() {
             ☁️ Alerta de clima: geada prevista em MT nos próximos dias. Fique de olho antes de
             planejar a atividade de campo.
           </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 2.5, duration: 0.4 }}
+            className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-[#d9fdd3] px-3 py-2 text-sm text-[#111b21]"
+          >
+            Posso plantar soja hoje em Sorriso/MT?
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 2.8, duration: 0.4 }}
+            className="mr-auto max-w-[88%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-sm text-[#111b21] shadow-sm"
+          >
+            <p>
+              🌱 Ainda não — a janela recomendada abre em 21/09, com risco climático de 40%
+              (ZARC/MAPA).
+            </p>
+            <p className="mt-1 text-xs text-[#667781]">Fonte: ZARC/MAPA · atualizado agora</p>
+          </motion.div>
         </div>
       </div>
     </div>
