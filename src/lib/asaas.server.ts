@@ -259,6 +259,112 @@ export const trocarPlanoTrial = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+const reconciliarCadastroSchema = z.object({
+  accessToken: z.string().min(1),
+  whatsapp: z.string().min(1),
+  nome: z.string().min(1),
+  culturaPrincipal: z.string().nullable(),
+  uf: z.string().nullable(),
+  municipio: z.string().nullable(),
+  lat: z.number().nullable(),
+  lon: z.number().nullable(),
+  cooperativaId: z.string().uuid().nullable(),
+  cpfCnpj: z.string().min(11),
+  plano: z.enum(["bronze", "prata", "ouro"]),
+  semTrial: z.boolean().optional(),
+});
+
+/**
+ * Vincula à conta recém-logada um cadastro de produtor que já existia sem
+ * login — caso real: alguém criou um teste grátis direto pela conversa do
+ * bot no WhatsApp (sem senha, sem CPF) e agora veio pro site assinar um
+ * plano de verdade. Sem isso, o INSERT de `/onboarding` batia na constraint
+ * unique de `whatsapp` e travava a pessoa numa mensagem de erro sem nenhum
+ * caminho pra continuar — achado real 2026-09-10.
+ *
+ * Roda com service role (não dá pra fazer isso do client): a RLS de UPDATE
+ * em `produtores` só libera quando `user_id` JÁ é o do usuário logado —
+ * ela nunca permite reivindicar uma linha órfã (`user_id is null`), de
+ * propósito, então essa "primeira vinculação" é obrigatoriamente um
+ * caminho de servidor. Reaproveita (UPDATE) a assinatura existente em vez
+ * de inserir uma segunda linha, pelo mesmo motivo do resto deste arquivo:
+ * `assinaturas` não tem unique em `produtor_id`, e a leitura no painel
+ * espera achar só uma linha.
+ */
+export const reconciliarCadastroWhatsapp = createServerFn({ method: "POST" })
+  .validator(reconciliarCadastroSchema)
+  .handler(async ({ data }) => {
+    const userId = await usuarioAutenticado(data.accessToken);
+    const supabase = supabaseServiceRole();
+
+    const { data: existente } = await supabase
+      .from("produtores")
+      .select("id, user_id")
+      .eq("whatsapp", data.whatsapp)
+      .maybeSingle();
+    if (!existente || existente.user_id) {
+      throw new Error("Esse número de WhatsApp já tem uma conta. Faça login em vez de criar uma nova.");
+    }
+
+    const { error: updateProdutorError } = await supabase
+      .from("produtores")
+      .update({
+        user_id: userId,
+        nome: data.nome,
+        cultura_principal: data.culturaPrincipal,
+        uf: data.uf,
+        municipio: data.municipio,
+        lat: data.lat,
+        lon: data.lon,
+        cooperativa_id: data.cooperativaId,
+        cpf_cnpj: data.cpfCnpj,
+      })
+      .eq("id", existente.id);
+    if (updateProdutorError) {
+      throw new Error("Algo deu errado ao vincular o cadastro. Tente de novo.");
+    }
+
+    if (data.cooperativaId) {
+      // Coberto pela assinatura da cooperativa — sem assinatura própria,
+      // igual ao fluxo normal de convite.
+      return { produtorId: existente.id, assinaturaId: null };
+    }
+
+    const { data: assinaturaExistente } = await supabase
+      .from("assinaturas")
+      .select("id")
+      .eq("produtor_id", existente.id)
+      .maybeSingle();
+
+    if (assinaturaExistente) {
+      const { error: updateAssinaturaError } = await supabase
+        .from("assinaturas")
+        .update({
+          plano: data.plano,
+          ...(data.semTrial ? { trial_expira_em: new Date().toISOString() } : {}),
+        })
+        .eq("id", assinaturaExistente.id);
+      if (updateAssinaturaError) {
+        throw new Error("Algo deu errado ao atualizar a assinatura. Tente de novo.");
+      }
+      return { produtorId: existente.id, assinaturaId: assinaturaExistente.id };
+    }
+
+    const { data: novaAssinatura, error: assinaturaError } = await supabase
+      .from("assinaturas")
+      .insert({
+        produtor_id: existente.id,
+        plano: data.plano,
+        ...(data.semTrial ? { trial_expira_em: new Date().toISOString() } : {}),
+      })
+      .select("id")
+      .single();
+    if (assinaturaError || !novaAssinatura) {
+      throw new Error("Algo deu errado ao criar a assinatura. Tente de novo.");
+    }
+    return { produtorId: existente.id, assinaturaId: novaAssinatura.id };
+  });
+
 const MOTIVOS_CANCELAMENTO = [
   "muito_caro",
   "nao_uso_o_suficiente",

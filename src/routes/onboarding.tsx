@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
-import { criarAssinaturaAsaas } from "@/lib/asaas.server";
+import { criarAssinaturaAsaas, reconciliarCadastroWhatsapp } from "@/lib/asaas.server";
 import { enviarBoasVindasWhatsApp } from "@/lib/notificacoes.server";
 import { culturas } from "@/config/culturas";
 import { normalizarWhatsapp } from "@/lib/telefone";
@@ -136,12 +136,13 @@ function OnboardingPage() {
         // ela é opcional, o produtor pode corrigir depois pelo painel.
       }
 
-      const { data: produtor, error } = await supabase
+      const whatsappNormalizado = normalizarWhatsapp(whatsapp);
+      const { data: produtorInserido, error } = await supabase
         .from("produtores")
         .insert({
           user_id: session.user.id,
           nome,
-          whatsapp: normalizarWhatsapp(whatsapp),
+          whatsapp: whatsappNormalizado,
           cultura_principal: cultura || null,
           uf: uf || null,
           municipio: municipioFinal,
@@ -152,44 +153,77 @@ function OnboardingPage() {
         })
         .select("id")
         .single();
-      if (error) {
-        setErroMsg(
-          error.code === "23505"
-            ? "Esse número de WhatsApp já está cadastrado."
-            : "Algo deu errado. Confira os dados e tente de novo.",
-        );
+
+      if (!error) {
+        // Produtor convidado por uma cooperativa já está coberto pelo plano
+        // dela — só produtor solo (sem convite) assina o próprio plano.
+        if (convite) {
+          // Best-effort — mesmo sem assinatura própria, quem entra convidado
+          // também precisa saber que existe um WhatsApp pra chamar.
+          void enviarBoasVindasWhatsApp({ data: { nome, whatsapp, cooperativaId: convite } });
+        } else {
+          const { data: assinatura, error: assinaturaError } = await supabase
+            .from("assinaturas")
+            .insert({
+              produtor_id: produtorInserido.id,
+              plano: planoEscolhido,
+              // Quem escolheu pular o teste grátis não ganha os 7 dias de
+              // acesso de graça se abandonar o checkout da Asaas sem pagar —
+              // o trial já nasce vencido pra esse caso.
+              ...(semTrialAtivo ? { trial_expira_em: new Date().toISOString() } : {}),
+            })
+            .select("id")
+            .single();
+          if (assinaturaError) {
+            setStatus("error");
+            return;
+          }
+          novaAssinaturaId = assinatura.id;
+
+          // Best-effort — o bot já chama primeiro no WhatsApp, se
+          // apresentando, em vez de a pessoa ter que descobrir o número.
+          void enviarBoasVindasWhatsApp({ data: { nome, whatsapp, plano: planoEscolhido } });
+        }
+      } else if (error.code !== "23505") {
+        setErroMsg("Algo deu errado. Confira os dados e tente de novo.");
         setStatus("error");
         return;
-      }
-
-      // Produtor convidado por uma cooperativa já está coberto pelo plano
-      // dela — só produtor solo (sem convite) assina o próprio plano.
-      if (convite) {
-        // Best-effort — mesmo sem assinatura própria, quem entra convidado
-        // também precisa saber que existe um WhatsApp pra chamar.
-        void enviarBoasVindasWhatsApp({ data: { nome, whatsapp, cooperativaId: convite } });
       } else {
-        const { data: assinatura, error: assinaturaError } = await supabase
-          .from("assinaturas")
-          .insert({
-            produtor_id: produtor.id,
-            plano: planoEscolhido,
-            // Quem escolheu pular o teste grátis não ganha os 7 dias de
-            // acesso de graça se abandonar o checkout da Asaas sem pagar —
-            // o trial já nasce vencido pra esse caso.
-            ...(semTrialAtivo ? { trial_expira_em: new Date().toISOString() } : {}),
-          })
-          .select("id")
-          .single();
-        if (assinaturaError) {
+        // Esse WhatsApp já tinha cadastro — quase sempre é alguém que criou
+        // um teste grátis direto pela conversa do bot (sem login) e agora
+        // veio pro site assinar um plano de verdade. Em vez de travar essa
+        // pessoa com "já está cadastrado" sem nenhum caminho pra continuar,
+        // reaproveita o cadastro existente e vincula a essa conta nova — via
+        // server function (service role), já que a RLS de UPDATE nunca
+        // libera reivindicar uma linha órfã (user_id null) direto do client.
+        try {
+          const resultado = await reconciliarCadastroWhatsapp({
+            data: {
+              accessToken: session.access_token,
+              whatsapp: whatsappNormalizado,
+              nome,
+              culturaPrincipal: cultura || null,
+              uf: uf || null,
+              municipio: municipioFinal,
+              lat,
+              lon,
+              cooperativaId: convite ?? null,
+              cpfCnpj: cpfCnpj.replace(/\D/g, ""),
+              plano: planoEscolhido,
+              semTrial: semTrialAtivo,
+            },
+          });
+          novaAssinaturaId = resultado.assinaturaId;
+          if (convite) {
+            void enviarBoasVindasWhatsApp({ data: { nome, whatsapp, cooperativaId: convite } });
+          } else {
+            void enviarBoasVindasWhatsApp({ data: { nome, whatsapp, plano: planoEscolhido } });
+          }
+        } catch (err) {
+          setErroMsg(err instanceof Error ? err.message : "Algo deu errado. Tente de novo.");
           setStatus("error");
           return;
         }
-        novaAssinaturaId = assinatura.id;
-
-        // Best-effort — o bot já chama primeiro no WhatsApp, se
-        // apresentando, em vez de a pessoa ter que descobrir o número.
-        void enviarBoasVindasWhatsApp({ data: { nome, whatsapp, plano: planoEscolhido } });
       }
     } else {
       // Gera o id no cliente: como o usuário só passa a enxergar a
