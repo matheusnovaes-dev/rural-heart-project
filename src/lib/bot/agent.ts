@@ -9,6 +9,7 @@ import {
   type HistoricoLinha,
 } from "@/lib/bot/prompt";
 import { executarTool, TOOLS } from "@/lib/bot/tools/index";
+import { mensagemBloqueioAcesso, verificarAcessoWhatsapp } from "@/lib/bot/tools/acesso";
 import type { ProdutorContexto } from "@/lib/bot/types";
 
 const MODEL = "gpt-4o-mini";
@@ -184,6 +185,23 @@ export async function runAgent(input: {
   signal: AbortSignal;
 }): Promise<RespostaAgente> {
   const { telefone, texto, historico, produtor, supabase, apiKey, signal } = input;
+
+  // Paywall determinístico: quem já tem conta mas o trial venceu (ou a
+  // assinatura não está ativa) não pode continuar recebendo dado real pelo
+  // bot de graça pra sempre — isso NUNCA pode ficar a cargo do modelo (mesmo
+  // risco de qualquer outra ação sensível: o modelo não é confiável pra
+  // recusar sozinho de forma consistente). Quem ainda não tem conta
+  // (produtor.id null, fluxo anônimo) não passa por essa checagem.
+  if (produtor.id) {
+    const acesso = await verificarAcessoWhatsapp(supabase, produtor.id);
+    if (!acesso.liberado) {
+      return {
+        resposta: mensagemBloqueioAcesso(acesso.comLogin),
+        precisa_humano: false,
+        cadastro_criado: false,
+      };
+    }
+  }
 
   const messages: OpenAIMessage[] = [
     { role: "system", content: SYSTEM_PROMPT },
