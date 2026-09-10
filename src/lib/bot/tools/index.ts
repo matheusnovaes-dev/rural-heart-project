@@ -15,6 +15,7 @@ import {
 } from "@/lib/bot/tools/mercado";
 import { criarAlertaClima, criarAlertaPreco } from "@/lib/bot/tools/alertas";
 import { criarContaTeste } from "@/lib/bot/tools/conta";
+import { consultarAssinatura } from "@/lib/bot/tools/assinatura";
 
 export type ToolContext = {
   supabase: SupabaseClient;
@@ -232,6 +233,15 @@ export const TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "consultar_assinatura",
+      description:
+        "Consulta o plano, status (trial/ativa/inadimplente/cancelada) e data de vencimento do trial da assinatura REAL do produtor. SEMPRE chame isto quando ele perguntar qual é o plano dele, se está ativo, quando o trial vence, ou quantos alertas/funcionários ele pode ter — nunca responda essas perguntas de cabeça ou supondo, mesmo que pareça óbvio pelo contexto da conversa.",
+      parameters: { type: "object", properties: {}, additionalProperties: false },
+    },
+  },
 ] as const;
 
 export async function executarTool(
@@ -267,6 +277,8 @@ export async function executarTool(
       return criarAlertaClima(ctx.supabase, args as Parameters<typeof criarAlertaClima>[1], ctx);
     case "criar_conta_teste":
       return criarContaTeste(ctx.supabase, args as Parameters<typeof criarContaTeste>[1], ctx);
+    case "consultar_assinatura":
+      return consultarAssinatura(ctx.supabase, ctx);
     default:
       return { erro: `Ferramenta desconhecida: ${nome}` };
   }
