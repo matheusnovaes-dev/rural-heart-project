@@ -14,6 +14,7 @@ import {
   buscarProducaoWasde,
 } from "@/lib/bot/tools/mercado";
 import { criarAlertaClima, criarAlertaPreco } from "@/lib/bot/tools/alertas";
+import { criarContaTeste } from "@/lib/bot/tools/conta";
 
 export type ToolContext = {
   supabase: SupabaseClient;
@@ -211,6 +212,26 @@ export const TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "criar_conta_teste",
+      description:
+        "Cria um cadastro de teste grátis (7 dias, plano Bronze, sem cartão) direto nesta conversa do WhatsApp, sem precisar ir pro site — só pra quem AINDA NÃO tem conta (conta_no_painel=não). Depois de criada, o produtor já é atendido como assinante Bronze normalmente. SÓ chame depois do produtor confirmar claramente que quer criar a conta, já com estado e cultura principal informados.",
+      parameters: {
+        type: "object",
+        properties: {
+          uf: { type: "string", description: "Sigla de 2 letras do estado do produtor." },
+          cultura_principal: {
+            type: "string",
+            description: "Cultura principal do produtor — mesma palavra-chave maiúscula usada em buscar_preco (SOJA, MILHO, BOI, etc).",
+          },
+        },
+        required: ["uf", "cultura_principal"],
+        additionalProperties: false,
+      },
+    },
+  },
 ] as const;
 
 export async function executarTool(
@@ -244,6 +265,8 @@ export async function executarTool(
       return criarAlertaPreco(ctx.supabase, args as Parameters<typeof criarAlertaPreco>[1], ctx);
     case "criar_alerta_clima":
       return criarAlertaClima(ctx.supabase, args as Parameters<typeof criarAlertaClima>[1], ctx);
+    case "criar_conta_teste":
+      return criarContaTeste(ctx.supabase, args as Parameters<typeof criarContaTeste>[1], ctx);
     default:
       return { erro: `Ferramenta desconhecida: ${nome}` };
   }
