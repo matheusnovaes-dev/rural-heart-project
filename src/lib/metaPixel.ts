@@ -10,11 +10,16 @@ declare global {
  * só existe depois do script base carregar (ver __root.tsx); se a extensão
  * de bloqueio de anúncio do navegador removeu o script, isso simplesmente
  * não deve derrubar o cadastro em si. */
-export function trackCadastroConcluido(params: { plano: string; valor?: number | undefined }) {
+export function trackCadastroConcluido(params: {
+  plano: string;
+  valor?: number | undefined;
+  eventId: string;
+}) {
   if (typeof window === "undefined" || !window.fbq) return;
-  window.fbq("track", "CompleteRegistration", {
-    content_name: params.plano,
-    currency: "BRL",
-    value: params.valor,
-  });
+  window.fbq(
+    "track",
+    "CompleteRegistration",
+    { content_name: params.plano, currency: "BRL", value: params.valor },
+    { eventID: params.eventId },
+  );
 }

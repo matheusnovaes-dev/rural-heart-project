@@ -24,6 +24,7 @@ import { ufs } from "@/config/ufs";
 import { buscarMunicipioServidor } from "@/lib/clima.server";
 import { pricingPlans } from "@/config/site";
 import { trackCadastroConcluido } from "@/lib/metaPixel";
+import { trackConversaoServidor } from "@/lib/metaCapi.server";
 
 const searchSchema = z.object({
   convite: z.string().uuid().optional(),
@@ -274,9 +275,24 @@ function OnboardingPage() {
     // fluxo com trial quanto no "prefere assinar direto" — o pagamento em
     // si (Asaas) pode falhar depois, mas o cadastro já aconteceu, que é o
     // objetivo configurado na campanha.
-    trackCadastroConcluido({
-      plano: planoEscolhido,
-      valor: pricingPlans.find((p) => p.id === planoEscolhido)?.price,
+    //
+    // Manda pelos dois lados (Pixel no navegador + Conversions API no
+    // servidor), com o mesmo eventId pra Meta deduplicar — achado real
+    // 2026-09-11: a única conversão até então nunca gerou esse evento
+    // porque o Pixel simplesmente não disparou nessa sessão (provável
+    // navegador interno do Instagram restringindo o script). O CAPI não
+    // depende do navegador do visitante, só do nosso próprio servidor.
+    const eventId = crypto.randomUUID();
+    const valorPlano = pricingPlans.find((p) => p.id === planoEscolhido)?.price;
+    trackCadastroConcluido({ plano: planoEscolhido, valor: valorPlano, eventId });
+    void trackConversaoServidor({
+      data: {
+        eventId,
+        plano: planoEscolhido,
+        valor: valorPlano,
+        email: session?.user.email,
+        whatsapp: tipo === "produtor" ? whatsapp : undefined,
+      },
     });
 
     // Fluxo normal (com teste grátis): cai direto no painel, sem cartão —
