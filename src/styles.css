@@ -193,3 +193,40 @@
     animation: none;
   }
 }
+
+/* Wash de fundo do painel de marca (login) — rotação lenta e sutil, nunca
+   chama mais atenção que o conteúdo por cima. */
+@keyframes slow-drift {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@utility animate-slow-drift {
+  animation: slow-drift 50s linear infinite;
+}
+
+/* Chips flutuantes de dado (ex: preço de exemplo) no painel de marca do login. */
+@keyframes float-chip {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@utility animate-float-chip {
+  animation: float-chip 5.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-slow-drift,
+  .animate-float-chip {
+    animation: none;
+  }
+}
