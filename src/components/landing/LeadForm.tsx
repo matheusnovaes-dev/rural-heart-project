@@ -26,6 +26,7 @@ import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { normalizarWhatsapp } from "@/lib/telefone";
 import { useAuth } from "@/lib/auth";
 import { pricingPlans } from "@/config/site";
+import { ufs } from "@/config/ufs";
 import { enviarBoasVindasWhatsApp } from "@/lib/notificacoes.server";
 import { trackCadastroConcluido } from "@/lib/metaPixel";
 import { trackConversaoServidor } from "@/lib/metaCapi.server";
@@ -37,6 +38,7 @@ const leadSchema = z.object({
     .min(10, "Digite um WhatsApp válido com DDD")
     .regex(/^[\d\s()+-]+$/, "Use apenas números, espaços e símbolos de telefone"),
   crop: z.string().min(1, "Selecione sua cultura principal"),
+  uf: z.string().min(2, "Selecione seu estado"),
   plano: z.enum(["bronze", "prata", "ouro"]),
 });
 
@@ -56,7 +58,7 @@ export function LeadForm({ className }: { className?: string }) {
 
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(leadSchema),
-    defaultValues: { name: "", whatsapp: "", crop: "", plano: "bronze" },
+    defaultValues: { name: "", whatsapp: "", crop: "", uf: "", plano: "bronze" },
   });
 
   async function onSubmit(values: LeadFormValues) {
@@ -104,6 +106,7 @@ export function LeadForm({ className }: { className?: string }) {
         nome: values.name,
         whatsapp,
         cultura_principal: values.crop || null,
+        uf: values.uf || null,
       })
       .select("id")
       .single();
@@ -210,6 +213,31 @@ export function LeadForm({ className }: { className?: string }) {
                   {cropOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="uf"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Estado (UF)</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione seu estado" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {ufs.map((uf) => (
+                    <SelectItem key={uf.value} value={uf.value}>
+                      {uf.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
