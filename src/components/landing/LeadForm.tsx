@@ -27,6 +27,8 @@ import { normalizarWhatsapp } from "@/lib/telefone";
 import { useAuth } from "@/lib/auth";
 import { pricingPlans } from "@/config/site";
 import { enviarBoasVindasWhatsApp } from "@/lib/notificacoes.server";
+import { trackCadastroConcluido } from "@/lib/metaPixel";
+import { trackConversaoServidor } from "@/lib/metaCapi.server";
 
 const leadSchema = z.object({
   name: z.string().min(2, "Digite seu nome completo"),
@@ -133,6 +135,21 @@ export function LeadForm({ className }: { className?: string }) {
     // já chama primeiro se apresentando.
     void enviarBoasVindasWhatsApp({
       data: { nome: values.name, whatsapp, plano: values.plano },
+    });
+
+    // Conversão de verdade pro Meta Ads: este formulário é o CTA principal
+    // da Hero (âncora #comece) — o caminho que a maioria do tráfego de
+    // anúncio realmente usa pra se cadastrar, diferente do /onboarding
+    // (só quem passa pela seção de Planos). Achado 2026-09-17: o fix de
+    // Pixel+CAPI de dias atrás só cobria o /onboarding — esse formulário
+    // aqui completava o cadastro inteiro (auth+produtor+assinatura) sem
+    // NUNCA disparar o evento, o que por si só explicava o "zero eventos
+    // de Cadastro completo" no Meta apesar de cadastros reais acontecendo.
+    const eventId = crypto.randomUUID();
+    const valorPlano = pricingPlans.find((p) => p.id === values.plano)?.price;
+    trackCadastroConcluido({ plano: values.plano, valor: valorPlano, eventId });
+    void trackConversaoServidor({
+      data: { eventId, plano: values.plano, valor: valorPlano, whatsapp },
     });
 
     // O AuthProvider já buscou o perfil (produtor) reagindo ao signUp() —
