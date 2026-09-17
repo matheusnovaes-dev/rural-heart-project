@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { normalizarWhatsapp } from "@/lib/telefone";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
+import { trackConversaoServidor } from "@/lib/metaCapi.server";
 
 // Mesma rede de segurança determinística usada em alertas.ts: o prompt já
 // exige confirmação numa mensagem separada antes de criar a conta, mas
@@ -76,6 +77,16 @@ export async function criarContaTeste(
   if (erroAssinatura) {
     return { sucesso: false, motivo: "erro_ao_criar" };
   }
+
+  // Conversão de verdade pro Meta Ads: mesmo evento (CompleteRegistration)
+  // que o site dispara, só que via CAPI direto — não existe navegador aqui
+  // (chamada servidor-a-servidor do n8n), então o Pixel do lado do cliente
+  // nunca entra em jogo. Achado 2026-09-17 junto com o mesmo bug no
+  // LeadForm: cadastro pelo bot (a campanha de Mensagens inteira depende
+  // disso) completava a conta de verdade sem nunca reportar a conversão.
+  void trackConversaoServidor({
+    data: { eventId: crypto.randomUUID(), plano: "bronze", whatsapp },
+  });
 
   return { sucesso: true };
 }
