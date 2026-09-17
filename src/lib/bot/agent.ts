@@ -212,7 +212,7 @@ export async function runAgent(input: {
     { role: "user", content: texto },
   ];
 
-  const ctx = { supabase, produtor, telefone, historico };
+  const ctx = { supabase, produtor, telefone, historico, texto };
   // Sinaliza pro n8n que a conta acabou de ser criada NESTA mensagem, pra ele
   // não emendar o convite de cadastro (que só faz sentido pra quem ainda não
   // tem conta) logo depois de "seu cadastro foi criado com sucesso" — sem

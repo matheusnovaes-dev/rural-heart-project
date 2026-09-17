@@ -23,6 +23,7 @@ export type ToolContext = {
   produtor: ProdutorContexto;
   telefone: string;
   historico: HistoricoLinha[];
+  texto: string;
 };
 
 /** Schema `tools` da OpenAI — descrições e argumentos de cada fonte de dado real disponível pro agente. */

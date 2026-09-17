@@ -31,6 +31,22 @@ function aindaPrecisaConfirmar(historico: HistoricoLinha[]): boolean {
   return !(PERGUNTA_DE_CONFIRMACAO_DE_ALERTA.test(ultima) && /alerta/i.test(ultima));
 }
 
+// Segunda rede de segurança, achada testando ao vivo: mesmo com a regra de
+// nunca inventar valor reforçada no prompt, o modelo às vezes ainda inventa
+// um preço "plausível" pra preencher a pergunta de confirmação quando o
+// produtor manda só "confirmo"/"sim" sem ter dito nenhum número antes —
+// e como a checagem acima só olha se ALGUMA pergunta de confirmação foi
+// feita (não se o valor dela é real), esse alerta inventado passaria batido
+// na mensagem seguinte. Aqui confere que o número que a ferramenta recebeu
+// realmente apareceu em algo que o PRODUTOR escreveu (mensagem atual ou
+// histórico) — nunca confia que o valor é genuíno só porque o assistente
+// perguntou usando ele.
+function valorFoiDitoPeloProdutor(valor: number, texto: string, historico: HistoricoLinha[]): boolean {
+  const inteiro = String(Math.trunc(valor));
+  if (texto.includes(inteiro)) return true;
+  return historico.some((h) => h.role === "user" && h.conteudo.includes(inteiro));
+}
+
 /** Mesmo teto do plano usado no dashboard (alertas.tsx) — preço + clima
  * somados, contados por produtor_id. Consulta a assinatura por produtor_id
  * (não por cooperativa) de propósito: o bot sempre fala com um produtor
@@ -65,13 +81,21 @@ async function limiteDeAlertasAtingido(supabase: SupabaseClient, produtorId: str
 export async function criarAlertaPreco(
   supabase: SupabaseClient,
   args: { cultura: string; uf: string; limite: number; direcao: "acima" | "abaixo" },
-  ctx: { produtor: ContextoProdutor; telefone: string; historico: HistoricoLinha[] },
+  ctx: {
+    produtor: ContextoProdutor;
+    telefone: string;
+    historico: HistoricoLinha[];
+    texto: string;
+  },
 ) {
   if (!ctx.produtor.user_id) {
     return { sucesso: false, motivo: "conta_sem_login" };
   }
   if (aindaPrecisaConfirmar(ctx.historico)) {
     return { sucesso: false, motivo: "precisa_confirmar_primeiro" };
+  }
+  if (!valorFoiDitoPeloProdutor(args.limite, ctx.texto, ctx.historico)) {
+    return { sucesso: false, motivo: "valor_nao_confirmado" };
   }
   if (await limiteDeAlertasAtingido(supabase, ctx.produtor.id)) {
     return { sucesso: false, motivo: "limite_atingido" };
@@ -96,13 +120,21 @@ export async function criarAlertaClima(
     condicao: "chuva_forte" | "geada" | "seca_prolongada" | "vento_forte";
     limite: number;
   },
-  ctx: { produtor: ContextoProdutor; telefone: string; historico: HistoricoLinha[] },
+  ctx: {
+    produtor: ContextoProdutor;
+    telefone: string;
+    historico: HistoricoLinha[];
+    texto: string;
+  },
 ) {
   if (!ctx.produtor.user_id) {
     return { sucesso: false, motivo: "conta_sem_login" };
   }
   if (aindaPrecisaConfirmar(ctx.historico)) {
     return { sucesso: false, motivo: "precisa_confirmar_primeiro" };
+  }
+  if (!valorFoiDitoPeloProdutor(args.limite, ctx.texto, ctx.historico)) {
+    return { sucesso: false, motivo: "valor_nao_confirmado" };
   }
   if (await limiteDeAlertasAtingido(supabase, ctx.produtor.id)) {
     return { sucesso: false, motivo: "limite_atingido" };
