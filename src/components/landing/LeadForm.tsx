@@ -61,6 +61,19 @@ export function LeadForm({ className }: { className?: string }) {
     defaultValues: { name: "", whatsapp: "", crop: "", uf: "", plano: "bronze" },
   });
 
+  // Antes, quando o cadastro falhava aqui, a pessoa só via o toast de erro
+  // e isso se perdia pra sempre — sem nenhum jeito de saber depois quantas
+  // tentativas reais de cadastro estavam quebrando, e em qual etapa.
+  // Fire-and-forget de propósito: um erro ao logar o erro não pode travar
+  // a experiência de quem já está tendo um problema.
+  function logarFalhaCadastro(
+    etapa: "auth" | "produtor" | "assinatura",
+    erro: string,
+    whatsapp?: string,
+  ) {
+    void supabase?.from("cadastro_falhas").insert({ origem: "leadform", etapa, erro, whatsapp });
+  }
+
   async function onSubmit(values: LeadFormValues) {
     if (!isSupabaseConfigured || !supabase) return;
     setStatus("submitting");
@@ -79,6 +92,7 @@ export function LeadForm({ className }: { className?: string }) {
       password: senha,
     });
     if (authError || !authData.user) {
+      logarFalhaCadastro("auth", authError?.message ?? "sem usuário retornado", values.whatsapp);
       setErroMsg(
         authError?.message.includes("already registered")
           ? "Esse WhatsApp já tem um teste iniciado. Chama no WhatsApp pra gente ajudar a recuperar o acesso."
@@ -111,6 +125,7 @@ export function LeadForm({ className }: { className?: string }) {
       .select("id")
       .single();
     if (produtorError || !produtor) {
+      logarFalhaCadastro("produtor", produtorError?.message ?? "sem produtor retornado", whatsapp);
       setErroMsg("Não conseguimos salvar seu cadastro agora. Chama no WhatsApp pra gente ajudar.");
       setStatus("error");
       return;
@@ -120,6 +135,7 @@ export function LeadForm({ className }: { className?: string }) {
       .from("assinaturas")
       .insert({ produtor_id: produtor.id, plano: values.plano });
     if (assinaturaError) {
+      logarFalhaCadastro("assinatura", assinaturaError.message, whatsapp);
       setErroMsg("Não conseguimos configurar seu teste agora. Chama no WhatsApp pra gente ajudar.");
       setStatus("error");
       return;
