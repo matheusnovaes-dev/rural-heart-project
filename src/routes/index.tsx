@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { Header } from "@/components/landing/Header";
 import { Hero } from "@/components/landing/Hero";
+import { PriceSimulator } from "@/components/landing/PriceSimulator";
 import { PainPoints } from "@/components/landing/PainPoints";
 import { Solution } from "@/components/landing/Solution";
 import { HowItWorks } from "@/components/landing/HowItWorks";
@@ -32,6 +33,7 @@ function Index() {
       <Header />
       <main>
         <Hero />
+        <PriceSimulator />
         <PainPoints />
         <Solution />
         <HowItWorks />
