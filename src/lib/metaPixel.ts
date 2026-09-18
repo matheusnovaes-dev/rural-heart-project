@@ -23,3 +23,14 @@ export function trackCadastroConcluido(params: {
     { eventID: params.eventId },
   );
 }
+
+/** Sinal de intenção (etapa 1 do formulário concluída, antes do cadastro
+ * de fato existir). Não é evento padrão de conversão do Meta, então usa
+ * trackCustom, não track — não deve interferir na otimização da campanha,
+ * que continua mirando em CompleteRegistration. Serve só pra comparar, no
+ * Gerenciador de Eventos, quantas pessoas chegam até aqui vs. quantas
+ * terminam o cadastro. */
+export function trackCadastroIniciado() {
+  if (typeof window === "undefined" || !window.fbq) return;
+  window.fbq("trackCustom", "CadastroIniciado");
+}
