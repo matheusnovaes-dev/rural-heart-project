@@ -7,6 +7,7 @@ import {
   FileDown,
   HardHat,
   LayoutDashboard,
+  LifeBuoy,
   LineChart,
   ListChecks,
   LogOut,
@@ -36,6 +37,7 @@ const DESTINOS_PRODUTOR: Destino[] = [
   { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
   { to: "/dashboard/funcionarios", label: "Funcionários", icon: HardHat },
   { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
+  { to: "/dashboard/suporte", label: "Suporte", icon: LifeBuoy },
 ];
 
 const DESTINOS_COOPERATIVA: Destino[] = [
@@ -45,6 +47,7 @@ const DESTINOS_COOPERATIVA: Destino[] = [
   { to: "/dashboard/produtores", label: "Produtores", icon: Users },
   { to: "/dashboard/lembretes", label: "Lembretes", icon: Bell },
   { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
+  { to: "/dashboard/suporte", label: "Suporte", icon: LifeBuoy },
 ];
 
 const DESTINOS_ADMIN: Destino[] = [

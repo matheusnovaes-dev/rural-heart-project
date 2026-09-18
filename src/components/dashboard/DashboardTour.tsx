@@ -54,6 +54,21 @@ const PASSOS = [
     descricao: "Adicione outras pessoas da cooperativa que também usam o painel.",
   },
   {
+    rota: "/dashboard/marca",
+    titulo: "Marca própria",
+    descricao: "Personalize o painel com a cor e o logo da sua cooperativa.",
+  },
+  {
+    rota: "/dashboard/relatorios",
+    titulo: "Relatórios",
+    descricao: "Gere um PDF com a marca da sua cooperativa e os preços mais recentes.",
+  },
+  {
+    rota: "/dashboard/suporte",
+    titulo: "Suporte",
+    descricao: "Abra um chamado quando precisar de ajuda — a resposta chega no WhatsApp.",
+  },
+  {
     rota: "/dashboard/assinatura",
     titulo: "Assinatura",
     descricao: "Veja seu plano atual e mude quando quiser.",

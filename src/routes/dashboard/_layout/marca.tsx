@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2, Palette, Upload } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,6 +20,21 @@ function MarcaPage() {
   const [cor, setCor] = useState(cooperativa?.cor_primaria ?? "#1F3D2B");
   const [logoPreview, setLogoPreview] = useState(cooperativa?.logo_url ?? null);
   const [status, setStatus] = useState<"idle" | "loading" | "saved">("idle");
+  const corSalva = cooperativa?.cor_primaria ?? "#1F3D2B";
+  const corNaoSalva = cor !== corSalva;
+
+  // Antes a cor escolhida se perdia em silêncio se a pessoa navegasse pra
+  // outra página antes de clicar em "Salvar cor" — sem aviso nenhum. Cobre
+  // o caso mais comum (fechar a aba/recarregar); pra navegação dentro do
+  // painel, o botão evidenciado abaixo já deixa claro que falta salvar.
+  useEffect(() => {
+    if (!corNaoSalva) return;
+    function avisar(e: BeforeUnloadEvent) {
+      e.preventDefault();
+    }
+    window.addEventListener("beforeunload", avisar);
+    return () => window.removeEventListener("beforeunload", avisar);
+  }, [corNaoSalva]);
 
   if (!cooperativa) return null;
 
@@ -124,9 +139,16 @@ function MarcaPage() {
             onChange={(e) => setCor(e.target.value)}
             className="size-10 cursor-pointer rounded border border-border"
           />
-          <Button onClick={handleSaveCor} disabled={status === "loading"}>
+          <Button
+            onClick={handleSaveCor}
+            disabled={status === "loading" || !corNaoSalva}
+            variant={corNaoSalva ? "default" : "outline"}
+          >
             {status === "loading" ? <Loader2 className="size-4 animate-spin" /> : "Salvar cor"}
           </Button>
+          {corNaoSalva && (
+            <span className="text-xs font-medium text-primary">Alteração não salva</span>
+          )}
         </CardContent>
       </Card>
     </div>
