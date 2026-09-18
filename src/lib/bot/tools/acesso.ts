@@ -31,7 +31,14 @@ export async function verificarAcessoWhatsapp(
       .select("status, trial_expira_em")
       .eq("produtor_id", produtorId)
       .maybeSingle();
-    if (!assinatura) return { liberado: true };
+    // Achado forçando erro 2026-09-18: isso retornava liberado:true — tratando
+    // "a consulta funcionou e não achou nenhuma assinatura" igual a "erro
+    // transitório de banco" (motivo do fail-open no catch, mais abaixo). São
+    // coisas diferentes: sem cooperativa e sem NENHUMA linha em assinaturas
+    // significa que essa conta nunca teve (ou perdeu, por alguma falha
+    // parcial no cadastro) um plano de verdade — precisa bloquear igual
+    // trial vencido, não liberar pra sempre.
+    if (!assinatura) return { liberado: false, comLogin: !!produtor?.user_id };
 
     const status = assinatura.status as StatusAssinatura;
     const trialValido =
