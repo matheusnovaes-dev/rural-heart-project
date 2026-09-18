@@ -35,10 +35,10 @@ export const pricingPlans: PricingPlan[] = [
       "Preço líquido com frete",
       "Boletim Semanal (Imea)",
       "Sinal de venda: cruza preço, futuros da B3 e clima pra apontar a hora certa",
-      "Janela de plantio oficial (ZARC) pra soja, milho, algodão, arroz e feijão — sabe se vale plantar agora ou esperar",
+      "Janela de plantio oficial (ZARC) pra soja, milho, algodão, arroz e feijão: sabe se vale plantar agora ou esperar",
       "Até 3 alertas de preço e clima ao mesmo tempo (dá pra editar e apagar)",
       "Lembretes automáticos, recorrentes ou avulsos",
-      "Previsão do clima por estado ou cidade — acompanhe quantos quiser",
+      "Previsão do clima por estado ou cidade, acompanhe quantos quiser",
       "Relatórios em PDF",
       "Contexto de mercado: câmbio, diesel, safra (USDA), futuros da B3 e produção do IBGE",
       "Suporte por chamado, direto no painel",
@@ -66,8 +66,8 @@ export const pricingPlans: PricingPlan[] = [
     features: [
       "Tudo do Prata, mais:",
       "Acompanhe o preço de outras culturas e estados, não só o seu",
-      "Funcionários sem limite — ideal pra consultor com vários clientes",
-      "Suporte prioritário — seu chamado é respondido primeiro",
+      "Funcionários sem limite, ideal pra consultor com vários clientes",
+      "Suporte prioritário: seu chamado é respondido primeiro",
     ],
   },
 ];

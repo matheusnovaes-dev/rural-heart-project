@@ -106,7 +106,7 @@ export function PriceSimulator() {
           Quanto você está perdendo sem saber o preço líquido?
         </h2>
         <p className="mt-2.5 text-muted-foreground">
-          Escolhe sua cultura e seu estado — a simulação sai em segundos.
+          Escolhe sua cultura e seu estado, a simulação sai em segundos.
         </p>
       </Reveal>
 
@@ -211,7 +211,7 @@ export function PriceSimulator() {
                   </a>
 
                   <p className="mt-3 text-center text-xs text-muted-foreground">
-                    E isso é só uma fatia do que o Safralume faz — preço líquido pra qualquer cultura e
+                    E isso é só uma fatia do que o Safralume faz: preço líquido pra qualquer cultura e
                     estado, clima oficial, tendência de mercado e alerta automático, tudo direto no seu
                     WhatsApp.
                   </p>

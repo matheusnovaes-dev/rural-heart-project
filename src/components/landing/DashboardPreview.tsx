@@ -79,7 +79,7 @@ export function DashboardPreview() {
         <p className="mt-4 text-muted-foreground">
           Preço, sinal de venda, alertas, lembretes, clima (por estado ou cidade) e suporte direto
           no painel, em qualquer plano, desde o Bronze. Acompanhar outras culturas e estados é do
-          plano Ouro — role o mouse pra pausar e explorar no seu ritmo.
+          plano Ouro. Role o mouse pra pausar e explorar no seu ritmo.
         </p>
       </Reveal>
 
@@ -152,11 +152,11 @@ export function DashboardPreview() {
           </div>
         </div>
         <p className="mt-3 text-center text-xs text-muted-foreground">
-          Prévia ilustrativa do painel — dados de exemplo. Recurso com selo{" "}
+          Prévia ilustrativa do painel, dados de exemplo. Recurso com selo{" "}
           <span className="rounded-full bg-gold px-1.5 py-0.5 font-semibold text-gold-foreground">
             Ouro
           </span>{" "}
-          faz parte desse plano —{" "}
+          faz parte desse plano,{" "}
           <a href="#planos" className="font-medium text-primary underline underline-offset-2">
             veja a comparação completa
           </a>
@@ -192,7 +192,7 @@ function PreviewPrecos() {
                 0.8%
               </span>
             </div>
-            <p className="mt-1 text-xs opacity-80">Soja · GO — já com frete descontado</p>
+            <p className="mt-1 text-xs opacity-80">Soja · GO, já com frete descontado</p>
           </div>
           <div className="w-24">
             <Sparkline data={sparklineDados} color="currentColor" className="h-9 w-full" />
@@ -324,7 +324,7 @@ function PreviewClima() {
         Produção de soja em GO (IBGE): <span className="font-semibold">50,6 mi t</span>
       </div>
       <p className="text-xs text-muted-foreground">
-        Além da sua cidade, acompanhe quantos outros estados quiser — útil pra quem opera em mais de
+        Além da sua cidade, acompanhe quantos outros estados quiser. Útil pra quem opera em mais de
         uma região.
       </p>
     </div>
@@ -340,8 +340,8 @@ function PreviewSinalVenda() {
           <Target className="mt-0.5 size-5 shrink-0 text-primary" />
           <div>
             <p className="text-sm text-foreground">
-              Preço bem posicionado nos últimos 90 dias e o mercado futuro não aponta mais alta —
-              pode ser um bom momento pra vender.
+              Preço bem posicionado nos últimos 90 dias e o mercado futuro não aponta mais alta.
+              Pode ser um bom momento pra vender.
             </p>
             <p className="mt-2 text-xs text-muted-foreground">
               Cruza a posição do preço nos últimos 90 dias, a curva de futuros da B3 e o risco de
@@ -384,7 +384,7 @@ function PreviewSuporte() {
       </div>
       <div className="flex items-center gap-2 rounded-lg border border-border p-3 text-sm text-foreground">
         <LifeBuoy className="size-4 shrink-0 text-primary" />
-        Abra um chamado direto no painel — a resposta chega no WhatsApp.
+        Abra um chamado direto no painel. A resposta chega no WhatsApp.
       </div>
     </div>
   );
@@ -404,7 +404,7 @@ function PreviewAcompanhamento() {
         </span>
       </div>
       <p className="text-xs text-muted-foreground">
-        Siga outras culturas e estados além do seu principal — útil pra consultor ou produtor que
+        Siga outras culturas e estados além do seu principal. Útil pra consultor ou produtor que
         opera em mais de uma frente.
       </p>
       <div className="flex flex-col gap-2">

@@ -15,7 +15,7 @@ export function Solution() {
             Você pergunta. O Safralume responde com o preço líquido.
           </h2>
           <p className="mt-4 max-w-md text-muted-foreground">
-            Cruzamos dados oficiais — Conab e órgãos estaduais — com o frete da sua região na hora,
+            Cruzamos dados oficiais (Conab e órgãos estaduais) com o frete da sua região na hora,
             sem você abrir planilha nenhuma.
           </p>
           <ul className="mt-6 space-y-3">
@@ -134,7 +134,7 @@ function PhoneMockup() {
           >
             <p>💵 Dólar hoje (PTAX): R$ 5,20</p>
             <p className="mt-1">
-              📈 Mercado futuro (B3) — Soja FOB Santos: nov. R$525 · mar. R$471 · mai. R$473
+              📈 Mercado futuro (B3), Soja FOB Santos: nov. R$525 · mar. R$471 · mai. R$473
             </p>
             <p className="mt-1 text-xs text-[#667781]">Fonte: BCB + B3 · atualizado agora</p>
           </motion.div>
@@ -168,7 +168,7 @@ function PhoneMockup() {
             className="mr-auto max-w-[88%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-sm text-[#111b21] shadow-sm"
           >
             <p>
-              🌱 Ainda não — a janela recomendada abre em 21/09, com risco climático de 40%
+              🌱 Ainda não. A janela recomendada abre em 21/09, com risco climático de 40%
               (ZARC/MAPA).
             </p>
             <p className="mt-1 text-xs text-[#667781]">Fonte: ZARC/MAPA · atualizado agora</p>

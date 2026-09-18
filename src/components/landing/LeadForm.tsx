@@ -262,7 +262,7 @@ export function LeadForm({ className }: { className?: string }) {
                 <SelectContent>
                   {pricingPlans.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
-                      {p.name} — R$ {p.price}/mês
+                      {p.name} (R$ {p.price}/mês)
                     </SelectItem>
                   ))}
                 </SelectContent>
