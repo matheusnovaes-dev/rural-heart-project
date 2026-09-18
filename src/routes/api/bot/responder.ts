@@ -50,8 +50,21 @@ export const Route = createFileRoute("/api/bot/responder")({
         } catch {
           return new Response("JSON inválido", { status: 400 });
         }
-        if (!body.telefone || !body.texto || !body.produtor) {
+        if (!body.telefone || !body.produtor) {
           return new Response("Campos obrigatórios ausentes", { status: 400 });
+        }
+
+        // Texto vazio/só espaço é cenário real (ex: figurinha/sticker sem
+        // legenda, reação a mensagem), não falha de infraestrutura — achado
+        // testando ao vivo: isso retornava 400 igual um erro de integração,
+        // o que ativa o fallback duro do n8n sem necessidade. Responde
+        // direto, sem gastar chamada de LLM à toa.
+        if (!body.texto || !body.texto.trim()) {
+          return Response.json({
+            resposta: "Recebi sua mensagem, mas não veio nenhum texto. Pode escrever o que você precisa?",
+            precisa_humano: false,
+            cadastro_criado: false,
+          } satisfies RespostaAgente);
         }
 
         const supabase = supabaseServiceRole();
