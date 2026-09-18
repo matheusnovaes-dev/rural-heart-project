@@ -1,9 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CreditCard, ExternalLink } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { EmptyState } from "@/components/dashboard/EmptyState";
@@ -129,6 +130,11 @@ function AssinaturaPage() {
               </p>
             )}
             <div className="flex flex-wrap items-center gap-2">
+              {status === "trial" && (
+                <Button asChild size="sm">
+                  <Link to="/assinar">Confirmar plano e assinar agora</Link>
+                </Button>
+              )}
               {ordemPlanos
                 .filter((p) => p !== plano && ordemPlanos.indexOf(p) > ordemPlanos.indexOf(plano))
                 .map((p) => (

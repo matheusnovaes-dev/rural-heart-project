@@ -29,6 +29,7 @@ import type { Previsao } from "@/lib/clima";
 import { buscarPrevisaoPorCoordenadasServidor, buscarPrevisaoServidor } from "@/lib/clima.server";
 import { precoLiquido, escolherRotaMaisProxima, type FreteRef } from "@/lib/frete";
 import { buildWhatsAppLink } from "@/config/site";
+import { verificarConversaWhatsapp } from "@/lib/notificacoes.server";
 
 export const Route = createFileRoute("/dashboard/_layout/")({
   component: DashboardHome,
@@ -121,14 +122,27 @@ function AssinaturaBanner({
     0,
     Math.ceil((new Date(assinatura.trial_expira_em).getTime() - Date.now()) / 86_400_000),
   );
+  // Perto do fim do trial o aviso precisa chamar mais atenção — mesmo
+  // esquema de cor do banner de inadimplência, não só o tom neutro de
+  // "informação" que ele tinha antes.
+  const urgente = diasRestantes <= 2;
 
   return (
-    <div className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm text-foreground">
+    <div
+      className={`rounded-lg border px-4 py-2.5 text-sm ${
+        urgente
+          ? "border-destructive/40 bg-destructive/10 text-destructive"
+          : "border-primary/30 bg-primary/5 text-foreground"
+      }`}
+    >
       Teste grátis do plano <span className="font-semibold">{planoLabel[assinatura.plano]}</span>:{" "}
       {diasRestantes === 0
         ? "expira hoje"
         : `${diasRestantes} dia${diasRestantes === 1 ? "" : "s"} restante${diasRestantes === 1 ? "" : "s"}`}
-      .
+      .{" "}
+      <Link to="/assinar" className="underline">
+        Confirmar plano e assinar agora
+      </Link>
     </div>
   );
 }
@@ -136,10 +150,15 @@ function AssinaturaBanner({
 type PrecoHistorico = { preco: number; data_referencia: string; updated_at: string | null };
 type PrecoRegional = { regiao: string; preco: number; data_referencia: string };
 
-const CHAVE_BANNER_WHATSAPP = "safralume_banner_whatsapp_dispensado";
-
 function ProdutorHome({ produtor }: { produtor: Produtor }) {
-  const [bannerWhatsappVisivel, setBannerWhatsappVisivel] = useState(false);
+  // Antes isso era só um "dispensado pra sempre" no localStorage — um clique
+  // errado (ou o "X" por curiosidade) escondia o convite pro WhatsApp de
+  // vez, mesmo pra quem nunca chegou a mandar mensagem nenhuma pro bot, que
+  // é o produto de verdade (o painel é secundário). Agora só esconde de
+  // forma permanente quando existe uma conversa de verdade registrada; um
+  // dispensar manual só vale pra sessão atual, sem persistir.
+  const [bannerWhatsappVisivel, setBannerWhatsappVisivel] = useState(true);
+  const [jaConversouNoWhatsapp, setJaConversouNoWhatsapp] = useState(false);
   const [serie, setSerie] = useState<PrecoHistorico[] | null>(null);
   const [precosRegionais, setPrecosRegionais] = useState<PrecoRegional[]>([]);
   const [lembretes, setLembretes] = useState<{ id: string; titulo: string; enviar_em: string }[]>(
@@ -148,21 +167,16 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
   const [previsao, setPrevisao] = useState<Previsao | null | undefined>(undefined);
   const [frete, setFrete] = useState<FreteRef | null | undefined>(undefined);
 
+  const { session } = useAuth();
   useEffect(() => {
-    try {
-      setBannerWhatsappVisivel(window.localStorage.getItem(CHAVE_BANNER_WHATSAPP) !== "true");
-    } catch {
-      setBannerWhatsappVisivel(true);
-    }
-  }, []);
+    if (!session) return;
+    verificarConversaWhatsapp({ data: { accessToken: session.access_token } }).then(({ jaConversou }) =>
+      setJaConversouNoWhatsapp(jaConversou),
+    );
+  }, [session]);
 
   function dispensarBannerWhatsapp() {
     setBannerWhatsappVisivel(false);
-    try {
-      window.localStorage.setItem(CHAVE_BANNER_WHATSAPP, "true");
-    } catch {
-      // sem localStorage (modo privado, etc) — só não persiste, sem quebrar nada
-    }
   }
 
   useEffect(() => {
@@ -270,7 +284,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
         </h1>
       </div>
 
-      {bannerWhatsappVisivel && (
+      {bannerWhatsappVisivel && !jaConversouNoWhatsapp && (
         <div className="flex items-start gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white">
             <MessageCircle className="size-4" />

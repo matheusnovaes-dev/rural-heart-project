@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 import { pricingPlans } from "@/config/site";
+import { supabaseServiceRole } from "@/lib/supabase.server";
+import { normalizarWhatsapp } from "@/lib/telefone";
 
 const enviarBoasVindasSchema = z.object({
   nome: z.string().min(1),
@@ -66,5 +68,42 @@ export const enviarBoasVindasWhatsApp = createServerFn({ method: "POST" })
     } catch (err) {
       console.error("Falha ao enviar boas-vindas por WhatsApp:", err);
       return { ok: false as const };
+    }
+  });
+
+const verificarConversaSchema = z.object({ accessToken: z.string().min(1) });
+
+/**
+ * `bot_conversas` tem RLS sem nenhuma política (bloqueia até leitura própria
+ * do dono), então o dashboard não consegue checar isso direto do cliente —
+ * precisa de service role. Usada só pra decidir se o convite "fica de olho
+ * no WhatsApp" já pode sumir de vez (ver ProdutorHome): antes disso era um
+ * dispensar manual que persistia pra sempre, mesmo sem nenhuma conversa
+ * real ter acontecido. Falha aqui é sempre "não conversou ainda" (fail
+ * safe pro lado de mostrar o convite de novo, nunca escondê-lo à toa).
+ */
+export const verificarConversaWhatsapp = createServerFn({ method: "POST" })
+  .validator(verificarConversaSchema)
+  .handler(async ({ data }) => {
+    try {
+      const supabase = supabaseServiceRole();
+      const { data: userData } = await supabase.auth.getUser(data.accessToken);
+      if (!userData.user) return { jaConversou: false as const };
+
+      const { data: produtor } = await supabase
+        .from("produtores")
+        .select("whatsapp")
+        .eq("user_id", userData.user.id)
+        .maybeSingle();
+      if (!produtor?.whatsapp) return { jaConversou: false as const };
+
+      const { count } = await supabase
+        .from("bot_conversas")
+        .select("telefone", { count: "exact", head: true })
+        .eq("telefone", normalizarWhatsapp(produtor.whatsapp));
+      return { jaConversou: !!count && count > 0 };
+    } catch (err) {
+      console.error("Falha ao verificar conversa no WhatsApp:", err);
+      return { jaConversou: false as const };
     }
   });
