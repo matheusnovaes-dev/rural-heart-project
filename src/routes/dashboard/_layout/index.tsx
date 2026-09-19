@@ -25,6 +25,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { Watchlist } from "@/components/dashboard/Watchlist";
 import { CompletarAcessoCard } from "@/components/dashboard/CompletarAcessoCard";
 import { BoletimSemanal } from "@/components/dashboard/BoletimSemanal";
+import { LeiteCard } from "@/components/dashboard/LeiteCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Previsao } from "@/lib/clima";
 import { buscarPrevisaoPorCoordenadasServidor, buscarPrevisaoServidor } from "@/lib/clima.server";
@@ -428,8 +429,9 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
               ) : (
                 <div className="flex items-center gap-1.5 text-sm opacity-80">
                   <span>
-                    Ainda não temos preço pra {produtor.cultura_principal ?? "sua cultura"} em{" "}
-                    {produtor.uf ?? "sua região"}.
+                    {/leite/i.test(produtor.cultura_principal ?? "")
+                      ? `Leite não tem cotação pública diária em ${produtor.uf ?? "sua região"}. Veja as referências abaixo.`
+                      : `Ainda não temos preço pra ${produtor.cultura_principal ?? "sua cultura"} em ${produtor.uf ?? "sua região"}.`}
                   </span>
                   <TrocarCulturaDialog produtor={produtor} />
                 </div>
@@ -442,6 +444,8 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
               </Link>
             </CardContent>
           </Card>
+
+          {/leite/i.test(produtor.cultura_principal ?? "") && <LeiteCard produtor={produtor} />}
 
           <InsightsPanel produtor={produtor} />
 

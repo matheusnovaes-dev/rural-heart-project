@@ -308,3 +308,48 @@ export function garantirMediaDasPracas(resposta: string, media: number | null): 
   const separador = /[.!?]$/.test(semPontuacaoFinal) ? " " : ". ";
   return `${semPontuacaoFinal}${separador}Média das praças: R$${media.toFixed(2).replace(".", ",")}.`;
 }
+
+// ---------------------------------------------------------------------------
+// Leite: números em kg/litros
+// ---------------------------------------------------------------------------
+
+// "60 kg" é o tamanho da saca e "1 litro" a unidade: aparecem sem vir de ferramenta.
+const MEDIDAS_SEMPRE_PERMITIDAS = [1, 60];
+
+/**
+ * Quantidades em kg ou litros que a resposta cita e nenhuma ferramenta
+ * sustenta. O guarda de valores em R$ não vê essas: na relação leite/milho o
+ * modelo escreveu "cada litro compra 0,038 kg de milho" (conta própria, errada
+ * por duas ordens de grandeza) com todos os R$ certos. A tolerância acompanha
+ * as casas escritas ("26 litros" cobre 26,4; "26,4" só cobre 26,4).
+ */
+export function medidasNaoAutorizadas(resposta: string, permitidos: number[]): number[] {
+  const validos = [...permitidos, ...MEDIDAS_SEMPRE_PERMITIDAS];
+  const padrao =
+    /(\d+(?:\.\d{3})*(?:,\d+)?|\d+(?:\.\d+)?)\s*(?:milhões\s+de\s+|mil\s+)?(?:kg|quilos?|litros?)\b/gi;
+  const invalidas: number[] = [];
+  for (const m of resposta.matchAll(padrao)) {
+    const bruto = m[1]!;
+    const valor = Number(bruto.replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", "."));
+    if (!Number.isFinite(valor)) continue;
+    const casas = bruto.includes(",") ? bruto.split(",")[1]!.length : 0;
+    const tolerancia = casas === 0 ? 0.5 + 1e-9 : 0.5 * 10 ** -casas + 1e-9;
+    if (!validos.some((p) => Math.abs(p - valor) <= tolerancia)) invalidas.push(valor);
+  }
+  return invalidas;
+}
+
+/**
+ * Relação leite/milho: se a resposta cita alguma quantidade em kg/litros que
+ * a ferramenta não trouxe, troca a resposta inteira pela frase pronta escrita
+ * por código (buscar_leite → frase_relacao). Sem frase pronta, devolve a
+ * resposta como veio.
+ */
+export function garantirRelacaoLeiteMilho(
+  resposta: string,
+  frase: string | null,
+  permitidos: number[],
+): string {
+  if (!frase) return resposta;
+  return medidasNaoAutorizadas(resposta, permitidos).length > 0 ? frase : resposta;
+}

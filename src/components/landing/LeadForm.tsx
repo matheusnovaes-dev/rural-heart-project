@@ -48,6 +48,7 @@ type LeadFormValues = z.infer<typeof leadSchema>;
 const cropOptions = [
   { value: "soja", label: "Soja" },
   { value: "milho", label: "Milho" },
+  { value: "leite de vaca", label: "Leite" },
   { value: "outra", label: "Outra cultura" },
 ];
 

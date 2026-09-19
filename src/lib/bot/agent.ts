@@ -20,6 +20,8 @@ import {
   classificarPedidoDeAcesso,
   corrigirLinkDePainelParaClienteSemLogin,
   garantirMediaDasPracas,
+  garantirRelacaoLeiteMilho,
+  medidasNaoAutorizadas,
   garantirRotaFrete,
   respostaCadastroCriado,
   respostaEntrarNoPainel,
@@ -154,6 +156,30 @@ function extrairMediaDasPracas(messages: OpenAIMessage[]): number | null {
     }
   }
   return medias.length === 1 ? medias[0]! : null;
+}
+
+// Frase pronta da relação leite/milho, só quando a resposta é sobre UMA consulta
+// de leite (buscar_leite escreve o texto por código; ver tools/leite.ts).
+function extrairFraseRelacaoLeite(messages: OpenAIMessage[]): string | null {
+  const nomePorToolCallId = new Map<string, string>();
+  for (const m of messages) {
+    if (m.role === "assistant" && m.tool_calls) {
+      for (const tc of m.tool_calls) nomePorToolCallId.set(tc.id, tc.function.name);
+    }
+  }
+  const frases: (string | null)[] = [];
+  for (const m of messages) {
+    if (m.role !== "tool" || !m.tool_call_id) continue;
+    if (nomePorToolCallId.get(m.tool_call_id) !== "buscar_leite") continue;
+    try {
+      const parsed = JSON.parse(m.content ?? "{}");
+      const frase = parsed?.relacao_milho?.frase_relacao;
+      frases.push(typeof frase === "string" ? frase : null);
+    } catch {
+      frases.push(null);
+    }
+  }
+  return frases.length === 1 ? frases[0]! : null;
 }
 
 const FALLBACK_DURO: RespostaAgente = {
@@ -339,22 +365,42 @@ export async function runAgent(input: {
       };
     }
 
-    const resposta = garantirMediaDasPracas(
-      garantirRotaFrete(
-        removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
-        extrairUltimoFreteCitado(messages),
+    const numerosPermitidos = coletarNumerosPermitidos(messages, texto, historico);
+    const resposta = garantirRelacaoLeiteMilho(
+      garantirMediaDasPracas(
+        garantirRotaFrete(
+          removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
+          extrairUltimoFreteCitado(messages),
+        ),
+        extrairMediaDasPracas(messages),
       ),
-      extrairMediaDasPracas(messages),
+      extrairFraseRelacaoLeite(messages),
+      numerosPermitidos,
     );
 
-    const naoAutorizados = valoresNaoAutorizados(
-      resposta,
-      coletarNumerosPermitidos(messages, texto, historico),
-    );
-    if (naoAutorizados.length > 0) {
+    const naoAutorizados = valoresNaoAutorizados(resposta, numerosPermitidos);
+    // Quantidades em kg/litros sem fonte (leite): sem frase pronta pra trocar,
+    // segue o mesmo caminho do valor em R$ inventado (uma correção, depois recusa).
+    // Só na conversa de leite: em outras culturas "15 kg" (arroba), "50 kg" etc.
+    // são medidas legítimas que nenhuma ferramenta precisa devolver.
+    const conversaDeLeite =
+      /leite/i.test(texto) ||
+      /leite/i.test(produtor.cultura_principal ?? "") ||
+      extrairFraseRelacaoLeite(messages) != null ||
+      messages.some(
+        (m) =>
+          m.role === "assistant" && m.tool_calls?.some((tc) => tc.function.name === "buscar_leite"),
+      );
+    const medidasInvalidas = conversaDeLeite
+      ? medidasNaoAutorizadas(resposta, numerosPermitidos)
+      : [];
+    if (naoAutorizados.length > 0 || medidasInvalidas.length > 0) {
       if (podeCorrigir && !jaTentouCorrigirValor) {
         jaTentouCorrigirValor = true;
-        const lista = naoAutorizados.map((v) => `R$${v.toFixed(2).replace(".", ",")}`).join(", ");
+        const lista = [
+          ...naoAutorizados.map((v) => `R$${v.toFixed(2).replace(".", ",")}`),
+          ...medidasInvalidas.map((v) => String(v).replace(".", ",")),
+        ].join(", ");
         messages.push({ role: "assistant", content: conteudoBruto ?? parsed.resposta });
         messages.push({
           role: "system",

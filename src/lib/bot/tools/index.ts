@@ -4,6 +4,7 @@ import type { ProdutorContexto } from "@/lib/bot/types";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
 import { buscarPreco } from "@/lib/bot/tools/preco";
 import { buscarClima } from "@/lib/bot/tools/clima";
+import { buscarLeite } from "@/lib/bot/tools/leite";
 import { buscarSinalVenda } from "@/lib/bot/tools/sinalVenda";
 import {
   buscarBoletimImea,
@@ -55,6 +56,31 @@ export const TOOLS = [
           },
         },
         required: ["produto", "uf", "incluir_frete"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "buscar_leite",
+      description:
+        "Dados de LEITE numa UF: preço médio por litro pago ao produtor no ano (IBGE, anual e defasado, NÃO é cotação de hoje), variação contra o ano anterior, produção, vacas ordenhadas e litros por vaca/dia; a última cotação observada quando a UF tem fonte (Conab no AC, EPAGRI em SC); e a relação leite/milho (quantos litros de leite pagam uma saca de milho e quantos kg de milho um litro compra), já calculada. Use pra QUALQUER pergunta sobre leite, preço do leite, relação leite/ração, leite x milho. Não use buscar_preco pra leite.",
+      parameters: {
+        type: "object",
+        properties: {
+          uf: {
+            type: ["string", "null"],
+            description:
+              "Sigla de 2 letras, da pergunta atual, do histórico ou do cadastro do produtor. null se nenhuma dessas fontes disser.",
+          },
+          preco_litro_produtor: {
+            type: ["number", "null"],
+            description:
+              "Preço em R$/litro que o PRODUTOR disse que recebe (ex: 'recebo 2,80 no litro' → 2.8). É o dado mais atual e usado na relação leite/milho. null se ele não disse.",
+          },
+        },
+        required: ["uf", "preco_litro_produtor"],
         additionalProperties: false,
       },
     },
@@ -298,6 +324,14 @@ export async function executarTool(
       return buscarPreco(ctx.supabase, args as Parameters<typeof buscarPreco>[1], {
         lat: ctx.produtor.lat,
         lon: ctx.produtor.lon,
+      });
+    case "buscar_leite":
+      return buscarLeite(ctx.supabase, args as Parameters<typeof buscarLeite>[1], {
+        atual: ctx.texto,
+        anteriores: ctx.historico
+          .filter((h) => h.role === "user")
+          .map((h) => h.conteudo)
+          .join("\n"),
       });
     case "buscar_clima":
       return buscarClima(args as Parameters<typeof buscarClima>[0], { produtor: ctx.produtor });
