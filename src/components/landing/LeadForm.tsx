@@ -29,7 +29,7 @@ import { useAuth } from "@/lib/auth";
 import { buildWhatsAppLink, pricingPlans } from "@/config/site";
 import { ufs } from "@/config/ufs";
 import { enviarBoasVindasWhatsApp } from "@/lib/notificacoes.server";
-import { trackCadastroConcluido, trackCadastroIniciado } from "@/lib/metaPixel";
+import { lerCookiesMeta, trackCadastroConcluido, trackCadastroIniciado } from "@/lib/metaPixel";
 import { trackConversaoServidor } from "@/lib/metaCapi.server";
 
 const leadSchema = z.object({
@@ -77,7 +77,6 @@ export function LeadForm({ className }: { className?: string }) {
     if (!jaTrackouInicioRef.current) {
       jaTrackouInicioRef.current = true;
       const whatsapp = normalizarWhatsapp(form.getValues("whatsapp"));
-      trackCadastroIniciado();
       // O query builder do supabase-js só dispara o fetch quando algo
       // consome a Promise (await ou .then) — um "void" sozinho nunca chega
       // a mandar a requisição (achado real: isso já tinha quebrado em
@@ -93,6 +92,25 @@ export function LeadForm({ className }: { className?: string }) {
         ?.from("cadastro_iniciados")
         .insert({ whatsapp })
         .then(() => {});
+      // Lead da etapa 1 (WhatsApp já digitado): pixel no navegador + API de
+      // Conversões, com o mesmo eventId pra a Meta deduplicar. Rastreamento
+      // NUNCA pode impedir a pessoa de avançar (ex: navegador antigo sem
+      // crypto.randomUUID), por isso o try/catch.
+      try {
+        const eventIdLead = crypto.randomUUID();
+        trackCadastroIniciado(eventIdLead);
+        trackConversaoServidor({
+          data: {
+            eventId: eventIdLead,
+            evento: "Lead",
+            whatsapp,
+            doNavegador: true,
+            ...lerCookiesMeta(),
+          },
+        }).catch(() => {});
+      } catch {
+        // sem rastreio de Lead nesse navegador; o fluxo segue.
+      }
     }
     setStep(2);
   }
@@ -136,7 +154,11 @@ export function LeadForm({ className }: { className?: string }) {
       password: senha,
     });
     if (authError || !authData.user) {
-      await logarFalhaCadastro("auth", authError?.message ?? "sem usuário retornado", values.whatsapp);
+      await logarFalhaCadastro(
+        "auth",
+        authError?.message ?? "sem usuário retornado",
+        values.whatsapp,
+      );
       if (authError?.message.includes("already registered")) {
         setCadastroJaExiste(true);
       } else {
@@ -169,7 +191,11 @@ export function LeadForm({ className }: { className?: string }) {
       .select("id")
       .single();
     if (produtorError || !produtor) {
-      await logarFalhaCadastro("produtor", produtorError?.message ?? "sem produtor retornado", whatsapp);
+      await logarFalhaCadastro(
+        "produtor",
+        produtorError?.message ?? "sem produtor retornado",
+        whatsapp,
+      );
       // 23505 = esse WhatsApp já tem cadastro (quase sempre feito pela
       // própria conversa do bot, sem login). Diz isso e aponta o caminho que
       // funciona (pedir o link de acesso pelo WhatsApp), em vez de um erro
@@ -180,7 +206,9 @@ export function LeadForm({ className }: { className?: string }) {
         setCadastroJaExiste(true);
         setErroMsg("");
       } else {
-        setErroMsg("Não conseguimos salvar seu cadastro agora. Chama no WhatsApp pra gente ajudar.");
+        setErroMsg(
+          "Não conseguimos salvar seu cadastro agora. Chama no WhatsApp pra gente ajudar.",
+        );
       }
       setStatus("error");
       return;
@@ -224,7 +252,14 @@ export function LeadForm({ className }: { className?: string }) {
     const valorPlano = pricingPlans.find((p) => p.id === values.plano)?.price;
     trackCadastroConcluido({ plano: values.plano, valor: valorPlano, eventId });
     void trackConversaoServidor({
-      data: { eventId, plano: values.plano, valor: valorPlano, whatsapp },
+      data: {
+        eventId,
+        plano: values.plano,
+        valor: valorPlano,
+        whatsapp,
+        doNavegador: true,
+        ...lerCookiesMeta(),
+      },
     });
 
     // O AuthProvider já buscou o perfil (produtor) reagindo ao signUp() —
@@ -242,12 +277,8 @@ export function LeadForm({ className }: { className?: string }) {
         className={`flex flex-col gap-4 ${className ?? ""}`}
       >
         <div className="flex items-center gap-1.5" aria-hidden="true">
-          <span
-            className={`h-1 flex-1 rounded-full ${step >= 1 ? "bg-primary" : "bg-border"}`}
-          />
-          <span
-            className={`h-1 flex-1 rounded-full ${step >= 2 ? "bg-primary" : "bg-border"}`}
-          />
+          <span className={`h-1 flex-1 rounded-full ${step >= 1 ? "bg-primary" : "bg-border"}`} />
+          <span className={`h-1 flex-1 rounded-full ${step >= 2 ? "bg-primary" : "bg-border"}`} />
         </div>
 
         <AnimatePresence mode="wait" initial={false}>
@@ -423,24 +454,24 @@ export function LeadForm({ className }: { className?: string }) {
               </Button>
 
               {status === "error" && cadastroJaExiste && (
-          <div className="flex flex-col gap-2 text-sm text-destructive">
-            <p>
-              Esse WhatsApp já tem um cadastro. Pra entrar no painel, peça seu link de acesso pelo
-              WhatsApp: o cadastro e o teste grátis são mantidos.
-            </p>
-            <a
-              href={buildWhatsAppLink("Quero acessar meu painel")}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex w-fit items-center rounded-md bg-[#25D366] px-3 py-2 font-medium text-white hover:bg-[#25D366]/90"
-            >
-              Pedir meu acesso pelo WhatsApp
-            </a>
-          </div>
-        )}
-        {status === "error" && !cadastroJaExiste && (
-          <p className="text-sm text-destructive">{erroMsg}</p>
-        )}
+                <div className="flex flex-col gap-2 text-sm text-destructive">
+                  <p>
+                    Esse WhatsApp já tem um cadastro. Pra entrar no painel, peça seu link de acesso
+                    pelo WhatsApp: o cadastro e o teste grátis são mantidos.
+                  </p>
+                  <a
+                    href={buildWhatsAppLink("Quero acessar meu painel")}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex w-fit items-center rounded-md bg-[#25D366] px-3 py-2 font-medium text-white hover:bg-[#25D366]/90"
+                  >
+                    Pedir meu acesso pelo WhatsApp
+                  </a>
+                </div>
+              )}
+              {status === "error" && !cadastroJaExiste && (
+                <p className="text-sm text-destructive">{erroMsg}</p>
+              )}
 
               <p className="text-center text-xs text-muted-foreground">
                 Sem cartão de crédito. Cancele quando quiser.

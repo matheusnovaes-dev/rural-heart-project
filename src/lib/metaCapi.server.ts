@@ -1,18 +1,25 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import crypto from "node:crypto";
+import { getRequestHeader } from "@tanstack/react-start/server";
+
+import { montarEventoCapi } from "@/lib/metaCapi";
 
 const trackConversaoSchema = z.object({
   eventId: z.string().min(1),
-  plano: z.string().min(1),
+  // Padrão CompleteRegistration (cadastro concluído); "Lead" é a etapa 1 do formulário.
+  evento: z.enum(["CompleteRegistration", "Lead"]).optional(),
+  plano: z.string().min(1).optional(),
   valor: z.number().optional(),
   email: z.string().email().optional(),
   whatsapp: z.string().optional(),
+  // Só quando a chamada vem do navegador do visitante (site): cookies da Meta
+  // e URL da página. Chamadas feitas pelo servidor (bot) não mandam isso, pra
+  // não atribuir o IP/navegador do n8n a um produtor.
+  doNavegador: z.boolean().optional(),
+  fbp: z.string().optional(),
+  fbc: z.string().optional(),
+  urlOrigem: z.string().url().optional(),
 });
-
-function sha256(valor: string): string {
-  return crypto.createHash("sha256").update(valor.trim().toLowerCase()).digest("hex");
-}
 
 /**
  * Envia o evento de conversão (CompleteRegistration) direto pro Meta via
@@ -40,29 +47,21 @@ export const trackConversaoServidor = createServerFn({ method: "POST" })
     const accessToken = process.env["META_CAPI_ACCESS_TOKEN"];
     if (!pixelId || !accessToken) return { ok: false as const };
 
-    const userData: Record<string, string[]> = {};
-    if (data.email) userData["em"] = [sha256(data.email)];
-    if (data.whatsapp) {
-      const digitos = data.whatsapp.replace(/\D/g, "");
-      const comDdi = digitos.startsWith("55") ? digitos : `55${digitos}`;
-      userData["ph"] = [sha256(comDdi)];
-    }
+    const evento = montarEventoCapi(data, {
+      userAgent: data.doNavegador ? getRequestHeader("user-agent") : undefined,
+      ip: data.doNavegador
+        ? (getRequestHeader("cf-connecting-ip") ??
+          getRequestHeader("x-forwarded-for")?.split(",")[0]?.trim())
+        : undefined,
+      agora: Math.floor(Date.now() / 1000),
+    });
 
     try {
       const res = await fetch(`https://graph.facebook.com/v21.0/${pixelId}/events`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          data: [
-            {
-              event_name: "CompleteRegistration",
-              event_time: Math.floor(Date.now() / 1000),
-              event_id: data.eventId,
-              action_source: "website",
-              user_data: userData,
-              custom_data: { content_name: data.plano, currency: "BRL", value: data.valor },
-            },
-          ],
+          data: [evento],
           access_token: accessToken,
         }),
       });

@@ -23,7 +23,7 @@ import { normalizarWhatsapp } from "@/lib/telefone";
 import { ufs } from "@/config/ufs";
 import { buscarMunicipioServidor } from "@/lib/clima.server";
 import { pricingPlans } from "@/config/site";
-import { trackCadastroConcluido } from "@/lib/metaPixel";
+import { lerCookiesMeta, trackCadastroConcluido } from "@/lib/metaPixel";
 import { trackConversaoServidor } from "@/lib/metaCapi.server";
 
 const searchSchema = z.object({
@@ -293,6 +293,8 @@ function OnboardingPage() {
           plano: planoEscolhido,
           valor: valorPlano,
           email: session?.user.email,
+          doNavegador: true,
+          ...lerCookiesMeta(),
           whatsapp: tipo === "produtor" ? whatsapp : undefined,
         },
       });

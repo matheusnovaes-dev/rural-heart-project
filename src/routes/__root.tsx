@@ -180,8 +180,8 @@ n.queue=[];t=b.createElement(e);t.async=!0;
 t.src=v;s=b.getElementsByTagName(e)[0];
 s.parentNode.insertBefore(t,s)}(window, document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
-fbq('init', '1610112627458029');
-fbq('track', 'PageView');`,
+if(!/^(localhost|127\\.0\\.0\\.1)$/.test(location.hostname)){fbq('init', '1610112627458029');
+fbq('track', 'PageView');}`,
       },
     ],
   }),
