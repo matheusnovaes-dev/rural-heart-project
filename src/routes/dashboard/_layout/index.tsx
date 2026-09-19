@@ -29,7 +29,7 @@ import { LeiteCard } from "@/components/dashboard/LeiteCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Previsao } from "@/lib/clima";
 import { buscarPrevisaoPorCoordenadasServidor, buscarPrevisaoServidor } from "@/lib/clima.server";
-import { precoLiquido, escolherRotaMaisProxima, type FreteRef } from "@/lib/frete";
+import { precoLiquido, escolherFreteReferencia, type FreteRef } from "@/lib/frete";
 import { buscarPrecosDaUf } from "@/lib/precos";
 import { mediaDePracas } from "@/lib/precoFonte";
 import { buildWhatsAppLink } from "@/config/site";
@@ -209,7 +209,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
       // quando não bate nenhuma rota, mostra o preço bruto em vez de
       // inventar frete. Entre as rotas que batem, escolhe a origem mais
       // perto da cidade cadastrada do produtor (se ele tiver uma), em vez
-      // de pegar qualquer rota do estado — ver escolherRotaMaisProxima.
+      // de pegar qualquer rota do estado — ver escolherFreteReferencia.
       supabase
         .from("fretes")
         .select(
@@ -219,7 +219,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
         .eq("uf_origem", produtor.uf)
         .returns<(FreteRef & { lat_origem: number | null; lon_origem: number | null })[]>()
         .then(({ data }) => {
-          const rota = escolherRotaMaisProxima(data ?? [], produtor.lat, produtor.lon);
+          const rota = escolherFreteReferencia(data ?? [], produtor.lat, produtor.lon);
           setFrete(rota);
         });
     } else {

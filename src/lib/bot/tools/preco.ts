@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { precoLiquido, escolherRotaMaisProxima } from "@/lib/frete";
+import { precoLiquido, escolherFreteReferencia } from "@/lib/frete";
 import { escolherFontePreco, mediaDePracas } from "@/lib/precoFonte";
 import { produtoPrincipal } from "@/lib/precos";
 
@@ -127,7 +127,7 @@ export async function buscarPreco(
 
   // Entre as rotas cadastradas nesse estado, escolhe a origem mais perto da
   // cidade cadastrada do produtor (quando ele tem uma) em vez de uma rota
-  // qualquer do estado — ver escolherRotaMaisProxima em lib/frete.ts.
+  // qualquer do estado — ver escolherFreteReferencia em lib/frete.ts.
   const { data: fretes } = await supabase
     .from("fretes")
     .select(
@@ -144,7 +144,7 @@ export async function buscarPreco(
       })[]
     >();
 
-  const frete = escolherRotaMaisProxima(fretes ?? [], ctx?.lat ?? null, ctx?.lon ?? null);
+  const frete = escolherFreteReferencia(fretes ?? [], ctx?.lat ?? null, ctx?.lon ?? null);
   if (!frete) {
     return { encontrado: true, precos: atuais, frete: null, preco_liquido: null, ...dadosDeOrigem };
   }
