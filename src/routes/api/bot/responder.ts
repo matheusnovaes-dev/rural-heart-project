@@ -18,6 +18,7 @@ const FALLBACK_DURO: RespostaAgente = {
   resposta: "Desculpa, não consegui pensar numa resposta agora. Pode tentar de novo em instantes?",
   precisa_humano: true,
   cadastro_criado: false,
+  convite_dispensado: false,
 };
 
 /**
@@ -64,6 +65,7 @@ export const Route = createFileRoute("/api/bot/responder")({
             resposta: "Recebi sua mensagem, mas não veio nenhum texto. Pode escrever o que você precisa?",
             precisa_humano: false,
             cadastro_criado: false,
+            convite_dispensado: false,
           } satisfies RespostaAgente);
         }
 

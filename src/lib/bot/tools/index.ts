@@ -17,6 +17,7 @@ import { criarAlertaClima, criarAlertaPreco } from "@/lib/bot/tools/alertas";
 import { criarContaTeste } from "@/lib/bot/tools/conta";
 import { consultarAssinatura } from "@/lib/bot/tools/assinatura";
 import { consultarJanelaPlantio } from "@/lib/bot/tools/plantio";
+import { atualizarLocalizacao } from "@/lib/bot/tools/localizacao";
 
 export type ToolContext = {
   supabase: SupabaseClient;
@@ -238,6 +239,23 @@ export const TOOLS = [
   {
     type: "function",
     function: {
+      name: "atualizar_localizacao",
+      description:
+        "Guarda no cadastro a CIDADE do produtor (e a UF dela) quando ele disser onde fica — ex: 'minha cidade é Vacaria RS', 'sou de Sorriso, MT'. Isso faz o frete das próximas respostas usar a rota cadastrada mais próxima dele. Só funciona pra quem já tem cadastro (conta_no_painel/cadastro_feito=sim). Chame SÓ quando ele informar a cidade dele explicitamente, nunca pra uma cidade que ele só mencionou de passagem (ex: perguntando o clima de outro lugar).",
+      parameters: {
+        type: "object",
+        properties: {
+          municipio: { type: "string", description: "Nome da cidade como o produtor escreveu." },
+          uf: { type: "string", description: "Sigla de 2 letras da UF dessa cidade." },
+        },
+        required: ["municipio", "uf"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "consultar_janela_plantio",
       description:
         "Consulta a janela de plantio oficial (ZARC/MAPA — Zoneamento Agrícola de Risco Climático) pra SOJA, MILHO, ALGODÃO, ARROZ ou FEIJÃO num município: diz se plantar agora (ou nas próximas semanas) está dentro da janela recomendada e com que risco climático oficial (%). NÃO cobre café, cana-de-açúcar (são perenes, não têm janela de plantio anual) nem boi. Precisa do nome do MUNICÍPIO (não só a UF) — se não tiver, pergunte antes de chamar. NUNCA estime produtividade (sacas/hectare) ou data de colheita a partir disso — a ferramenta só classifica risco climático da janela, não prevê safra.",
@@ -303,6 +321,8 @@ export async function executarTool(
       return criarAlertaClima(ctx.supabase, args as Parameters<typeof criarAlertaClima>[1], ctx);
     case "criar_conta_teste":
       return criarContaTeste(ctx.supabase, args as Parameters<typeof criarContaTeste>[1], ctx);
+    case "atualizar_localizacao":
+      return atualizarLocalizacao(ctx.supabase, args as Parameters<typeof atualizarLocalizacao>[1], ctx);
     case "consultar_assinatura":
       return consultarAssinatura(ctx.supabase, ctx);
     case "consultar_janela_plantio":

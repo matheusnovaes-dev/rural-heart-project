@@ -88,5 +88,5 @@ export async function criarContaTeste(
     data: { eventId: crypto.randomUUID(), plano: "bronze", whatsapp },
   });
 
-  return { sucesso: true };
+  return { sucesso: true, uf: args.uf, cultura_principal: args.cultura_principal };
 }

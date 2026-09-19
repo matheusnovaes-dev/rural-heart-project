@@ -1,10 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { limiteAlertas, type Plano } from "@/lib/planos.shared";
+import { normalizarWhatsapp } from "@/lib/telefone";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
 
 type ContextoProdutor = {
-  id: string;
+  id: string | null;
   user_id: string | null;
 };
 
@@ -88,8 +89,12 @@ export async function criarAlertaPreco(
     texto: string;
   },
 ) {
-  if (!ctx.produtor.user_id) {
-    return { sucesso: false, motivo: "conta_sem_login" };
+  // Alerta pertence ao produtor (produtor_id), não a um login: quem se
+  // cadastrou direto pela conversa do WhatsApp não tem user_id e mesmo
+  // assim precisa poder pedir aviso — foi exatamente o que o produtor
+  // real pediu ("avisar o preço") e o cadastro pelo bot deixava sem saída.
+  if (!ctx.produtor.id) {
+    return { sucesso: false, motivo: "sem_cadastro" };
   }
   if (aindaPrecisaConfirmar(ctx.historico)) {
     return { sucesso: false, motivo: "precisa_confirmar_primeiro" };
@@ -100,6 +105,10 @@ export async function criarAlertaPreco(
   if (await limiteDeAlertasAtingido(supabase, ctx.produtor.id)) {
     return { sucesso: false, motivo: "limite_atingido" };
   }
+  // Mesmo formato nacional (sem 55, com o 9) que o painel grava e que o n8n
+  // espera: ele monta o destino como "55" + whatsapp_destino, então gravar o
+  // número do WhatsApp cru (que já vem com 55) mandaria o aviso pra
+  // "5555..." — nunca chegaria.
   const { error } = await supabase.from("alertas_preco").insert({
     produtor_id: ctx.produtor.id,
     criado_por: ctx.produtor.user_id,
@@ -107,7 +116,7 @@ export async function criarAlertaPreco(
     uf: args.uf,
     limite: args.limite,
     direcao: args.direcao,
-    whatsapp_destino: ctx.telefone,
+    whatsapp_destino: normalizarWhatsapp(ctx.telefone),
   });
   if (error) return { sucesso: false, motivo: "erro_ao_criar" };
   return { sucesso: true };
@@ -127,8 +136,8 @@ export async function criarAlertaClima(
     texto: string;
   },
 ) {
-  if (!ctx.produtor.user_id) {
-    return { sucesso: false, motivo: "conta_sem_login" };
+  if (!ctx.produtor.id) {
+    return { sucesso: false, motivo: "sem_cadastro" };
   }
   if (aindaPrecisaConfirmar(ctx.historico)) {
     return { sucesso: false, motivo: "precisa_confirmar_primeiro" };
@@ -145,7 +154,7 @@ export async function criarAlertaClima(
     uf: args.uf,
     condicao: args.condicao,
     limite: args.limite,
-    whatsapp_destino: ctx.telefone,
+    whatsapp_destino: normalizarWhatsapp(ctx.telefone),
   });
   if (error) return { sucesso: false, motivo: "erro_ao_criar" };
   return { sucesso: true };

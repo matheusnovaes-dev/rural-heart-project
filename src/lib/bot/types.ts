@@ -1,5 +1,5 @@
 export type ProdutorContexto = {
-  id: string;
+  id: string | null;
   nome: string;
   uf: string | null;
   cultura_principal: string | null;

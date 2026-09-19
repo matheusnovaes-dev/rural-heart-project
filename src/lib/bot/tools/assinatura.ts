@@ -13,7 +13,7 @@ import { limiteAlertas, limiteFuncionarios, type Plano, type StatusAssinatura } 
  */
 export async function consultarAssinatura(
   supabase: SupabaseClient,
-  ctx: { produtor: { id: string } },
+  ctx: { produtor: { id: string | null } },
 ) {
   if (!ctx.produtor.id) {
     return { encontrado: false };

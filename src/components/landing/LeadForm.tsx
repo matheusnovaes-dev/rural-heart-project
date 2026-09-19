@@ -167,7 +167,14 @@ export function LeadForm({ className }: { className?: string }) {
       .single();
     if (produtorError || !produtor) {
       await logarFalhaCadastro("produtor", produtorError?.message ?? "sem produtor retornado", whatsapp);
-      setErroMsg("Não conseguimos salvar seu cadastro agora. Chama no WhatsApp pra gente ajudar.");
+      // 23505 = esse WhatsApp já tem cadastro (quase sempre feito pela
+      // própria conversa do bot, sem login) — dizer isso em vez de um erro
+      // genérico dá um caminho claro em vez de parecer que o site quebrou.
+      setErroMsg(
+        produtorError?.code === "23505"
+          ? "Esse WhatsApp já tem um cadastro feito pela conversa. Chama a gente no WhatsApp pra liberar seu acesso ao painel."
+          : "Não conseguimos salvar seu cadastro agora. Chama no WhatsApp pra gente ajudar.",
+      );
       setStatus("error");
       return;
     }

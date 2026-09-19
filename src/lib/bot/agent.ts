@@ -5,12 +5,22 @@ import {
   buildContextoPlanos,
   buildContextoProdutor,
   buildHistoryMessages,
+  buildRegrasCadastroAnonimo,
   SYSTEM_PROMPT,
   type HistoricoLinha,
 } from "@/lib/bot/prompt";
 import { executarTool, TOOLS } from "@/lib/bot/tools/index";
 import { mensagemBloqueioAcesso, verificarAcessoWhatsapp } from "@/lib/bot/tools/acesso";
 import type { ProdutorContexto } from "@/lib/bot/types";
+import {
+  coletarNumerosPermitidos,
+  conversaFalaDeCadastro,
+  corrigirLinkDePainelParaClienteSemLogin,
+  garantirRotaFrete,
+  respostaCadastroCriado,
+  valoresNaoAutorizados,
+  type FreteCitado,
+} from "@/lib/bot/guardas";
 
 const MODEL = "gpt-4o-mini";
 const MAX_TOOL_ROUNDS = 6;
@@ -35,7 +45,15 @@ const RESPONSE_FORMAT = {
   },
 };
 
-export type RespostaAgente = { resposta: string; precisa_humano: boolean; cadastro_criado: boolean };
+export type RespostaAgente = {
+  resposta: string;
+  precisa_humano: boolean;
+  cadastro_criado: boolean;
+  // true quando a própria resposta já trata de cadastro (oferta, confirmação,
+  // pedido de UF/cultura pro cadastro) — o n8n não emenda o convite padrão
+  // "crie um cadastro grátis" nesse caso, que ficava redundante e confuso.
+  convite_dispensado: boolean;
+};
 
 // Rede de segurança determinística: o prompt já proíbe fechar a resposta
 // com uma oferta de ajuda genérica ("se precisar de algo, é só avisar"),
@@ -57,14 +75,10 @@ function removerFechamentoGenerico(resposta: string): string {
   return semDisposicao || resposta;
 }
 
-// Mesmo tipo de rede de segurança determinística, agora pra transparência
-// da rota de frete: o prompt já pede pra citar origem e destino numa frase
-// curta quando vem preço líquido, mas testando ao vivo isso escapou em ~1/5
-// das respostas (o modelo citava só o destino, ou nenhuma cidade). Em vez
-// de insistir só no prompt, pega a rota de verdade que a tool buscar_preco
-// devolveu e garante que a cidade de origem apareça na resposta.
-type FreteCitado = { origem: string; destino: string };
-
+// Rota de frete: o prompt já pede origem E destino numa frase curta quando
+// vem preço líquido, mas testando ao vivo o modelo cita só uma das duas (ou
+// nenhuma). A checagem em si mora em guardas.ts (garantirRotaFrete) — aqui só
+// extrai a rota REAL que a ferramenta buscar_preco devolveu.
 function extrairUltimoFreteCitado(messages: OpenAIMessage[]): FreteCitado | null {
   const nomePorToolCallId = new Map<string, string>();
   for (const m of messages) {
@@ -87,13 +101,6 @@ function extrairUltimoFreteCitado(messages: OpenAIMessage[]): FreteCitado | null
     }
   }
   return ultimo;
-}
-
-function garantirOrigemFrete(resposta: string, frete: FreteCitado | null): string {
-  if (!frete || resposta.includes(frete.origem)) return resposta;
-  const semPontuacaoFinal = resposta.trimEnd();
-  const separador = /[.!?]$/.test(semPontuacaoFinal) ? " " : ". ";
-  return `${semPontuacaoFinal}${separador}Rota de frete considerada: ${frete.origem} até ${frete.destino}.`;
 }
 
 // Mesma rede de segurança determinística de novo: o prompt já proíbe
@@ -119,7 +126,15 @@ const FALLBACK_DURO: RespostaAgente = {
   resposta: "Desculpa, não consegui pensar numa resposta agora. Pode tentar de novo em instantes?",
   precisa_humano: true,
   cadastro_criado: false,
+  convite_dispensado: false,
 };
+
+// Última linha de defesa contra número inventado (ver guardas.ts): se mesmo
+// depois de uma chance de se corrigir a resposta ainda cita um valor em R$
+// que nenhuma fonte sustenta, é melhor dizer a verdade do que mandar um
+// preço falso pra um produtor tomar decisão em cima dele.
+const RESPOSTA_SEM_VALOR_CONFIAVEL =
+  "Não consegui confirmar esse valor com segurança agora. Me diz a cultura e o estado que eu busco de novo direto na fonte.";
 
 // Mesma rede de segurança determinística de cima, agora pra escalada de
 // cobrança/reembolso — o prompt já pede pra escalar (precisa_humano=true)
@@ -199,6 +214,7 @@ export async function runAgent(input: {
         resposta: mensagemBloqueioAcesso(acesso.comLogin),
         precisa_humano: false,
         cadastro_criado: false,
+        convite_dispensado: false,
       };
     }
   }
@@ -206,6 +222,7 @@ export async function runAgent(input: {
   const messages: OpenAIMessage[] = [
     { role: "system", content: SYSTEM_PROMPT },
     { role: "system", content: buildContextoProdutor(produtor) },
+    ...(produtor.id ? [] : [{ role: "system" as const, content: buildRegrasCadastroAnonimo() }]),
     { role: "system", content: buildContextoPlanos() },
     { role: "system", content: buildContextoInstitucional() },
     ...buildHistoryMessages(historico),
@@ -218,6 +235,77 @@ export async function runAgent(input: {
   // tem conta) logo depois de "seu cadastro foi criado com sucesso" — sem
   // isso o convite aparecia de forma redundante/confusa após um cadastro OK.
   let cadastroCriado = false;
+  let contaCriada: { uf: string; cultura: string } | null = null;
+  let jaTentouCorrigirValor = false;
+
+  // Fecha a resposta: aplica as redes de segurança de texto, troca a resposta
+  // do modelo pela confirmação escrita por código quando o cadastro acabou
+  // de ser criado, e barra valor em R$ que nenhuma fonte desta conversa
+  // sustenta. Devolve null quando a resposta precisa de mais uma rodada
+  // (pedido de correção de valor inventado).
+  const fechar = (
+    parsed: { resposta: string; precisa_humano: boolean },
+    conteudoBruto: string | null | undefined,
+    podeCorrigir: boolean,
+  ): RespostaAgente | null => {
+    if (cadastroCriado && contaCriada) {
+      return {
+        resposta: respostaCadastroCriado({
+          nome: produtor.nome,
+          uf: contaCriada.uf,
+          cultura: contaCriada.cultura,
+        }),
+        precisa_humano: false,
+        cadastro_criado: true,
+        convite_dispensado: true,
+      };
+    }
+
+    const resposta = garantirRotaFrete(
+      removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
+      extrairUltimoFreteCitado(messages),
+    );
+
+    const naoAutorizados = valoresNaoAutorizados(
+      resposta,
+      coletarNumerosPermitidos(messages, texto, historico),
+    );
+    if (naoAutorizados.length > 0) {
+      if (podeCorrigir && !jaTentouCorrigirValor) {
+        jaTentouCorrigirValor = true;
+        const lista = naoAutorizados.map((v) => `R$${v.toFixed(2).replace(".", ",")}`).join(", ");
+        messages.push({ role: "assistant", content: conteudoBruto ?? parsed.resposta });
+        messages.push({
+          role: "system",
+          content: `Correção obrigatória: sua resposta anterior citou ${lista}, que NÃO veio de nenhuma ferramenta consultada agora nem do que o produtor escreveu — é valor inventado ou copiado/ajustado de uma resposta anterior. Chame a ferramenta necessária de novo agora (ex: buscar_preco com a cultura e a UF do contexto) e responda usando SOMENTE os valores que ela retornar, sem reaproveitar nem ajustar números de mensagens anteriores. Se nenhuma ferramenta dá esse valor, não cite valor nenhum.`,
+        });
+        return null;
+      }
+      return {
+        resposta: RESPOSTA_SEM_VALOR_CONFIAVEL,
+        precisa_humano: false,
+        cadastro_criado: cadastroCriado,
+        convite_dispensado: cadastroCriado,
+      };
+    }
+
+    // Cliente cadastrado só pelo WhatsApp (sem login no site): nenhum link
+    // de /dashboard serve pra ele — ver guardas.ts.
+    const semLogin = produtor.id && !produtor.user_id;
+    const correcaoPainel = semLogin
+      ? corrigirLinkDePainelParaClienteSemLogin(resposta, texto, precisaEscalarPorCobranca(texto))
+      : null;
+    if (correcaoPainel) {
+      return { ...correcaoPainel, cadastro_criado: cadastroCriado, convite_dispensado: true };
+    }
+
+    return {
+      resposta,
+      precisa_humano: parsed.precisa_humano || precisaEscalarPorCobranca(texto),
+      cadastro_criado: cadastroCriado,
+      convite_dispensado: cadastroCriado || conversaFalaDeCadastro(resposta, historico),
+    };
+  };
 
   try {
     for (let rodada = 0; rodada < MAX_TOOL_ROUNDS; rodada++) {
@@ -246,6 +334,11 @@ export async function runAgent(input: {
               (resultado as { sucesso?: boolean })?.sucesso === true
             ) {
               cadastroCriado = true;
+              const r = resultado as { uf?: string; cultura_principal?: string };
+              contaCriada = {
+                uf: r.uf ?? String(args["uf"] ?? ""),
+                cultura: r.cultura_principal ?? String(args["cultura_principal"] ?? ""),
+              };
             }
             return { tool_call_id: tc.id, content: JSON.stringify(resultado) };
           }),
@@ -258,16 +351,10 @@ export async function runAgent(input: {
       }
 
       if (mensagem?.content) {
-        const parsed = JSON.parse(mensagem.content) as RespostaAgente;
-        const comFrete = garantirOrigemFrete(
-          removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
-          extrairUltimoFreteCitado(messages),
-        );
-        return {
-          resposta: comFrete,
-          precisa_humano: parsed.precisa_humano || precisaEscalarPorCobranca(texto),
-          cadastro_criado: cadastroCriado,
-        };
+        const parsed = JSON.parse(mensagem.content) as { resposta: string; precisa_humano: boolean };
+        const fechada = fechar(parsed, mensagem.content, true);
+        if (fechada) return fechada;
+        continue;
       }
 
       break;
@@ -278,16 +365,9 @@ export async function runAgent(input: {
     const json = await chamarOpenAI(apiKey, messages, { comTools: false, signal });
     const conteudo = json.choices?.[0]?.message?.content;
     if (conteudo) {
-      const parsed = JSON.parse(conteudo) as RespostaAgente;
-      const comFrete = garantirOrigemFrete(
-        removerFechamentoGenerico(parsed.resposta),
-        extrairUltimoFreteCitado(messages),
-      );
-      return {
-        resposta: comFrete,
-        precisa_humano: parsed.precisa_humano || precisaEscalarPorCobranca(texto),
-        cadastro_criado: cadastroCriado,
-      };
+      const parsed = JSON.parse(conteudo) as { resposta: string; precisa_humano: boolean };
+      const fechada = fechar(parsed, conteudo, false);
+      if (fechada) return fechada;
     }
 
     return FALLBACK_DURO;
