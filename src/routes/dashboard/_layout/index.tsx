@@ -23,6 +23,7 @@ import { Sparkline } from "@/components/dashboard/Sparkline";
 import { AtualizadoEm } from "@/components/dashboard/AtualizadoEm";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Watchlist } from "@/components/dashboard/Watchlist";
+import { CompletarAcessoCard } from "@/components/dashboard/CompletarAcessoCard";
 import { BoletimSemanal } from "@/components/dashboard/BoletimSemanal";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Previsao } from "@/lib/clima";
@@ -283,6 +284,8 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
           {greeting()}, {produtor.nome.split(" ")[0]}
         </h1>
       </div>
+
+      <CompletarAcessoCard />
 
       {bannerWhatsappVisivel && !jaConversouNoWhatsapp && (
         <div className="flex items-start gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">

@@ -114,6 +114,11 @@ function OnboardingPage() {
     setStatus("loading");
 
     let novaAssinaturaId: string | null = null;
+    // Cadastro que já existia (feito pelo WhatsApp) e só ganhou login agora:
+    // a conversão de anúncio e a mensagem de boas-vindas já aconteceram lá
+    // na conversa — repetir aqui contaria a mesma pessoa duas vezes no Meta
+    // e mandaria template de boas-vindas pra quem já está conversando.
+    let cadastroJaExistia = false;
 
     if (tipo === "produtor") {
       // Cidade é opcional — sem ela, clima cai na capital do estado e o
@@ -215,11 +220,7 @@ function OnboardingPage() {
             },
           });
           novaAssinaturaId = resultado.assinaturaId;
-          if (convite) {
-            void enviarBoasVindasWhatsApp({ data: { nome, whatsapp, cooperativaId: convite } });
-          } else {
-            void enviarBoasVindasWhatsApp({ data: { nome, whatsapp, plano: planoEscolhido } });
-          }
+          cadastroJaExistia = true;
         } catch (err) {
           setErroMsg(err instanceof Error ? err.message : "Algo deu errado. Tente de novo.");
           setStatus("error");
@@ -282,18 +283,20 @@ function OnboardingPage() {
     // porque o Pixel simplesmente não disparou nessa sessão (provável
     // navegador interno do Instagram restringindo o script). O CAPI não
     // depende do navegador do visitante, só do nosso próprio servidor.
-    const eventId = crypto.randomUUID();
-    const valorPlano = pricingPlans.find((p) => p.id === planoEscolhido)?.price;
-    trackCadastroConcluido({ plano: planoEscolhido, valor: valorPlano, eventId });
-    void trackConversaoServidor({
-      data: {
-        eventId,
-        plano: planoEscolhido,
-        valor: valorPlano,
-        email: session?.user.email,
-        whatsapp: tipo === "produtor" ? whatsapp : undefined,
-      },
-    });
+    if (!cadastroJaExistia) {
+      const eventId = crypto.randomUUID();
+      const valorPlano = pricingPlans.find((p) => p.id === planoEscolhido)?.price;
+      trackCadastroConcluido({ plano: planoEscolhido, valor: valorPlano, eventId });
+      void trackConversaoServidor({
+        data: {
+          eventId,
+          plano: planoEscolhido,
+          valor: valorPlano,
+          email: session?.user.email,
+          whatsapp: tipo === "produtor" ? whatsapp : undefined,
+        },
+      });
+    }
 
     // Fluxo normal (com teste grátis): cai direto no painel, sem cartão —
     // os 7 dias já estão contando (trial_expira_em, default do banco), e o

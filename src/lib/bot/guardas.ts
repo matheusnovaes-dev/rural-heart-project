@@ -149,6 +149,8 @@ export function garantirRotaFrete(resposta: string, frete: FreteCitado | null): 
  * que é verdade — o que o cadastro dá (consulta na hora) e como pedir o
  * aviso automático (que passa a funcionar sem precisar de login).
  */
+export const LINK_CRIAR_ACESSO = "https://safralume.com.br/login";
+
 export function respostaCadastroCriado(params: {
   nome: string;
   uf: string;
@@ -158,7 +160,7 @@ export function respostaCadastroCriado(params: {
   const saudacao = primeiroNome ? `Pronto, ${primeiroNome}!` : "Pronto!";
   const ufPorExtenso = ufs.find((u) => u.value === params.uf.toUpperCase())?.label ?? params.uf;
   const cultura = params.cultura.toLowerCase();
-  return `${saudacao} Seu cadastro grátis de 7 dias como produtor de ${cultura} em ${ufPorExtenso} está criado. Aqui no WhatsApp você consulta preço, clima e tendência do mercado quando quiser, é só perguntar. Pra receber aviso automático quando o preço bater um valor, me diz a cultura e a partir de quanto você quer ser avisado que eu crio o alerta.`;
+  return `${saudacao} Seu cadastro grátis de 7 dias como produtor de ${cultura} em ${ufPorExtenso} está criado. Aqui no WhatsApp você consulta preço, clima e tendência do mercado quando quiser, é só perguntar. Pra receber aviso automático quando o preço bater um valor, me diz a cultura e a partir de quanto você quer ser avisado que eu crio o alerta. Se quiser também um painel no site, é só criar seu acesso em ${LINK_CRIAR_ACESSO} com este mesmo WhatsApp.`;
 }
 
 /**
@@ -194,12 +196,46 @@ export function corrigirLinkDePainelParaClienteSemLogin(
   // que o modelo tenha errado de outro jeito (ex: "se cadastre no site").
   forcar = false,
 ): { resposta: string; precisa_humano: boolean } | null {
-  if (!forcar && !/safralume\.com\.br\/dashboard/i.test(resposta)) return null;
   const querCancelar = /cancel/i.test(textoProdutor);
+  // Pergunta sobre painel/login/senha (sem ser cobrança nem cancelamento):
+  // sempre a explicação fixa de como criar o acesso, nunca improviso.
+  if (!forcar && !querCancelar && perguntaSobrePainel(textoProdutor)) {
+    return { resposta: respostaAcessoPainel(), precisa_humano: false };
+  }
+  if (!forcar && !/safralume\.com\.br\/dashboard/i.test(resposta)) return null;
   return {
     resposta: querCancelar
       ? "Seu teste grátis não tem cobrança nem cartão cadastrado, então não tem nada pra cancelar. Já avisei a equipe do seu pedido e a resposta vem por aqui mesmo no WhatsApp."
       : "Já passei seu caso pra nossa equipe. A resposta vem por aqui mesmo no WhatsApp.",
     precisa_humano: true,
   };
+}
+
+/** Perguntas de quem é cadastrado só pelo WhatsApp sobre o painel/site, login ou senha. */
+const PADRAO_PERGUNTA_PAINEL =
+  /\b(painel|dashboard|senha|login|logar)\b|conta no site|(entrar|acessar|acesso)\b.{0,25}\b(site|painel)\b/i;
+
+export function perguntaSobrePainel(textoProdutor: string): boolean {
+  return PADRAO_PERGUNTA_PAINEL.test(textoProdutor);
+}
+
+/**
+ * Como quem se cadastrou só pelo WhatsApp passa a ter acesso ao painel. Texto
+ * fixo, escrito a partir do que o fluxo real faz (testado ponta a ponta):
+ * criar conta em /login com e-mail e senha, informar o MESMO WhatsApp no
+ * cadastro e o sistema reaproveita o cadastro e o teste grátis que já
+ * existem, sem duplicar; o CPF do final só existe pra emitir cobrança se ele
+ * assinar. Sem senha no cadastro pelo chat, por isso o modelo não pode
+ * improvisar isso.
+ */
+export function respostaAcessoPainel(): string {
+  return `O painel é opcional: lá você vê preço e clima da sua região, gerencia alertas e lembretes e acompanha seu plano. Pra entrar, crie seu acesso em ${LINK_CRIAR_ACESSO} (Criar conta) com um e-mail e uma senha e, no cadastro, informe este mesmo WhatsApp: seu cadastro e seu teste grátis são mantidos, nada é duplicado. No final ele pede o CPF, só pra emitir a cobrança caso você decida assinar um plano.`;
+}
+
+/**
+ * Pra quem já tem login: o modelo chegou a dizer "faça login com seu
+ * WhatsApp" (o login é por e-mail e senha, nunca por WhatsApp). Texto fixo.
+ */
+export function respostaEntrarNoPainel(): string {
+  return `Pra entrar no painel, acesse ${LINK_CRIAR_ACESSO} com o e-mail e a senha que você cadastrou. Se esqueceu a senha, use o "Esqueci minha senha" na mesma tela.`;
 }

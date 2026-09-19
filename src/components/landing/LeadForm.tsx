@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -54,6 +54,7 @@ const cropOptions = [
 export function LeadForm({ className }: { className?: string }) {
   const [status, setStatus] = useState<"idle" | "submitting" | "error">("idle");
   const [erroMsg, setErroMsg] = useState("");
+  const [cadastroJaExiste, setCadastroJaExiste] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
   const navigate = useNavigate();
   const { refresh } = useAuth();
@@ -119,6 +120,7 @@ export function LeadForm({ className }: { className?: string }) {
     if (!isSupabaseConfigured || !supabase) return;
     setStatus("submitting");
     setErroMsg("");
+    setCadastroJaExiste(false);
 
     // Preenchendo esse formulário já é o cadastro inteiro — sem e-mail/senha
     // pra pedir, gera uma conta técnica a partir do próprio WhatsApp (único
@@ -168,13 +170,17 @@ export function LeadForm({ className }: { className?: string }) {
     if (produtorError || !produtor) {
       await logarFalhaCadastro("produtor", produtorError?.message ?? "sem produtor retornado", whatsapp);
       // 23505 = esse WhatsApp já tem cadastro (quase sempre feito pela
-      // própria conversa do bot, sem login) — dizer isso em vez de um erro
-      // genérico dá um caminho claro em vez de parecer que o site quebrou.
-      setErroMsg(
-        produtorError?.code === "23505"
-          ? "Esse WhatsApp já tem um cadastro feito pela conversa. Chama a gente no WhatsApp pra liberar seu acesso ao painel."
-          : "Não conseguimos salvar seu cadastro agora. Chama no WhatsApp pra gente ajudar.",
-      );
+      // própria conversa do bot, sem login). Diz isso e aponta o caminho que
+      // funciona (criar acesso em /login, que reaproveita o cadastro), em
+      // vez de um erro genérico. Sai da conta técnica que o signUp acabou
+      // de abrir, pra não deixar o navegador logado numa conta vazia.
+      if (produtorError?.code === "23505") {
+        await supabase.auth.signOut();
+        setCadastroJaExiste(true);
+        setErroMsg("");
+      } else {
+        setErroMsg("Não conseguimos salvar seu cadastro agora. Chama no WhatsApp pra gente ajudar.");
+      }
       setStatus("error");
       return;
     }
@@ -415,7 +421,22 @@ export function LeadForm({ className }: { className?: string }) {
                 )}
               </Button>
 
-              {status === "error" && <p className="text-sm text-destructive">{erroMsg}</p>}
+              {status === "error" && cadastroJaExiste && (
+          <p className="text-sm text-destructive">
+            Esse WhatsApp já tem um cadastro feito pela conversa. Pra abrir o painel,{" "}
+            <Link
+              to="/login"
+              search={{ plano: form.getValues("plano") }}
+              className="font-medium underline underline-offset-2"
+            >
+              crie seu acesso aqui
+            </Link>{" "}
+            com este mesmo WhatsApp: o cadastro e o teste grátis são mantidos.
+          </p>
+        )}
+        {status === "error" && !cadastroJaExiste && (
+          <p className="text-sm text-destructive">{erroMsg}</p>
+        )}
 
               <p className="text-center text-xs text-muted-foreground">
                 Sem cartão de crédito. Cancele quando quiser.

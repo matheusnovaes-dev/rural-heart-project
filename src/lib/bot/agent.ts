@@ -6,6 +6,7 @@ import {
   buildContextoProdutor,
   buildHistoryMessages,
   buildRegrasCadastroAnonimo,
+  buildRegrasClienteSemLogin,
   SYSTEM_PROMPT,
   type HistoricoLinha,
 } from "@/lib/bot/prompt";
@@ -17,7 +18,9 @@ import {
   conversaFalaDeCadastro,
   corrigirLinkDePainelParaClienteSemLogin,
   garantirRotaFrete,
+  perguntaSobrePainel,
   respostaCadastroCriado,
+  respostaEntrarNoPainel,
   valoresNaoAutorizados,
   type FreteCitado,
 } from "@/lib/bot/guardas";
@@ -223,6 +226,9 @@ export async function runAgent(input: {
     { role: "system", content: SYSTEM_PROMPT },
     { role: "system", content: buildContextoProdutor(produtor) },
     ...(produtor.id ? [] : [{ role: "system" as const, content: buildRegrasCadastroAnonimo() }]),
+    ...(produtor.id && !produtor.user_id
+      ? [{ role: "system" as const, content: buildRegrasClienteSemLogin() }]
+      : []),
     { role: "system", content: buildContextoPlanos() },
     { role: "system", content: buildContextoInstitucional() },
     ...buildHistoryMessages(historico),
@@ -257,6 +263,23 @@ export async function runAgent(input: {
         }),
         precisa_humano: false,
         cadastro_criado: true,
+        convite_dispensado: true,
+      };
+    }
+
+    // Cliente que já tem login perguntando como entrar no painel: texto fixo
+    // (o modelo já disse que o login era "com seu WhatsApp", o que é falso).
+    if (
+      produtor.id &&
+      produtor.user_id &&
+      perguntaSobrePainel(texto) &&
+      !/cancel/i.test(texto) &&
+      !precisaEscalarPorCobranca(texto)
+    ) {
+      return {
+        resposta: respostaEntrarNoPainel(),
+        precisa_humano: false,
+        cadastro_criado: cadastroCriado,
         convite_dispensado: true,
       };
     }
