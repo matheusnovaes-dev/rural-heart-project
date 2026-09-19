@@ -12,6 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/lib/supabase";
+import { produtoPrincipal, ultimaDataRegional } from "@/lib/precos";
+import { escolherFontePreco } from "@/lib/precoFonte";
 import { buscarPrevisaoServidor } from "@/lib/clima.server";
 import { temAcessoPrata, useAssinatura } from "@/lib/planos";
 import type { Produtor } from "@/lib/auth";
@@ -121,15 +123,27 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
     supabase
       .from("precos")
       .select("preco, data_referencia, produto, uf")
-      .ilike("produto", `%${cultura}%`)
+      // Soja/milho: só a variante principal (o "milho" também casa "MILHO DE
+      // PIPOCA", que é ~2x mais caro) — ilike sem curinga é comparação exata.
+      .ilike("produto", produtoPrincipal(cultura) ?? `%${cultura}%`)
       .eq("regiao", "")
       .gte("data_referencia", desde.toISOString().slice(0, 10))
       .order("data_referencia", { ascending: true })
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         const deduped = serieUnica(data ?? []);
         const daUf = deduped.filter((r) => r.uf === uf);
-        setSerie(daUf);
         setTodasUfs(deduped);
+        // Série do estado defasada (ex: Conab de MT parada 4 semanas) não pode
+        // alimentar tendência/posição como se fosse atual — mesma escolha de
+        // fonte do card "Seu preço hoje". Sem ela, cai no aviso de "só por
+        // região" em vez de insight velho.
+        const ultimaRegional = supabase ? await ultimaDataRegional(supabase, cultura, uf) : null;
+        if (escolherFontePreco(daUf.at(-1)?.data_referencia, ultimaRegional) === "regional") {
+          setSerie([]);
+          setTemDadoRegional(true);
+          return;
+        }
+        setSerie(daUf);
         if (daUf.length > 0) {
           setTemDadoRegional(false);
           return;

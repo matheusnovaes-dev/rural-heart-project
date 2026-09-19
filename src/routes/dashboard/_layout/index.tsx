@@ -29,6 +29,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { Previsao } from "@/lib/clima";
 import { buscarPrevisaoPorCoordenadasServidor, buscarPrevisaoServidor } from "@/lib/clima.server";
 import { precoLiquido, escolherRotaMaisProxima, type FreteRef } from "@/lib/frete";
+import { buscarPrecosDaUf } from "@/lib/precos";
+import { mediaDePracas } from "@/lib/precoFonte";
 import { buildWhatsAppLink } from "@/config/site";
 import { verificarConversaWhatsapp } from "@/lib/notificacoes.server";
 
@@ -149,7 +151,12 @@ function AssinaturaBanner({
 }
 
 type PrecoHistorico = { preco: number; data_referencia: string; updated_at: string | null };
-type PrecoRegional = { regiao: string; preco: number; data_referencia: string };
+type PrecoRegional = { regiao: string; preco: number; data_referencia: string; fonte?: string };
+
+function dataCurta(iso: string): string {
+  const [ano, mes, dia] = iso.slice(0, 10).split("-");
+  return `${dia}/${mes}/${ano}`;
+}
 
 function ProdutorHome({ produtor }: { produtor: Produtor }) {
   // Antes isso era só um "dispensado pra sempre" no localStorage — um clique
@@ -162,6 +169,9 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
   const [jaConversouNoWhatsapp, setJaConversouNoWhatsapp] = useState(false);
   const [serie, setSerie] = useState<PrecoHistorico[] | null>(null);
   const [precosRegionais, setPrecosRegionais] = useState<PrecoRegional[]>([]);
+  const [motivoRegional, setMotivoRegional] = useState<"sem_estado" | "estado_defasado" | null>(
+    null,
+  );
   const [lembretes, setLembretes] = useState<{ id: string; titulo: string; enviar_em: string }[]>(
     [],
   );
@@ -171,8 +181,8 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
   const { session } = useAuth();
   useEffect(() => {
     if (!session) return;
-    verificarConversaWhatsapp({ data: { accessToken: session.access_token } }).then(({ jaConversou }) =>
-      setJaConversouNoWhatsapp(jaConversou),
+    verificarConversaWhatsapp({ data: { accessToken: session.access_token } }).then(
+      ({ jaConversou }) => setJaConversouNoWhatsapp(jaConversou),
     );
   }, [session]);
 
@@ -184,43 +194,15 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
     if (!supabase) return;
 
     if (produtor.cultura_principal && produtor.uf) {
-      const desde = new Date();
-      desde.setDate(desde.getDate() - 90);
-      supabase
-        .from("precos")
-        .select("preco, data_referencia, updated_at")
-        .ilike("produto", `%${produtor.cultura_principal}%`)
-        .eq("uf", produtor.uf)
-        .eq("regiao", "")
-        .gte("data_referencia", desde.toISOString().slice(0, 10))
-        .order("data_referencia", { ascending: true })
-        .then(({ data }) => {
-          const rows = data ?? [];
-          setSerie(rows);
-          if (rows.length > 0) {
-            setPrecosRegionais([]);
-            return;
-          }
-          // Sem preço único do estado — antes disso, o card mostrava
-          // "ainda não temos preço" mesmo quando tinha dado real, só que
-          // publicado por praça em vez de UF inteira (ex: milho em MG, só
-          // via BBM). Mesmo princípio já usado no bot: mostrar por região é
-          // mais honesto do que dizer "não temos" quando na verdade tem.
-          if (!supabase) return;
-          supabase
-            .from("precos")
-            .select("regiao, preco, data_referencia")
-            .ilike("produto", `%${produtor.cultura_principal}%`)
-            .eq("uf", produtor.uf)
-            .order("data_referencia", { ascending: false })
-            .limit(20)
-            .then(({ data: regionaisRaw }) => {
-              const maisRecente = regionaisRaw?.[0]?.data_referencia;
-              setPrecosRegionais(
-                (regionaisRaw ?? []).filter((r) => r.data_referencia === maisRecente),
-              );
-            });
-        });
+      // Fonte escolhida pela mais recente (ver escolherFontePreco): a série do
+      // estado quando está em dia, ou as praças do dia mais recente quando a
+      // do estado está defasada (Conab de MT ficou parada 4 semanas enquanto a
+      // BBM publicava todo dia) ou não existe.
+      buscarPrecosDaUf(supabase, produtor.cultura_principal, produtor.uf).then((r) => {
+        setSerie(r.serieEstado);
+        setPrecosRegionais(r.regionais);
+        setMotivoRegional(r.motivoRegional);
+      });
 
       // A Sifreca não cobre toda UF, só municípios de origem selecionados —
       // quando não bate nenhuma rota, mostra o preço bruto em vez de
@@ -273,6 +255,8 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
     atual && anterior && anterior.preco !== 0
       ? ((atual.preco - anterior.preco) / anterior.preco) * 100
       : null;
+  const mediaRegional =
+    precosRegionais.length > 0 ? mediaDePracas(precosRegionais.map((r) => r.preco)) : null;
   const precoExibido =
     atual && frete ? precoLiquido(atual.preco, frete.frete_rt) : (atual?.preco ?? null);
 
@@ -400,7 +384,9 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
               ) : precosRegionais.length > 0 ? (
                 <div className="flex flex-col gap-2">
                   <p className="text-sm opacity-80">
-                    {produtor.uf} não tem um preço único pro estado — só por região:
+                    {motivoRegional === "estado_defasado"
+                      ? `O preço do estado (${produtor.uf}) está desatualizado. Estes são os preços mais recentes por região, de ${dataCurta(precosRegionais[0]!.data_referencia)}:`
+                      : `${produtor.uf} não tem um preço único pro estado, só por região:`}
                   </p>
                   <div className="flex flex-col gap-1">
                     {precosRegionais.map((r) => (
@@ -415,6 +401,23 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                       </div>
                     ))}
                   </div>
+                  {mediaRegional != null && (
+                    <p className="mt-1 text-xs opacity-80">
+                      Média das regiões: R${mediaRegional.toFixed(2).replace(".", ",")}
+                      {frete && (
+                        <>
+                          {" "}
+                          · já com o frete descontado: R$
+                          {precoLiquido(mediaRegional, frete.frete_rt)
+                            .toFixed(2)
+                            .replace(".", ",")}{" "}
+                          ({frete.municipio_origem}/{frete.uf_origem} → {frete.municipio_destino}/
+                          {frete.uf_destino})
+                        </>
+                      )}
+                      {precosRegionais[0]?.fonte && <> · fonte: {precosRegionais[0].fonte}</>}
+                    </p>
+                  )}
                   <div className="mt-1 flex items-center gap-1.5 text-sm opacity-80">
                     <span className="capitalize">
                       {produtor.cultura_principal} · {produtor.uf}

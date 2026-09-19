@@ -19,6 +19,7 @@ import {
   conversaFalaDeCadastro,
   classificarPedidoDeAcesso,
   corrigirLinkDePainelParaClienteSemLogin,
+  garantirMediaDasPracas,
   garantirRotaFrete,
   respostaCadastroCriado,
   respostaEntrarNoPainel,
@@ -127,6 +128,32 @@ function removerMarkdownProibido(resposta: string): string {
     .map((l) => l.replace(PADRAO_LINHA_DE_LISTA, "").trim())
     .filter((l) => l.length > 0)
     .join(" · ");
+}
+
+// Média das praças que buscar_preco devolveu, só quando a resposta é sobre UMA
+// consulta de preço (com duas culturas, não dá pra saber a qual a frase
+// acrescentada se refere).
+function extrairMediaDasPracas(messages: OpenAIMessage[]): number | null {
+  const nomePorToolCallId = new Map<string, string>();
+  for (const m of messages) {
+    if (m.role === "assistant" && m.tool_calls) {
+      for (const tc of m.tool_calls) nomePorToolCallId.set(tc.id, tc.function.name);
+    }
+  }
+  const medias: (number | null)[] = [];
+  for (const m of messages) {
+    if (m.role !== "tool" || !m.tool_call_id) continue;
+    if (nomePorToolCallId.get(m.tool_call_id) !== "buscar_preco") continue;
+    try {
+      const parsed = JSON.parse(m.content ?? "{}");
+      medias.push(
+        typeof parsed?.preco_medio_regioes === "number" ? parsed.preco_medio_regioes : null,
+      );
+    } catch {
+      medias.push(null);
+    }
+  }
+  return medias.length === 1 ? medias[0]! : null;
 }
 
 const FALLBACK_DURO: RespostaAgente = {
@@ -312,9 +339,12 @@ export async function runAgent(input: {
       };
     }
 
-    const resposta = garantirRotaFrete(
-      removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
-      extrairUltimoFreteCitado(messages),
+    const resposta = garantirMediaDasPracas(
+      garantirRotaFrete(
+        removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
+        extrairUltimoFreteCitado(messages),
+      ),
+      extrairMediaDasPracas(messages),
     );
 
     const naoAutorizados = valoresNaoAutorizados(
@@ -402,7 +432,10 @@ export async function runAgent(input: {
       }
 
       if (mensagem?.content) {
-        const parsed = JSON.parse(mensagem.content) as { resposta: string; precisa_humano: boolean };
+        const parsed = JSON.parse(mensagem.content) as {
+          resposta: string;
+          precisa_humano: boolean;
+        };
         const fechada = fechar(parsed, mensagem.content, true);
         if (fechada) return fechada;
         continue;
@@ -422,7 +455,11 @@ export async function runAgent(input: {
     }
 
     return FALLBACK_DURO;
-  } catch {
+  } catch (err) {
+    // Antes engolia o erro em silêncio: uma rajada de 429 da OpenAI (limite de
+    // tokens por minuto) virava "não consegui pensar numa resposta" sem nenhum
+    // rastro nos logs de quem investiga.
+    console.error("Erro no agente do bot:", err);
     return FALLBACK_DURO;
   }
 }

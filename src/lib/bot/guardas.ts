@@ -170,7 +170,10 @@ export function respostaCadastroCriado(params: {
  * produtor só respondeu com um "eu quero"/UF/cultura) — o convite padrão do
  * n8n ("crie um cadastro grátis: link") é redundante e confunde.
  */
-export function conversaFalaDeCadastro(resposta: string, historico: HistoricoLinha[] = []): boolean {
+export function conversaFalaDeCadastro(
+  resposta: string,
+  historico: HistoricoLinha[] = [],
+): boolean {
   if (/cadastr/i.test(resposta)) return true;
   const ultimaDoAssistente = [...historico]
     .sort((a, b) => a.ordem - b.ordem)
@@ -227,7 +230,11 @@ export function respostaEntrarNoPainel(): string {
 // Acesso ao painel por link no WhatsApp
 // ---------------------------------------------------------------------------
 
-const semAcento = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+const semAcento = (t: string) =>
+  t
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 
 const PADROES_PEDIDO_DIRETO_DE_ACESSO = [
   /\b(manda|mande|envia|envie|passa|passe|gera|gere|quero|preciso)\b.{0,30}\b(link|acesso)\b/,
@@ -238,7 +245,8 @@ const PADROES_PEDIDO_DIRETO_DE_ACESSO = [
   /\bacessar\s+(o\s+|meu\s+)?painel\b/,
 ];
 
-const RESPOSTA_SIM = /^\s*(sim|s|pode|pode sim|quero|quero sim|manda|mande|claro|ok|isso|por favor|pf)\b/;
+const RESPOSTA_SIM =
+  /^\s*(sim|s|pode|pode sim|quero|quero sim|manda|mande|claro|ok|isso|por favor|pf)\b/;
 
 /** Trecho fixo da oferta — a confirmação "sim" só vale se a última mensagem do bot foi essa oferta. */
 const MARCA_DA_OFERTA_DE_ACESSO = "te mande agora um link de acesso";
@@ -285,3 +293,18 @@ export function respostaLinkDeAcesso(link: string): string {
 
 export const RESPOSTA_FALHA_AO_GERAR_LINK =
   "Não consegui gerar seu link de acesso agora. Já avisei a equipe e a gente resolve por aqui mesmo no WhatsApp.";
+
+/**
+ * Quando o preço veio por praça, o líquido é calculado sobre a MÉDIA das
+ * praças — e o produtor só entende esse número se a resposta disser qual é a
+ * média. O prompt pede isso, mas o modelo cita só as praças e o líquido cerca
+ * de metade das vezes. Acrescenta a frase quando a média não aparece.
+ */
+export function garantirMediaDasPracas(resposta: string, media: number | null): string {
+  if (media == null) return resposta;
+  const jaCitou = extrairValoresReais(resposta).some((v) => Math.abs(v - media) < 0.011);
+  if (jaCitou) return resposta;
+  const semPontuacaoFinal = resposta.trimEnd();
+  const separador = /[.!?]$/.test(semPontuacaoFinal) ? " " : ". ";
+  return `${semPontuacaoFinal}${separador}Média das praças: R$${media.toFixed(2).replace(".", ",")}.`;
+}

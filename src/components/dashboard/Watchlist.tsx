@@ -24,6 +24,7 @@ import {
 import { Sparkline } from "@/components/dashboard/Sparkline";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { supabase } from "@/lib/supabase";
+import { buscarPrecosDaUf } from "@/lib/precos";
 import { culturas } from "@/config/culturas";
 import { temAcessoOuro, useAssinatura } from "@/lib/planos";
 import { UpgradeButton } from "@/components/dashboard/UpgradeButton";
@@ -64,40 +65,17 @@ export function Watchlist({ produtor }: { produtor: Produtor }) {
 
   useEffect(() => {
     if (!supabase || !itens) return;
-    const desde = new Date();
-    desde.setDate(desde.getDate() - 90);
 
     itens.forEach(async (item) => {
       const chave = `${item.cultura}|${item.uf}`;
       if (chave in cotacoes) return;
-      const { data } = await supabase!
-        .from("precos")
-        .select("preco, data_referencia")
-        .ilike("produto", `%${item.cultura}%`)
-        .eq("uf", item.uf)
-        .eq("regiao", "")
-        .gte("data_referencia", desde.toISOString().slice(0, 10))
-        .order("data_referencia", { ascending: true });
-
-      const serie = (data ?? []).map((d) => d.preco);
+      // Mesma escolha de fonte do card "Seu preço hoje": série do estado só
+      // quando está em dia; senão, sem número único (só por região).
+      const r = await buscarPrecosDaUf(supabase!, item.cultura, item.uf);
+      const serie = r.serieEstado.map((d) => d.preco);
       const atual = serie.at(-1) ?? null;
       const anterior = serie.at(-2) ?? null;
-
-      // Sem preço único do estado não é o mesmo que "sem preço nenhum" —
-      // fontes como BBM/IEA-SP só publicam por praça (mesmo caso já
-      // resolvido no card "Seu preço hoje" da home). Aqui não dá pra
-      // mostrar um número único (seria escolher uma região arbitrária),
-      // mas "sem preço publicado" seria uma afirmação falsa.
-      let soRegional = false;
-      if (atual == null) {
-        const { count } = await supabase!
-          .from("precos")
-          .select("id", { count: "exact", head: true })
-          .ilike("produto", `%${item.cultura}%`)
-          .eq("uf", item.uf)
-          .neq("regiao", "");
-        soRegional = (count ?? 0) > 0;
-      }
+      const soRegional = atual == null && r.regionais.length > 0;
 
       setCotacoes((prev) => ({
         ...prev,

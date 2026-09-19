@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { precoLiquido, escolherRotaMaisProxima } from "@/lib/frete";
+import { escolherFontePreco, mediaDePracas } from "@/lib/precoFonte";
+import { produtoPrincipal } from "@/lib/precos";
 
 type PrecoRow = {
   produto: string;
@@ -25,6 +27,10 @@ export type ResultadoBuscarPreco = {
   preco_liquido?: number | null;
   frete?: FreteRow | null;
   ufs_com_dado?: string[];
+  /** De onde veio o preço: o número único do estado ou os preços por praça (quando o do estado está defasado ou não existe). */
+  origem_preco?: "estado" | "regional";
+  /** Só quando origem_preco="regional": média das praças, base do preco_liquido. */
+  preco_medio_regioes?: number | null;
   erro?: "produto_ausente" | "uf_ausente";
 };
 
@@ -43,36 +49,48 @@ export async function buscarPreco(
   if (!produto) return { encontrado: false, erro: "produto_ausente" };
   if (!uf) return { encontrado: false, erro: "uf_ausente" };
 
-  // Primeiro tenta o número único do estado (regiao=''). Fontes como
-  // BBM/IEA-SP não publicam isso pra todo produto — só praça por praça
-  // (ex: soja em MG só existe como "Paracatú/Unaí" e "Uberlândia/Uberaba",
-  // nunca um "MG" genérico). Nesse caso cai pro fallback abaixo em vez de
-  // dizer "não encontrado" com o dado disponível — mostrar por região é
-  // mais honesto (e mais útil pro produtor) do que inventar uma média ou
-  // escolher uma região arbitrária sem avisar.
-  const { data: rowsEstado } = await supabase
-    .from("precos")
-    .select("produto, preco, unidade, regiao, data_referencia, fonte")
-    .ilike("produto", `%${produto}%`)
-    .eq("uf", uf)
-    .eq("regiao", "")
-    .order("data_referencia", { ascending: false })
-    .limit(20)
-    .returns<PrecoRow[]>();
-
-  const maisRecenteEstado = rowsEstado?.[0]?.data_referencia;
-  let atuais = (rowsEstado ?? []).filter((r) => r.data_referencia === maisRecenteEstado);
-
-  if (atuais.length === 0) {
-    const { data: rowsRegionais } = await supabase
+  // Dois tipos de dado convivem: o número único do estado (regiao='', ex:
+  // Conab) e o preço por praça/região (ex: BBM, diário). O do estado vence, a
+  // não ser que esteja defasado — ver escolherFontePreco. Antes só olhava as
+  // regiões quando o estado não tinha NADA, e servia preço de 4 semanas atrás
+  // (soja MT: R$129,80 de 21/08 vs ~R$143 de hoje nas praças).
+  const principal = produtoPrincipal(produto);
+  const buscarLinhas = (soPrincipal: boolean, regional: boolean) => {
+    let q = supabase
       .from("precos")
       .select("produto, preco, unidade, regiao, data_referencia, fonte")
       .ilike("produto", `%${produto}%`)
-      .eq("uf", uf)
+      .eq("uf", uf);
+    q = regional ? q.neq("regiao", "") : q.eq("regiao", "");
+    if (soPrincipal && principal) q = q.eq("produto", principal);
+    return q
       .order("data_referencia", { ascending: false })
-      .limit(20)
+      .limit(regional ? 60 : 20)
       .returns<PrecoRow[]>();
-    const maisRecenteRegional = rowsRegionais?.[0]?.data_referencia;
+  };
+
+  // "milho" também casa "MILHO DE PIPOCA" (achado real: R$103 pro milho de MT,
+  // que vale ~R$51) — soja e milho usam só a variante principal; sem nenhuma
+  // linha dela, cai pro comportamento antigo (qualquer variante).
+  let [{ data: rowsEstado }, { data: rowsRegionais }] = await Promise.all([
+    buscarLinhas(true, false),
+    buscarLinhas(true, true),
+  ]);
+  if (principal && (rowsEstado ?? []).length === 0 && (rowsRegionais ?? []).length === 0) {
+    [{ data: rowsEstado }, { data: rowsRegionais }] = await Promise.all([
+      buscarLinhas(false, false),
+      buscarLinhas(false, true),
+    ]);
+  }
+
+  const maisRecenteEstado = rowsEstado?.[0]?.data_referencia ?? null;
+  const maisRecenteRegional = rowsRegionais?.[0]?.data_referencia ?? null;
+  const origem = escolherFontePreco(maisRecenteEstado, maisRecenteRegional);
+
+  let atuais: PrecoRow[] = [];
+  if (origem === "estado") {
+    atuais = (rowsEstado ?? []).filter((r) => r.data_referencia === maisRecenteEstado);
+  } else if (origem === "regional") {
     atuais = (rowsRegionais ?? []).filter((r) => r.data_referencia === maisRecenteRegional);
   }
 
@@ -91,8 +109,20 @@ export async function buscarPreco(
     };
   }
 
+  // Com várias praças, o preço de referência é a média delas (na unidade de
+  // saca de 60kg quando houver) — antes pegava a primeira linha que o banco
+  // devolvesse, ou seja, uma praça arbitrária.
+  const linhasSaca = atuais.filter((r) => (r.unidade ?? "").includes("60"));
+  const paraMedia = linhasSaca.length > 0 ? linhasSaca : atuais;
+  const precoMedioRegioes =
+    origem === "regional" ? mediaDePracas(paraMedia.map((r) => r.preco)) : null;
+  const dadosDeOrigem =
+    origem === "regional"
+      ? { origem_preco: "regional" as const, preco_medio_regioes: precoMedioRegioes }
+      : { origem_preco: "estado" as const };
+
   if (!incluir_frete) {
-    return { encontrado: true, precos: atuais };
+    return { encontrado: true, precos: atuais, ...dadosDeOrigem };
   }
 
   // Entre as rotas cadastradas nesse estado, escolhe a origem mais perto da
@@ -116,13 +146,15 @@ export async function buscarPreco(
 
   const frete = escolherRotaMaisProxima(fretes ?? [], ctx?.lat ?? null, ctx?.lon ?? null);
   if (!frete) {
-    return { encontrado: true, precos: atuais, frete: null, preco_liquido: null };
+    return { encontrado: true, precos: atuais, frete: null, preco_liquido: null, ...dadosDeOrigem };
   }
 
   // Preferir a linha em saca de 60kg pro cálculo de líquido — mesma
-  // preferência de unidade instruída no prompt pra resposta ao produtor.
+  // preferência de unidade instruída no prompt pra resposta ao produtor. Com
+  // várias praças, usa a média delas.
   const linhaParaCalculo = atuais.find((r) => (r.unidade ?? "").includes("60")) ?? atuais[0]!;
-  const liquido = precoLiquido(linhaParaCalculo.preco, frete.frete_rt);
+  const base = precoMedioRegioes ?? linhaParaCalculo.preco;
+  const liquido = Math.round(precoLiquido(base, frete.frete_rt) * 100) / 100;
 
-  return { encontrado: true, precos: atuais, frete, preco_liquido: liquido };
+  return { encontrado: true, precos: atuais, frete, preco_liquido: liquido, ...dadosDeOrigem };
 }
