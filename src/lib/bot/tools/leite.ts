@@ -21,9 +21,18 @@ export type ResultadoBuscarLeite = {
   erro?: "uf_ausente" | "preco_litro_implausivel";
   uf?: string;
   /** Preço médio pago ao produtor no ano (IBGE), com produção e produtividade. Anual: não é cotação do dia. */
-  media_ibge?: ResumoLeite & { fonte: string };
+  media_ibge?: (
+    | ResumoLeite
+    | Pick<
+        ResumoLeite,
+        "ano" | "producao_milhoes_litros" | "vacas_ordenhadas" | "litros_por_vaca_dia"
+      >
+  ) & { fonte: string };
   /** Última cotação observada na UF, quando uma fonte cobre o estado (só se recente). */
-  cotacao_recente?: CotacaoLeite;
+  cotacao_recente?: CotacaoLeite & {
+    /** Frase pronta, escrita por código: abra a resposta com ela. */
+    frase_cotacao: string;
+  };
   /** Leite x milho, com o preço de leite mais confiável disponível. */
   relacao_milho?: RelacaoLeiteMilho & {
     origem_preco_litro: "informado_pelo_produtor" | "cotacao_recente" | "media_ibge";
@@ -43,6 +52,16 @@ const dataBr = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
  * inverte a leitura ("uma saca compra N litros") e faz conta própria em
  * outra unidade (0,038 kg), erros que passam pelo guarda de valores em R$.
  */
+/** A cotação em português, escrita por código (o modelo erra o nome da fonte e mistura mês com dia). */
+export function fraseCotacaoLeite(c: CotacaoLeite): string {
+  const preco = brl(c.preco);
+  if (c.mensal) {
+    const situacao = c.projecao ? "valor projetado, que a fonte ainda vai fechar" : "valor fechado";
+    return `Leite entregue em ${c.referencia}: ${preco} por litro (${c.fonte_nome}, ${situacao}).`;
+  }
+  return `O leite está a ${preco} por litro (semana até ${c.referencia}, ${c.fonte_nome}).`;
+}
+
 export function fraseRelacaoLeiteMilho(params: {
   relacao: RelacaoLeiteMilho;
   dataMilho: string;
@@ -56,7 +75,7 @@ export function fraseRelacaoLeiteMilho(params: {
     return `${base} Conta feita com os ${brl(relacao.preco_litro)} por litro que você informou.`;
   }
   if (origem === "cotacao_recente" && cotacao) {
-    return `${base} Conta feita com a cotação de ${brl(relacao.preco_litro)} por litro de ${dataBr(cotacao.data_referencia)} (${cotacao.fonte}).`;
+    return `${base} Conta feita com a cotação de ${brl(relacao.preco_litro)} por litro, referência ${cotacao.referencia}${cotacao.projecao ? " (projeção)" : ""} (${cotacao.fonte_nome}).`;
   }
   return `${base} É uma estimativa: usa a média de leite de ${anoMediaIbge ?? "um ano anterior"} do IBGE (${brl(relacao.preco_litro)} por litro, dado anual) com o milho de agora. Me diga quanto você recebe por litro que eu recalculo com o seu número.`;
 }
@@ -115,8 +134,12 @@ export async function buscarLeite(
   if (!resumo && !cotacao) return { encontrado: false, uf };
 
   const resultado: ResultadoBuscarLeite = { encontrado: true, uf };
-  if (resumo) resultado.media_ibge = { ...resumo, fonte: "IBGE/PPM (anual)" };
-  if (cotacao) resultado.cotacao_recente = cotacao;
+  if (cotacao)
+    resultado.cotacao_recente = { ...cotacao, frase_cotacao: fraseCotacaoLeite(cotacao) };
+  // Com cotação recente a média anual do IBGE não entra na resposta: o modelo
+  // misturava os números (chamou a cotação de MT de "média do IBGE") e a média
+  // de 2024 só enterra o preço fresco. Sem cotação, é a única referência.
+  if (resumo && !cotacao) resultado.media_ibge = { ...resumo, fonte: "IBGE/PPM (anual)" };
 
   // Preço de leite da relação com o milho: o que o produtor disse (é o dele e
   // é de hoje) > última cotação observada > média anual do IBGE.
@@ -150,7 +173,7 @@ export async function buscarLeite(
   }
 
   resultado.nota = cotacao
-    ? "A média do IBGE é o preço médio pago ao produtor no ano indicado (anual, defasada) e NÃO é a cotação de hoje; a cotacao_recente é a última observada nesta UF."
+    ? "A média do IBGE é o preço médio pago ao produtor no ano indicado (anual, defasada) e NÃO é a cotação de hoje; a cotacao_recente é a última observada nesta UF (semanal ou mensal, veja o campo mensal)."
     : "Não há cotação pública diária de leite pra esta UF. A média do IBGE é o preço médio pago ao produtor no ano indicado (anual, defasada) e NÃO é a cotação de hoje: cite sempre o ano e diga que é referência.";
   return resultado;
 }

@@ -13,6 +13,7 @@ import {
 import { executarTool, TOOLS } from "@/lib/bot/tools/index";
 import { mensagemBloqueioAcesso, verificarAcessoWhatsapp } from "@/lib/bot/tools/acesso";
 import { gerarLinkDeAcesso, tipoDeAcesso } from "@/lib/bot/tools/linkAcesso";
+import type { ResultadoBuscarLeite } from "@/lib/bot/tools/leite";
 import type { ProdutorContexto } from "@/lib/bot/types";
 import {
   coletarNumerosPermitidos,
@@ -20,6 +21,7 @@ import {
   classificarPedidoDeAcesso,
   corrigirLinkDePainelParaClienteSemLogin,
   garantirMediaDasPracas,
+  garantirCotacaoLeite,
   garantirRelacaoLeiteMilho,
   medidasNaoAutorizadas,
   garantirRotaFrete,
@@ -158,28 +160,44 @@ function extrairMediaDasPracas(messages: OpenAIMessage[]): number | null {
   return medias.length === 1 ? medias[0]! : null;
 }
 
-// Frase pronta da relação leite/milho, só quando a resposta é sobre UMA consulta
-// de leite (buscar_leite escreve o texto por código; ver tools/leite.ts).
-function extrairFraseRelacaoLeite(messages: OpenAIMessage[]): string | null {
+// Resultado de buscar_leite, só quando a resposta é sobre UMA consulta de leite
+// (as frases prontas são escritas por código; ver tools/leite.ts).
+type ResultadoLeiteDoTurno = {
+  chamou: boolean;
+  fraseRelacao: string | null;
+  cotacao: { preco: number; frase: string } | null;
+};
+
+function extrairResultadoLeite(messages: OpenAIMessage[]): ResultadoLeiteDoTurno {
   const nomePorToolCallId = new Map<string, string>();
   for (const m of messages) {
     if (m.role === "assistant" && m.tool_calls) {
       for (const tc of m.tool_calls) nomePorToolCallId.set(tc.id, tc.function.name);
     }
   }
-  const frases: (string | null)[] = [];
+  const resultados: Partial<ResultadoBuscarLeite>[] = [];
   for (const m of messages) {
     if (m.role !== "tool" || !m.tool_call_id) continue;
     if (nomePorToolCallId.get(m.tool_call_id) !== "buscar_leite") continue;
     try {
-      const parsed = JSON.parse(m.content ?? "{}");
-      const frase = parsed?.relacao_milho?.frase_relacao;
-      frases.push(typeof frase === "string" ? frase : null);
+      resultados.push(JSON.parse(m.content ?? "{}"));
     } catch {
-      frases.push(null);
+      resultados.push({});
     }
   }
-  return frases.length === 1 ? frases[0]! : null;
+  if (resultados.length !== 1)
+    return { chamou: resultados.length > 0, fraseRelacao: null, cotacao: null };
+  const r = resultados[0]!;
+  const frase = r.relacao_milho?.frase_relacao;
+  const c = r.cotacao_recente;
+  return {
+    chamou: true,
+    fraseRelacao: typeof frase === "string" ? frase : null,
+    cotacao:
+      c && typeof c.preco === "number" && typeof c.frase_cotacao === "string"
+        ? { preco: c.preco, frase: c.frase_cotacao }
+        : null,
+  };
 }
 
 const FALLBACK_DURO: RespostaAgente = {
@@ -366,16 +384,20 @@ export async function runAgent(input: {
     }
 
     const numerosPermitidos = coletarNumerosPermitidos(messages, texto, historico);
-    const resposta = garantirRelacaoLeiteMilho(
-      garantirMediaDasPracas(
-        garantirRotaFrete(
-          removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
-          extrairUltimoFreteCitado(messages),
+    const leite = extrairResultadoLeite(messages);
+    const resposta = garantirCotacaoLeite(
+      garantirRelacaoLeiteMilho(
+        garantirMediaDasPracas(
+          garantirRotaFrete(
+            removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
+            extrairUltimoFreteCitado(messages),
+          ),
+          extrairMediaDasPracas(messages),
         ),
-        extrairMediaDasPracas(messages),
+        leite.fraseRelacao,
+        numerosPermitidos,
       ),
-      extrairFraseRelacaoLeite(messages),
-      numerosPermitidos,
+      leite.cotacao,
     );
 
     const naoAutorizados = valoresNaoAutorizados(resposta, numerosPermitidos);
@@ -386,7 +408,7 @@ export async function runAgent(input: {
     const conversaDeLeite =
       /leite/i.test(texto) ||
       /leite/i.test(produtor.cultura_principal ?? "") ||
-      extrairFraseRelacaoLeite(messages) != null ||
+      leite.chamou ||
       messages.some(
         (m) =>
           m.role === "assistant" && m.tool_calls?.some((tc) => tc.function.name === "buscar_leite"),

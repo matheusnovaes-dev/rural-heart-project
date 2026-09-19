@@ -71,7 +71,7 @@ export function LeiteCard({ produtor }: { produtor: Produtor }) {
   const origemRelacao = meuPrecoNumero
     ? "com o preço que você informou"
     : dados?.cotacao
-      ? `com a cotação de ${dataBr(dados.cotacao.data_referencia)} (${dados.cotacao.fonte})`
+      ? `com a cotação de ${dados.cotacao.referencia}, ${dados.cotacao.fonte_nome}`
       : dados?.resumo
         ? `com a média do IBGE de ${dados.resumo.ano}`
         : "";
@@ -108,8 +108,10 @@ export function LeiteCard({ produtor }: { produtor: Produtor }) {
                   <span className="text-sm font-normal text-muted-foreground"> / litro</span>
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Última cotação, {dataBr(dados.cotacao.data_referencia)} · fonte:{" "}
-                  {dados.cotacao.fonte}
+                  {dados.cotacao.mensal
+                    ? `Leite entregue em ${dados.cotacao.referencia}${dados.cotacao.projecao ? " (valor projetado)" : ""}`
+                    : `Última cotação, semana até ${dados.cotacao.referencia}`}{" "}
+                  · fonte: {dados.cotacao.fonte_nome}
                 </p>
               </div>
             )}

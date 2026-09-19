@@ -16,8 +16,14 @@ import { diasEntre, mediaDePracas } from "@/lib/precoFonte";
  *     milho da ração.
  */
 
-/** Cotação observada mais velha que isso não entra como "preço recente". */
-export const DIAS_COTACAO_RECENTE = 60;
+/**
+ * Idade máxima de uma cotação pra entrar como "preço recente". Fonte semanal
+ * (DERAL-PR, Conab) vale 30 dias; fonte mensal (Conseleite, EPAGRI) tem a data
+ * no primeiro dia do mês de entrega do leite e vale 90 dias, pra cobrir o mês
+ * inteiro mais o atraso normal até a divulgação do mês seguinte.
+ */
+export const DIAS_COTACAO_SEMANAL = 30;
+export const DIAS_COTACAO_MENSAL = 90;
 
 export type LinhaLeite = {
   ano: number;
@@ -103,12 +109,76 @@ export function relacaoLeiteMilho(
   };
 }
 
-export type CotacaoLeite = { preco: number; data_referencia: string; fonte: string };
+export type LinhaCotacao = { preco: number; data_referencia: string; fonte: string };
+export type CotacaoLeite = LinhaCotacao & {
+  /** Fonte mensal (Conseleite, EPAGRI): a data é o mês de entrega do leite, não um dia. */
+  mensal: boolean;
+  /** Valor ainda projetado pela fonte (vira definitivo no mês seguinte). */
+  projecao: boolean;
+  /** Como citar a data: "18/09/2026" (semanal) ou "agosto/2026" (mensal). */
+  referencia: string;
+  /** Nome da fonte sem o sufixo de projeção. */
+  fonte_nome: string;
+};
+
+const MESES_POR_EXTENSO = [
+  "janeiro",
+  "fevereiro",
+  "março",
+  "abril",
+  "maio",
+  "junho",
+  "julho",
+  "agosto",
+  "setembro",
+  "outubro",
+  "novembro",
+  "dezembro",
+];
+
+export function fonteDeLeiteEhMensal(fonte: string): boolean {
+  return /^(conseleite|epagri)/i.test(fonte);
+}
+
+export function montarCotacao(linha: LinhaCotacao): CotacaoLeite {
+  const mensal = fonteDeLeiteEhMensal(linha.fonte);
+  const projecao = /proje[cç]ão/i.test(linha.fonte);
+  const [ano, mes, dia] = linha.data_referencia.slice(0, 10).split("-");
+  const referencia = mensal
+    ? `${MESES_POR_EXTENSO[Number(mes) - 1]}/${ano}`
+    : `${dia}/${mes}/${ano}`;
+  return {
+    ...linha,
+    mensal,
+    projecao,
+    referencia,
+    fonte_nome: linha.fonte.replace(/\s*\(proje[cç]ão\)/i, ""),
+  };
+}
 
 /**
- * Última cotação de leite observada numa UF (Conab, EPAGRI...), só se tiver
- * até DIAS_COTACAO_RECENTE dias. Ignora leite de cabra e "posto plataforma
- * da indústria" (preço em outro ponto da cadeia, não comparável).
+ * Entre as cotações de leite de uma UF, a mais recente que ainda está no
+ * prazo da sua periodicidade. Função pura (recebe as linhas e o dia de hoje).
+ */
+export function escolherCotacao(
+  linhas: LinhaCotacao[],
+  hoje: Date = new Date(),
+): CotacaoLeite | null {
+  const hojeIso = hoje.toISOString().slice(0, 10);
+  const validas = linhas
+    .map(montarCotacao)
+    .filter((c) => {
+      const idade = diasEntre(c.data_referencia, hojeIso);
+      return idade >= 0 ? idade <= (c.mensal ? DIAS_COTACAO_MENSAL : DIAS_COTACAO_SEMANAL) : true;
+    })
+    .sort((a, b) => b.data_referencia.localeCompare(a.data_referencia));
+  return validas[0] ?? null;
+}
+
+/**
+ * Última cotação de leite observada numa UF (DERAL-PR, Conseleite, EPAGRI,
+ * Conab...), só se ainda estiver no prazo. Ignora leite de cabra e "posto
+ * plataforma da indústria" (outro ponto da cadeia, não comparável).
  */
 export async function buscarCotacaoLeite(
   supabase: SupabaseClient,
@@ -124,14 +194,9 @@ export async function buscarCotacaoLeite(
     .eq("uf", uf)
     .eq("regiao", "")
     .order("data_referencia", { ascending: false })
-    .limit(1)
-    .returns<CotacaoLeite[]>();
-  const linha = data?.[0];
-  if (!linha) return null;
-  if (diasEntre(linha.data_referencia, hoje.toISOString().slice(0, 10)) > DIAS_COTACAO_RECENTE) {
-    return null;
-  }
-  return linha;
+    .limit(40)
+    .returns<LinhaCotacao[]>();
+  return escolherCotacao(data ?? [], hoje);
 }
 
 export async function buscarLinhasLeite(

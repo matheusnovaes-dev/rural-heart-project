@@ -353,3 +353,17 @@ export function garantirRelacaoLeiteMilho(
   if (!frase) return resposta;
   return medidasNaoAutorizadas(resposta, permitidos).length > 0 ? frase : resposta;
 }
+
+/**
+ * Leite: a resposta tem que trazer a cotação recente que a ferramenta achou.
+ * O modelo às vezes abre só com a média de 2024 (ou erra o nome da fonte); se o
+ * preço da cotação não aparece, a frase pronta entra na frente.
+ */
+export function garantirCotacaoLeite(
+  resposta: string,
+  cotacao: { preco: number; frase: string } | null,
+): string {
+  if (!cotacao) return resposta;
+  const citou = extrairValoresReais(resposta).some((v) => Math.abs(v - cotacao.preco) <= 0.0101);
+  return citou ? resposta : `${cotacao.frase} ${resposta}`;
+}
