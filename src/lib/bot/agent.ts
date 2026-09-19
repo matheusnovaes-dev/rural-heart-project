@@ -12,15 +12,19 @@ import {
 } from "@/lib/bot/prompt";
 import { executarTool, TOOLS } from "@/lib/bot/tools/index";
 import { mensagemBloqueioAcesso, verificarAcessoWhatsapp } from "@/lib/bot/tools/acesso";
+import { gerarLinkDeAcesso, tipoDeAcesso } from "@/lib/bot/tools/linkAcesso";
 import type { ProdutorContexto } from "@/lib/bot/types";
 import {
   coletarNumerosPermitidos,
   conversaFalaDeCadastro,
+  classificarPedidoDeAcesso,
   corrigirLinkDePainelParaClienteSemLogin,
   garantirRotaFrete,
-  perguntaSobrePainel,
   respostaCadastroCriado,
   respostaEntrarNoPainel,
+  respostaLinkDeAcesso,
+  respostaOfertaDeAcesso,
+  RESPOSTA_FALHA_AO_GERAR_LINK,
   valoresNaoAutorizados,
   type FreteCitado,
 } from "@/lib/bot/guardas";
@@ -193,6 +197,35 @@ async function chamarOpenAI(
   return res.json();
 }
 
+async function responderPedidoDeAcesso(
+  supabase: SupabaseClient,
+  produtorId: string,
+  pedido: "gerar" | "oferecer",
+): Promise<RespostaAgente | null> {
+  const base = { cadastro_criado: false, convite_dispensado: true };
+  try {
+    const tipo = await tipoDeAcesso(supabase, produtorId);
+    if (tipo === "sem_cadastro") return null;
+    if (tipo === "propria") {
+      return { ...base, resposta: respostaEntrarNoPainel(), precisa_humano: false };
+    }
+    if (pedido === "oferecer") {
+      return { ...base, resposta: respostaOfertaDeAcesso(), precisa_humano: false };
+    }
+    const r = await gerarLinkDeAcesso(supabase, produtorId);
+    if (r.sucesso) {
+      return { ...base, resposta: respostaLinkDeAcesso(r.link), precisa_humano: false };
+    }
+    if (r.motivo === "tem_login_proprio") {
+      return { ...base, resposta: respostaEntrarNoPainel(), precisa_humano: false };
+    }
+    return { ...base, resposta: RESPOSTA_FALHA_AO_GERAR_LINK, precisa_humano: true };
+  } catch (err) {
+    console.error("Erro ao gerar link de acesso:", err);
+    return { ...base, resposta: RESPOSTA_FALHA_AO_GERAR_LINK, precisa_humano: true };
+  }
+}
+
 export async function runAgent(input: {
   telefone: string;
   texto: string;
@@ -210,6 +243,18 @@ export async function runAgent(input: {
   // risco de qualquer outra ação sensível: o modelo não é confiável pra
   // recusar sozinho de forma consistente). Quem ainda não tem conta
   // (produtor.id null, fluxo anônimo) não passa por essa checagem.
+  // Pedido de acesso ao painel (link de uso único no WhatsApp) vem ANTES do
+  // paywall: quem está com o teste vencido e não lembra como entrar precisa
+  // justamente do painel pra assinar. Tudo aqui é decidido por código, sem o
+  // modelo — é acesso à conta de alguém, não pode depender de improviso.
+  if (produtor.id) {
+    const pedido = classificarPedidoDeAcesso(texto, historico);
+    if (pedido) {
+      const respostaAcesso = await responderPedidoDeAcesso(supabase, produtor.id, pedido);
+      if (respostaAcesso) return respostaAcesso;
+    }
+  }
+
   if (produtor.id) {
     const acesso = await verificarAcessoWhatsapp(supabase, produtor.id);
     if (!acesso.liberado) {
@@ -263,23 +308,6 @@ export async function runAgent(input: {
         }),
         precisa_humano: false,
         cadastro_criado: true,
-        convite_dispensado: true,
-      };
-    }
-
-    // Cliente que já tem login perguntando como entrar no painel: texto fixo
-    // (o modelo já disse que o login era "com seu WhatsApp", o que é falso).
-    if (
-      produtor.id &&
-      produtor.user_id &&
-      perguntaSobrePainel(texto) &&
-      !/cancel/i.test(texto) &&
-      !precisaEscalarPorCobranca(texto)
-    ) {
-      return {
-        resposta: respostaEntrarNoPainel(),
-        precisa_humano: false,
-        cadastro_criado: cadastroCriado,
         convite_dispensado: true,
       };
     }

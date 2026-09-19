@@ -57,9 +57,6 @@ export async function verificarAcessoWhatsapp(
   }
 }
 
-export function mensagemBloqueioAcesso(comLogin: boolean): string {
-  if (comLogin) {
-    return "Seu teste grátis de 7 dias no Safralume acabou. Pra continuar recebendo preço, clima e alertas por aqui, assine um plano em https://safralume.com.br/assinar — leva 1 minuto.";
-  }
-  return "Seu teste grátis de 7 dias no Safralume acabou. Pra continuar recebendo preço, clima e alertas por aqui, complete seu cadastro e escolha um plano em https://safralume.com.br.";
+export function mensagemBloqueioAcesso(_comLogin: boolean): string {
+  return "Seu teste grátis de 7 dias no Safralume acabou. Pra continuar recebendo preço, clima e alertas por aqui, assine um plano em https://safralume.com.br/assinar. Se não lembra como entrar no painel, me diga \"quero acessar meu painel\" que eu te mando um link de acesso.";
 }

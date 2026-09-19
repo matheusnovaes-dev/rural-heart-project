@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -26,7 +26,7 @@ import {
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { normalizarWhatsapp } from "@/lib/telefone";
 import { useAuth } from "@/lib/auth";
-import { pricingPlans } from "@/config/site";
+import { buildWhatsAppLink, pricingPlans } from "@/config/site";
 import { ufs } from "@/config/ufs";
 import { enviarBoasVindasWhatsApp } from "@/lib/notificacoes.server";
 import { trackCadastroConcluido, trackCadastroIniciado } from "@/lib/metaPixel";
@@ -136,11 +136,11 @@ export function LeadForm({ className }: { className?: string }) {
     });
     if (authError || !authData.user) {
       await logarFalhaCadastro("auth", authError?.message ?? "sem usuário retornado", values.whatsapp);
-      setErroMsg(
-        authError?.message.includes("already registered")
-          ? "Esse WhatsApp já tem um teste iniciado. Chama no WhatsApp pra gente ajudar a recuperar o acesso."
-          : "Não conseguimos iniciar seu teste agora. Chama no WhatsApp pra gente ajudar.",
-      );
+      if (authError?.message.includes("already registered")) {
+        setCadastroJaExiste(true);
+      } else {
+        setErroMsg("Não conseguimos iniciar seu teste agora. Chama no WhatsApp pra gente ajudar.");
+      }
       setStatus("error");
       return;
     }
@@ -171,9 +171,9 @@ export function LeadForm({ className }: { className?: string }) {
       await logarFalhaCadastro("produtor", produtorError?.message ?? "sem produtor retornado", whatsapp);
       // 23505 = esse WhatsApp já tem cadastro (quase sempre feito pela
       // própria conversa do bot, sem login). Diz isso e aponta o caminho que
-      // funciona (criar acesso em /login, que reaproveita o cadastro), em
-      // vez de um erro genérico. Sai da conta técnica que o signUp acabou
-      // de abrir, pra não deixar o navegador logado numa conta vazia.
+      // funciona (pedir o link de acesso pelo WhatsApp), em vez de um erro
+      // genérico. Sai da conta técnica que o signUp acabou de abrir, pra não
+      // deixar o navegador logado numa conta vazia.
       if (produtorError?.code === "23505") {
         await supabase.auth.signOut();
         setCadastroJaExiste(true);
@@ -422,17 +422,20 @@ export function LeadForm({ className }: { className?: string }) {
               </Button>
 
               {status === "error" && cadastroJaExiste && (
-          <p className="text-sm text-destructive">
-            Esse WhatsApp já tem um cadastro feito pela conversa. Pra abrir o painel,{" "}
-            <Link
-              to="/login"
-              search={{ plano: form.getValues("plano") }}
-              className="font-medium underline underline-offset-2"
+          <div className="flex flex-col gap-2 text-sm text-destructive">
+            <p>
+              Esse WhatsApp já tem um cadastro. Pra entrar no painel, peça seu link de acesso pelo
+              WhatsApp: o cadastro e o teste grátis são mantidos.
+            </p>
+            <a
+              href={buildWhatsAppLink("Quero acessar meu painel")}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex w-fit items-center rounded-md bg-[#25D366] px-3 py-2 font-medium text-white hover:bg-[#25D366]/90"
             >
-              crie seu acesso aqui
-            </Link>{" "}
-            com este mesmo WhatsApp: o cadastro e o teste grátis são mantidos.
-          </p>
+              Pedir meu acesso pelo WhatsApp
+            </a>
+          </div>
         )}
         {status === "error" && !cadastroJaExiste && (
           <p className="text-sm text-destructive">{erroMsg}</p>

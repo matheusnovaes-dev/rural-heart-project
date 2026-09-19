@@ -39,6 +39,7 @@ import { DashboardTour } from "@/components/dashboard/DashboardTour";
 import { useAuth } from "@/lib/auth";
 import { useAcessoDashboard } from "@/lib/planos";
 import { supabase } from "@/lib/supabase";
+import { useSair } from "@/components/dashboard/useSair";
 import { LoadingScreen } from "@/components/LoadingScreen";
 
 export const Route = createFileRoute("/dashboard/_layout")({
@@ -270,17 +271,15 @@ function ProdutorHeader({
 }
 
 function SignOutButton({ compact }: { compact?: boolean }) {
-  const navigate = useNavigate();
-
-  async function handleSignOut() {
-    await supabase?.auth.signOut();
-    navigate({ to: "/login" });
-  }
+  const { sair, aviso } = useSair();
 
   return (
-    <Button variant="ghost" size={compact ? "sm" : "default"} onClick={handleSignOut}>
-      <LogOut className="size-4" />
-      {!compact && "Sair"}
-    </Button>
+    <>
+      <Button variant="ghost" size={compact ? "sm" : "default"} onClick={sair} aria-label="Sair">
+        <LogOut className="size-4" />
+        {!compact && "Sair"}
+      </Button>
+      {aviso}
+    </>
   );
 }

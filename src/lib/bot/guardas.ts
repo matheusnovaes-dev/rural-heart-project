@@ -149,7 +149,8 @@ export function garantirRotaFrete(resposta: string, frete: FreteCitado | null): 
  * que é verdade — o que o cadastro dá (consulta na hora) e como pedir o
  * aviso automático (que passa a funcionar sem precisar de login).
  */
-export const LINK_CRIAR_ACESSO = "https://safralume.com.br/login";
+export const SITE_URL = "https://safralume.com.br";
+export const LINK_CRIAR_ACESSO = `${SITE_URL}/login`;
 
 export function respostaCadastroCriado(params: {
   nome: string;
@@ -160,7 +161,7 @@ export function respostaCadastroCriado(params: {
   const saudacao = primeiroNome ? `Pronto, ${primeiroNome}!` : "Pronto!";
   const ufPorExtenso = ufs.find((u) => u.value === params.uf.toUpperCase())?.label ?? params.uf;
   const cultura = params.cultura.toLowerCase();
-  return `${saudacao} Seu cadastro grátis de 7 dias como produtor de ${cultura} em ${ufPorExtenso} está criado. Aqui no WhatsApp você consulta preço, clima e tendência do mercado quando quiser, é só perguntar. Pra receber aviso automático quando o preço bater um valor, me diz a cultura e a partir de quanto você quer ser avisado que eu crio o alerta. Se quiser também um painel no site, é só criar seu acesso em ${LINK_CRIAR_ACESSO} com este mesmo WhatsApp.`;
+  return `${saudacao} Seu cadastro grátis de 7 dias como produtor de ${cultura} em ${ufPorExtenso} está criado. Aqui no WhatsApp você consulta preço, clima e tendência do mercado quando quiser, é só perguntar. Pra receber aviso automático quando o preço bater um valor, me diz a cultura e a partir de quanto você quer ser avisado que eu crio o alerta. Se quiser também um painel no site, é só me pedir aqui que eu te mando um link de acesso.`;
 }
 
 /**
@@ -197,11 +198,6 @@ export function corrigirLinkDePainelParaClienteSemLogin(
   forcar = false,
 ): { resposta: string; precisa_humano: boolean } | null {
   const querCancelar = /cancel/i.test(textoProdutor);
-  // Pergunta sobre painel/login/senha (sem ser cobrança nem cancelamento):
-  // sempre a explicação fixa de como criar o acesso, nunca improviso.
-  if (!forcar && !querCancelar && perguntaSobrePainel(textoProdutor)) {
-    return { resposta: respostaAcessoPainel(), precisa_humano: false };
-  }
   if (!forcar && !/safralume\.com\.br\/dashboard/i.test(resposta)) return null;
   return {
     resposta: querCancelar
@@ -220,22 +216,72 @@ export function perguntaSobrePainel(textoProdutor: string): boolean {
 }
 
 /**
- * Como quem se cadastrou só pelo WhatsApp passa a ter acesso ao painel. Texto
- * fixo, escrito a partir do que o fluxo real faz (testado ponta a ponta):
- * criar conta em /login com e-mail e senha, informar o MESMO WhatsApp no
- * cadastro e o sistema reaproveita o cadastro e o teste grátis que já
- * existem, sem duplicar; o CPF do final só existe pra emitir cobrança se ele
- * assinar. Sem senha no cadastro pelo chat, por isso o modelo não pode
- * improvisar isso.
- */
-export function respostaAcessoPainel(): string {
-  return `O painel é opcional: lá você vê preço e clima da sua região, gerencia alertas e lembretes e acompanha seu plano. Pra entrar, crie seu acesso em ${LINK_CRIAR_ACESSO} (Criar conta) com um e-mail e uma senha e, no cadastro, informe este mesmo WhatsApp: seu cadastro e seu teste grátis são mantidos, nada é duplicado. No final ele pede o CPF, só pra emitir a cobrança caso você decida assinar um plano.`;
-}
-
-/**
  * Pra quem já tem login: o modelo chegou a dizer "faça login com seu
  * WhatsApp" (o login é por e-mail e senha, nunca por WhatsApp). Texto fixo.
  */
 export function respostaEntrarNoPainel(): string {
   return `Pra entrar no painel, acesse ${LINK_CRIAR_ACESSO} com o e-mail e a senha que você cadastrou. Se esqueceu a senha, use o "Esqueci minha senha" na mesma tela.`;
 }
+
+// ---------------------------------------------------------------------------
+// Acesso ao painel por link no WhatsApp
+// ---------------------------------------------------------------------------
+
+const semAcento = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+const PADROES_PEDIDO_DIRETO_DE_ACESSO = [
+  /\b(manda|mande|envia|envie|passa|passe|gera|gere|quero|preciso)\b.{0,30}\b(link|acesso)\b/,
+  /\blink\s+de\s+acesso\b/,
+  /\bquero\b.{0,20}\b(acessar|entrar)\b.{0,25}\b(painel|site|dashboard|conta)\b/,
+  /\b(esqueci|perdi)\b.{0,25}\b(acesso|senha|login)\b/,
+  /\bnao\s+consigo\s+(entrar|acessar|logar)\b/,
+  /\bacessar\s+(o\s+|meu\s+)?painel\b/,
+];
+
+const RESPOSTA_SIM = /^\s*(sim|s|pode|pode sim|quero|quero sim|manda|mande|claro|ok|isso|por favor|pf)\b/;
+
+/** Trecho fixo da oferta — a confirmação "sim" só vale se a última mensagem do bot foi essa oferta. */
+const MARCA_DA_OFERTA_DE_ACESSO = "te mande agora um link de acesso";
+
+export function respostaOfertaDeAcesso(): string {
+  return `O painel é opcional: lá você vê preço e clima da sua região, gerencia alertas e lembretes e acompanha seu plano. Quer que eu ${MARCA_DA_OFERTA_DE_ACESSO}? É só responder "sim".`;
+}
+
+/**
+ * O que o produtor está pedindo sobre acesso ao painel:
+ * - "gerar": pediu o link/acesso de forma direta, ou confirmou a oferta;
+ * - "oferecer": só perguntou sobre painel/login/senha (explica e oferece);
+ * - null: não é sobre isso (segue o fluxo normal).
+ * Cancelamento e cobrança nunca entram aqui.
+ */
+export function classificarPedidoDeAcesso(
+  textoProdutor: string,
+  historico: HistoricoLinha[],
+): "gerar" | "oferecer" | null {
+  const t = semAcento(textoProdutor);
+  if (/cancel/.test(t)) return null;
+
+  if (PADROES_PEDIDO_DIRETO_DE_ACESSO.some((p) => p.test(t))) return "gerar";
+
+  const ultimaDoAssistente = [...historico]
+    .sort((a, b) => a.ordem - b.ordem)
+    .reverse()
+    .find((h) => h.role === "assistant")?.conteudo;
+  if (
+    ultimaDoAssistente &&
+    ultimaDoAssistente.includes(MARCA_DA_OFERTA_DE_ACESSO) &&
+    RESPOSTA_SIM.test(t)
+  ) {
+    return "gerar";
+  }
+
+  if (perguntaSobrePainel(textoProdutor)) return "oferecer";
+  return null;
+}
+
+export function respostaLinkDeAcesso(link: string): string {
+  return `Aqui está seu link de acesso ao painel: ${link}\n\nEle vale por pouco tempo e só funciona uma vez. Depois de entrar, crie seu e-mail e senha pra voltar quando quiser.`;
+}
+
+export const RESPOSTA_FALHA_AO_GERAR_LINK =
+  "Não consegui gerar seu link de acesso agora. Já avisei a equipe e a gente resolve por aqui mesmo no WhatsApp.";

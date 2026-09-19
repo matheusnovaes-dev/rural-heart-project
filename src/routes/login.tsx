@@ -10,6 +10,7 @@ import {
   BadgeCheck,
   TrendingUp,
   ArrowRight,
+  MessageCircle,
 } from "lucide-react";
 import { z } from "zod";
 
@@ -17,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { siteConfig } from "@/config/site";
+import { buildWhatsAppLink, siteConfig } from "@/config/site";
 
 const destaques = [
   "Preço líquido da sua saca, com frete já descontado",
@@ -307,6 +308,23 @@ function LoginPage() {
           >
             {entrando ? "Não tem conta? Criar uma agora" : "Já tem conta? Entrar"}
           </button>
+
+          {entrando && (
+            <div className="mt-6 flex flex-col gap-2 border-t border-border pt-5 text-center">
+              <p className="text-xs text-muted-foreground">
+                Se cadastrou pelo WhatsApp ou pelo formulário e não criou e-mail e senha?
+              </p>
+              <a
+                href={buildWhatsAppLink("Quero acessar meu painel")}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
+              >
+                <MessageCircle className="size-4 text-[#25D366]" />
+                Pedir meu acesso pelo WhatsApp
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </div>

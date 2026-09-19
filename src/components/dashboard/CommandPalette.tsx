@@ -27,7 +27,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
+import { useSair } from "@/components/dashboard/useSair";
 
 type Destino = { to: string; label: string; icon: typeof Bell };
 
@@ -72,6 +72,7 @@ export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const { produtor, cooperativa, papel } = useAuth();
+  const { sair: sairDaConta, aviso: avisoDeSaida } = useSair();
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -95,33 +96,35 @@ export function CommandPalette() {
     navigate({ to });
   }
 
-  async function sair() {
+  function sair() {
     setOpen(false);
-    await supabase?.auth.signOut();
-    navigate({ to: "/login" });
+    sairDaConta();
   }
 
   return (
-    <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Buscar página ou ação..." />
-      <CommandList>
-        <CommandEmpty>Nada encontrado.</CommandEmpty>
-        <CommandGroup heading="Ir para">
-          {destinos.map((d) => (
-            <CommandItem key={d.to} value={d.label} onSelect={() => ir(d.to)}>
-              <d.icon className="mr-2 size-4" />
-              {d.label}
+    <>
+      <CommandDialog open={open} onOpenChange={setOpen}>
+        <CommandInput placeholder="Buscar página ou ação..." />
+        <CommandList>
+          <CommandEmpty>Nada encontrado.</CommandEmpty>
+          <CommandGroup heading="Ir para">
+            {destinos.map((d) => (
+              <CommandItem key={d.to} value={d.label} onSelect={() => ir(d.to)}>
+                <d.icon className="mr-2 size-4" />
+                {d.label}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+          <CommandSeparator />
+          <CommandGroup heading="Conta">
+            <CommandItem value="Sair da conta" onSelect={sair}>
+              <LogOut className="mr-2 size-4" />
+              Sair da conta
             </CommandItem>
-          ))}
-        </CommandGroup>
-        <CommandSeparator />
-        <CommandGroup heading="Conta">
-          <CommandItem value="Sair da conta" onSelect={sair}>
-            <LogOut className="mr-2 size-4" />
-            Sair da conta
-          </CommandItem>
-        </CommandGroup>
-      </CommandList>
-    </CommandDialog>
+          </CommandGroup>
+        </CommandList>
+      </CommandDialog>
+      {avisoDeSaida}
+    </>
   );
 }

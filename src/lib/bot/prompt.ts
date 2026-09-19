@@ -125,7 +125,7 @@ Como ele ainda não tem cadastro, se demonstrar interesse real — perguntou pre
  * bloco de cadastro: o modelo não respeita bem condição dentro do prompt fixo.
  */
 export function buildRegrasClienteSemLogin(): string {
-  return `REGRAS PARA ESTE PRODUTOR (cadastrado pelo WhatsApp, ainda sem login no site): ele NÃO tem senha nem acesso ao painel. Se perguntar sobre painel, site, login ou senha, explique que o painel é opcional e que pra entrar ele cria o acesso em https://safralume.com.br/login (Criar conta) com e-mail e senha e informa este mesmo WhatsApp — o cadastro e o teste grátis dele são mantidos, nada é duplicado; o CPF pedido no final só serve pra emitir cobrança se um dia ele assinar. NUNCA mande link de /dashboard (ele não consegue abrir) e nunca diga que ele "já tem senha" ou "já tem conta no painel".`;
+  return `REGRAS PARA ESTE PRODUTOR (cadastrado pelo WhatsApp, ainda sem login no site): ele NÃO tem senha nem acesso ao painel. Pedidos de acesso ao painel (link, login, senha) são tratados por código antes de chegar em você — nunca invente link nem explique como entrar por conta própria. NUNCA mande link de /dashboard (ele não consegue abrir) e nunca diga que ele "já tem senha" ou "já tem conta no painel".`;
 }
 
 /** Dado institucional real (extraído da landing, termos e privacidade —
