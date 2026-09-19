@@ -8,7 +8,11 @@ export function TrustProof() {
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2">
         <Reveal className="overflow-hidden rounded-2xl">
           <picture>
-            <source srcSet="/images/soybean-field.webp" type="image/webp" />
+            <source
+              srcSet="/images/soybean-field-640.webp 640w, /images/soybean-field.webp 1000w"
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              type="image/webp"
+            />
             <img
               src="/images/soybean-field.jpg"
               alt="Lavoura de soja"

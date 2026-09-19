@@ -110,6 +110,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:image", content: "/images/og-image.jpg" },
     ],
     links: [
+      // Pixel da Meta: o PageView só sai quando o fbevents.js executa, e é ele
+      // que vira "visualização da página" no relatório dos anúncios. Conectar e
+      // baixar o script já no começo encurta o tempo até esse evento (medido:
+      // celular médio em 4G só mandava o PageView depois de ~6s).
+      { rel: "preconnect", href: "https://connect.facebook.net" },
+      { rel: "preconnect", href: "https://www.facebook.com" },
+      { rel: "preload", as: "script", href: "https://connect.facebook.net/en_US/fbevents.js" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {

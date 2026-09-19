@@ -8,9 +8,17 @@ export function Hero() {
     <section id="topo" className="relative overflow-hidden">
       <div className="absolute inset-0">
         <picture>
-          <source srcSet="/images/hero-field.webp" type="image/webp" />
+          {/* A foto fica sob um gradiente escuro que cobre quase toda ela: as versões
+              pequenas (640px/1000px, 14-29 KB) são idênticas a olho nu e tiram ~140 KB
+              do caminho crítico de quem chega do anúncio pelo celular. */}
+          <source
+            media="(max-width: 640px)"
+            srcSet="/images/hero-field-640.webp"
+            type="image/webp"
+          />
+          <source srcSet="/images/hero-field-1000.webp" type="image/webp" />
           <img
-            src="/images/hero-field.jpg"
+            src="/images/hero-field-1000.jpg"
             alt="Lavoura ao entardecer"
             className="size-full object-cover"
             fetchPriority="high"
