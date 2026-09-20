@@ -23,6 +23,7 @@ import {
   classificarPedidoDeAcesso,
   corrigirLinkDePainelParaClienteSemLogin,
   garantirMediaDasPracas,
+  garantirParidade,
   garantirCotacaoLeite,
   garantirRelacaoLeiteMilho,
   medidasNaoAutorizadas,
@@ -90,7 +91,7 @@ function removerFechamentoGenerico(resposta: string): string {
 }
 
 // Rota de frete: o prompt já pede origem E destino numa frase curta quando
-// vem preço líquido, mas testando ao vivo o modelo cita só uma das duas (ou
+// vem frete de referência, mas testando ao vivo o modelo cita só uma das duas (ou
 // nenhuma). A checagem em si mora em guardas.ts (garantirRotaFrete) — aqui só
 // extrai a rota REAL que a ferramenta buscar_preco devolveu.
 function extrairUltimoFreteCitado(messages: OpenAIMessage[]): FreteCitado | null {
@@ -160,6 +161,33 @@ function extrairMediaDasPracas(messages: OpenAIMessage[]): number | null {
     }
   }
   return medias.length === 1 ? medias[0]! : null;
+}
+
+// Paridade de porto que buscar_preco calculou, só quando a resposta é sobre UMA
+// consulta de preço (a frase pronta é escrita por código; ver lib/paridade.ts).
+function extrairParidade(messages: OpenAIMessage[]): { valor: number; frase: string } | null {
+  const nomePorToolCallId = new Map<string, string>();
+  for (const m of messages) {
+    if (m.role === "assistant" && m.tool_calls) {
+      for (const tc of m.tool_calls) nomePorToolCallId.set(tc.id, tc.function.name);
+    }
+  }
+  const achadas: ({ valor: number; frase: string } | null)[] = [];
+  for (const m of messages) {
+    if (m.role !== "tool" || !m.tool_call_id) continue;
+    if (nomePorToolCallId.get(m.tool_call_id) !== "buscar_preco") continue;
+    try {
+      const f = JSON.parse(m.content ?? "{}")?.frete_e_paridade;
+      achadas.push(
+        f?.tipo === "paridade" && typeof f.paridade === "number" && typeof f.frase === "string"
+          ? { valor: f.paridade, frase: f.frase }
+          : null,
+      );
+    } catch {
+      achadas.push(null);
+    }
+  }
+  return achadas.length === 1 ? achadas[0]! : null;
 }
 
 // Resultado de buscar_leite, só quando a resposta é sobre UMA consulta de leite
@@ -419,9 +447,12 @@ export async function runAgent(input: {
     const resposta = garantirCotacaoLeite(
       garantirRelacaoLeiteMilho(
         garantirMediaDasPracas(
-          garantirRotaFrete(
-            removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
-            extrairUltimoFreteCitado(messages),
+          garantirParidade(
+            garantirRotaFrete(
+              removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
+              extrairUltimoFreteCitado(messages),
+            ),
+            extrairParidade(messages),
           ),
           extrairMediaDasPracas(messages),
         ),

@@ -1,8 +1,8 @@
 export const siteConfig = {
   name: "Safralume",
-  tagline: "O preço líquido da sua saca, direto no WhatsApp",
+  tagline: "O preço da sua saca e o do porto, direto no WhatsApp",
   description:
-    "Safralume traduz os relatórios da Conab e da Imea em respostas simples, para grãos e pecuária, com frete já descontado, direto no WhatsApp do produtor.",
+    "Safralume traduz os relatórios da Conab e da Imea em respostas simples, para grãos e pecuária: o preço da sua região, a comparação com o porto e o frete, direto no WhatsApp do produtor.",
   whatsapp: {
     number: "5531990040215",
     defaultMessage: "Olá! Quero testar o Safralume grátis por 7 dias.",
@@ -32,7 +32,7 @@ export const pricingPlans: PricingPlan[] = [
     price: 39,
     features: [
       "Cotações (Conab e órgãos estaduais, semanal ou mais rápido conforme a fonte)",
-      "Preço líquido com frete",
+      "Preço da sua região comparado com o porto (paridade), com frete",
       "Boletim Semanal (Imea)",
       "Sinal de venda: cruza preço, futuros da B3 e clima pra apontar a hora certa",
       "Janela de plantio oficial (ZARC) pra soja, milho, algodão, arroz e feijão: sabe se vale plantar agora ou esperar",

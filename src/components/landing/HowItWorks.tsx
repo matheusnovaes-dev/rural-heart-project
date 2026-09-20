@@ -12,12 +12,13 @@ const steps = [
     icon: SearchCheck,
     title: "2. Cruzamos os dados oficiais",
     description:
-      "Consultamos Conab e órgãos estaduais na hora e aplicamos o frete líquido da sua região.",
+      "Consultamos Conab e órgãos estaduais na hora e comparamos com o preço do porto e o frete.",
   },
   {
     icon: BadgeCheck,
     title: "3. Você recebe o número certo",
-    description: "Preço líquido, com fonte e data, pronto para decidir sem depender de planilha.",
+    description:
+      "Preço da sua região, do porto e o frete, com fonte e data, pronto para decidir sem depender de planilha.",
   },
 ];
 

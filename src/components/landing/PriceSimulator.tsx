@@ -18,8 +18,11 @@ type UfId = "MT" | "PR" | "GO" | "RS" | "MG" | "BA";
 
 // Subconjunto curado das ~77 culturas reais (ver config/culturas.ts) só pra
 // esse simulador ilustrativo — não precisa cobrir tudo, é uma prévia.
-const CULTURAS: Record<CulturaId, { label: string; unidade: string; base: number; tendencia: number }> = {
-  soja: { label: "Soja", unidade: "saca de 60kg", base: 13200, tendencia: 2.1 },
+const CULTURAS: Record<
+  CulturaId,
+  { label: string; unidade: string; base: number; tendencia: number }
+> = {
+  soja: { label: "Soja", unidade: "saca de 60kg", base: 16000, tendencia: 2.1 },
   milho: { label: "Milho", unidade: "saca de 60kg", base: 7500, tendencia: -0.8 },
   cafe: { label: "Café arábica", unidade: "saca de 60kg", base: 145000, tendencia: 5.9 },
   algodao: { label: "Algodão", unidade: "@ de pluma", base: 13500, tendencia: 1.2 },
@@ -28,13 +31,52 @@ const CULTURAS: Record<CulturaId, { label: string; unidade: string; base: number
   boi: { label: "Boi gordo", unidade: "arroba", base: 37800, tendencia: 2.8 },
 };
 
-const UFS: Record<UfId, { label: string; fator: number; frete: number; origem: string; destino: string }> = {
-  MT: { label: "Mato Grosso", fator: 1.0, frete: 3000, origem: "Confresa (MT)", destino: "Santos (SP)" },
-  PR: { label: "Paraná", fator: 1.03, frete: 1800, origem: "Toledo (PR)", destino: "Paranaguá (PR)" },
-  GO: { label: "Goiás", fator: 0.97, frete: 2200, origem: "Rio Verde (GO)", destino: "Santos (SP)" },
-  RS: { label: "Rio Grande do Sul", fator: 1.05, frete: 1500, origem: "Passo Fundo (RS)", destino: "Rio Grande (RS)" },
-  MG: { label: "Minas Gerais", fator: 0.99, frete: 2000, origem: "Uberlândia (MG)", destino: "Santos (SP)" },
-  BA: { label: "Bahia", fator: 0.95, frete: 2600, origem: "Luís Eduardo Magalhães (BA)", destino: "Salvador (BA)" },
+const UFS: Record<
+  UfId,
+  { label: string; fator: number; frete: number; origem: string; destino: string }
+> = {
+  MT: {
+    label: "Mato Grosso",
+    fator: 1.0,
+    frete: 3000,
+    origem: "Confresa (MT)",
+    destino: "Santos (SP)",
+  },
+  PR: {
+    label: "Paraná",
+    fator: 1.03,
+    frete: 1200,
+    origem: "Toledo (PR)",
+    destino: "Paranaguá (PR)",
+  },
+  GO: {
+    label: "Goiás",
+    fator: 0.97,
+    frete: 1750,
+    origem: "Rio Verde (GO)",
+    destino: "Santos (SP)",
+  },
+  RS: {
+    label: "Rio Grande do Sul",
+    fator: 1.05,
+    frete: 1500,
+    origem: "Passo Fundo (RS)",
+    destino: "Rio Grande (RS)",
+  },
+  MG: {
+    label: "Minas Gerais",
+    fator: 0.99,
+    frete: 1100,
+    origem: "Uberlândia (MG)",
+    destino: "Santos (SP)",
+  },
+  BA: {
+    label: "Bahia",
+    fator: 0.95,
+    frete: 1300,
+    origem: "Luís Eduardo Magalhães (BA)",
+    destino: "Salvador (BA)",
+  },
 };
 
 function fmt(centavos: number) {
@@ -91,8 +133,8 @@ export function PriceSimulator() {
   const c = CULTURAS[cultura];
   const u = UFS[uf];
   const bruto = Math.round(c.base * u.fator);
-  const liquido = bruto - u.frete;
-  const diferenca = bruto - liquido;
+  const paridade = bruto - u.frete;
+  const diferenca = bruto - paridade;
   const tendUp = c.tendencia >= 0;
 
   return (
@@ -103,7 +145,7 @@ export function PriceSimulator() {
           Simulador rápido
         </span>
         <h2 className="mt-4 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          Quanto você está perdendo sem saber o preço líquido?
+          Quanto o frete pesa entre o porto e a sua porteira?
         </h2>
         <p className="mt-2.5 text-muted-foreground">
           Escolhe sua cultura e seu estado, a simulação sai em segundos.
@@ -161,23 +203,31 @@ export function PriceSimulator() {
                 <div className="mt-6 border-t border-dashed border-border pt-6">
                   <div className="flex items-end justify-between">
                     <div>
-                      <p className="text-[11px] font-semibold text-muted-foreground">PREÇO BRUTO</p>
-                      <p className="font-display text-xl font-bold text-muted-foreground line-through decoration-destructive/50">
+                      <p className="text-[11px] font-semibold text-muted-foreground">
+                        PREÇO NO PORTO / DESTINO
+                      </p>
+                      <p className="font-display text-xl font-bold text-muted-foreground">
                         R${fmt(bruto)}
                       </p>
                     </div>
                     <ArrowRight className="mb-1.5 size-5 text-muted-foreground" />
                     <div className="text-right">
-                      <p className="text-[11px] font-semibold text-primary">LÍQUIDO (com frete)</p>
-                      <p className="font-display text-2xl font-extrabold text-primary">R${fmt(liquido)}</p>
+                      <p className="text-[11px] font-semibold text-primary">
+                        NA SUA REGIÃO (paridade)
+                      </p>
+                      <p className="font-display text-2xl font-extrabold text-primary">
+                        R${fmt(paridade)}
+                      </p>
                     </div>
                   </div>
-                  <p className="mt-1.5 text-right text-[11px] text-muted-foreground">por {c.unidade}</p>
+                  <p className="mt-1.5 text-right text-[11px] text-muted-foreground">
+                    por {c.unidade}
+                  </p>
 
                   <div className="mt-3.5 flex flex-wrap gap-2">
                     <span className="inline-flex items-center gap-1 rounded-full bg-gold-soft px-2.5 py-1 text-xs font-bold text-gold-foreground">
                       <AlertTriangle className="size-3" />
-                      R${fmt(diferenca)} de diferença
+                      R${fmt(diferenca)} de frete até o destino
                     </span>
                     <span
                       className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${
@@ -193,7 +243,10 @@ export function PriceSimulator() {
                   <div className="mt-4 flex items-center gap-2.5 rounded-lg bg-secondary px-3 py-2.5">
                     <Truck className="size-4 shrink-0 text-primary" />
                     <p className="text-xs text-foreground">
-                      Rota considerada: <strong>{u.origem} → {u.destino}</strong>
+                      Rota de referência:{" "}
+                      <strong>
+                        {u.origem} → {u.destino}
+                      </strong>
                     </p>
                   </div>
 
@@ -211,9 +264,9 @@ export function PriceSimulator() {
                   </a>
 
                   <p className="mt-3 text-center text-xs text-muted-foreground">
-                    E isso é só uma fatia do que o Safralume faz: preço líquido pra qualquer cultura e
-                    estado, clima oficial, tendência de mercado e alerta automático, tudo direto no seu
-                    WhatsApp.
+                    E isso é só uma fatia do que o Safralume faz: o preço da sua região comparado
+                    com o porto, com o frete, pra qualquer cultura e estado, clima oficial,
+                    tendência de mercado e alerta automático, tudo direto no seu WhatsApp.
                   </p>
                 </div>
               </motion.div>

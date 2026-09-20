@@ -192,7 +192,7 @@ function PreviewPrecos() {
                 0.8%
               </span>
             </div>
-            <p className="mt-1 text-xs opacity-80">Soja · GO, já com frete descontado</p>
+            <p className="mt-1 text-xs opacity-80">Soja · GO · preço na sua região</p>
           </div>
           <div className="w-24">
             <Sparkline data={sparklineDados} color="currentColor" className="h-9 w-full" />

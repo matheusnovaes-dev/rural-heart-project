@@ -10,8 +10,8 @@ const pains = [
   },
   {
     icon: Truck,
-    title: "Frete não calculado",
-    description: "O preço da bolsa não é o que cai na sua conta: o frete muda tudo.",
+    title: "Sem comparar com o porto",
+    description: "O preço do porto não é o que você recebe: o frete pesa e muda a negociação.",
   },
   {
     icon: FileWarning,

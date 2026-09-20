@@ -21,7 +21,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { buildWhatsAppLink, siteConfig } from "@/config/site";
 
 const destaques = [
-  "Preço líquido da sua saca, com frete já descontado",
+  "Preço da sua saca comparado com o porto, com o frete",
   "Clima, tendência de mercado e alertas direto no WhatsApp",
   "7 dias grátis pra testar, sem cartão de crédito",
 ];
@@ -118,7 +118,7 @@ function LoginPage() {
 
         <div className="relative z-10">
           <h2 className="text-balance font-display text-3xl font-bold leading-tight tracking-tight">
-            Saiba o preço líquido da sua saca, direto no WhatsApp
+            Saiba o preço da sua saca e quanto o porto paga, direto no WhatsApp
           </h2>
           <ul className="mt-6 flex flex-col gap-3">
             {destaques.map((item, i) => (
@@ -172,7 +172,7 @@ function LoginPage() {
           </Link>
         </div>
         <h1 className="relative z-10 mt-4 max-w-72 text-balance font-display text-xl font-bold leading-tight tracking-tight">
-          Preço líquido da sua saca, direto no WhatsApp
+          O preço da sua saca e o do porto, direto no WhatsApp
         </h1>
         <div className="relative z-10 mt-3.5 inline-flex animate-float-chip items-center gap-2 rounded-lg bg-white/95 px-2.5 py-1.5 text-foreground shadow-lg shadow-black/30">
           <span className="text-[10px] font-semibold text-muted-foreground">SOJA MT</span>
@@ -391,9 +391,7 @@ function BrandBackdrop() {
 function Ticker({ compact = false }: { compact?: boolean }) {
   return (
     <div className="group relative z-10">
-      <div
-        className={`overflow-hidden ${compact ? "" : "border-t border-white/12 pt-3.5"}`}
-      >
+      <div className={`overflow-hidden ${compact ? "" : "border-t border-white/12 pt-3.5"}`}>
         <div className="flex w-max animate-marquee gap-6 group-hover:[animation-play-state:paused]">
           {[...ticker, ...ticker].map((item, i) => (
             <span

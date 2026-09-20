@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { escolherFontePreco, type FonteDePreco } from "@/lib/precoFonte";
+import { ehPracaDePorto } from "@/lib/paridade";
 
 /**
  * Nome exato do produto "de verdade" quando a busca por substring casa mais
@@ -89,7 +90,8 @@ export async function buscarPrecosDaUf(
   }
 
   const serieEstado = estado ?? [];
-  const regionaisTodas = regionalRaw ?? [];
+  // Praça CIF (porto/indústria) é outro nível de preço: fora da média e da lista do interior.
+  const regionaisTodas = (regionalRaw ?? []).filter((r) => !ehPracaDePorto(r.regiao));
   const ultimaRegional = regionaisTodas[0]?.data_referencia ?? null;
   const fonte = escolherFontePreco(serieEstado.at(-1)?.data_referencia, ultimaRegional);
 
@@ -118,6 +120,7 @@ export async function ultimaDataRegional(
       .ilike("produto", `%${cultura}%`)
       .eq("uf", uf)
       .neq("regiao", "")
+      .not("regiao", "ilike", "%cif%")
       .order("data_referencia", { ascending: false })
       .limit(1);
     if (soPrincipal && principal) q = q.eq("produto", principal);

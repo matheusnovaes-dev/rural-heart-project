@@ -252,7 +252,7 @@ function templateBoasVindas({
       <td align="center" class="px" style="padding:40px 48px 30px 48px;">
         <img src="${logoUrl}" width="72" height="72" alt="Safralume" style="display:block;width:72px;height:72px;margin:0 auto 20px auto;border-radius:16px;" />
         <div style="font-family:${serif};font-size:25px;letter-spacing:9px;color:${primaria};text-transform:uppercase;padding-left:9px;">Safralume</div>
-        <div style="font-family:${sans};font-size:10px;letter-spacing:3px;color:#8A9280;text-transform:uppercase;padding:11px 0 0 2px;">Preço líquido da sua saca</div>
+        <div style="font-family:${sans};font-size:10px;letter-spacing:3px;color:#8A9280;text-transform:uppercase;padding:11px 0 0 2px;">Preço da sua saca e o do porto</div>
       </td>
     </tr>
 
@@ -281,7 +281,7 @@ function templateBoasVindas({
           </tr>
           <tr>
             <td style="font-family:${sans};font-size:15px;line-height:26px;color:#CBD8C1;padding-bottom:32px;">
-              Todo preço que você recebe aqui sai direto dos boletins oficiais da Conab e da Imea, com o frete da sua região já descontado e a fonte sempre visível. A partir de agora, é só perguntar.
+              Todo preço que você recebe aqui sai direto dos boletins oficiais da Conab e da Imea, comparados com o preço do porto e o frete, e a fonte sempre visível. A partir de agora, é só perguntar.
             </td>
           </tr>
           <tr>
@@ -342,7 +342,7 @@ function templateBoasVindas({
             </td>
             <td valign="top" style="padding-bottom:26px;">
               <div style="font-family:${serif};font-size:17px;color:${primaria};padding-bottom:6px;">Cruzamos os dados oficiais</div>
-              <div style="font-family:${sans};font-size:14px;line-height:23px;color:#5E6857;">Consultamos Conab e Imea na hora e aplicamos o frete líquido até a sua região.</div>
+              <div style="font-family:${sans};font-size:14px;line-height:23px;color:#5E6857;">Consultamos Conab e Imea na hora e comparamos com o preço do porto e o frete.</div>
             </td>
           </tr>
           <tr>
@@ -353,7 +353,7 @@ function templateBoasVindas({
             </td>
             <td valign="top" style="padding-bottom:30px;">
               <div style="font-family:${serif};font-size:17px;color:${primaria};padding-bottom:6px;">Você recebe o número certo</div>
-              <div style="font-family:${sans};font-size:14px;line-height:23px;color:#5E6857;">Preço líquido, com fonte e data, pronto pra decidir sem depender de planilha.</div>
+              <div style="font-family:${sans};font-size:14px;line-height:23px;color:#5E6857;">Preço da sua região, do porto e o frete, com fonte e data, pronto pra decidir sem depender de planilha.</div>
             </td>
           </tr>
         </table>
@@ -384,7 +384,7 @@ function templateBoasVindas({
     <tr>
       <td align="center" class="px" style="padding:44px 56px 46px 56px;">
         <div style="font-family:${serif};font-style:italic;font-size:19px;line-height:30px;color:${primaria};padding-bottom:6px;">
-          &#8220;Preço líquido, direto no WhatsApp &#8212; sem planilha, sem esperar boletim.&#8221;
+          &#8220;O preço da sua saca e o do porto, direto no WhatsApp &#8212; sem planilha, sem esperar boletim.&#8221;
         </div>
       </td>
     </tr>

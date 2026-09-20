@@ -29,7 +29,7 @@ import { LeiteCard } from "@/components/dashboard/LeiteCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Previsao } from "@/lib/clima";
 import { buscarPrevisaoPorCoordenadasServidor, buscarPrevisaoServidor } from "@/lib/clima.server";
-import { precoLiquido, escolherFreteReferencia, type FreteRef } from "@/lib/frete";
+import { buscarFrete, type ResultadoFrete } from "@/lib/paridade";
 import { buscarPrecosDaUf } from "@/lib/precos";
 import { mediaDePracas } from "@/lib/precoFonte";
 import { buildWhatsAppLink } from "@/config/site";
@@ -177,7 +177,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
     [],
   );
   const [previsao, setPrevisao] = useState<Previsao | null | undefined>(undefined);
-  const [frete, setFrete] = useState<FreteRef | null | undefined>(undefined);
+  const [frete, setFrete] = useState<ResultadoFrete | null | undefined>(undefined);
 
   const { session } = useAuth();
   useEffect(() => {
@@ -205,23 +205,18 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
         setMotivoRegional(r.motivoRegional);
       });
 
-      // A Sifreca não cobre toda UF, só municípios de origem selecionados —
-      // quando não bate nenhuma rota, mostra o preço bruto em vez de
-      // inventar frete. Entre as rotas que batem, escolhe a origem mais
-      // perto da cidade cadastrada do produtor (se ele tiver uma), em vez
-      // de pegar qualquer rota do estado — ver escolherFreteReferencia.
-      supabase
-        .from("fretes")
-        .select(
-          "cultura, municipio_origem, uf_origem, municipio_destino, uf_destino, frete_rt, lat_origem, lon_origem",
-        )
-        .eq("cultura", produtor.cultura_principal)
-        .eq("uf_origem", produtor.uf)
-        .returns<(FreteRef & { lat_origem: number | null; lon_origem: number | null })[]>()
-        .then(({ data }) => {
-          const rota = escolherFreteReferencia(data ?? [], produtor.lat, produtor.lon);
-          setFrete(rota);
-        });
+      // Frete de referência e, em PR/SP/MS/MG (soja), a paridade de porto: o
+      // preço da região já vem descontado do frete, então o frete NÃO é
+      // subtraído dele, só comparado com o porto (ver lib/paridade.ts). Sem
+      // rota até porto na base (RS, TO...), mostra só o preço.
+      buscarFrete(supabase, {
+        cultura: produtor.cultura_principal,
+        uf: produtor.uf,
+        lat: produtor.lat,
+        lon: produtor.lon,
+      })
+        .then(setFrete)
+        .catch(() => setFrete(null));
     } else {
       setSerie([]);
       setPrecosRegionais([]);
@@ -258,8 +253,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
       : null;
   const mediaRegional =
     precosRegionais.length > 0 ? mediaDePracas(precosRegionais.map((r) => r.preco)) : null;
-  const precoExibido =
-    atual && frete ? precoLiquido(atual.preco, frete.frete_rt) : (atual?.preco ?? null);
+  const precoExibido = atual?.preco ?? null;
 
   return (
     <div className="flex flex-col gap-5">
@@ -358,18 +352,12 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                       <TrocarCulturaDialog produtor={produtor} />
                     </div>
                     <p className="mt-1 text-xs opacity-70">
-                      {frete ? (
-                        <>
-                          Já com o frete descontado · rota usada como referência:{" "}
-                          {frete.municipio_origem}/{frete.uf_origem} → {frete.municipio_destino}/
-                          {frete.uf_destino}
-                        </>
-                      ) : (
-                        <>
-                          Preço sem desconto de frete — ainda não temos uma rota de referência pra
-                          essa cultura na sua região
-                        </>
-                      )}
+                      Preço na sua região: é o que você recebe, com o frete até o porto já incluído.
+                    </p>
+                    <p className="mt-1 max-w-md text-xs opacity-80">
+                      {frete
+                        ? frete.frase
+                        : "Ainda não temos rota de frete de referência pra essa cultura na sua região."}
                     </p>
                   </div>
                   {serie.length >= 2 && (
@@ -405,20 +393,10 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                   {mediaRegional != null && (
                     <p className="mt-1 text-xs opacity-80">
                       Média das regiões: R${mediaRegional.toFixed(2).replace(".", ",")}
-                      {frete && (
-                        <>
-                          {" "}
-                          · já com o frete descontado: R$
-                          {precoLiquido(mediaRegional, frete.frete_rt)
-                            .toFixed(2)
-                            .replace(".", ",")}{" "}
-                          ({frete.municipio_origem}/{frete.uf_origem} → {frete.municipio_destino}/
-                          {frete.uf_destino})
-                        </>
-                      )}
                       {precosRegionais[0]?.fonte && <> · fonte: {precosRegionais[0].fonte}</>}
                     </p>
                   )}
+                  {frete && <p className="max-w-md text-xs opacity-80">{frete.frase}</p>}
                   <div className="mt-1 flex items-center gap-1.5 text-sm opacity-80">
                     <span className="capitalize">
                       {produtor.cultura_principal} · {produtor.uf}

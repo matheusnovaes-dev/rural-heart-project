@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { precoLiquido, escolherFreteReferencia } from "@/lib/frete";
+import { buscarFrete, ehPracaDePorto, type ResultadoFrete } from "@/lib/paridade";
 import { escolherFontePreco, mediaDePracas } from "@/lib/precoFonte";
 import { produtoPrincipal } from "@/lib/precos";
 
@@ -24,12 +24,17 @@ type FreteRow = {
 export type ResultadoBuscarPreco = {
   encontrado: boolean;
   precos?: PrecoRow[];
-  preco_liquido?: number | null;
+  /**
+   * Rota de frete de referência (origem e destino), pra citar a rota completa. O
+   * frete NÃO é descontado do preço: o preço da região já vem descontado.
+   */
   frete?: FreteRow | null;
+  /** Paridade de porto (porto menos frete) quando dá pra afirmar, ou só o frete de referência. */
+  frete_e_paridade?: ResultadoFrete | null;
   ufs_com_dado?: string[];
   /** De onde veio o preço: o número único do estado ou os preços por praça (quando o do estado está defasado ou não existe). */
   origem_preco?: "estado" | "regional";
-  /** Só quando origem_preco="regional": média das praças, base do preco_liquido. */
+  /** Só quando origem_preco="regional": média das praças do interior. */
   preco_medio_regioes?: number | null;
   erro?: "produto_ausente" | "uf_ausente";
 };
@@ -37,7 +42,7 @@ export type ResultadoBuscarPreco = {
 export async function buscarPreco(
   supabase: SupabaseClient,
   args: { produto: string | null; uf: string | null; incluir_frete: boolean },
-  ctx?: { lat: number | null; lon: number | null },
+  ctx?: { lat: number | null; lon: number | null; pediuFrete?: boolean },
 ): Promise<ResultadoBuscarPreco> {
   const { produto, uf, incluir_frete } = args;
 
@@ -83,6 +88,9 @@ export async function buscarPreco(
     ]);
   }
 
+  // Praça CIF (porto/indústria) é outro nível de preço: não entra no preço da região.
+  rowsRegionais = (rowsRegionais ?? []).filter((r) => !ehPracaDePorto(r.regiao));
+
   const maisRecenteEstado = rowsEstado?.[0]?.data_referencia ?? null;
   const maisRecenteRegional = rowsRegionais?.[0]?.data_referencia ?? null;
   const origem = escolherFontePreco(maisRecenteEstado, maisRecenteRegional);
@@ -125,36 +133,32 @@ export async function buscarPreco(
     return { encontrado: true, precos: atuais, ...dadosDeOrigem };
   }
 
-  // Entre as rotas cadastradas nesse estado, escolhe a origem mais perto da
-  // cidade cadastrada do produtor (quando ele tem uma) em vez de uma rota
-  // qualquer do estado — ver escolherFreteReferencia em lib/frete.ts.
-  const { data: fretes } = await supabase
-    .from("fretes")
-    .select(
-      "municipio_origem, uf_origem, municipio_destino, uf_destino, frete_rt, lat_origem, lon_origem, updated_at",
-    )
-    .ilike("cultura", `%${produto}%`)
-    .eq("uf_origem", uf)
-    .order("updated_at", { ascending: false })
-    .returns<
-      (FreteRow & {
-        lat_origem: number | null;
-        lon_origem: number | null;
-        updated_at: string;
-      })[]
-    >();
-
-  const frete = escolherFreteReferencia(fretes ?? [], ctx?.lat ?? null, ctx?.lon ?? null);
+  // O preço da região é o que o produtor recebe (já descontado do frete até o
+  // porto). O frete serve pra comparar com o porto (paridade, contra a média das
+  // praças da BBM), nunca pra descontar de novo.
+  const frete = await buscarFrete(supabase, {
+    cultura: produto,
+    uf,
+    lat: ctx?.lat ?? null,
+    lon: ctx?.lon ?? null,
+  });
   if (!frete) {
-    return { encontrado: true, precos: atuais, frete: null, preco_liquido: null, ...dadosDeOrigem };
+    return ctx?.pediuFrete
+      ? { encontrado: true, precos: atuais, frete: null, ...dadosDeOrigem }
+      : { encontrado: true, precos: atuais, ...dadosDeOrigem };
+  }
+  // Frete de referência sem paridade (MT, GO, milho...) só entra se o produtor
+  // perguntou de frete: sem porto pra comparar, é ruído que o modelo repetia
+  // em toda resposta.
+  if (frete.tipo === "frete_referencia" && !ctx?.pediuFrete) {
+    return { encontrado: true, precos: atuais, ...dadosDeOrigem };
   }
 
-  // Preferir a linha em saca de 60kg pro cálculo de líquido — mesma
-  // preferência de unidade instruída no prompt pra resposta ao produtor. Com
-  // várias praças, usa a média delas.
-  const linhaParaCalculo = atuais.find((r) => (r.unidade ?? "").includes("60")) ?? atuais[0]!;
-  const base = precoMedioRegioes ?? linhaParaCalculo.preco;
-  const liquido = Math.round(precoLiquido(base, frete.frete_rt) * 100) / 100;
-
-  return { encontrado: true, precos: atuais, frete, preco_liquido: liquido, ...dadosDeOrigem };
+  return {
+    encontrado: true,
+    precos: atuais,
+    frete: frete.rota,
+    frete_e_paridade: frete,
+    ...dadosDeOrigem,
+  };
 }

@@ -122,7 +122,7 @@ function OnboardingPage() {
 
     if (tipo === "produtor") {
       // Cidade é opcional — sem ela, clima cai na capital do estado e o
-      // frete líquido usa uma rota qualquer do mesmo estado (não a mais
+      // frete de referência usa a origem "do meio" do estado (não a mais
       // perto). Geocodifica antes de inserir, mesmo processo já usado pra
       // trocar cultura/UF depois do cadastro (TrocarCulturaDialog).
       let municipioFinal: string | null = null;
@@ -453,7 +453,7 @@ function OnboardingPage() {
                   onChange={(e) => setMunicipio(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Deixa o clima e o frete descontado mais precisos, usando sua cidade em vez da
+                  Deixa o clima e o frete de referência mais precisos, usando sua cidade em vez da
                   capital do estado. Sem isso, continua funcionando pela UF.
                 </p>
               </div>

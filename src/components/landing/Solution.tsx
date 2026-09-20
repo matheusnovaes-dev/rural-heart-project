@@ -12,16 +12,16 @@ export function Solution() {
             Como funciona na prática
           </span>
           <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            Você pergunta. O Safralume responde com o preço líquido.
+            Você pergunta. O Safralume responde com o preço da sua região e o do porto.
           </h2>
           <p className="mt-4 max-w-md text-muted-foreground">
-            Cruzamos dados oficiais (Conab e órgãos estaduais) com o frete da sua região na hora,
-            sem você abrir planilha nenhuma.
+            Cruzamos dados oficiais (Conab e órgãos estaduais) com o preço do porto e o frete na
+            hora, sem você abrir planilha nenhuma.
           </p>
           <ul className="mt-6 space-y-3">
             {[
               "Fonte e data sempre visíveis em cada resposta",
-              "Frete já descontado do preço da bolsa",
+              "Preço do porto e frete até lá, pra você negociar com números",
               "Grãos e pecuária, com duas fontes cruzadas onde é possível",
               "Funciona mesmo com internet fraca no campo",
             ].map((item) => (
@@ -85,10 +85,10 @@ function PhoneMockup() {
             className="mr-auto max-w-[88%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-sm text-[#111b21] shadow-sm"
           >
             <p>
-              Soja em Rio Verde/GO hoje: <strong>R$ 131,40/saca líquido</strong> (frete já
-              descontado).
+              Soja em Cascavel/PR hoje: <strong>R$ 151,00/saca</strong>. Porto de Paranaguá: R$
+              162,50, frete R$ 12,30: paridade de R$ 150,20.
             </p>
-            <p className="mt-1 text-xs text-[#667781]">Fonte: Conab · atualizado às 08:12</p>
+            <p className="mt-1 text-xs text-[#667781]">Fonte: BBM · atualizado às 08:12</p>
           </motion.div>
 
           <motion.div

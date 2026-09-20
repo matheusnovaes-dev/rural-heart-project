@@ -35,7 +35,7 @@ export const TOOLS = [
     function: {
       name: "buscar_preco",
       description:
-        "Busca o preço bruto mais recente de uma cultura numa UF (dados oficiais, Conab) e o frete de referência até o destino padrão, já calculando o preço líquido (frete descontado) quando disponível. Se não achar preço nessa UF, retorna as UFs onde essa cultura tem preço nos últimos 90 dias. Só chame com produto/uf null se REALMENTE não tiver como saber (nem pergunta, nem histórico, nem padrão do produtor) — nesse caso ela devolve um erro indicando o que falta, pra você perguntar ao produtor em vez de chutar.",
+        "Busca o preço mais recente de uma cultura numa UF (dados oficiais: Conab, órgãos estaduais, BBM). Esse preço é o que o produtor recebe na região e JÁ vem descontado do frete até o porto: nunca desconte frete dele. Com incluir_frete=true, devolve também frete_e_paridade: a paridade de porto (preço no porto menos o frete até lá, comparada com a média das praças do interior) onde dá pra afirmar, ou só um frete de referência. Se não achar preço nessa UF, retorna as UFs onde essa cultura tem preço nos últimos 90 dias. Só chame com produto/uf null se REALMENTE não tiver como saber (nem pergunta, nem histórico, nem padrão do produtor) — nesse caso ela devolve um erro indicando o que falta, pra você perguntar ao produtor em vez de chutar.",
       parameters: {
         type: "object",
         properties: {
@@ -52,7 +52,7 @@ export const TOOLS = [
           incluir_frete: {
             type: "boolean",
             description:
-              "true para o produto principal da pergunta (calcula preço líquido); false para um segundo produto numa pergunta comparando duas culturas (só preço bruto).",
+              "true para o produto principal da pergunta (traz frete de referência e paridade de porto); false para um segundo produto numa pergunta comparando duas culturas (só o preço).",
           },
         },
         required: ["produto", "uf", "incluir_frete"],
@@ -254,7 +254,8 @@ export const TOOLS = [
           uf: { type: "string", description: "Sigla de 2 letras do estado do produtor." },
           cultura_principal: {
             type: "string",
-            description: "Cultura principal do produtor — mesma palavra-chave maiúscula usada em buscar_preco (SOJA, MILHO, BOI, etc).",
+            description:
+              "Cultura principal do produtor — mesma palavra-chave maiúscula usada em buscar_preco (SOJA, MILHO, BOI, etc).",
           },
         },
         required: ["uf", "cultura_principal"],
@@ -290,12 +291,14 @@ export const TOOLS = [
         properties: {
           produto: {
             type: "string",
-            description: "SOJA, MILHO, ALGODÃO, ARROZ ou FEIJÃO — mesma palavra-chave de buscar_preco.",
+            description:
+              "SOJA, MILHO, ALGODÃO, ARROZ ou FEIJÃO — mesma palavra-chave de buscar_preco.",
           },
           uf: { type: "string" },
           municipio: {
             type: ["string", "null"],
-            description: "Nome do município. Use o cadastrado do produtor se ele não mencionar outro.",
+            description:
+              "Nome do município. Use o cadastrado do produtor se ele não mencionar outro.",
           },
         },
         required: ["produto", "uf", "municipio"],
@@ -320,11 +323,18 @@ export async function executarTool(
   ctx: ToolContext,
 ): Promise<unknown> {
   switch (nome) {
-    case "buscar_preco":
-      return buscarPreco(ctx.supabase, args as Parameters<typeof buscarPreco>[1], {
-        lat: ctx.produtor.lat,
-        lon: ctx.produtor.lon,
-      });
+    case "buscar_preco": {
+      const a = args as Parameters<typeof buscarPreco>[1];
+      // Pergunta que fala de frete/porto/paridade/líquido sempre traz o frete,
+      // mesmo se o modelo pediu incluir_frete=false (visto ao vivo: respondeu
+      // "não tenho frete" pra "quanto é o frete até o porto?").
+      const falaDeFrete = /frete|porto|parid|l[ií]quid|sobra|descont/i.test(ctx.texto);
+      return buscarPreco(
+        ctx.supabase,
+        { ...a, incluir_frete: a.incluir_frete || falaDeFrete },
+        { lat: ctx.produtor.lat, lon: ctx.produtor.lon, pediuFrete: falaDeFrete },
+      );
+    }
     case "buscar_leite":
       return buscarLeite(ctx.supabase, args as Parameters<typeof buscarLeite>[1], {
         atual: ctx.texto,
@@ -356,11 +366,18 @@ export async function executarTool(
     case "criar_conta_teste":
       return criarContaTeste(ctx.supabase, args as Parameters<typeof criarContaTeste>[1], ctx);
     case "atualizar_localizacao":
-      return atualizarLocalizacao(ctx.supabase, args as Parameters<typeof atualizarLocalizacao>[1], ctx);
+      return atualizarLocalizacao(
+        ctx.supabase,
+        args as Parameters<typeof atualizarLocalizacao>[1],
+        ctx,
+      );
     case "consultar_assinatura":
       return consultarAssinatura(ctx.supabase, ctx);
     case "consultar_janela_plantio":
-      return consultarJanelaPlantio(ctx.supabase, args as Parameters<typeof consultarJanelaPlantio>[1]);
+      return consultarJanelaPlantio(
+        ctx.supabase,
+        args as Parameters<typeof consultarJanelaPlantio>[1],
+      );
     default:
       return { erro: `Ferramenta desconhecida: ${nome}` };
   }

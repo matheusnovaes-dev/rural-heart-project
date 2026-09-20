@@ -134,6 +134,10 @@ export type FreteCitado = { origem: string; destino: string };
 /** Garante origem E destino do frete na resposta (só um dos dois lê como "frete até X" e engana). */
 export function garantirRotaFrete(resposta: string, frete: FreteCitado | null): string {
   if (!frete) return resposta;
+  // Só quando a resposta fala de frete: a ferramenta devolve a rota de
+  // referência sempre, e emendar "rota considerada" numa resposta que não tocou
+  // no assunto só confunde.
+  if (!/frete/i.test(resposta)) return resposta;
   if (mencionaCidade(resposta, frete.origem) && mencionaCidade(resposta, frete.destino)) {
     return resposta;
   }
@@ -295,10 +299,10 @@ export const RESPOSTA_FALHA_AO_GERAR_LINK =
   "Não consegui gerar seu link de acesso agora. Já avisei a equipe e a gente resolve por aqui mesmo no WhatsApp.";
 
 /**
- * Quando o preço veio por praça, o líquido é calculado sobre a MÉDIA das
- * praças — e o produtor só entende esse número se a resposta disser qual é a
- * média. O prompt pede isso, mas o modelo cita só as praças e o líquido cerca
- * de metade das vezes. Acrescenta a frase quando a média não aparece.
+ * Quando o preço veio por praça, o número de referência é a MÉDIA das praças
+ * do interior — e o produtor só entende se a resposta disser qual é a média.
+ * O prompt pede isso, mas o modelo cita só as praças cerca de metade das
+ * vezes. Acrescenta a frase quando a média não aparece.
  */
 export function garantirMediaDasPracas(resposta: string, media: number | null): string {
   if (media == null) return resposta;
@@ -366,4 +370,21 @@ export function garantirCotacaoLeite(
   if (!cotacao) return resposta;
   const citou = extrairValoresReais(resposta).some((v) => Math.abs(v - cotacao.preco) <= 0.0101);
   return citou ? resposta : `${cotacao.frase} ${resposta}`;
+}
+
+/**
+ * Paridade de porto: quando a ferramenta calculou (tipo "paridade"), a resposta
+ * tem que trazer o valor da paridade. O modelo às vezes cita só o preço; nesse
+ * caso a frase pronta (porto, frete, paridade, comparação) entra no fim.
+ */
+export function garantirParidade(
+  resposta: string,
+  paridade: { valor: number; frase: string } | null,
+): string {
+  if (!paridade) return resposta;
+  const citou = extrairValoresReais(resposta).some((v) => Math.abs(v - paridade.valor) <= 0.0101);
+  if (citou) return resposta;
+  const semPontuacaoFinal = resposta.trimEnd();
+  const separador = /[.!?]$/.test(semPontuacaoFinal) ? " " : ". ";
+  return `${semPontuacaoFinal}${separador}${paridade.frase}`;
 }

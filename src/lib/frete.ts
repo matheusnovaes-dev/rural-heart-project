@@ -11,10 +11,9 @@ export type FreteRef = {
 // usa nos preços que exibimos, não é uma escolha nossa.
 const KG_POR_SACA = 60;
 
-/** Converte R$/t em R$/saca de 60kg e desconta do preço bruto. */
-export function precoLiquido(precoBrutoPorSaca: number, freteRt: number) {
-  const freteReaisPorSaca = (freteRt / 1000) * KG_POR_SACA;
-  return precoBrutoPorSaca - freteReaisPorSaca;
+/** Converte frete em R$/t pra R$ por saca de 60kg (2 casas). */
+export function fretePorSaca(freteRt: number): number {
+  return Math.round(((freteRt / 1000) * KG_POR_SACA) * 100) / 100;
 }
 
 const RAIO_TERRA_KM = 6371;
@@ -63,7 +62,7 @@ const PORTOS_DE_EXPORTACAO = new Set(
   ].map((n) => normalizarNome(n)),
 );
 
-function normalizarNome(nome: string): string {
+export function normalizarNome(nome: string): string {
   return nome.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
 }
 
@@ -95,10 +94,11 @@ export function escolherFreteReferencia<T extends RotaParaEscolha>(
   rotas: T[],
   produtorLat: number | null,
   produtorLon: number | null,
+  destinoValido: (municipioDestino: string) => boolean = ehPortoDeExportacao,
 ): T | null {
   const maisBarataPorOrigem = new Map<string, T>();
   for (const r of rotas) {
-    if (!ehPortoDeExportacao(r.municipio_destino)) continue;
+    if (!destinoValido(r.municipio_destino)) continue;
     if (!Number.isFinite(r.frete_rt) || r.frete_rt <= 0) continue;
     const atual = maisBarataPorOrigem.get(r.municipio_origem);
     if (!atual || r.frete_rt < atual.frete_rt) maisBarataPorOrigem.set(r.municipio_origem, r);

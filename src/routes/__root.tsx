@@ -80,16 +80,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Safralume: preço líquido da sua saca, direto no WhatsApp" },
+      { title: "Safralume: o preço da sua saca e o do porto, direto no WhatsApp" },
       {
         name: "description",
         content:
-          "Safralume traduz relatórios oficiais (Conab e órgãos estaduais) em respostas simples, para grãos e pecuária, com frete já descontado, direto no WhatsApp do produtor.",
+          "Safralume traduz relatórios oficiais (Conab e órgãos estaduais) em respostas simples, para grãos e pecuária: o preço da sua região, a comparação com o porto e o frete, direto no WhatsApp do produtor.",
       },
-      { property: "og:title", content: "Safralume: preço líquido da sua saca, direto no WhatsApp" },
+      {
+        property: "og:title",
+        content: "Safralume: o preço da sua saca e o do porto, direto no WhatsApp",
+      },
       {
         property: "og:description",
-        content: "O preço líquido da sua saca, direto no WhatsApp.",
+        content: "O preço da sua saca e o do porto, direto no WhatsApp.",
       },
       { property: "og:type", content: "website" },
       { property: "og:locale", content: "pt_BR" },
@@ -101,11 +104,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       {
         name: "twitter:title",
-        content: "Safralume: preço líquido da sua saca, direto no WhatsApp",
+        content: "Safralume: o preço da sua saca e o do porto, direto no WhatsApp",
       },
       {
         name: "twitter:description",
-        content: "O preço líquido da sua saca, direto no WhatsApp.",
+        content: "O preço da sua saca e o do porto, direto no WhatsApp.",
       },
       { name: "twitter:image", content: "/images/og-image.jpg" },
     ],
@@ -142,7 +145,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           url: "https://www.safralume.com.br",
           logo: "https://www.safralume.com.br/favicon.png",
           description:
-            "Assistente via WhatsApp que traduz preços agrícolas oficiais (Conab e órgãos estaduais) em respostas com frete já descontado.",
+            "Assistente via WhatsApp que traduz preços agrícolas oficiais (Conab e órgãos estaduais) em respostas com o preço da região, a comparação com o porto e o frete.",
         }),
       },
       {
@@ -158,7 +161,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           operatingSystem: "Web, WhatsApp",
           url: "https://www.safralume.com.br",
           description:
-            "Assistente via WhatsApp e painel web que traduz preços agrícolas oficiais em respostas com frete já descontado, para produtores rurais e cooperativas.",
+            "Assistente via WhatsApp e painel web que traduz preços agrícolas oficiais em respostas com o preço da região, a comparação com o porto e o frete, para produtores rurais e cooperativas.",
           offers: pricingPlans.map((plano) => ({
             "@type": "Offer",
             name: `Plano ${plano.name}`,
