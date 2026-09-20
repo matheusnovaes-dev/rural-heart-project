@@ -329,6 +329,13 @@ export function LeadForm({ className }: { className?: string }) {
               <p className="text-center text-xs text-muted-foreground">
                 Sem cartão de crédito. Cancele quando quiser.
               </p>
+              {/* Consentimento pra mensagem no WhatsApp (a Meta exige aceite pra
+                  mensagem que a empresa inicia, e a recuperação de cadastro
+                  depende disso). Fica na etapa 1 porque é aqui que o número é dado. */}
+              <p className="text-center text-[11px] leading-snug text-muted-foreground/80">
+                Ao continuar, você aceita receber mensagens da Safralume no WhatsApp. Para parar, é
+                só responder SAIR.
+              </p>
             </motion.div>
           ) : (
             <motion.div

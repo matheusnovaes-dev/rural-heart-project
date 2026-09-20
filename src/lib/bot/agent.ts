@@ -14,6 +14,8 @@ import { executarTool, TOOLS } from "@/lib/bot/tools/index";
 import { mensagemBloqueioAcesso, verificarAcessoWhatsapp } from "@/lib/bot/tools/acesso";
 import { gerarLinkDeAcesso, tipoDeAcesso } from "@/lib/bot/tools/linkAcesso";
 import type { ResultadoBuscarLeite } from "@/lib/bot/tools/leite";
+import { ehPedidoDeSair, RESPOSTA_SAIDA_DE_MENSAGENS } from "@/lib/recuperacaoCadastro";
+import { normalizarWhatsapp } from "@/lib/telefone";
 import type { ProdutorContexto } from "@/lib/bot/types";
 import {
   coletarNumerosPermitidos,
@@ -307,6 +309,35 @@ export async function runAgent(input: {
   signal: AbortSignal;
 }): Promise<RespostaAgente> {
   const { telefone, texto, historico, produtor, supabase, apiKey, signal } = input;
+
+  // Quem ainda não é cliente e responde SAIR à mensagem de recuperação sai da
+  // lista de mensagens proativas. Decidido por código (é compromisso legal com
+  // o usuário, não pode depender do modelo). Cliente cadastrado não entra: pra
+  // ele "sair" pode significar outra coisa (painel, plano).
+  if (!produtor.id && ehPedidoDeSair(texto)) {
+    const { error } = await supabase
+      .from("whatsapp_optout")
+      .upsert(
+        { whatsapp: normalizarWhatsapp(telefone), origem: "bot" },
+        { onConflict: "whatsapp" },
+      );
+    if (error) {
+      console.error("Erro ao registrar opt-out:", error);
+      return {
+        resposta:
+          "Recebi seu pedido pra parar de receber mensagens. Vou pedir pra nossa equipe confirmar isso pra você.",
+        precisa_humano: true,
+        cadastro_criado: false,
+        convite_dispensado: true,
+      };
+    }
+    return {
+      resposta: RESPOSTA_SAIDA_DE_MENSAGENS,
+      precisa_humano: false,
+      cadastro_criado: false,
+      convite_dispensado: true,
+    };
+  }
 
   // Paywall determinístico: quem já tem conta mas o trial venceu (ou a
   // assinatura não está ativa) não pode continuar recebendo dado real pelo

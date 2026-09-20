@@ -22,6 +22,7 @@ import { Route as DashboardLayoutRouteImport } from './routes/dashboard/_layout'
 import { Route as ApiAsaasWebhookRouteImport } from './routes/api/asaas/webhook'
 import { Route as ApiBotResponderRouteImport } from './routes/api/bot/responder'
 import { Route as ApiCronAvisoTrialRouteImport } from './routes/api/cron/aviso-trial'
+import { Route as ApiCronRecuperarCadastroRouteImport } from './routes/api/cron/recuperar-cadastro'
 import { Route as DashboardLayoutIndexRouteImport } from './routes/dashboard/_layout/index'
 import { Route as DashboardLayoutAlertasRouteImport } from './routes/dashboard/_layout/alertas'
 import { Route as DashboardLayoutAssinaturaRouteImport } from './routes/dashboard/_layout/assinatura'
@@ -101,6 +102,12 @@ const ApiCronAvisoTrialRoute = ApiCronAvisoTrialRouteImport.update({
   path: '/api/cron/aviso-trial',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCronRecuperarCadastroRoute =
+  ApiCronRecuperarCadastroRouteImport.update({
+    id: '/api/cron/recuperar-cadastro',
+    path: '/api/cron/recuperar-cadastro',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DashboardLayoutIndexRoute = DashboardLayoutIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -186,6 +193,7 @@ export interface FileRoutesByFullPath {
   '/api/asaas/webhook': typeof ApiAsaasWebhookRoute
   '/api/bot/responder': typeof ApiBotResponderRoute
   '/api/cron/aviso-trial': typeof ApiCronAvisoTrialRoute
+  '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/assinatura': typeof DashboardLayoutAssinaturaRoute
   '/dashboard/clima': typeof DashboardLayoutClimaRoute
@@ -213,6 +221,7 @@ export interface FileRoutesByTo {
   '/api/asaas/webhook': typeof ApiAsaasWebhookRoute
   '/api/bot/responder': typeof ApiBotResponderRoute
   '/api/cron/aviso-trial': typeof ApiCronAvisoTrialRoute
+  '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/assinatura': typeof DashboardLayoutAssinaturaRoute
   '/dashboard/clima': typeof DashboardLayoutClimaRoute
@@ -242,6 +251,7 @@ export interface FileRoutesById {
   '/api/asaas/webhook': typeof ApiAsaasWebhookRoute
   '/api/bot/responder': typeof ApiBotResponderRoute
   '/api/cron/aviso-trial': typeof ApiCronAvisoTrialRoute
+  '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
   '/dashboard/_layout/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/_layout/assinatura': typeof DashboardLayoutAssinaturaRoute
   '/dashboard/_layout/clima': typeof DashboardLayoutClimaRoute
@@ -272,6 +282,7 @@ export interface FileRouteTypes {
     | '/api/asaas/webhook'
     | '/api/bot/responder'
     | '/api/cron/aviso-trial'
+    | '/api/cron/recuperar-cadastro'
     | '/dashboard/alertas'
     | '/dashboard/assinatura'
     | '/dashboard/clima'
@@ -299,6 +310,7 @@ export interface FileRouteTypes {
     | '/api/asaas/webhook'
     | '/api/bot/responder'
     | '/api/cron/aviso-trial'
+    | '/api/cron/recuperar-cadastro'
     | '/dashboard/alertas'
     | '/dashboard/assinatura'
     | '/dashboard/clima'
@@ -327,6 +339,7 @@ export interface FileRouteTypes {
     | '/api/asaas/webhook'
     | '/api/bot/responder'
     | '/api/cron/aviso-trial'
+    | '/api/cron/recuperar-cadastro'
     | '/dashboard/_layout/alertas'
     | '/dashboard/_layout/assinatura'
     | '/dashboard/_layout/clima'
@@ -356,6 +369,7 @@ export interface RootRouteChildren {
   ApiAsaasWebhookRoute: typeof ApiAsaasWebhookRoute
   ApiBotResponderRoute: typeof ApiBotResponderRoute
   ApiCronAvisoTrialRoute: typeof ApiCronAvisoTrialRoute
+  ApiCronRecuperarCadastroRoute: typeof ApiCronRecuperarCadastroRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -449,6 +463,13 @@ declare module '@tanstack/react-router' {
       path: '/api/cron/aviso-trial'
       fullPath: '/api/cron/aviso-trial'
       preLoaderRoute: typeof ApiCronAvisoTrialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cron/recuperar-cadastro': {
+      id: '/api/cron/recuperar-cadastro'
+      path: '/api/cron/recuperar-cadastro'
+      fullPath: '/api/cron/recuperar-cadastro'
+      preLoaderRoute: typeof ApiCronRecuperarCadastroRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/_layout/': {
@@ -595,6 +616,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAsaasWebhookRoute: ApiAsaasWebhookRoute,
   ApiBotResponderRoute: ApiBotResponderRoute,
   ApiCronAvisoTrialRoute: ApiCronAvisoTrialRoute,
+  ApiCronRecuperarCadastroRoute: ApiCronRecuperarCadastroRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
