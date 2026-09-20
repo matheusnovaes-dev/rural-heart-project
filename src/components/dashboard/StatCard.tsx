@@ -27,16 +27,16 @@ export function StatCard({
   to?: string;
 }) {
   const conteudo = (
-    <Card className="h-full gap-2 py-4 transition-colors hover:border-primary/50">
-      <CardHeader className="gap-0 pb-0">
+    <Card className="group h-full gap-3 border-border/80 py-4 shadow-none hover:-translate-y-0.5 hover:shadow-sm">
+      <CardHeader className="gap-0 px-4 pb-0">
         <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
           <Icon className="size-4 shrink-0" />
           {label}
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-2 pb-0">
+      <CardContent className="flex flex-col gap-2 px-4 pb-0">
         <div className="flex items-end justify-between gap-2">
-          <p className="font-mono text-3xl font-bold tabular-nums text-foreground">{value}</p>
+          <p className="font-mono text-3xl font-semibold tabular-nums text-foreground">{value}</p>
           {variacao != null && (
             <span
               className={`mb-1 inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs font-semibold ${
