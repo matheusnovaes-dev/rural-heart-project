@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { CULTURA_PARA_B3 } from "@/config/b3";
+import { normalizarCultura } from "@/config/culturas";
 
 export async function buscarCambio(supabase: SupabaseClient) {
   const { data } = await supabase
@@ -60,7 +61,7 @@ export async function buscarProducaoIbge(
 }
 
 export async function buscarFuturosB3(supabase: SupabaseClient, args: { produto: string }) {
-  const codigos = CULTURA_PARA_B3[args.produto.toLowerCase()];
+  const codigos = CULTURA_PARA_B3[normalizarCultura(args.produto)];
   if (!codigos || codigos.length === 0) return { disponivel: false };
 
   const inicioMesAtual = new Date();

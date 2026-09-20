@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { normalizarCultura } from "@/config/culturas";
 import { escolherFontePreco, type FonteDePreco } from "@/lib/precoFonte";
 import { ehPracaDePorto } from "@/lib/paridade";
 
@@ -14,10 +15,13 @@ import { ehPracaDePorto } from "@/lib/paridade";
 const PRODUTO_PRINCIPAL: Record<string, string> = {
   soja: "SOJA EM GRÃOS (60 kg)",
   milho: "MILHO EM GRÃOS (60 kg)",
+  // Boi gordo em arroba (15 kg): "boi" também casa "BOI GORDO CHINA", "BOI
+  // MAGRO" e o boi vivo em kg da EMATER, que são outras medidas.
+  boi: "BOI GORDO (15 kg)",
 };
 
 export function produtoPrincipal(cultura: string): string | null {
-  return PRODUTO_PRINCIPAL[cultura.trim().toLowerCase()] ?? null;
+  return PRODUTO_PRINCIPAL[normalizarCultura(cultura)] ?? null;
 }
 
 export type LinhaEstado = { preco: number; data_referencia: string; updated_at: string | null };
@@ -38,7 +42,7 @@ const DIAS_DE_HISTORICO = 90;
  */
 export async function buscarPrecosDaUf(
   supabase: SupabaseClient,
-  cultura: string,
+  culturaCadastrada: string,
   uf: string,
 ): Promise<{
   fonte: FonteDePreco;
@@ -46,6 +50,7 @@ export async function buscarPrecosDaUf(
   regionais: LinhaRegional[];
   motivoRegional: "sem_estado" | "estado_defasado" | null;
 }> {
+  const cultura = normalizarCultura(culturaCadastrada);
   const desde = new Date();
   desde.setDate(desde.getDate() - DIAS_DE_HISTORICO);
   const desdeIso = desde.toISOString().slice(0, 10);
@@ -109,9 +114,10 @@ export async function buscarPrecosDaUf(
 /** Data da praça mais recente de uma cultura numa UF (ou null). Mesma variante principal de buscarPrecosDaUf. */
 export async function ultimaDataRegional(
   supabase: SupabaseClient,
-  cultura: string,
+  culturaCadastrada: string,
   uf: string,
 ): Promise<string | null> {
+  const cultura = normalizarCultura(culturaCadastrada);
   const principal = produtoPrincipal(cultura);
   const consulta = (soPrincipal: boolean) => {
     let q = supabase

@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { buscarFrete, ehPracaDePorto, type ResultadoFrete } from "@/lib/paridade";
+import { buscarReferenciaMercado, type ReferenciaMercado } from "@/lib/referenciaMercado";
+import { normalizarCultura } from "@/config/culturas";
 import { escolherFontePreco, mediaDePracas } from "@/lib/precoFonte";
 import { produtoPrincipal } from "@/lib/precos";
 
@@ -36,6 +38,11 @@ export type ResultadoBuscarPreco = {
   origem_preco?: "estado" | "regional";
   /** Só quando origem_preco="regional": média das praças do interior. */
   preco_medio_regioes?: number | null;
+  /**
+   * Quando o estado não tem preço recente (ou nenhum) da cultura: preço em
+   * outros estados e, no boi, o futuro da B3. `frase` é texto pronto pra citar.
+   */
+  referencia_mercado?: ReferenciaMercado;
   erro?: "produto_ausente" | "uf_ausente";
 };
 
@@ -44,7 +51,8 @@ export async function buscarPreco(
   args: { produto: string | null; uf: string | null; incluir_frete: boolean },
   ctx?: { lat: number | null; lon: number | null; pediuFrete?: boolean },
 ): Promise<ResultadoBuscarPreco> {
-  const { produto, uf, incluir_frete } = args;
+  let { produto } = args;
+  const { uf, incluir_frete } = args;
 
   // Defesa em profundidade: o prompt já instrui a perguntar em vez de
   // chutar quando não sabe produto/UF, mas o schema permite null — se o
@@ -53,6 +61,8 @@ export async function buscarPreco(
   // preenchia UF sozinho em vez de perguntar).
   if (!produto) return { encontrado: false, erro: "produto_ausente" };
   if (!uf) return { encontrado: false, erro: "uf_ausente" };
+  // "carne bovina", "gado" etc. são o boi gordo na base (ver config/culturas.ts).
+  produto = normalizarCultura(produto);
 
   // Dois tipos de dado convivem: o número único do estado (regiao='', ex:
   // Conab) e o preço por praça/região (ex: BBM, diário). O do estado vence, a
@@ -111,15 +121,34 @@ export async function buscarPreco(
       .ilike("produto", `%${produto}%`)
       .gte("data_referencia", desde.toISOString().slice(0, 10))
       .returns<{ uf: string }[]>();
+    const referencia = await buscarReferenciaMercado(supabase, {
+      cultura: produto,
+      uf,
+      ultimaDataUf: null,
+    });
     return {
       encontrado: false,
       ufs_com_dado: [...new Set((outrasUfs ?? []).map((r) => r.uf))],
+      ...(referencia ? { referencia_mercado: referencia } : {}),
     };
   }
 
   // Com várias praças, o preço de referência é a média delas (na unidade de
   // saca de 60kg quando houver) — antes pegava a primeira linha que o banco
   // devolvesse, ou seja, uma praça arbitrária.
+  // Dado do estado antigo demais (ex: boi de SC, 50 dias): a resposta traz
+  // também o que existe de recente em outros estados (e o futuro da B3 no boi).
+  const dataMaisRecente = atuais
+    .map((r) => r.data_referencia)
+    .sort()
+    .at(-1)!;
+  const referencia = await buscarReferenciaMercado(supabase, {
+    cultura: produto,
+    uf,
+    ultimaDataUf: dataMaisRecente,
+  });
+  const comReferencia = referencia ? { referencia_mercado: referencia } : {};
+
   const linhasSaca = atuais.filter((r) => (r.unidade ?? "").includes("60"));
   const paraMedia = linhasSaca.length > 0 ? linhasSaca : atuais;
   const precoMedioRegioes =
@@ -130,7 +159,7 @@ export async function buscarPreco(
       : { origem_preco: "estado" as const };
 
   if (!incluir_frete) {
-    return { encontrado: true, precos: atuais, ...dadosDeOrigem };
+    return { encontrado: true, precos: atuais, ...dadosDeOrigem, ...comReferencia };
   }
 
   // O preço da região é o que o produtor recebe (já descontado do frete até o
@@ -145,13 +174,13 @@ export async function buscarPreco(
   if (!frete) {
     return ctx?.pediuFrete
       ? { encontrado: true, precos: atuais, frete: null, ...dadosDeOrigem }
-      : { encontrado: true, precos: atuais, ...dadosDeOrigem };
+      : { encontrado: true, precos: atuais, ...dadosDeOrigem, ...comReferencia };
   }
   // Frete de referência sem paridade (MT, GO, milho...) só entra se o produtor
   // perguntou de frete: sem porto pra comparar, é ruído que o modelo repetia
   // em toda resposta.
   if (frete.tipo === "frete_referencia" && !ctx?.pediuFrete) {
-    return { encontrado: true, precos: atuais, ...dadosDeOrigem };
+    return { encontrado: true, precos: atuais, ...dadosDeOrigem, ...comReferencia };
   }
 
   return {
@@ -160,5 +189,6 @@ export async function buscarPreco(
     frete: frete.rota,
     frete_e_paridade: frete,
     ...dadosDeOrigem,
+    ...comReferencia,
   };
 }

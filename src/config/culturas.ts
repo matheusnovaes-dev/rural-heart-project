@@ -3,7 +3,7 @@
 // coluna `produto` (que guarda o nome completo, ex: "SOJA EM GRÃOS (60 kg)").
 export type Cultura = { value: string; label: string };
 
-export const culturas: Cultura[] = [
+const CATALOGO: Cultura[] = [
   { value: "abacaxi", label: "Abacaxi" },
   { value: "açaí", label: "Açaí" },
   { value: "algodão em caroço", label: "Algodão em caroço" },
@@ -19,7 +19,7 @@ export const culturas: Cultura[] = [
   { value: "baru", label: "Baru" },
   { value: "batata", label: "Batata" },
   { value: "batata-doce", label: "Batata-doce" },
-  { value: "boi", label: "Boi" },
+  { value: "boi", label: "Boi gordo (carne bovina)" },
   { value: "borracha", label: "Borracha" },
   { value: "buriti", label: "Buriti" },
   { value: "cacau cultivado", label: "Cacau cultivado" },
@@ -29,7 +29,6 @@ export const culturas: Cultura[] = [
   { value: "cana de açúcar", label: "Cana-de-açúcar" },
   { value: "canola", label: "Canola" },
   { value: "cará", label: "Cará" },
-  { value: "carne bovina", label: "Carne bovina" },
   { value: "carne caprina", label: "Carne caprina" },
   { value: "carne ovina", label: "Carne ovina" },
   { value: "caroço de algodão", label: "Caroço de algodão" },
@@ -39,9 +38,7 @@ export const culturas: Cultura[] = [
   { value: "cebola", label: "Cebola" },
   { value: "coco de babaçu", label: "Coco de babaçu" },
   { value: "erva mate", label: "Erva-mate" },
-  { value: "farelo de soja", label: "Farelo de soja" },
   { value: "farinha de mandioca", label: "Farinha de mandioca" },
-  { value: "farinha de trigo", label: "Farinha de trigo" },
   { value: "feijão", label: "Feijão" },
   { value: "frango", label: "Frango" },
   { value: "inhame", label: "Inhame" },
@@ -80,3 +77,55 @@ export const culturas: Cultura[] = [
   { value: "umbu", label: "Umbu" },
   { value: "uva", label: "Uva" },
 ];
+
+/**
+ * Só entram no catálogo culturas com preço de verdade na base (conferido em
+ * 2026-09-20: "carne bovina", "farelo de soja" e "farinha de trigo" tinham zero
+ * linhas em qualquer estado e foram tiradas; quem digitava "carne bovina" via
+ * um painel vazio, ver ALIAS_CULTURA). Ordem: as mais usadas primeiro, o resto
+ * em ordem alfabética.
+ */
+export const DESTAQUES = [
+  "soja",
+  "milho",
+  "boi",
+  "leite de vaca",
+  "café arábica",
+  "café conillon",
+  "feijão",
+  "arroz",
+  "trigo",
+  "algodão em pluma",
+  "cana de açúcar",
+  "suíno",
+  "frango",
+];
+
+export const culturas: Cultura[] = [
+  ...DESTAQUES.map((v) => CATALOGO.find((c) => c.value === v)).filter((c): c is Cultura => !!c),
+  ...CATALOGO.filter((c) => !DESTAQUES.includes(c.value)),
+];
+
+/**
+ * Nomes que o produtor (ou o cadastro antigo) usa pra uma cultura que a base
+ * chama de outro jeito. A carne bovina é o boi gordo (arroba de 15 kg).
+ */
+const ALIAS_CULTURA: Record<string, string> = {
+  "carne bovina": "boi",
+  "carne de boi": "boi",
+  "boi gordo": "boi",
+  gado: "boi",
+  "gado de corte": "boi",
+  bovino: "boi",
+  bovinos: "boi",
+  "pecuária de corte": "boi",
+};
+
+/** Cultura como a base de preços a conhece: minúscula, sem espaço nas pontas e sem apelido. */
+export function normalizarCultura(cultura: string): string {
+  const c = cultura.trim().toLowerCase();
+  return ALIAS_CULTURA[c] ?? c;
+}
+
+export const ehBoi = (cultura: string | null | undefined): boolean =>
+  !!cultura && normalizarCultura(cultura) === "boi";

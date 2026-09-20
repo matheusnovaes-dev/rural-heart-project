@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { buscarPrevisao } from "@/lib/clima";
 import { CULTURA_PARA_B3 } from "@/config/b3";
+import { normalizarCultura } from "@/config/culturas";
 import {
   calcularPosicao,
   combinarComClima,
@@ -44,7 +45,7 @@ export async function buscarSinalVenda(
   const serie = serieUnica(rows ?? []);
   const posicao = calcularPosicao(serie);
 
-  const codigo = CULTURA_PARA_B3[produto.toLowerCase()]?.[0];
+  const codigo = CULTURA_PARA_B3[normalizarCultura(produto)]?.[0];
   let futuros: { mesAnoVencimento: string; preco: number }[] | null = null;
   if (codigo) {
     const inicioMesAtual = new Date();

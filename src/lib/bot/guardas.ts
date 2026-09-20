@@ -388,3 +388,22 @@ export function garantirParidade(
   const separador = /[.!?]$/.test(semPontuacaoFinal) ? " " : ". ";
   return `${semPontuacaoFinal}${separador}${paridade.frase}`;
 }
+
+/**
+ * Referência de mercado (estado sem dado recente): a resposta tem que trazer ao
+ * menos um dos valores da referência (outro estado ou B3). Sem isso o modelo
+ * respondia só "não tenho dado recente" e o produtor ficava sem nada. A frase
+ * pronta entra no fim.
+ */
+export function garantirReferenciaMercado(
+  resposta: string,
+  referencia: { valores: number[]; frase: string } | null,
+): string {
+  if (!referencia || referencia.valores.length === 0) return resposta;
+  const citados = extrairValoresReais(resposta);
+  const citou = referencia.valores.some((v) => citados.some((c) => Math.abs(c - v) <= 0.0101));
+  if (citou) return resposta;
+  const semPontuacaoFinal = resposta.trimEnd();
+  const separador = /[.!?]$/.test(semPontuacaoFinal) ? " " : ". ";
+  return `${semPontuacaoFinal}${separador}${referencia.frase}`;
+}

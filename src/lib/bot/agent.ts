@@ -24,6 +24,7 @@ import {
   corrigirLinkDePainelParaClienteSemLogin,
   garantirMediaDasPracas,
   garantirParidade,
+  garantirReferenciaMercado,
   garantirCotacaoLeite,
   garantirRelacaoLeiteMilho,
   medidasNaoAutorizadas,
@@ -161,6 +162,35 @@ function extrairMediaDasPracas(messages: OpenAIMessage[]): number | null {
     }
   }
   return medias.length === 1 ? medias[0]! : null;
+}
+
+// Referência de mercado que buscar_preco trouxe (estado sem dado recente), só
+// quando a resposta é sobre UMA consulta de preço.
+function extrairReferenciaMercado(
+  messages: OpenAIMessage[],
+): { valores: number[]; frase: string } | null {
+  const nomePorToolCallId = new Map<string, string>();
+  for (const m of messages) {
+    if (m.role === "assistant" && m.tool_calls) {
+      for (const tc of m.tool_calls) nomePorToolCallId.set(tc.id, tc.function.name);
+    }
+  }
+  const achadas: ({ valores: number[]; frase: string } | null)[] = [];
+  for (const m of messages) {
+    if (m.role !== "tool" || !m.tool_call_id) continue;
+    if (nomePorToolCallId.get(m.tool_call_id) !== "buscar_preco") continue;
+    try {
+      const r = JSON.parse(m.content ?? "{}")?.referencia_mercado;
+      achadas.push(
+        r && Array.isArray(r.valores) && typeof r.frase === "string"
+          ? { valores: r.valores as number[], frase: r.frase }
+          : null,
+      );
+    } catch {
+      achadas.push(null);
+    }
+  }
+  return achadas.length === 1 ? achadas[0]! : null;
 }
 
 // Paridade de porto que buscar_preco calculou, só quando a resposta é sobre UMA
@@ -447,12 +477,15 @@ export async function runAgent(input: {
     const resposta = garantirCotacaoLeite(
       garantirRelacaoLeiteMilho(
         garantirMediaDasPracas(
-          garantirParidade(
-            garantirRotaFrete(
-              removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
-              extrairUltimoFreteCitado(messages),
+          garantirReferenciaMercado(
+            garantirParidade(
+              garantirRotaFrete(
+                removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
+                extrairUltimoFreteCitado(messages),
+              ),
+              extrairParidade(messages),
             ),
-            extrairParidade(messages),
+            extrairReferenciaMercado(messages),
           ),
           extrairMediaDasPracas(messages),
         ),

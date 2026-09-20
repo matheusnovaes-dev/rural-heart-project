@@ -19,6 +19,7 @@ import { temAcessoPrata, useAssinatura } from "@/lib/planos";
 import type { Produtor } from "@/lib/auth";
 import { InsightCard } from "@/components/dashboard/InsightCard";
 import { CULTURA_PARA_B3 } from "@/config/b3";
+import { normalizarCultura } from "@/config/culturas";
 import {
   calcularPosicao,
   combinarComClima,
@@ -108,7 +109,7 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
     null,
   );
 
-  const cultura = produtor.cultura_principal;
+  const cultura = produtor.cultura_principal ? normalizarCultura(produtor.cultura_principal) : null;
   const uf = produtor.uf;
 
   useEffect(() => {

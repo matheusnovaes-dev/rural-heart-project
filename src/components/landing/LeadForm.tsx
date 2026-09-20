@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -19,7 +19,9 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -28,6 +30,7 @@ import { normalizarWhatsapp } from "@/lib/telefone";
 import { useAuth } from "@/lib/auth";
 import { buildWhatsAppLink, pricingPlans } from "@/config/site";
 import { ufs } from "@/config/ufs";
+import { culturas, DESTAQUES, normalizarCultura } from "@/config/culturas";
 import { enviarBoasVindasWhatsApp } from "@/lib/notificacoes.server";
 import { lerCookiesMeta, trackCadastroConcluido, trackCadastroIniciado } from "@/lib/metaPixel";
 import { trackConversaoServidor } from "@/lib/metaCapi.server";
@@ -45,12 +48,12 @@ const leadSchema = z.object({
 
 type LeadFormValues = z.infer<typeof leadSchema>;
 
-const cropOptions = [
-  { value: "soja", label: "Soja" },
-  { value: "milho", label: "Milho" },
-  { value: "leite de vaca", label: "Leite" },
-  { value: "outra", label: "Outra cultura" },
-];
+// Só as culturas que a base de preços de fato cobre (config/culturas.ts). Antes
+// havia "Soja, Milho, Outra cultura": os dois primeiros cadastros reais depois
+// das mudanças de 2026-09-19 caíram em cultura sem dado ("outra" e "carne
+// bovina") e viram um painel vazio.
+const culturasMaisUsadas = culturas.filter((c) => DESTAQUES.includes(c.value));
+const culturasOutras = culturas.filter((c) => !DESTAQUES.includes(c.value));
 
 export function LeadForm({ className }: { className?: string }) {
   const [status, setStatus] = useState<"idle" | "submitting" | "error">("idle");
@@ -65,6 +68,28 @@ export function LeadForm({ className }: { className?: string }) {
     resolver: zodResolver(leadSchema),
     defaultValues: { name: "", whatsapp: "", crop: "", uf: "", plano: "bronze" },
   });
+
+  // Cultura + estado sem nenhum preço recente: avisa antes de cadastrar em vez
+  // de deixar a pessoa descobrir num painel vazio. Não bloqueia (o painel mostra
+  // referências de outros estados).
+  const cultura = form.watch("crop");
+  const ufEscolhida = form.watch("uf");
+  const [semDadoNoEstado, setSemDadoNoEstado] = useState(false);
+  useEffect(() => {
+    setSemDadoNoEstado(false);
+    if (!supabase || !cultura || !ufEscolhida) return;
+    let ativo = true;
+    // A tabela de preços só é legível com login e este formulário roda sem
+    // login: a função devolve só "há preço recente?", sem expor dado.
+    supabase
+      .rpc("tem_preco_recente", { p_cultura: normalizarCultura(cultura), p_uf: ufEscolhida })
+      .then(({ data, error }) => {
+        if (ativo && !error && data === false) setSemDadoNoEstado(true);
+      });
+    return () => {
+      ativo = false;
+    };
+  }, [cultura, ufEscolhida]);
 
   // Etapa 1 pede só o WhatsApp, pra reduzir a fricção de encarar 5 campos
   // de uma vez assim que a pessoa chega vinda de um anúncio. Só valida o
@@ -382,11 +407,22 @@ export function LeadForm({ className }: { className?: string }) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {cropOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
+                        <SelectGroup>
+                          <SelectLabel>Mais usadas</SelectLabel>
+                          {culturasMaisUsadas.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                        <SelectGroup>
+                          <SelectLabel>Outras culturas</SelectLabel>
+                          {culturasOutras.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -418,6 +454,16 @@ export function LeadForm({ className }: { className?: string }) {
                   </FormItem>
                 )}
               />
+
+              {semDadoNoEstado && (
+                <p
+                  role="status"
+                  className="rounded-lg border border-border bg-secondary/60 px-3 py-2 text-xs text-foreground"
+                >
+                  Ainda não temos preço recente dessa cultura nesse estado. Você vai ver o que
+                  existe de mais recente em outros estados, e a gente segue ampliando a cobertura.
+                </p>
+              )}
 
               <FormField
                 control={form.control}

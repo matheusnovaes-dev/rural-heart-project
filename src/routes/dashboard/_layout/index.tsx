@@ -26,6 +26,9 @@ import { Watchlist } from "@/components/dashboard/Watchlist";
 import { CompletarAcessoCard } from "@/components/dashboard/CompletarAcessoCard";
 import { BoletimSemanal } from "@/components/dashboard/BoletimSemanal";
 import { LeiteCard } from "@/components/dashboard/LeiteCard";
+import { ReferenciaMercadoCard } from "@/components/dashboard/ReferenciaMercadoCard";
+import { DIAS_DADO_DESATUALIZADO } from "@/lib/referenciaMercado";
+import { diasEntre } from "@/lib/precoFonte";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Previsao } from "@/lib/clima";
 import { buscarPrevisaoPorCoordenadasServidor, buscarPrevisaoServidor } from "@/lib/clima.server";
@@ -254,6 +257,16 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
   const mediaRegional =
     precosRegionais.length > 0 ? mediaDePracas(precosRegionais.map((r) => r.preco)) : null;
   const precoExibido = atual?.preco ?? null;
+  // Data mais recente que o estado tem da cultura (série do estado ou praças);
+  // undefined enquanto carrega, null se não tem nada.
+  const ultimaDataDoEstado =
+    serie === null
+      ? undefined
+      : (atual?.data_referencia ?? precosRegionais[0]?.data_referencia ?? null);
+  const regionalDesatualizado =
+    precosRegionais[0] != null &&
+    diasEntre(precosRegionais[0].data_referencia, new Date().toISOString().slice(0, 10)) >
+      DIAS_DADO_DESATUALIZADO;
 
   return (
     <div className="flex flex-col gap-5">
@@ -373,9 +386,11 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
               ) : precosRegionais.length > 0 ? (
                 <div className="flex flex-col gap-2">
                   <p className="text-sm opacity-80">
-                    {motivoRegional === "estado_defasado"
-                      ? `O preço do estado (${produtor.uf}) está desatualizado. Estes são os preços mais recentes por região, de ${dataCurta(precosRegionais[0]!.data_referencia)}:`
-                      : `${produtor.uf} não tem um preço único pro estado, só por região:`}
+                    {regionalDesatualizado
+                      ? `O último preço por região em ${produtor.uf} é de ${dataCurta(precosRegionais[0]!.data_referencia)} e está desatualizado (veja as referências abaixo):`
+                      : motivoRegional === "estado_defasado"
+                        ? `O preço do estado (${produtor.uf}) está desatualizado. Estes são os preços mais recentes por região, de ${dataCurta(precosRegionais[0]!.data_referencia)}:`
+                        : `${produtor.uf} não tem um preço único pro estado, só por região:`}
                   </p>
                   <div className="flex flex-col gap-1">
                     {precosRegionais.map((r) => (
@@ -409,7 +424,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                   <span>
                     {/leite/i.test(produtor.cultura_principal ?? "")
                       ? `Leite não tem cotação pública diária em ${produtor.uf ?? "sua região"}. Veja as referências abaixo.`
-                      : `Ainda não temos preço pra ${produtor.cultura_principal ?? "sua cultura"} em ${produtor.uf ?? "sua região"}.`}
+                      : `Ainda não temos preço pra ${produtor.cultura_principal ?? "sua cultura"} em ${produtor.uf ?? "sua região"}. Veja as referências de outros estados logo abaixo.`}
                   </span>
                   <TrocarCulturaDialog produtor={produtor} />
                 </div>
@@ -424,6 +439,8 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
           </Card>
 
           {/leite/i.test(produtor.cultura_principal ?? "") && <LeiteCard produtor={produtor} />}
+
+          <ReferenciaMercadoCard produtor={produtor} ultimaData={ultimaDataDoEstado} />
 
           <InsightsPanel produtor={produtor} />
 
