@@ -291,7 +291,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
         <div>
           <p className="text-xs font-semibold uppercase text-muted-foreground">Visão geral</p>
           <h1 className="mt-1 font-display text-2xl font-semibold text-foreground text-balance sm:text-3xl">
-          {greeting()}, {produtor.nome.split(" ")[0]}
+            {greeting()}, {produtor.nome.split(" ")[0]}
           </h1>
         </div>
         <p className="mt-2 text-sm font-medium text-muted-foreground sm:mt-0">{todayLabel()}</p>
@@ -494,7 +494,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                     return (
                       <div
                         key={dia}
-                         className={`flex min-w-0 flex-col items-center gap-0.5 rounded-md border p-1.5 text-center ${
+                        className={`flex min-w-0 flex-col items-center gap-0.5 rounded-md border p-1.5 text-center ${
                           pct >= 60
                             ? "border-destructive/20 bg-destructive/10 text-destructive"
                             : "border-transparent bg-secondary text-muted-foreground"
@@ -541,7 +541,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
               {lembretes.map((l) => (
                 <div
                   key={l.id}
-                   className="flex items-center justify-between gap-2 rounded-md border border-border p-2.5 text-sm transition-colors hover:bg-accent/50"
+                  className="flex items-center justify-between gap-2 rounded-md border border-border p-2.5 text-sm transition-colors hover:bg-accent/50"
                 >
                   <span className="truncate font-medium text-foreground">{l.titulo}</span>
                   <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">

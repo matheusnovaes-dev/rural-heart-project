@@ -45,7 +45,8 @@ export function CompletarAcessoCard() {
         email: emailSalvo,
         password: senha,
       });
-      if (erroLogin) throw new Error("Acesso salvo, mas não conseguimos entrar agora. Recarregue a página.");
+      if (erroLogin)
+        throw new Error("Acesso salvo, mas não conseguimos entrar agora. Recarregue a página.");
       await refresh();
       toast.success(`Pronto! Agora você entra com ${emailSalvo} e a senha que criou.`);
     } catch (err) {

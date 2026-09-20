@@ -53,9 +53,9 @@ function CardDestaque({ boletim, destaque }: { boletim: Boletim; destaque?: bool
   return (
     <div
       className={
-         destaque
-           ? "rounded-md border border-border bg-secondary/35 p-3.5"
-           : "rounded-md border border-border p-3 transition-colors hover:bg-accent/50"
+        destaque
+          ? "rounded-md border border-border bg-secondary/35 p-3.5"
+          : "rounded-md border border-border p-3 transition-colors hover:bg-accent/50"
       }
     >
       <p className="text-xs text-muted-foreground">

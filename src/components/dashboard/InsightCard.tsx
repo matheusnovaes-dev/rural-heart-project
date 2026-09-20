@@ -34,7 +34,9 @@ export function InsightCard({
           <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
         </div>
       </CardHeader>
-      <CardContent className="px-4 pb-0 text-sm leading-relaxed text-foreground">{children}</CardContent>
+      <CardContent className="px-4 pb-0 text-sm leading-relaxed text-foreground">
+        {children}
+      </CardContent>
     </Card>
   );
 }
