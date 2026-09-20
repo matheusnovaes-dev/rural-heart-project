@@ -57,8 +57,8 @@ export function ReferenciaMercadoCard({
       : null;
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
+    <Card className="border-border/80 shadow-none">
+      <CardHeader className="border-b border-border/70 px-4 pb-3">
         <CardTitle className="flex items-center gap-2 text-base capitalize">
           <BarChart3 className="size-4 text-primary" />
           {nomeCultura}: referências de mercado
@@ -67,7 +67,7 @@ export function ReferenciaMercadoCard({
           {aviso ?? "Preços recentes em outros estados e o mercado futuro, pra você comparar."}
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+      <CardContent className="flex flex-col gap-4 px-4">
         {ref === undefined ? (
           <Skeleton className="h-24 w-full" />
         ) : (

@@ -33,7 +33,7 @@ function formatarData(iso: string) {
 
 function LinhaBoletim({ titulo, data }: { titulo: string; data: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-border p-2.5">
+    <div className="flex items-center gap-3 rounded-md border border-border p-2.5 transition-colors hover:bg-accent/50">
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-foreground">{titulo}</p>
         <p className="text-xs text-muted-foreground">{formatarData(data)}</p>
@@ -53,7 +53,9 @@ function CardDestaque({ boletim, destaque }: { boletim: Boletim; destaque?: bool
   return (
     <div
       className={
-        destaque ? "rounded-lg border border-border p-3.5" : "rounded-lg border border-border p-3"
+        destaque
+          ? "rounded-md border border-border bg-secondary/35 p-3.5"
+          : "rounded-md border border-border p-3 transition-colors hover:bg-accent/50"
       }
     >
       <p className="text-xs text-muted-foreground">
@@ -100,15 +102,15 @@ export function BoletimSemanal({ produtor }: { produtor: Produtor }) {
   if (!cadeia) return null;
 
   return (
-    <Card className="gap-3">
-      <CardHeader className="pb-0">
+    <Card className="gap-3 border-border/80 shadow-none">
+      <CardHeader className="border-b border-border/70 px-4 pb-3">
         <CardTitle className="flex items-center gap-2 font-display text-base font-semibold">
           <Newspaper className="size-4 text-primary" />
           Boletim Semanal
         </CardTitle>
         <CardDescription>Análise de mercado da Imea pra sua cultura, direto aqui.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4">
         {boletins === null ? (
           <div className="flex flex-col gap-2">
             <Skeleton className="h-28 w-full" />

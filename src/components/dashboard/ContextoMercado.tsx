@@ -285,7 +285,7 @@ export function ContextoMercado({ cultura }: { cultura?: string }) {
   function Bloco({ item, sufixo }: { item: (typeof itens)[number]; sufixo: string }) {
     return (
       <div key={`${item.chave}-${sufixo}`} className="flex shrink-0 items-center gap-2 pr-8">
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-secondary text-primary">
           <item.icone className="size-4" />
         </span>
         <div className="whitespace-nowrap">
@@ -301,7 +301,7 @@ export function ContextoMercado({ cultura }: { cultura?: string }) {
   const rolar = itens.length >= 4;
 
   return (
-    <Card className="gap-3 overflow-hidden py-4">
+    <Card className="gap-3 overflow-hidden border-border/80 py-4 shadow-none">
       <CardContent className="group px-0">
         {rolar ? (
           <div className="overflow-hidden px-4">

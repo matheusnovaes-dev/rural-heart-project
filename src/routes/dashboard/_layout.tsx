@@ -96,14 +96,17 @@ function DashboardGuard() {
   if (cooperativa) {
     return (
       <TooltipProvider delayDuration={200}>
-        <SidebarProvider>
+        <SidebarProvider className="dashboard-shell">
           <CooperativaSidebar cooperativaNome={cooperativa.nome} isAdmin={papel === "admin"} />
           <SidebarInset>
-            <header className="flex h-14 items-center gap-2 border-b border-border px-4">
+            <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-border/80 bg-background/95 px-4 backdrop-blur-sm sm:px-6">
               <SidebarTrigger />
+              <span className="hidden text-xs font-medium text-muted-foreground sm:inline">
+                Inteligência de mercado rural
+              </span>
               <AtalhoBusca />
             </header>
-            <div className="flex-1 p-4 sm:p-6">
+            <div className="flex-1 p-4 sm:p-6 lg:p-8">
               <Outlet />
             </div>
           </SidebarInset>
@@ -116,11 +119,11 @@ function DashboardGuard() {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="min-h-screen bg-background">
+      <div className="dashboard-shell min-h-screen bg-background">
         <ProdutorHeader nome={produtor!.nome} temAssinaturaPropria={!produtor!.cooperativa_id} />
         {/* max-w-6xl, não max-w-lg: a coluna de 512px fazia o painel parecer
             um app de celular esticado no desktop. Mobile segue coluna única. */}
-        <main className="mx-auto max-w-6xl px-4 py-6">
+        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
           <Outlet />
         </main>
       </div>
@@ -133,7 +136,7 @@ function DashboardGuard() {
 /** Dica visual de que o ⌘K existe — senão ninguém descobre o atalho. */
 function AtalhoBusca() {
   return (
-    <span className="ml-auto hidden items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground sm:flex">
+    <span className="ml-auto hidden items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs text-muted-foreground shadow-sm sm:flex">
       <Search className="size-3" />
       Buscar
       <kbd className="ml-1 font-mono text-[10px]">⌘K</kbd>
@@ -170,18 +173,23 @@ function CooperativaSidebar({
 
   return (
     <Sidebar>
-      <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-1.5">
-          <span className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
+      <SidebarHeader className="border-b border-sidebar-border px-3 py-4">
+        <div className="flex items-center gap-3 px-1">
+          <span className="flex size-9 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
             <Sprout className="size-3.5" />
           </span>
-          <span className="truncate font-display text-sm font-semibold text-foreground">
-            {cooperativaNome}
-          </span>
+          <div className="min-w-0">
+            <span className="block truncate font-display text-sm font-semibold text-sidebar-foreground">
+              {cooperativaNome}
+            </span>
+            <span className="block text-[10px] font-medium uppercase text-sidebar-foreground/55">
+              Painel executivo
+            </span>
+          </div>
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
+        <SidebarGroup className="px-3 py-4">
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
@@ -198,7 +206,7 @@ function CooperativaSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t border-sidebar-border p-3">
         <SignOutButton />
       </SidebarFooter>
     </Sidebar>
@@ -233,10 +241,10 @@ function ProdutorHeader({
     : produtorNavItemsBase;
 
   return (
-    <header className="border-b border-border bg-card">
-      <div className="flex items-center justify-between px-4 py-3">
+    <header className="sticky top-0 z-20 border-b border-border/80 bg-card/95 backdrop-blur-sm">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
         <div className="flex items-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <span className="flex size-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <Sprout className="size-4" />
           </span>
           <div>
@@ -246,7 +254,7 @@ function ProdutorHeader({
         </div>
         <SignOutButton compact />
       </div>
-      <nav className="flex items-center gap-1 overflow-x-auto px-2 pb-2">
+      <nav className="mx-auto flex max-w-7xl items-center gap-1 overflow-x-auto px-3 pb-2 sm:px-5">
         {produtorNavItems.map((item) => {
           const active = pathname === item.to;
           return (
@@ -254,10 +262,10 @@ function ProdutorHeader({
               key={item.to}
               to={item.to}
               data-tour={item.to}
-              className={`flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`flex shrink-0 items-center gap-1.5 rounded-md border-b-2 px-3 py-2 text-xs font-medium transition-colors ${
                 active
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                  ? "border-primary bg-accent text-primary"
+                  : "border-transparent text-muted-foreground hover:bg-accent/70 hover:text-foreground"
               }`}
             >
               <item.icon className="size-3.5" />
