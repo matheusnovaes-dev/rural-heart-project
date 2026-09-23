@@ -407,3 +407,28 @@ export function garantirReferenciaMercado(
   const separador = /[.!?]$/.test(semPontuacaoFinal) ? " " : ". ";
   return `${semPontuacaoFinal}${separador}${referencia.frase}`;
 }
+
+// ---------------------------------------------------------------------------
+// Canal que o bot não tem (áudio, foto, vídeo, ligação)
+// ---------------------------------------------------------------------------
+
+// Achado real 2026-09-22: uma produtora disse que não sabe ler e pediu áudio;
+// o bot respondeu "vou me atentar a não enviar mais texto" — uma promessa
+// impossível, já que texto é o único canal que ele tem, e a resposta seguinte
+// dele já quebrou essa promessa (era texto de novo). O prompt já pede pra não
+// prometer isso, mas é o tipo de regra que o modelo ignora de vez em quando —
+// esta é a rede de segurança determinística.
+const PADRAO_PROMESSA_IMPOSSIVEL =
+  /\bn[ãa]o\b(?:\s+\S+){0,4}\s+(mandar|enviar)\b[^.!?]{0,40}\btexto\b|\bvou (parar|deixar) de (mandar|enviar)\b[^.!?]{0,40}\btexto\b/i;
+
+export const RESPOSTA_SO_TEXTO =
+  "Só consigo responder por texto aqui, não tenho como mandar áudio. Mas posso continuar te ajudando por escrito, sem problema.";
+
+/**
+ * Troca a resposta inteira quando ela promete parar de mandar texto (a única
+ * coisa que o bot sabe fazer). Substitui tudo, não só a frase, porque uma
+ * promessa que ele não pode cumprir é pior do que uma resposta mais curta.
+ */
+export function garantirCanalDeTexto(resposta: string): string {
+  return PADRAO_PROMESSA_IMPOSSIVEL.test(resposta) ? RESPOSTA_SO_TEXTO : resposta;
+}

@@ -25,6 +25,7 @@ import {
   garantirMediaDasPracas,
   garantirParidade,
   garantirReferenciaMercado,
+  garantirCanalDeTexto,
   garantirCotacaoLeite,
   garantirRelacaoLeiteMilho,
   medidasNaoAutorizadas,
@@ -474,25 +475,27 @@ export async function runAgent(input: {
 
     const numerosPermitidos = coletarNumerosPermitidos(messages, texto, historico);
     const leite = extrairResultadoLeite(messages);
-    const resposta = garantirCotacaoLeite(
-      garantirRelacaoLeiteMilho(
-        garantirMediaDasPracas(
-          garantirReferenciaMercado(
-            garantirParidade(
-              garantirRotaFrete(
-                removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
-                extrairUltimoFreteCitado(messages),
+    const resposta = garantirCanalDeTexto(
+      garantirCotacaoLeite(
+        garantirRelacaoLeiteMilho(
+          garantirMediaDasPracas(
+            garantirReferenciaMercado(
+              garantirParidade(
+                garantirRotaFrete(
+                  removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
+                  extrairUltimoFreteCitado(messages),
+                ),
+                extrairParidade(messages),
               ),
-              extrairParidade(messages),
+              extrairReferenciaMercado(messages),
             ),
-            extrairReferenciaMercado(messages),
+            extrairMediaDasPracas(messages),
           ),
-          extrairMediaDasPracas(messages),
+          leite.fraseRelacao,
+          numerosPermitidos,
         ),
-        leite.fraseRelacao,
-        numerosPermitidos,
+        leite.cotacao,
       ),
-      leite.cotacao,
     );
 
     const naoAutorizados = valoresNaoAutorizados(resposta, numerosPermitidos);
