@@ -108,9 +108,9 @@ export function Watchlist({ produtor }: { produtor: Produtor }) {
 
   if (!temAcessoOuro(plano)) {
     return (
-      <Card>
+      <Card className="border-border/80 shadow-none">
         <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-          <span className="flex size-11 items-center justify-center rounded-full bg-gold-soft text-gold-foreground">
+          <span className="flex size-11 items-center justify-center rounded-md bg-gold-soft text-gold-foreground">
             <Lock className="size-5" />
           </span>
           <div className="space-y-1">
@@ -132,8 +132,8 @@ export function Watchlist({ produtor }: { produtor: Produtor }) {
   }
 
   return (
-    <Card className="gap-3">
-      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-0">
+    <Card className="gap-3 border-border/80 shadow-none">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 border-b border-border/70 px-4 pb-3">
         <div>
           <CardTitle className="flex items-center gap-2 font-display text-base font-semibold">
             <Star className="size-4 text-gold" />
@@ -162,7 +162,7 @@ export function Watchlist({ produtor }: { produtor: Produtor }) {
           </DialogContent>
         </Dialog>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4">
         {itens === null ? (
           <div className="flex flex-col gap-2">
             {Array.from({ length: 2 }).map((_, i) => (
@@ -183,7 +183,7 @@ export function Watchlist({ produtor }: { produtor: Produtor }) {
               return (
                 <div
                   key={item.id}
-                  className="flex items-center gap-3 rounded-lg border border-border p-2.5"
+                  className="flex items-center gap-3 rounded-md border border-border p-2.5 transition-colors hover:bg-accent/50"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-foreground">

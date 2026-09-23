@@ -39,6 +39,23 @@ import { buildWhatsAppLink } from "@/config/site";
 import { verificarConversaWhatsapp } from "@/lib/notificacoes.server";
 
 export const Route = createFileRoute("/dashboard/_layout/")({
+  head: () => ({
+    meta: [
+      { title: "Visão geral | Safralume" },
+      {
+        name: "description",
+        content: "Resumo executivo de preços, mercado, clima e atividades da sua operação rural.",
+      },
+      { property: "og:title", content: "Visão geral | Safralume" },
+      {
+        property: "og:description",
+        content: "Resumo executivo de preços, mercado, clima e atividades da sua operação rural.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: DashboardHome,
 });
 
@@ -62,7 +79,7 @@ function DashboardHome() {
   const { produtor, cooperativa } = useAuth();
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
       <AssinaturaBanner produtorId={produtor?.id} cooperativaId={cooperativa?.id} />
       {produtor ? (
         <ProdutorHome produtor={produtor} />
@@ -269,19 +286,22 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
       DIAS_DADO_DESATUALIZADO;
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-1">
-        <p className="text-xs font-medium text-muted-foreground">{todayLabel()}</p>
-        <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground text-balance">
-          {greeting()}, {produtor.nome.split(" ")[0]}
-        </h1>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-1 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase text-muted-foreground">Visão geral</p>
+          <h1 className="mt-1 font-display text-2xl font-semibold text-foreground text-balance sm:text-3xl">
+            {greeting()}, {produtor.nome.split(" ")[0]}
+          </h1>
+        </div>
+        <p className="mt-2 text-sm font-medium text-muted-foreground sm:mt-0">{todayLabel()}</p>
       </div>
 
       <CompletarAcessoCard />
 
       {bannerWhatsappVisivel && !jaConversouNoWhatsapp && (
-        <div className="flex items-start gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white">
+        <div className="flex items-start gap-3 rounded-lg border border-primary/25 bg-card p-4 shadow-sm">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <MessageCircle className="size-4" />
           </span>
           <div className="flex-1">
@@ -311,11 +331,11 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.65fr)_minmax(18rem,.75fr)] lg:items-start">
         {/* Coluna principal: preço herói + insights */}
-        <div className="flex flex-col gap-4 lg:col-span-2">
-          <Card className="border-primary/30 bg-primary text-primary-foreground">
-            <CardHeader className="pb-0">
+        <div className="flex min-w-0 flex-col gap-5">
+          <Card className="overflow-hidden border-primary bg-primary text-primary-foreground shadow-none">
+            <CardHeader className="border-b border-primary-foreground/15 px-5 pb-4 sm:px-6">
               <CardTitle className="flex items-center justify-between gap-2 text-sm font-medium opacity-90">
                 <span className="flex items-center gap-2">
                   <TrendingUp className="size-4" />
@@ -326,14 +346,14 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                 )}
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-3">
+            <CardContent className="flex flex-col gap-4 px-5 pt-5 sm:px-6 sm:pt-6">
               {serie === null || frete === undefined ? (
                 <Skeleton className="h-14 w-56 bg-primary-foreground/15" />
               ) : atual && precoExibido != null ? (
                 <div className="flex flex-wrap items-end justify-between gap-4">
                   <div>
                     <div className="flex items-end gap-2">
-                      <p className="font-mono text-5xl font-bold tabular-nums">
+                      <p className="font-mono text-4xl font-semibold tabular-nums sm:text-5xl">
                         <span className="mr-1 align-top text-xl font-sans font-semibold opacity-70">
                           R$
                         </span>
@@ -450,15 +470,15 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
         </div>
 
         {/* Coluna lateral: clima + lembretes */}
-        <div className="flex flex-col gap-4">
-          <Card className="gap-3">
-            <CardHeader className="pb-0">
+        <div className="flex flex-col gap-5 lg:sticky lg:top-24">
+          <Card className="gap-3 border-border/80 shadow-none">
+            <CardHeader className="border-b border-border/70 px-4 pb-3">
               <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <CloudSun className="size-4" />
                 Clima em {produtor.municipio ?? produtor.uf ?? "sua região"}
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-4">
               {previsao === undefined ? (
                 <div className="grid grid-cols-5 gap-1.5">
                   {Array.from({ length: 5 }).map((_, i) => (
@@ -474,7 +494,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                     return (
                       <div
                         key={dia}
-                        className={`flex flex-col items-center gap-0.5 rounded-lg border p-1.5 text-center ${
+                        className={`flex min-w-0 flex-col items-center gap-0.5 rounded-md border p-1.5 text-center ${
                           pct >= 60
                             ? "border-destructive/20 bg-destructive/10 text-destructive"
                             : "border-transparent bg-secondary text-muted-foreground"
@@ -505,14 +525,14 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
             </CardContent>
           </Card>
 
-          <Card className="gap-3">
-            <CardHeader className="pb-0">
+          <Card className="gap-3 border-border/80 shadow-none">
+            <CardHeader className="border-b border-border/70 px-4 pb-3">
               <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <Bell className="size-4" />
                 Seus lembretes
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-2">
+            <CardContent className="flex flex-col gap-2 px-4">
               {lembretes.length === 0 && (
                 <p className="py-2 text-sm text-muted-foreground">
                   Nenhum lembrete agendado. Crie um pra não esquecer uma tarefa da lavoura.
@@ -521,7 +541,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
               {lembretes.map((l) => (
                 <div
                   key={l.id}
-                  className="flex items-center justify-between gap-2 rounded-lg border border-border p-2.5 text-sm"
+                  className="flex items-center justify-between gap-2 rounded-md border border-border p-2.5 text-sm transition-colors hover:bg-accent/50"
                 >
                   <span className="truncate font-medium text-foreground">{l.titulo}</span>
                   <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
@@ -553,7 +573,7 @@ type TickerEntry = { label: string; atual: number; variacao: number | null };
 function PriceTicker({ entries }: { entries: TickerEntry[] }) {
   if (entries.length === 0) return null;
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-full border border-border bg-card px-3 py-2 shadow-sm">
+    <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card px-3 py-2 shadow-sm">
       <span className="flex items-center gap-1.5 pl-1 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
         <span className="size-1.5 animate-pulse rounded-full bg-primary" />
         Soja agora
@@ -561,7 +581,7 @@ function PriceTicker({ entries }: { entries: TickerEntry[] }) {
       {entries.map((e) => (
         <span
           key={e.label}
-          className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium"
+          className="flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1 text-xs font-medium"
         >
           <span className="font-semibold text-foreground">{e.label}</span>
           <span className="font-mono tabular-nums text-foreground">
@@ -690,19 +710,20 @@ function CooperativaHome({
     .at(0);
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-medium text-muted-foreground">{todayLabel()}</p>
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground text-balance">
+          <p className="text-xs font-semibold uppercase text-muted-foreground">Resumo executivo</p>
+          <h1 className="mt-1 font-display text-2xl font-semibold text-foreground text-balance sm:text-3xl">
             {greeting()}, {cooperativaNome}
           </h1>
+          <p className="mt-1 text-sm text-muted-foreground">{todayLabel()}</p>
         </div>
         <PriceTicker entries={ticker} />
       </div>
 
       {maiorVariacao && Math.abs(maiorVariacao.variacao!) >= 1 && (
-        <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm text-foreground">
+        <div className="flex items-center gap-2 rounded-md border border-gold/35 bg-gold-soft/40 px-4 py-3 text-sm text-foreground">
           {maiorVariacao.variacao! > 0 ? (
             <ArrowUp className="size-4 shrink-0 text-primary" />
           ) : (
@@ -721,7 +742,7 @@ function CooperativaHome({
 
       <CooperativaInsights cooperativaId={cooperativaId} />
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:max-w-3xl">
         {cards.map((c) => (
           <StatCard
             key={c.label}

@@ -45,7 +45,8 @@ export function CompletarAcessoCard() {
         email: emailSalvo,
         password: senha,
       });
-      if (erroLogin) throw new Error("Acesso salvo, mas não conseguimos entrar agora. Recarregue a página.");
+      if (erroLogin)
+        throw new Error("Acesso salvo, mas não conseguimos entrar agora. Recarregue a página.");
       await refresh();
       toast.success(`Pronto! Agora você entra com ${emailSalvo} e a senha que criou.`);
     } catch (err) {
@@ -57,10 +58,10 @@ export function CompletarAcessoCard() {
   return (
     <form
       onSubmit={salvar}
-      className="flex flex-col gap-3 rounded-2xl border border-gold/40 bg-gold-soft/40 p-4"
+      className="flex flex-col gap-3 rounded-lg border border-gold/40 bg-gold-soft/40 p-4"
     >
       <div className="flex items-start gap-3">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gold-soft text-gold-foreground">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-gold-soft text-gold-foreground">
           <KeyRound className="size-4" />
         </span>
         <div className="min-w-0">

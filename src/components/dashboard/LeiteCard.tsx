@@ -79,8 +79,8 @@ export function LeiteCard({ produtor }: { produtor: Produtor }) {
   if (!uf) return null;
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
+    <Card className="border-border/80 shadow-none">
+      <CardHeader className="border-b border-border/70 px-4 pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <Milk className="size-4 text-primary" />
           Leite em {uf}
@@ -90,7 +90,7 @@ export function LeiteCard({ produtor }: { produtor: Produtor }) {
           disponíveis.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+      <CardContent className="flex flex-col gap-4 px-4">
         {erro ? (
           <p className="text-sm text-muted-foreground">
             Não consegui carregar os dados de leite agora.
@@ -144,7 +144,7 @@ export function LeiteCard({ produtor }: { produtor: Produtor }) {
             )}
 
             {dados.milho && (
-              <div className="rounded-lg border border-border p-3">
+              <div className="rounded-md border border-border bg-secondary/30 p-3">
                 <p className="text-sm font-medium text-foreground">Relação leite e milho</p>
                 {relacao ? (
                   <p className="mt-1 text-sm text-foreground">
