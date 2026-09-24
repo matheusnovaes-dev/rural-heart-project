@@ -467,6 +467,8 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
 
           <Watchlist produtor={produtor} />
 
+          <JanelaPlantioCard produtor={produtor} />
+
           <BoletimSemanal produtor={produtor} />
         </div>
 
@@ -527,8 +529,6 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
               </Link>
             </CardContent>
           </Card>
-
-          <JanelaPlantioCard produtor={produtor} />
 
           <Card className="gap-3 border-border/80 shadow-sm transition-shadow hover:shadow-md">
             <CardHeader className="border-b border-border/70 px-4 pb-3">
