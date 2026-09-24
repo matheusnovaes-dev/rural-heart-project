@@ -26,6 +26,7 @@ import { Watchlist } from "@/components/dashboard/Watchlist";
 import { CompletarAcessoCard } from "@/components/dashboard/CompletarAcessoCard";
 import { BoletimSemanal } from "@/components/dashboard/BoletimSemanal";
 import { LeiteCard } from "@/components/dashboard/LeiteCard";
+import { JanelaPlantioCard } from "@/components/dashboard/JanelaPlantioCard";
 import { ReferenciaMercadoCard } from "@/components/dashboard/ReferenciaMercadoCard";
 import { DIAS_DADO_DESATUALIZADO } from "@/lib/referenciaMercado";
 import { diasEntre } from "@/lib/precoFonte";
@@ -526,6 +527,8 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
               </Link>
             </CardContent>
           </Card>
+
+          <JanelaPlantioCard produtor={produtor} />
 
           <Card className="gap-3 border-border/80 shadow-sm transition-shadow hover:shadow-md">
             <CardHeader className="border-b border-border/70 px-4 pb-3">
