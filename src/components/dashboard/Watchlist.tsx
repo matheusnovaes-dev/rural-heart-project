@@ -25,6 +25,7 @@ import { Sparkline } from "@/components/dashboard/Sparkline";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { supabase } from "@/lib/supabase";
 import { buscarPrecosDaUf } from "@/lib/precos";
+import { mediaDePracas } from "@/lib/precoFonte";
 import { culturas } from "@/config/culturas";
 import { temAcessoOuro, useAssinatura } from "@/lib/planos";
 import { UpgradeButton } from "@/components/dashboard/UpgradeButton";
@@ -70,12 +71,15 @@ export function Watchlist({ produtor }: { produtor: Produtor }) {
       const chave = `${item.cultura}|${item.uf}`;
       if (chave in cotacoes) return;
       // Mesma escolha de fonte do card "Seu preço hoje": série do estado só
-      // quando está em dia; senão, sem número único (só por região).
+      // quando está em dia; senão, média das praças (mesma conta do card
+      // principal) em vez de deixar o item sem número nenhum.
       const r = await buscarPrecosDaUf(supabase!, item.cultura, item.uf);
       const serie = r.serieEstado.map((d) => d.preco);
-      const atual = serie.at(-1) ?? null;
-      const anterior = serie.at(-2) ?? null;
-      const soRegional = atual == null && r.regionais.length > 0;
+      const soRegional = serie.length === 0 && r.regionais.length > 0;
+      const atual = soRegional
+        ? mediaDePracas(r.regionais.map((x) => x.preco))
+        : (serie.at(-1) ?? null);
+      const anterior = soRegional ? null : (serie.at(-2) ?? null);
 
       setCotacoes((prev) => ({
         ...prev,
@@ -192,16 +196,15 @@ export function Watchlist({ produtor }: { produtor: Produtor }) {
                       {label} · {item.uf}
                     </p>
                     {c?.atual != null ? (
-                      <p className="font-mono text-xs tabular-nums text-muted-foreground">
-                        R$ {c.atual.toFixed(2).replace(".", ",")}
+                      <p className="text-xs text-muted-foreground">
+                        <span className="font-mono tabular-nums">
+                          R$ {c.atual.toFixed(2).replace(".", ",")}
+                        </span>
+                        {c.soRegional && " · média por região"}
                       </p>
                     ) : (
                       <p className="text-xs text-muted-foreground">
-                        {!c
-                          ? "Carregando..."
-                          : c.soRegional
-                            ? "Só por região, sem preço único do estado"
-                            : "Sem preço publicado"}
+                        {!c ? "Carregando..." : "Sem preço publicado"}
                       </p>
                     )}
                   </div>
