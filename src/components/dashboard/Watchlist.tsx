@@ -108,9 +108,9 @@ export function Watchlist({ produtor }: { produtor: Produtor }) {
 
   if (!temAcessoOuro(plano)) {
     return (
-      <Card className="border-border/80 shadow-none">
+      <Card className="border-border/80 shadow-sm transition-shadow hover:shadow-md">
         <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-          <span className="flex size-11 items-center justify-center rounded-md bg-gold-soft text-gold-foreground">
+          <span className="flex size-11 items-center justify-center rounded-lg bg-gold-soft text-gold-foreground">
             <Lock className="size-5" />
           </span>
           <div className="space-y-1">
@@ -132,11 +132,13 @@ export function Watchlist({ produtor }: { produtor: Produtor }) {
   }
 
   return (
-    <Card className="gap-3 border-border/80 shadow-none">
+    <Card className="gap-3 border-border/80 shadow-sm transition-shadow hover:shadow-md">
       <CardHeader className="flex flex-row items-center justify-between gap-2 border-b border-border/70 px-4 pb-3">
         <div>
           <CardTitle className="flex items-center gap-2 font-display text-base font-semibold">
-            <Star className="size-4 text-gold" />
+            <span className="flex size-8 items-center justify-center rounded-lg bg-gold-soft text-gold-foreground">
+              <Star className="size-4" />
+            </span>
             Lista de acompanhamento
           </CardTitle>
           <CardDescription>Outras culturas e estados que você segue.</CardDescription>

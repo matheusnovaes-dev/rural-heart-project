@@ -23,13 +23,13 @@ export function InsightCard({
   children: React.ReactNode;
 }) {
   return (
-    <Card className="gap-3 border-border/80 py-4 shadow-none">
+    <Card className="gap-3 border-border/80 py-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
       <CardHeader className="gap-0 px-4 pb-0">
         <div className="flex items-center gap-2">
           <span
-            className={`flex size-7 items-center justify-center rounded-md ${toneClasses[tone]}`}
+            className={`flex size-8 items-center justify-center rounded-lg ${toneClasses[tone]}`}
           >
-            <Icon className="size-3.5" />
+            <Icon className="size-4" />
           </span>
           <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
         </div>

@@ -79,10 +79,12 @@ export function LeiteCard({ produtor }: { produtor: Produtor }) {
   if (!uf) return null;
 
   return (
-    <Card className="border-border/80 shadow-none">
+    <Card className="border-border/80 shadow-sm transition-shadow hover:shadow-md">
       <CardHeader className="border-b border-border/70 px-4 pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Milk className="size-4 text-primary" />
+          <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Milk className="size-4" />
+          </span>
           Leite em {uf}
         </CardTitle>
         <CardDescription>

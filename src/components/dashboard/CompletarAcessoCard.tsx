@@ -58,7 +58,7 @@ export function CompletarAcessoCard() {
   return (
     <form
       onSubmit={salvar}
-      className="flex flex-col gap-3 rounded-lg border border-gold/40 bg-gold-soft/40 p-4"
+      className="flex flex-col gap-3 rounded-lg border border-gold/40 bg-gold-soft/40 p-4 shadow-sm"
     >
       <div className="flex items-start gap-3">
         <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-gold-soft text-gold-foreground">

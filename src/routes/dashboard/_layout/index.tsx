@@ -334,7 +334,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.65fr)_minmax(18rem,.75fr)] lg:items-start">
         {/* Coluna principal: preço herói + insights */}
         <div className="flex min-w-0 flex-col gap-5">
-          <Card className="overflow-hidden border-primary bg-primary text-primary-foreground shadow-none">
+          <Card className="overflow-hidden border-primary bg-primary text-primary-foreground shadow-lg">
             <CardHeader className="border-b border-primary-foreground/15 px-5 pb-4 sm:px-6">
               <CardTitle className="flex items-center justify-between gap-2 text-sm font-medium opacity-90">
                 <span className="flex items-center gap-2">
@@ -471,10 +471,12 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
 
         {/* Coluna lateral: clima + lembretes */}
         <div className="flex flex-col gap-5 lg:sticky lg:top-24">
-          <Card className="gap-3 border-border/80 shadow-none">
+          <Card className="gap-3 border-border/80 shadow-sm transition-shadow hover:shadow-md">
             <CardHeader className="border-b border-border/70 px-4 pb-3">
               <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <CloudSun className="size-4" />
+                <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <CloudSun className="size-4" />
+                </span>
                 Clima em {produtor.municipio ?? produtor.uf ?? "sua região"}
               </CardTitle>
             </CardHeader>
@@ -525,10 +527,12 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
             </CardContent>
           </Card>
 
-          <Card className="gap-3 border-border/80 shadow-none">
+          <Card className="gap-3 border-border/80 shadow-sm transition-shadow hover:shadow-md">
             <CardHeader className="border-b border-border/70 px-4 pb-3">
               <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <Bell className="size-4" />
+                <span className="flex size-8 items-center justify-center rounded-lg bg-cta/10 text-cta-foreground">
+                  <Bell className="size-4" />
+                </span>
                 Seus lembretes
               </CardTitle>
             </CardHeader>

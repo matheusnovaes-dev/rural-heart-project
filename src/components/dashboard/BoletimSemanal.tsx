@@ -54,7 +54,7 @@ function CardDestaque({ boletim, destaque }: { boletim: Boletim; destaque?: bool
     <div
       className={
         destaque
-          ? "rounded-md border border-border bg-secondary/35 p-3.5"
+          ? "rounded-md border border-border border-l-4 border-l-primary bg-secondary/35 p-3.5 shadow-sm"
           : "rounded-md border border-border p-3 transition-colors hover:bg-accent/50"
       }
     >
@@ -102,10 +102,12 @@ export function BoletimSemanal({ produtor }: { produtor: Produtor }) {
   if (!cadeia) return null;
 
   return (
-    <Card className="gap-3 border-border/80 shadow-none">
+    <Card className="gap-3 border-border/80 shadow-sm transition-shadow hover:shadow-md">
       <CardHeader className="border-b border-border/70 px-4 pb-3">
         <CardTitle className="flex items-center gap-2 font-display text-base font-semibold">
-          <Newspaper className="size-4 text-primary" />
+          <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Newspaper className="size-4" />
+          </span>
           Boletim Semanal
         </CardTitle>
         <CardDescription>Análise de mercado da Imea pra sua cultura, direto aqui.</CardDescription>
