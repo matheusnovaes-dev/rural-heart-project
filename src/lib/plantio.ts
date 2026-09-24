@@ -77,16 +77,21 @@ export async function consultarJanelaPlantio(
     return { disponivel: false, motivo: "municipio_ausente" };
   }
 
-  const { data } = await supabase
-    .from("zarc_janelas_plantio")
-    .select("riscos_decendio")
-    .eq("cultura", cultura)
-    .eq("uf", args.uf)
-    .ilike("municipio", `%${args.municipio}%`)
-    .limit(100)
-    .returns<LinhaZarc[]>();
+  // RPC em vez de .ilike() direto: o município do produtor vem de geocodificação
+  // de terceiros e às vezes chega sem acento (ex: "Pompeu"), enquanto o ZARC usa
+  // o nome oficial do IBGE (ex: "Pompéu") — ILIKE puro não ignora acento, então
+  // dado que existia de verdade aparecia como "não encontrado". A função
+  // buscar_zarc_janela (ver supabase/migrations) usa unaccent() nos dois lados.
+  // Sem .returns<>() aqui: o client de tipos gerados não conhece essa RPC
+  // (não existe nos types gerados do Supabase), e o generic entra em conflito
+  // com a heurística de "single object" dele — cast direto no valor.
+  const { data } = await supabase.rpc("buscar_zarc_janela", {
+    p_cultura: cultura,
+    p_uf: args.uf,
+    p_municipio: args.municipio,
+  });
 
-  const linhas = data ?? [];
+  const linhas = (data ?? []) as LinhaZarc[];
   if (linhas.length === 0) {
     return { disponivel: false, motivo: "municipio_nao_encontrado" };
   }
