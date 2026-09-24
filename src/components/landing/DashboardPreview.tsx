@@ -14,6 +14,7 @@ import {
   Clock,
   LifeBuoy,
   CheckCircle2,
+  Sprout,
 } from "lucide-react";
 
 import { Reveal } from "@/components/landing/Reveal";
@@ -30,13 +31,14 @@ const planoBadge: Record<PlanoId, { label: string; className: string }> = {
   ouro: { label: "Ouro", className: "bg-gold text-gold-foreground" },
 };
 
-type AbaId = "precos" | "sinal" | "alertas" | "clima" | "suporte" | "acompanhamento";
+type AbaId = "precos" | "sinal" | "alertas" | "clima" | "plantio" | "suporte" | "acompanhamento";
 
 const abas: { id: AbaId; label: string; icon: typeof LineChart; plano: PlanoId }[] = [
   { id: "precos", label: "Preços", icon: LineChart, plano: "bronze" },
   { id: "sinal", label: "Sinal de venda", icon: Target, plano: "bronze" },
   { id: "alertas", label: "Alertas & lembretes", icon: Bell, plano: "bronze" },
   { id: "clima", label: "Clima", icon: CloudSun, plano: "bronze" },
+  { id: "plantio", label: "Plantio", icon: Sprout, plano: "bronze" },
   { id: "suporte", label: "Suporte", icon: LifeBuoy, plano: "bronze" },
   { id: "acompanhamento", label: "Acompanhamento", icon: Star, plano: "ouro" },
 ];
@@ -77,9 +79,10 @@ export function DashboardPreview() {
           Um painel que cresce junto com sua operação
         </h2>
         <p className="mt-4 text-muted-foreground">
-          Preço, sinal de venda, alertas, lembretes, clima (por estado ou cidade) e suporte direto
-          no painel, em qualquer plano, desde o Bronze. Acompanhar outras culturas e estados é do
-          plano Ouro. Role o mouse pra pausar e explorar no seu ritmo.
+          Preço, sinal de venda, alertas, lembretes, clima (por estado ou cidade), janela de plantio
+          oficial (ZARC) e suporte direto no painel, em qualquer plano, desde o Bronze. Acompanhar
+          outras culturas e estados é do plano Ouro. Role o mouse pra pausar e explorar no seu
+          ritmo.
         </p>
       </Reveal>
 
@@ -146,6 +149,7 @@ export function DashboardPreview() {
               {aba === "sinal" && <PreviewSinalVenda />}
               {aba === "alertas" && <PreviewAlertas />}
               {aba === "clima" && <PreviewClima />}
+              {aba === "plantio" && <PreviewPlantio />}
               {aba === "suporte" && <PreviewSuporte />}
               {aba === "acompanhamento" && <PreviewAcompanhamento />}
             </div>
@@ -354,6 +358,54 @@ function PreviewSinalVenda() {
         <Bell className="size-4 shrink-0 text-primary" />
         Quando o sinal muda pra "bom momento pra vender", você recebe também no WhatsApp.
       </div>
+    </div>
+  );
+}
+
+function PreviewPlantio() {
+  const janelas = [
+    { periodo: "dia 21 ao fim do mês de set.", risco: 40 },
+    { periodo: "dia 1 a 10 de out.", risco: 20 },
+    { periodo: "dia 11 a 20 de out.", risco: 20 },
+    { periodo: "dia 21 ao fim do mês de out.", risco: 20 },
+  ];
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-sm font-semibold text-foreground">Janela de plantio · Soja · Sorriso/MT</p>
+      <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+        <div className="flex items-start gap-2">
+          <Sprout className="mt-0.5 size-5 shrink-0 text-primary" />
+          <div>
+            <p className="text-sm text-foreground">
+              Agora ({janelas[0]!.periodo}):{" "}
+              <span className="font-semibold">{janelas[0]!.risco}% de risco</span>.
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Risco climático oficial do ZARC/MAPA, direto do zoneamento da safra vigente.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <p className="text-xs font-semibold text-muted-foreground">Próximas janelas</p>
+      <div className="flex flex-col gap-2">
+        {janelas.slice(1).map((j) => (
+          <div
+            key={j.periodo}
+            className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm text-foreground"
+          >
+            {j.periodo}
+            <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
+              {j.risco}% de risco
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        Soja, milho, algodão, arroz e feijão. Não é estimativa de produtividade, só risco climático
+        da época de plantio.
+      </p>
     </div>
   );
 }
