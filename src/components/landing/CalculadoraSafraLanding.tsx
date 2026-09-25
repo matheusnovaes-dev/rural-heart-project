@@ -263,6 +263,9 @@ export function CalculadoraSafraLanding() {
                       <p className="text-center text-xs text-muted-foreground">
                         {sacasNum.toLocaleString("pt-BR")} sacas × {brl(resultado.precoAtual!)}
                       </p>
+                      <p className="mt-2 text-center text-[11px] font-semibold uppercase tracking-wide text-gold-foreground">
+                        Isso é só uma amostra — oferecemos muito mais
+                      </p>
 
                       {resultado.frete && (
                         <p className="mt-3 text-center text-xs text-muted-foreground">
@@ -278,8 +281,10 @@ export function CalculadoraSafraLanding() {
                         <ArrowRight className="size-3.5" />
                       </a>
                       <p className="mt-3 text-center text-xs text-muted-foreground">
-                        Crie sua conta grátis por 7 dias e veja também sua margem, alertas
-                        automáticos e a janela certa pra plantar. Sem cartão de crédito.
+                        Essa é só a ponta do que a Safralume faz. Crie sua conta grátis por 7 dias e
+                        veja também sua margem por saca, comparação com o porto e o frete, alertas
+                        automáticos de preço, previsão do tempo e a janela certa pra plantar — tudo
+                        com dado real. Sem cartão de crédito.
                       </p>
                     </>
                   )}

@@ -33,6 +33,7 @@ export const pricingPlans: PricingPlan[] = [
     features: [
       "Cotações (Conab e órgãos estaduais, semanal ou mais rápido conforme a fonte)",
       "Preço da sua região comparado com o porto (paridade), com frete",
+      "Calculadora de Safra: quanto sua produção vale e sua margem, com preço real do dia",
       "Boletim Semanal (Imea)",
       "Sinal de venda: cruza preço, futuros da B3 e clima pra apontar a hora certa",
       "Janela de plantio oficial (ZARC) pra soja, milho, algodão, arroz e feijão: sabe se vale plantar agora ou esperar",
