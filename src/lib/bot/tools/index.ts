@@ -19,6 +19,7 @@ import { criarContaTeste } from "@/lib/bot/tools/conta";
 import { consultarAssinatura } from "@/lib/bot/tools/assinatura";
 import { consultarJanelaPlantio } from "@/lib/bot/tools/plantio";
 import { atualizarLocalizacao } from "@/lib/bot/tools/localizacao";
+import { calcularMargemSafra } from "@/lib/bot/tools/calculadora";
 
 export type ToolContext = {
   supabase: SupabaseClient;
@@ -309,6 +310,44 @@ export const TOOLS = [
   {
     type: "function",
     function: {
+      name: "calcular_margem_safra",
+      description:
+        "Calcula quanto a produção do produtor vale hoje e a margem estimada: sacas × preço real da região, menos o custo de produção que ele informar. SÓ chame depois que ele disser a QUANTIDADE de sacas (nunca estime isso) — custo por saca é opcional, sem ele calcula só o valor bruto, sem margem. Se a cultura não tiver preço na UF pedida, o retorno traz outras_ufs_disponiveis (preço real e recente em outros estados) — nesse caso pergunte qual estado ele quer usar como referência e chame de novo passando uf_referencia com a sigla escolhida.",
+      parameters: {
+        type: "object",
+        properties: {
+          produto: {
+            type: "string",
+            description: "Mesma palavra-chave maiúscula de buscar_preco (SOJA, MILHO, BOI, etc).",
+          },
+          uf: {
+            type: ["string", "null"],
+            description: "Sigla de 2 letras. null se genuinamente não souber.",
+          },
+          sacas: {
+            type: ["number", "null"],
+            description:
+              "Quantidade de sacas de 60kg que o produtor disse ter. null se ele não disse — nesse caso pergunte, nunca chame com um número chutado.",
+          },
+          custo_saca: {
+            type: ["number", "null"],
+            description:
+              "Custo de produção em R$ por saca, só se o produtor informou. null se ele não disse (a ferramenta calcula só o valor bruto, sem margem).",
+          },
+          uf_referencia: {
+            type: ["string", "null"],
+            description:
+              "Preencha só numa segunda chamada, depois que a primeira resposta trouxe outras_ufs_disponiveis e o produtor escolheu uma UF entre elas.",
+          },
+        },
+        required: ["produto", "uf", "sacas", "custo_saca", "uf_referencia"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "consultar_assinatura",
       description:
         "Consulta o plano, status (trial/ativa/inadimplente/cancelada) e data de vencimento do trial da assinatura REAL do produtor. SEMPRE chame isto quando ele perguntar qual é o plano dele, se está ativo, quando o trial vence, ou quantos alertas/funcionários ele pode ter — nunca responda essas perguntas de cabeça ou supondo, mesmo que pareça óbvio pelo contexto da conversa.",
@@ -371,6 +410,11 @@ export async function executarTool(
         args as Parameters<typeof atualizarLocalizacao>[1],
         ctx,
       );
+    case "calcular_margem_safra":
+      return calcularMargemSafra(ctx.supabase, args as Parameters<typeof calcularMargemSafra>[1], {
+        lat: ctx.produtor.lat,
+        lon: ctx.produtor.lon,
+      });
     case "consultar_assinatura":
       return consultarAssinatura(ctx.supabase, ctx);
     case "consultar_janela_plantio":
