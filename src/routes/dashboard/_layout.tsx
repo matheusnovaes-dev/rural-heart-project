@@ -16,6 +16,7 @@ import {
   CreditCard,
   HardHat,
   LifeBuoy,
+  Calculator,
 } from "lucide-react";
 
 import {
@@ -156,6 +157,7 @@ function CooperativaSidebar({
   const items = [
     { to: "/dashboard", label: "Visão geral", icon: LayoutDashboard },
     { to: "/dashboard/precos", label: "Preços", icon: LineChart },
+    { to: "/dashboard/calculadora", label: "Calculadora", icon: Calculator },
     { to: "/dashboard/alertas", label: "Alertas", icon: TrendingUp },
     { to: "/dashboard/produtores", label: "Produtores", icon: Users },
     { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
@@ -215,6 +217,7 @@ function CooperativaSidebar({
 
 const produtorNavItemsBase = [
   { to: "/dashboard", label: "Início", icon: LayoutDashboard },
+  { to: "/dashboard/calculadora", label: "Calculadora", icon: Calculator },
   { to: "/dashboard/alertas", label: "Alertas", icon: TrendingUp },
   { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
   { to: "/dashboard/funcionarios", label: "Funcionários", icon: HardHat },

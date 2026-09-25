@@ -26,6 +26,7 @@ import { Route as ApiCronRecuperarCadastroRouteImport } from './routes/api/cron/
 import { Route as DashboardLayoutIndexRouteImport } from './routes/dashboard/_layout/index'
 import { Route as DashboardLayoutAlertasRouteImport } from './routes/dashboard/_layout/alertas'
 import { Route as DashboardLayoutAssinaturaRouteImport } from './routes/dashboard/_layout/assinatura'
+import { Route as DashboardLayoutCalculadoraRouteImport } from './routes/dashboard/_layout/calculadora'
 import { Route as DashboardLayoutClimaRouteImport } from './routes/dashboard/_layout/clima'
 import { Route as DashboardLayoutEquipeRouteImport } from './routes/dashboard/_layout/equipe'
 import { Route as DashboardLayoutFuncionariosRouteImport } from './routes/dashboard/_layout/funcionarios'
@@ -124,6 +125,12 @@ const DashboardLayoutAssinaturaRoute =
     path: '/assinatura',
     getParentRoute: () => DashboardLayoutRoute,
   } as any)
+const DashboardLayoutCalculadoraRoute =
+  DashboardLayoutCalculadoraRouteImport.update({
+    id: '/calculadora',
+    path: '/calculadora',
+    getParentRoute: () => DashboardLayoutRoute,
+  } as any)
 const DashboardLayoutClimaRoute = DashboardLayoutClimaRouteImport.update({
   id: '/clima',
   path: '/clima',
@@ -196,6 +203,7 @@ export interface FileRoutesByFullPath {
   '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/assinatura': typeof DashboardLayoutAssinaturaRoute
+  '/dashboard/calculadora': typeof DashboardLayoutCalculadoraRoute
   '/dashboard/clima': typeof DashboardLayoutClimaRoute
   '/dashboard/equipe': typeof DashboardLayoutEquipeRoute
   '/dashboard/funcionarios': typeof DashboardLayoutFuncionariosRoute
@@ -224,6 +232,7 @@ export interface FileRoutesByTo {
   '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/assinatura': typeof DashboardLayoutAssinaturaRoute
+  '/dashboard/calculadora': typeof DashboardLayoutCalculadoraRoute
   '/dashboard/clima': typeof DashboardLayoutClimaRoute
   '/dashboard/equipe': typeof DashboardLayoutEquipeRoute
   '/dashboard/funcionarios': typeof DashboardLayoutFuncionariosRoute
@@ -254,6 +263,7 @@ export interface FileRoutesById {
   '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
   '/dashboard/_layout/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/_layout/assinatura': typeof DashboardLayoutAssinaturaRoute
+  '/dashboard/_layout/calculadora': typeof DashboardLayoutCalculadoraRoute
   '/dashboard/_layout/clima': typeof DashboardLayoutClimaRoute
   '/dashboard/_layout/equipe': typeof DashboardLayoutEquipeRoute
   '/dashboard/_layout/funcionarios': typeof DashboardLayoutFuncionariosRoute
@@ -285,6 +295,7 @@ export interface FileRouteTypes {
     | '/api/cron/recuperar-cadastro'
     | '/dashboard/alertas'
     | '/dashboard/assinatura'
+    | '/dashboard/calculadora'
     | '/dashboard/clima'
     | '/dashboard/equipe'
     | '/dashboard/funcionarios'
@@ -313,6 +324,7 @@ export interface FileRouteTypes {
     | '/api/cron/recuperar-cadastro'
     | '/dashboard/alertas'
     | '/dashboard/assinatura'
+    | '/dashboard/calculadora'
     | '/dashboard/clima'
     | '/dashboard/equipe'
     | '/dashboard/funcionarios'
@@ -342,6 +354,7 @@ export interface FileRouteTypes {
     | '/api/cron/recuperar-cadastro'
     | '/dashboard/_layout/alertas'
     | '/dashboard/_layout/assinatura'
+    | '/dashboard/_layout/calculadora'
     | '/dashboard/_layout/clima'
     | '/dashboard/_layout/equipe'
     | '/dashboard/_layout/funcionarios'
@@ -493,6 +506,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLayoutAssinaturaRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
+    '/dashboard/_layout/calculadora': {
+      id: '/dashboard/_layout/calculadora'
+      path: '/calculadora'
+      fullPath: '/dashboard/calculadora'
+      preLoaderRoute: typeof DashboardLayoutCalculadoraRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
     '/dashboard/_layout/clima': {
       id: '/dashboard/_layout/clima'
       path: '/clima'
@@ -569,6 +589,7 @@ declare module '@tanstack/react-router' {
 interface DashboardLayoutRouteChildren {
   DashboardLayoutAlertasRoute: typeof DashboardLayoutAlertasRoute
   DashboardLayoutAssinaturaRoute: typeof DashboardLayoutAssinaturaRoute
+  DashboardLayoutCalculadoraRoute: typeof DashboardLayoutCalculadoraRoute
   DashboardLayoutClimaRoute: typeof DashboardLayoutClimaRoute
   DashboardLayoutEquipeRoute: typeof DashboardLayoutEquipeRoute
   DashboardLayoutFuncionariosRoute: typeof DashboardLayoutFuncionariosRoute
@@ -585,6 +606,7 @@ interface DashboardLayoutRouteChildren {
 const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
   DashboardLayoutAlertasRoute: DashboardLayoutAlertasRoute,
   DashboardLayoutAssinaturaRoute: DashboardLayoutAssinaturaRoute,
+  DashboardLayoutCalculadoraRoute: DashboardLayoutCalculadoraRoute,
   DashboardLayoutClimaRoute: DashboardLayoutClimaRoute,
   DashboardLayoutEquipeRoute: DashboardLayoutEquipeRoute,
   DashboardLayoutFuncionariosRoute: DashboardLayoutFuncionariosRoute,

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   Bell,
+  Calculator,
   CloudSun,
   CreditCard,
   FileDown,
@@ -33,6 +34,7 @@ type Destino = { to: string; label: string; icon: typeof Bell };
 
 const DESTINOS_PRODUTOR: Destino[] = [
   { to: "/dashboard", label: "Início", icon: LayoutDashboard },
+  { to: "/dashboard/calculadora", label: "Calculadora de safra", icon: Calculator },
   { to: "/dashboard/alertas", label: "Alertas de preço", icon: TrendingUp },
   { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
   { to: "/dashboard/funcionarios", label: "Funcionários", icon: HardHat },
@@ -43,6 +45,7 @@ const DESTINOS_PRODUTOR: Destino[] = [
 const DESTINOS_COOPERATIVA: Destino[] = [
   { to: "/dashboard", label: "Visão geral", icon: LayoutDashboard },
   { to: "/dashboard/precos", label: "Preços", icon: LineChart },
+  { to: "/dashboard/calculadora", label: "Calculadora de safra", icon: Calculator },
   { to: "/dashboard/alertas", label: "Alertas de preço", icon: TrendingUp },
   { to: "/dashboard/produtores", label: "Produtores", icon: Users },
   { to: "/dashboard/lembretes", label: "Lembretes", icon: Bell },
