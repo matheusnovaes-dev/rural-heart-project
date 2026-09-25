@@ -90,6 +90,10 @@ export function CalculadoraSafraLanding() {
           Cultura, estado e quantidade de sacas. O preço é real, do dia, das mesmas fontes oficiais
           que o Safralume usa em tudo.
         </p>
+        <p className="mt-1.5 text-sm font-semibold text-primary">
+          Depois de criar sua conta, essa mesma conta você também faz direto pelo WhatsApp — sem
+          precisar abrir o painel.
+        </p>
       </Reveal>
 
       <Reveal delay={0.1} className="mx-auto mt-9 max-w-xl">
@@ -284,7 +288,7 @@ export function CalculadoraSafraLanding() {
                         Essa é só a ponta do que a Safralume faz. Crie sua conta grátis por 7 dias e
                         veja também sua margem por saca, comparação com o porto e o frete, alertas
                         automáticos de preço, previsão do tempo e a janela certa pra plantar — tudo
-                        com dado real. Sem cartão de crédito.
+                        com dado real, no painel ou direto pelo WhatsApp. Sem cartão de crédito.
                       </p>
                     </>
                   )}

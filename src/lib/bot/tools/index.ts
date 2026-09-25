@@ -414,6 +414,8 @@ export async function executarTool(
       return calcularMargemSafra(ctx.supabase, args as Parameters<typeof calcularMargemSafra>[1], {
         lat: ctx.produtor.lat,
         lon: ctx.produtor.lon,
+        textoAtual: ctx.texto,
+        culturaPadrao: ctx.produtor.cultura_principal,
       });
     case "consultar_assinatura":
       return consultarAssinatura(ctx.supabase, ctx);
