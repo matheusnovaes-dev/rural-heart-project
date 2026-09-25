@@ -420,7 +420,7 @@ export async function runAgent(input: {
     const acesso = await verificarAcessoWhatsapp(supabase, produtor.id);
     if (!acesso.liberado) {
       return {
-        resposta: mensagemBloqueioAcesso(acesso.comLogin),
+        resposta: mensagemBloqueioAcesso(acesso.comLogin, acesso.motivo),
         precisa_humano: false,
         cadastro_criado: false,
         convite_dispensado: false,

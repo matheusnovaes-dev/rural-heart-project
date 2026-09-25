@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { runAgent, type RespostaAgente } from "@/lib/bot/agent";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
 import type { ProdutorContexto } from "@/lib/bot/types";
+import { verificarCobranca } from "@/lib/bot/cobranca";
 import { supabaseServiceRole } from "@/lib/supabase.server";
 
 type RequestBody = {
@@ -55,14 +56,29 @@ export const Route = createFileRoute("/api/bot/responder")({
           return new Response("Campos obrigatórios ausentes", { status: 400 });
         }
 
+        // Trava de inadimplência do bot: separada da do painel (essa corta
+        // na hora), o bot continua respondendo por 1 dia com um aviso, só
+        // depois disso bloqueia de vez — ver lib/bot/cobranca.ts.
+        const cobranca = await verificarCobranca(supabaseServiceRole(), body.produtor.id);
+        if (cobranca.bloqueado) {
+          return Response.json({
+            resposta: cobranca.mensagem,
+            precisa_humano: false,
+            cadastro_criado: false,
+            convite_dispensado: false,
+          } satisfies RespostaAgente);
+        }
+
         // Texto vazio/só espaço é cenário real (ex: figurinha/sticker sem
         // legenda, reação a mensagem), não falha de infraestrutura — achado
         // testando ao vivo: isso retornava 400 igual um erro de integração,
         // o que ativa o fallback duro do n8n sem necessidade. Responde
         // direto, sem gastar chamada de LLM à toa.
         if (!body.texto || !body.texto.trim()) {
+          const base =
+            "Recebi sua mensagem, mas não veio nenhum texto. Pode escrever o que você precisa?";
           return Response.json({
-            resposta: "Recebi sua mensagem, mas não veio nenhum texto. Pode escrever o que você precisa?",
+            resposta: cobranca.aviso ? `${cobranca.aviso}\n\n${base}` : base,
             precisa_humano: false,
             cadastro_criado: false,
             convite_dispensado: false,
@@ -83,6 +99,12 @@ export const Route = createFileRoute("/api/bot/responder")({
             apiKey: openaiApiKey,
             signal: controller.signal,
           });
+          // Aviso de cobrança vencida é anexado por código, nunca pedido ao
+          // modelo — garante que o produtor é avisado em toda resposta
+          // durante o dia de graça, sem depender do modelo lembrar disso.
+          if (cobranca.aviso) {
+            resposta.resposta = `${cobranca.aviso}\n\n${resposta.resposta}`;
+          }
           return Response.json(resposta);
         } catch (err) {
           console.error("Erro no agente do bot:", err);
