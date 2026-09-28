@@ -60,6 +60,23 @@ export async function buscarProducaoIbge(
   return rows[0] ? { encontrado: true, ...rows[0] } : { encontrado: false };
 }
 
+/**
+ * Rótulo de fonte escrito por código, não pelo modelo — achado real 2026-09-28:
+ * o bot chamou o contrato SOY (preço de porto da Platts, FOB Santos) de "Bolsa
+ * de Chicago", e só o SJC (cross listing do CME) tem relação de verdade com
+ * Chicago, mesmo assim negociado na B3. Pedir pro modelo "não confundir" via
+ * instrução de prompt piorou (ele passou a recusar a pergunta inteira quando o
+ * produtor mencionava "Chicago"), então o rótulo certo vem pronto daqui —
+ * o prompt só precisa mandar citar este campo, sem precisar raciocinar sobre
+ * qual fonte é qual.
+ */
+function rotuloFonte(produtoCodigo: string): string {
+  if (produtoCodigo === "SOY")
+    return "preço de porto (Platts, FOB Santos) — não é futuro de Chicago";
+  if (produtoCodigo === "SJC") return "negociado na B3, referenciado ao CME (Chicago)";
+  return "negociado na B3";
+}
+
 export async function buscarFuturosB3(supabase: SupabaseClient, args: { produto: string }) {
   const codigos = CULTURA_PARA_B3[normalizarCultura(args.produto)];
   if (!codigos || codigos.length === 0) return { disponivel: false };
@@ -68,7 +85,9 @@ export async function buscarFuturosB3(supabase: SupabaseClient, args: { produto:
   inicioMesAtual.setDate(1);
   const { data } = await supabase
     .from("b3_futuros")
-    .select("produto, nome_produto, mes_ano_vencimento, preco_ajuste_atual, moeda, unidade, data_pregao")
+    .select(
+      "produto, nome_produto, mes_ano_vencimento, preco_ajuste_atual, moeda, unidade, data_pregao",
+    )
     .in("produto", codigos)
     .gte("mes_ano_vencimento", inicioMesAtual.toISOString().slice(0, 10))
     .order("data_pregao", { ascending: false })
@@ -88,7 +107,10 @@ export async function buscarFuturosB3(supabase: SupabaseClient, args: { produto:
 
   const rows = data ?? [];
   const pregaoMaisRecente = rows[0]?.data_pregao;
-  const doDiaCerto = rows.filter((r) => r.data_pregao === pregaoMaisRecente).slice(0, 6);
+  const doDiaCerto = rows
+    .filter((r) => r.data_pregao === pregaoMaisRecente)
+    .slice(0, 6)
+    .map((r) => ({ ...r, fonte: rotuloFonte(r.produto) }));
   return doDiaCerto.length > 0 ? { disponivel: true, futuros: doDiaCerto } : { disponivel: false };
 }
 
