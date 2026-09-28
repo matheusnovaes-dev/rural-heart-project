@@ -131,6 +131,13 @@ const ALIAS_CULTURA: Record<string, string> = {
   carneiros: "carne ovina",
   cordeiro: "carne ovina",
   cordeiros: "carne ovina",
+  porco: "suíno",
+  porcos: "suíno",
+  suínos: "suíno",
+  suinos: "suíno",
+  galinha: "frango",
+  galinhas: "frango",
+  frangos: "frango",
 };
 
 /** Cultura como a base de preços a conhece: minúscula, sem espaço nas pontas e sem apelido. */
