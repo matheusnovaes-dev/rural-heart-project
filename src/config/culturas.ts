@@ -119,6 +119,18 @@ const ALIAS_CULTURA: Record<string, string> = {
   bovino: "boi",
   bovinos: "boi",
   "pecuária de corte": "boi",
+  caprino: "carne caprina",
+  caprinos: "carne caprina",
+  cabra: "carne caprina",
+  cabras: "carne caprina",
+  ovino: "carne ovina",
+  ovinos: "carne ovina",
+  ovelha: "carne ovina",
+  ovelhas: "carne ovina",
+  carneiro: "carne ovina",
+  carneiros: "carne ovina",
+  cordeiro: "carne ovina",
+  cordeiros: "carne ovina",
 };
 
 /** Cultura como a base de preços a conhece: minúscula, sem espaço nas pontas e sem apelido. */
