@@ -81,18 +81,20 @@ export function CalculadoraSafraLanding() {
       <Reveal className="mx-auto max-w-2xl text-center">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3.5 py-1.5 text-xs font-semibold text-primary">
           <Calculator className="size-3.5" />
-          Calculadora de safra
+          Uma das ferramentas do Safralume
         </span>
         <h2 className="mt-4 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           Quanto sua produção vale hoje?
         </h2>
         <p className="mt-2.5 text-muted-foreground">
-          Cultura, estado e quantidade de sacas. O preço é real, do dia, das mesmas fontes oficiais
-          que o Safralume usa em tudo.
+          Essa é a Calculadora de Safra, uma amostra do que o Safralume faz. Cultura, estado e
+          quantidade de sacas — o preço é real, do dia, das mesmas fontes oficiais que usamos em
+          tudo.
         </p>
         <p className="mt-1.5 text-sm font-semibold text-primary">
-          Depois de criar sua conta, essa mesma conta você também faz direto pelo WhatsApp — sem
-          precisar abrir o painel.
+          O produto completo tem muito mais: preço comparado com o porto e o frete, sinal de venda,
+          previsão do tempo, alertas automáticos, janela de plantio e histórico de safra da Conab —
+          no painel ou direto pelo WhatsApp.
         </p>
       </Reveal>
 
