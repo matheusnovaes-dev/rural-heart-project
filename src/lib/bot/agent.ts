@@ -44,6 +44,26 @@ import {
 const MODEL = "gpt-4o-mini";
 const MAX_TOOL_ROUNDS = 6;
 
+// Bug real testado ao vivo contra produção (3x, reproduzido nas 3 mesmo
+// depois de reforçar o prompt por instrução): "tem em nenhum outro
+// estado?" é uma negativa dupla comum na fala informal — SIGNIFICA "tem
+// em algum outro estado?" — mas o modelo lia como confirmação de que não
+// tem, e respondia negando UFs que ele mesmo tinha acabado de citar na
+// resposta anterior da mesma conversa. Instrução no prompt sozinha não
+// resolveu de forma confiável; isso detecta o padrão na mensagem ATUAL e
+// injeta uma nota de sistema só nesse turno, clareando a pergunta antes
+// do modelo processar — mais confiável que confiar só em prompt.
+const NEGATIVA_DUPLA = /tem\s+em\s+nenhum/i;
+
+function notaDeNegativaDupla(texto: string): OpenAIMessage | null {
+  if (!NEGATIVA_DUPLA.test(texto)) return null;
+  return {
+    role: "system",
+    content:
+      'Nota: a mensagem do produtor usa uma negativa dupla comum na fala informal ("tem em nenhum...?") — isso SIGNIFICA "tem em algum...?", uma pergunta normal, não uma confirmação de que não tem. Se você já citou UFs com preço nas suas respostas anteriores desta conversa, a resposta certa é confirmar essas MESMAS UFs de novo, nunca negar o que você mesmo acabou de afirmar.',
+  };
+}
+
 const RESPONSE_FORMAT = {
   type: "json_schema" as const,
   json_schema: {
@@ -456,6 +476,7 @@ export async function runAgent(input: {
     }
   }
 
+  const notaNegativaDupla = notaDeNegativaDupla(texto);
   const messages: OpenAIMessage[] = [
     { role: "system", content: SYSTEM_PROMPT },
     { role: "system", content: buildContextoProdutor(produtor) },
@@ -466,6 +487,7 @@ export async function runAgent(input: {
     { role: "system", content: buildContextoPlanos() },
     { role: "system", content: buildContextoInstitucional() },
     ...buildHistoryMessages(historico),
+    ...(notaNegativaDupla ? [notaNegativaDupla] : []),
     { role: "user", content: texto },
   ];
 
