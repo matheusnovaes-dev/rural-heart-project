@@ -26,6 +26,7 @@ import { Watchlist } from "@/components/dashboard/Watchlist";
 import { CompletarAcessoCard } from "@/components/dashboard/CompletarAcessoCard";
 import { BoletimSemanal } from "@/components/dashboard/BoletimSemanal";
 import { LeiteCard } from "@/components/dashboard/LeiteCard";
+import { FerrugemAsiaticaCard } from "@/components/dashboard/FerrugemAsiaticaCard";
 import { JanelaPlantioCard } from "@/components/dashboard/JanelaPlantioCard";
 import { PrecoInsumosCard } from "@/components/dashboard/PrecoInsumosCard";
 import { ProgressoSafraCard } from "@/components/dashboard/ProgressoSafraCard";
@@ -472,6 +473,8 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
           <JanelaPlantioCard produtor={produtor} />
 
           <ProgressoSafraCard produtor={produtor} />
+
+          <FerrugemAsiaticaCard produtor={produtor} />
 
           <PrecoInsumosCard produtor={produtor} />
 
