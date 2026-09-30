@@ -422,6 +422,14 @@ function PreviewPlantio() {
         </span>
       </div>
 
+      <p className="mt-1 text-xs font-semibold text-muted-foreground">Preço de insumos (Conab)</p>
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm text-foreground">
+        Herbicida no MT
+        <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
+          R$ 28,17 – 66,83/L
+        </span>
+      </div>
+
       <p className="text-xs text-muted-foreground">
         Soja, milho, algodão, arroz e feijão. Não é estimativa de produtividade, só risco climático
         da época de plantio.
