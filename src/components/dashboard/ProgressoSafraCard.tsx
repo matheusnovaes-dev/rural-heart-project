@@ -51,21 +51,30 @@ export function ProgressoSafraCard({ produtor }: { produtor: Produtor }) {
           return;
         }
         const semanaMaisRecente = data[0]!.semana_referencia;
-        const daSemana = data.filter((l) => l.semana_referencia === semanaMaisRecente);
+        // 0% é dado real (a cultura genuinamente ainda não começou nesse
+        // estado ou no Brasil), mas sozinho não diz nada útil pro produtor —
+        // achado ao vivo: MG em soja deu "0% · média 5 anos: 0%", um card
+        // que não mostra nada de interessante. Descarta ANTES de escolher
+        // UF vs. nacional, pra um MG=0% não esconder um Brasil=3,9% que
+        // seria útil de mostrar.
+        const daSemanaComDado = data.filter(
+          (l) => l.semana_referencia === semanaMaisRecente && l.percentual > 0,
+        );
         // Por produto+tipo (ex: "Milho 1ª"/semeadura), prefere a linha da UF
-        // do produtor; só usa a nacional ("BR") quando a Conab não acompanha
-        // essa cultura nesse estado — nunca mostra as duas juntas (achado
-        // testando: mostrar as duas fazia o aviso "sem dado específico do
-        // estado" aparecer do lado de um número que ERA específico do estado).
-        const porGrupo = new Map<string, (typeof daSemana)[number]>();
-        for (const linha of daSemana) {
+        // do produtor; só usa a nacional ("BR") quando ela não tem (ou tem
+        // zero) — nunca mostra as duas juntas (achado testando: mostrar as
+        // duas fazia o aviso "sem dado específico do estado" aparecer do
+        // lado de um número que ERA específico do estado).
+        const porGrupo = new Map<string, (typeof daSemanaComDado)[number]>();
+        for (const linha of daSemanaComDado) {
           const chave = `${linha.produto}|${linha.tipo}`;
           const existente = porGrupo.get(chave);
           if (!existente || linha.uf === produtor.uf) {
             if (!existente || existente.uf !== produtor.uf) porGrupo.set(chave, linha);
           }
         }
-        setLinhas([...porGrupo.values()]);
+        const linhasFinais = [...porGrupo.values()];
+        setLinhas(linhasFinais.length > 0 ? linhasFinais : null);
       });
     return () => {
       ativo = false;
@@ -104,7 +113,7 @@ export function ProgressoSafraCard({ produtor }: { produtor: Produtor }) {
                 >
                   <p className="text-xs text-muted-foreground">
                     {linha.produto} · {linha.tipo === "semeadura" ? "semeadura" : "colheita"}
-                    {!daUf && ` (Brasil, sem dado específico de ${produtor.uf})`}
+                    {!daUf && ` (Brasil — ainda sem avanço relevante em ${produtor.uf})`}
                   </p>
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-sm font-semibold text-primary">
