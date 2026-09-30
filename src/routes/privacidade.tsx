@@ -59,7 +59,17 @@ function PrivacidadePage() {
           </section>
 
           <section>
-            <h2 className="font-display text-lg font-semibold">5. Seus direitos</h2>
+            <h2 className="font-display text-lg font-semibold">5. Cookies e publicidade</h2>
+            <p className="mt-2 text-muted-foreground">
+              Usamos o Meta Pixel (Facebook/Instagram) no site pra entender o desempenho dos nossos
+              anúncios e medir quantas pessoas se cadastram a partir deles. Ele grava um
+              identificador anônimo no seu navegador. Não vendemos nem compartilhamos esse dado além
+              da Meta, que o usa segundo a própria política de privacidade dela.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="font-display text-lg font-semibold">6. Seus direitos</h2>
             <p className="mt-2 text-muted-foreground">
               Você pode pedir a qualquer momento para acessar, corrigir ou apagar seus dados, ou
               cancelar sua assinatura. É só chamar no WhatsApp de suporte informado no rodapé do
@@ -68,7 +78,7 @@ function PrivacidadePage() {
           </section>
 
           <section>
-            <h2 className="font-display text-lg font-semibold">6. Contato</h2>
+            <h2 className="font-display text-lg font-semibold">7. Contato</h2>
             <p className="mt-2 text-muted-foreground">
               Dúvidas sobre privacidade podem ser enviadas pelo WhatsApp de contato do{" "}
               {siteConfig.name}.
