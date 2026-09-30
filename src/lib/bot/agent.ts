@@ -18,6 +18,7 @@ import { ehPedidoDeSair, RESPOSTA_SAIDA_DE_MENSAGENS } from "@/lib/recuperacaoCa
 import { normalizarWhatsapp } from "@/lib/telefone";
 import type { ProdutorContexto } from "@/lib/bot/types";
 import {
+  areaProducaoNaoAutorizada,
   coletarNumerosPermitidos,
   conversaFalaDeCadastro,
   classificarPedidoDeAcesso,
@@ -544,12 +545,16 @@ export async function runAgent(input: {
     const medidasInvalidas = conversaDeLeite
       ? medidasNaoAutorizadas(resposta, numerosPermitidos)
       : [];
-    if (naoAutorizados.length > 0 || medidasInvalidas.length > 0) {
+    // Hectares/toneladas sem fonte valem em QUALQUER conversa (não só leite)
+    // — achado real testando buscar_producao_ibge, ver comentário da função.
+    const areaInvalida = areaProducaoNaoAutorizada(resposta, numerosPermitidos);
+    if (naoAutorizados.length > 0 || medidasInvalidas.length > 0 || areaInvalida.length > 0) {
       if (podeCorrigir && !jaTentouCorrigirValor) {
         jaTentouCorrigirValor = true;
         const lista = [
           ...naoAutorizados.map((v) => `R$${v.toFixed(2).replace(".", ",")}`),
           ...medidasInvalidas.map((v) => String(v).replace(".", ",")),
+          ...areaInvalida.map((v) => String(v).replace(".", ",")),
         ].join(", ");
         messages.push({ role: "assistant", content: conteudoBruto ?? parsed.resposta });
         messages.push({

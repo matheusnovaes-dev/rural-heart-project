@@ -366,6 +366,50 @@ export function medidasNaoAutorizadas(resposta: string, permitidos: number[]): n
   return invalidas;
 }
 
+// ---------------------------------------------------------------------------
+// Área/produção: hectares e toneladas sem fonte (IBGE, série histórica)
+// ---------------------------------------------------------------------------
+
+/**
+ * Área plantada/colhida (hectares) ou produção (toneladas) citada sem vir de
+ * nenhuma ferramenta desse turno. Achado real testando buscar_producao_ibge:
+ * o modelo inventou "5,1 milhões de hectares" pra soja em MG/2023 — um valor
+ * que não existe em lugar nenhum do banco (confirmado via SQL) — enquanto
+ * todos os valores em R$ da mesma resposta estavam certos, então o guarda de
+ * R$ não pega esse tipo de invenção. coletarNumerosPermitidos já inclui os
+ * números reais que QUALQUER ferramenta devolveu nesse turno (caminha o JSON
+ * inteiro), então basta achar o que a resposta cita em hectare/tonelada e
+ * comparar contra essa mesma lista — sem coleta nova.
+ *
+ * Diferente de medidasNaoAutorizadas (kg/litros): área/produção do IBGE é
+ * tipicamente na casa dos milhões (ex: 5.100.000 ha), e é natural a resposta
+ * escrever isso como "5,1 milhões de hectares" — sem aplicar o multiplicador
+ * ao comparar, TODA citação legítima nesse formato bateria errado contra o
+ * valor bruto (5,1 ≠ 5.100.000) e seria barrada por engano. Por isso aqui o
+ * "milhões"/"mil" reescala o valor E a tolerância antes de comparar.
+ */
+export function areaProducaoNaoAutorizada(resposta: string, permitidos: number[]): number[] {
+  const padrao =
+    /(\d+(?:\.\d{3})*(?:,\d+)?|\d+(?:\.\d+)?)\s*(milhões\s+de\s+|mil\s+)?(?:hectares?|toneladas?|kg\s*\/\s*ha)\b/gi;
+  const invalidas: number[] = [];
+  for (const m of resposta.matchAll(padrao)) {
+    const bruto = m[1]!;
+    const qualificador = m[2]?.trim().toLowerCase();
+    const multiplicador = qualificador?.startsWith("milh")
+      ? 1_000_000
+      : qualificador?.startsWith("mil")
+        ? 1_000
+        : 1;
+    const base = Number(bruto.replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", "."));
+    if (!Number.isFinite(base)) continue;
+    const valor = base * multiplicador;
+    const casas = bruto.includes(",") ? bruto.split(",")[1]!.length : 0;
+    const tolerancia = (casas === 0 ? 0.5 + 1e-9 : 0.5 * 10 ** -casas + 1e-9) * multiplicador;
+    if (!permitidos.some((p) => Math.abs(p - valor) <= tolerancia)) invalidas.push(valor);
+  }
+  return invalidas;
+}
+
 /**
  * Relação leite/milho: se a resposta cita alguma quantidade em kg/litros que
  * a ferramenta não trouxe, troca a resposta inteira pela frase pronta escrita
