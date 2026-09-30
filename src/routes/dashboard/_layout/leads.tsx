@@ -30,7 +30,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/lib/supabase";
-import { useRequireCooperativa } from "@/lib/auth";
+import { useRequireSafralumeAdmin } from "@/lib/auth";
 
 export const Route = createFileRoute("/dashboard/_layout/leads")({
   component: LeadsPage,
@@ -46,7 +46,7 @@ type Lead = {
 };
 
 function LeadsPage() {
-  const cooperativa = useRequireCooperativa();
+  const ehAdmin = useRequireSafralumeAdmin();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [busca, setBusca] = useState("");
@@ -100,7 +100,7 @@ function LeadsPage() {
     load();
   }
 
-  if (!cooperativa) return null;
+  if (!ehAdmin) return null;
 
   return (
     <div className="flex flex-col gap-5">

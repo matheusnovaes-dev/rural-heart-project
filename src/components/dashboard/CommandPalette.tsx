@@ -12,6 +12,7 @@ import {
   LineChart,
   ListChecks,
   LogOut,
+  Megaphone,
   Palette,
   TrendingUp,
   Users,
@@ -27,7 +28,7 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { useAuth } from "@/lib/auth";
+import { EMAIL_SAFRALUME_ADMIN, useAuth } from "@/lib/auth";
 import { useSair } from "@/components/dashboard/useSair";
 
 type Destino = { to: string; label: string; icon: typeof Bell };
@@ -66,6 +67,10 @@ const DESTINO_ASSINATURA: Destino = {
   icon: CreditCard,
 };
 
+// Mesma checagem de _layout.tsx (EMAIL_SAFRALUME_ADMIN) — a RLS de `leads`
+// só libera esse e-mail, então o atalho não pode aparecer pra mais ninguém.
+const DESTINO_LEADS: Destino = { to: "/dashboard/leads", label: "Leads", icon: Megaphone };
+
 /**
  * Paleta ⌘K — atalho de poder pra quem usa o painel todo dia, sem adicionar
  * complexidade à navegação visível (a pesquisa com produtores mostra que
@@ -74,8 +79,9 @@ const DESTINO_ASSINATURA: Destino = {
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const { produtor, cooperativa, papel } = useAuth();
+  const { produtor, cooperativa, papel, session } = useAuth();
   const { sair: sairDaConta, aviso: avisoDeSaida } = useSair();
+  const ehSafralumeAdmin = session?.user.email === EMAIL_SAFRALUME_ADMIN;
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -89,9 +95,17 @@ export function CommandPalette() {
   }, []);
 
   const destinos = cooperativa
-    ? [...DESTINOS_COOPERATIVA, ...(papel === "admin" ? DESTINOS_ADMIN : [])]
+    ? [
+        ...DESTINOS_COOPERATIVA,
+        ...(ehSafralumeAdmin ? [DESTINO_LEADS] : []),
+        ...(papel === "admin" ? DESTINOS_ADMIN : []),
+      ]
     : produtor
-      ? [...DESTINOS_PRODUTOR, ...(produtor.cooperativa_id ? [] : [DESTINO_ASSINATURA])]
+      ? [
+          ...DESTINOS_PRODUTOR,
+          ...(produtor.cooperativa_id ? [] : [DESTINO_ASSINATURA]),
+          ...(ehSafralumeAdmin ? [DESTINO_LEADS] : []),
+        ]
       : [];
 
   function ir(to: string) {

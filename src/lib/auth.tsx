@@ -140,6 +140,29 @@ export function useRequireCooperativa() {
   return cooperativa;
 }
 
+// Não é um papel de admin real ainda (sem tabela/coluna própria) — só o
+// dono da conta. A RLS de `leads` já trava leitura/escrita nesse mesmo
+// e-mail (ver supabase/leads-restringir-cooperativa.sql), então checar
+// aqui é só pra não deixar a página renderizar vazia/quebrada pra mais
+// ninguém, nunca a fonte de verdade da permissão.
+export const EMAIL_SAFRALUME_ADMIN = "sirmatheus143@gmail.com";
+
+/** Redireciona pra fora de páginas internas do Safralume (ex: Leads) — não
+ * depende de cooperativa/produtor, só do e-mail da conta logada. */
+export function useRequireSafralumeAdmin() {
+  const { loading, session } = useAuth();
+  const navigate = useNavigate();
+  const ehAdmin = session?.user.email === EMAIL_SAFRALUME_ADMIN;
+
+  useEffect(() => {
+    if (!loading && !ehAdmin) {
+      navigate({ to: "/dashboard" });
+    }
+  }, [loading, ehAdmin, navigate]);
+
+  return ehAdmin;
+}
+
 /** Redirects away pages that only make sense for a produtor (not a cooperativa member). */
 export function useRequireProdutor() {
   const { loading, produtor } = useAuth();

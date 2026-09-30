@@ -17,6 +17,7 @@ import {
   HardHat,
   LifeBuoy,
   Calculator,
+  Megaphone,
 } from "lucide-react";
 
 import {
@@ -37,7 +38,7 @@ import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CommandPalette } from "@/components/dashboard/CommandPalette";
 import { DashboardTour } from "@/components/dashboard/DashboardTour";
-import { useAuth } from "@/lib/auth";
+import { EMAIL_SAFRALUME_ADMIN, useAuth } from "@/lib/auth";
 import { useAcessoDashboard } from "@/lib/planos";
 import { supabase } from "@/lib/supabase";
 import { useSair } from "@/components/dashboard/useSair";
@@ -98,7 +99,11 @@ function DashboardGuard() {
     return (
       <TooltipProvider delayDuration={200}>
         <SidebarProvider className="dashboard-shell">
-          <CooperativaSidebar cooperativaNome={cooperativa.nome} isAdmin={papel === "admin"} />
+          <CooperativaSidebar
+            cooperativaNome={cooperativa.nome}
+            isAdmin={papel === "admin"}
+            emailDoUsuario={session.user.email}
+          />
           <SidebarInset>
             <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-border/80 bg-background/95 px-4 backdrop-blur-sm sm:px-6">
               <SidebarTrigger />
@@ -121,7 +126,11 @@ function DashboardGuard() {
   return (
     <TooltipProvider delayDuration={200}>
       <div className="dashboard-shell min-h-screen bg-background">
-        <ProdutorHeader nome={produtor!.nome} temAssinaturaPropria={!produtor!.cooperativa_id} />
+        <ProdutorHeader
+          nome={produtor!.nome}
+          temAssinaturaPropria={!produtor!.cooperativa_id}
+          emailDoUsuario={session.user.email}
+        />
         {/* max-w-6xl, não max-w-lg: a coluna de 512px fazia o painel parecer
             um app de celular esticado no desktop. Mobile segue coluna única. */}
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
@@ -148,9 +157,11 @@ function AtalhoBusca() {
 function CooperativaSidebar({
   cooperativaNome,
   isAdmin,
+  emailDoUsuario,
 }: {
   cooperativaNome: string;
   isAdmin: boolean;
+  emailDoUsuario: string | undefined;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -163,6 +174,9 @@ function CooperativaSidebar({
     { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
     { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
     { to: "/dashboard/suporte", label: "Suporte", icon: LifeBuoy },
+    ...(emailDoUsuario === EMAIL_SAFRALUME_ADMIN
+      ? [{ to: "/dashboard/leads", label: "Leads", icon: Megaphone }]
+      : []),
     ...(isAdmin
       ? [
           { to: "/dashboard/equipe", label: "Equipe", icon: UsersRound },
@@ -231,17 +245,23 @@ const assinaturaNavItem = {
   icon: CreditCard,
 } as const;
 
+const leadsNavItem = { to: "/dashboard/leads", label: "Leads", icon: Megaphone } as const;
+
 function ProdutorHeader({
   nome,
   temAssinaturaPropria,
+  emailDoUsuario,
 }: {
   nome: string;
   temAssinaturaPropria: boolean;
+  emailDoUsuario: string | undefined;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const produtorNavItems = temAssinaturaPropria
-    ? [...produtorNavItemsBase, assinaturaNavItem]
-    : produtorNavItemsBase;
+  const produtorNavItems = [
+    ...produtorNavItemsBase,
+    ...(temAssinaturaPropria ? [assinaturaNavItem] : []),
+    ...(emailDoUsuario === EMAIL_SAFRALUME_ADMIN ? [leadsNavItem] : []),
+  ];
 
   return (
     <header className="sticky top-0 z-20 border-b border-border/80 bg-card/95 backdrop-blur-sm">
