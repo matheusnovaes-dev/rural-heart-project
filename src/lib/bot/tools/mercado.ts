@@ -298,14 +298,19 @@ export async function buscarPrecoInsumo(
 
   if (!data || data.length === 0) return { encontrado: false };
 
-  // Período mais recente entre as linhas encontradas — publicação é
-  // bimestral (meses ímpares), então "o mês atual" quase nunca tem dado;
-  // pega o mais recente que exista de verdade em vez de assumir.
-  const maisRecente = data[0]!;
-  const doPeriodo = data.filter((l) => l.ano === maisRecente.ano && l.mes === maisRecente.mes);
-
-  const daUf = doPeriodo.filter((l) => l.uf === args.uf);
-  const linhas = daUf.length > 0 ? daUf : doPeriodo;
+  // Período mais recente — mas DENTRO da UF pedida primeiro, não entre
+  // todas as UFs. Achado real conferindo isso: a publicação não sai na
+  // mesma data pra todo estado (ex: fungicida em GO só tinha mar/2026
+  // enquanto outros estados já tinham ago/2026 pro mesmo subgrupo) — pegar
+  // "o mais recente entre todos" antes de olhar pra UF fazia o produtor
+  // ver preço de produto de OUTRO estado sem saber, mesmo quando a UF dele
+  // tinha dado (só que mais antigo). "data" já vem ordenado (ano desc, mes
+  // desc), então filtrar preserva essa ordem.
+  const daUfTodosPeriodos = data.filter((l) => l.uf === args.uf);
+  const usouOutraUf = daUfTodosPeriodos.length === 0;
+  const base = usouOutraUf ? data : daUfTodosPeriodos;
+  const maisRecente = base[0]!;
+  const linhas = base.filter((l) => l.ano === maisRecente.ano && l.mes === maisRecente.mes);
 
   // Agrupa por unidade de medida — não faz sentido misturar faixa de preço
   // em R$/L com R$/KG no mesmo min/max.
@@ -333,7 +338,7 @@ export async function buscarPrecoInsumo(
     busca_por_categoria: buscaPorCategoria,
     ano: maisRecente.ano,
     mes: maisRecente.mes,
-    cobertura: daUf.length > 0 ? "uf_do_produtor" : "multiplas_ufs_sem_dado_na_uf_pedida",
+    cobertura: usouOutraUf ? "multiplas_ufs_sem_dado_na_uf_pedida" : "uf_do_produtor",
     grupo: maisRecente.grupo,
     subgrupo: maisRecente.subgrupo,
     faixas_de_preco,
