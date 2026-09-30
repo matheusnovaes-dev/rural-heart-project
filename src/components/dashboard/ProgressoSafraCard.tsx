@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/lib/supabase";
 import { CULTURA_PARA_CONAB_PROGRESSO } from "@/config/conabProgressoSafra";
+import { ufs } from "@/config/ufs";
 import type { Produtor } from "@/lib/auth";
 
 type LinhaProgresso = {
@@ -15,24 +16,44 @@ type LinhaProgresso = {
   media_5_anos: number | null;
 };
 
+// Um grupo por produto+tipo (ex: "Milho 1ª"/semeadura e "Milho 2ª"/semeadura
+// são grupos independentes, cada um com seu próprio estado selecionado).
+type GrupoProgresso = {
+  chave: string;
+  produto: string;
+  tipo: string;
+  opcoes: LinhaProgresso[]; // só estados com percentual > 0, ordenado do maior pro menor
+};
+
 const formatarPct = (fracao: number) =>
   `${(fracao * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+
+const nomeDaUf = (uf: string) =>
+  uf === "BR" ? "Brasil" : (ufs.find((u) => u.value === uf)?.label ?? uf);
 
 /**
  * % de área semeada/colhida na semana mais recente (boletim "Plantio e
  * Colheita" da Conab, achado 2026-09-30) — mesmo dado que o bot já
  * responde no WhatsApp, direto no painel também. Consulta o client
- * `supabase` direto (a tabela é de leitura pública, sem precisar de
- * service role) igual o card de janela de plantio ao lado. Só aparece
- * quando a cultura do produtor está na janela de plantio/colheita
- * daquela semana — fora dessa época, o card some (nada pra mostrar é
- * melhor do que mostrar um "0%" que parece erro).
+ * `supabase` direto (a tabela é de leitura pública) igual o card de janela
+ * de plantio ao lado.
+ *
+ * Achado ao vivo (print real, soja/MG): o estado do produtor pode estar
+ * genuinamente em 0% (a cultura ainda não começou ali) — um número sozinho
+ * nesse caso não diz nada útil. Em vez de só cair fixo no nacional, mostra
+ * TODOS os estados que já têm avanço de verdade essa semana como opções
+ * clicáveis (mesmo padrão de "trocar estado de referência" já usado na
+ * calculadora de safra) — o produtor pode comparar com quem já começou.
+ * Só aparece quando existe pelo menos UM estado (ou o Brasil) com
+ * percentual > 0 pra essa cultura essa semana; fora da janela de
+ * plantio/colheita, o card some.
  */
 export function ProgressoSafraCard({ produtor }: { produtor: Produtor }) {
   const produtoConab = produtor.cultura_principal
     ? CULTURA_PARA_CONAB_PROGRESSO[produtor.cultura_principal.trim().toLowerCase()]
     : null;
-  const [linhas, setLinhas] = useState<LinhaProgresso[] | null | undefined>(undefined);
+  const [grupos, setGrupos] = useState<GrupoProgresso[] | null | undefined>(undefined);
+  const [selecionado, setSelecionado] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!supabase || !produtoConab || !produtor.uf) return;
@@ -41,40 +62,44 @@ export function ProgressoSafraCard({ produtor }: { produtor: Produtor }) {
       .from("progresso_safra_conab")
       .select("produto, tipo, uf, semana_referencia, percentual, media_5_anos")
       .ilike("produto", `${produtoConab}%`)
-      .in("uf", [produtor.uf, "BR"])
       .order("semana_referencia", { ascending: false })
-      .limit(12)
+      .limit(200)
       .then(({ data }) => {
         if (!ativo) return;
         if (!data || data.length === 0) {
-          setLinhas(null);
+          setGrupos(null);
           return;
         }
         const semanaMaisRecente = data[0]!.semana_referencia;
-        // 0% é dado real (a cultura genuinamente ainda não começou nesse
-        // estado ou no Brasil), mas sozinho não diz nada útil pro produtor —
-        // achado ao vivo: MG em soja deu "0% · média 5 anos: 0%", um card
-        // que não mostra nada de interessante. Descarta ANTES de escolher
-        // UF vs. nacional, pra um MG=0% não esconder um Brasil=3,9% que
-        // seria útil de mostrar.
-        const daSemanaComDado = data.filter(
-          (l) => l.semana_referencia === semanaMaisRecente && l.percentual > 0,
+        const daSemana = data.filter(
+          (l): l is LinhaProgresso & { semana_referencia: string } =>
+            l.semana_referencia === semanaMaisRecente && l.percentual > 0,
         );
-        // Por produto+tipo (ex: "Milho 1ª"/semeadura), prefere a linha da UF
-        // do produtor; só usa a nacional ("BR") quando ela não tem (ou tem
-        // zero) — nunca mostra as duas juntas (achado testando: mostrar as
-        // duas fazia o aviso "sem dado específico do estado" aparecer do
-        // lado de um número que ERA específico do estado).
-        const porGrupo = new Map<string, (typeof daSemanaComDado)[number]>();
-        for (const linha of daSemanaComDado) {
+
+        const porChave = new Map<string, LinhaProgresso[]>();
+        for (const linha of daSemana) {
           const chave = `${linha.produto}|${linha.tipo}`;
-          const existente = porGrupo.get(chave);
-          if (!existente || linha.uf === produtor.uf) {
-            if (!existente || existente.uf !== produtor.uf) porGrupo.set(chave, linha);
-          }
+          if (!porChave.has(chave)) porChave.set(chave, []);
+          porChave.get(chave)!.push(linha);
         }
-        const linhasFinais = [...porGrupo.values()];
-        setLinhas(linhasFinais.length > 0 ? linhasFinais : null);
+
+        const gruposMontados: GrupoProgresso[] = [...porChave.entries()].map(([chave, opcoes]) => ({
+          chave,
+          produto: opcoes[0]!.produto,
+          tipo: opcoes[0]!.tipo,
+          opcoes: opcoes.sort((a, b) => b.percentual - a.percentual),
+        }));
+
+        setGrupos(gruposMontados.length > 0 ? gruposMontados : null);
+        // Padrão: o estado do produtor, quando ele mesmo tem avanço > 0;
+        // senão o Brasil (nacional) como base neutra — o produtor troca pra
+        // qualquer outro estado clicando, sem precisar disso pronto.
+        const padrao: Record<string, string> = {};
+        for (const grupo of gruposMontados) {
+          const temUf = grupo.opcoes.some((o) => o.uf === produtor.uf);
+          padrao[grupo.chave] = temUf ? produtor.uf! : "BR";
+        }
+        setSelecionado(padrao);
       });
     return () => {
       ativo = false;
@@ -82,9 +107,7 @@ export function ProgressoSafraCard({ produtor }: { produtor: Produtor }) {
   }, [produtoConab, produtor.uf]);
 
   if (!produtoConab || !produtor.uf) return null;
-  // Fora da janela de plantio/colheita dessa cultura essa semana: nada a
-  // mostrar, o card não aparece (não é erro, só não tem novidade agora).
-  if (linhas === null) return null;
+  if (grupos === null) return null;
 
   return (
     <Card className="gap-3 border-border/80 shadow-sm transition-shadow hover:shadow-md">
@@ -100,31 +123,53 @@ export function ProgressoSafraCard({ produtor }: { produtor: Produtor }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="px-4">
-        {linhas === undefined ? (
+        {grupos === undefined ? (
           <Skeleton className="h-16 w-full" />
         ) : (
-          <div className="flex flex-col gap-3">
-            {linhas.map((linha) => {
-              const daUf = linha.uf === produtor.uf;
+          <div className="flex flex-col gap-4">
+            {grupos.map((grupo) => {
+              const ufAtual = selecionado[grupo.chave] ?? grupo.opcoes[0]!.uf;
+              const linhaAtual = grupo.opcoes.find((o) => o.uf === ufAtual) ?? grupo.opcoes[0]!;
+              const temUfPropria = grupo.opcoes.some((o) => o.uf === produtor.uf);
               return (
-                <div
-                  key={`${linha.produto}-${linha.tipo}-${linha.uf}`}
-                  className="flex flex-col gap-1"
-                >
+                <div key={grupo.chave} className="flex flex-col gap-2">
                   <p className="text-xs text-muted-foreground">
-                    {linha.produto} · {linha.tipo === "semeadura" ? "semeadura" : "colheita"}
-                    {!daUf && ` (Brasil — ainda sem avanço relevante em ${produtor.uf})`}
+                    {grupo.produto} · {grupo.tipo === "semeadura" ? "semeadura" : "colheita"}
+                    {!temUfPropria && ` — ${produtor.uf} sem avanço relevante ainda`}
                   </p>
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-sm font-semibold text-primary">
-                      {formatarPct(linha.percentual)}
+                    <span className="text-sm font-semibold text-foreground">
+                      {nomeDaUf(linhaAtual.uf)}
                     </span>
-                    {linha.media_5_anos != null && (
+                    <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-sm font-semibold text-primary">
+                      {formatarPct(linhaAtual.percentual)}
+                    </span>
+                    {linhaAtual.media_5_anos != null && (
                       <span className="text-xs text-muted-foreground">
-                        média 5 anos: {formatarPct(linha.media_5_anos)}
+                        média 5 anos: {formatarPct(linhaAtual.media_5_anos)}
                       </span>
                     )}
                   </div>
+                  {grupo.opcoes.length > 1 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {grupo.opcoes.slice(0, 8).map((opcao) => (
+                        <button
+                          key={opcao.uf}
+                          type="button"
+                          onClick={() =>
+                            setSelecionado((prev) => ({ ...prev, [grupo.chave]: opcao.uf }))
+                          }
+                          className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors hover:border-primary hover:bg-primary/5 ${
+                            opcao.uf === ufAtual
+                              ? "border-primary bg-primary/5 text-primary"
+                              : "border-border text-muted-foreground"
+                          }`}
+                        >
+                          {nomeDaUf(opcao.uf)} · {formatarPct(opcao.percentual)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}
