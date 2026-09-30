@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { CULTURA_PARA_B3 } from "@/config/b3";
+import { CULTURA_PARA_CONAB_HISTORICO } from "@/config/conabSerieHistorica";
 import { normalizarCultura } from "@/config/culturas";
 
 export async function buscarCambio(supabase: SupabaseClient) {
@@ -58,6 +59,46 @@ export async function buscarProducaoIbge(
   const rows = (data ?? []).filter((r) => r.producao_ton != null);
   rows.sort((a, b) => b.periodo.localeCompare(a.periodo) || b.producao_ton! - a.producao_ton!);
   return rows[0] ? { encontrado: true, ...rows[0] } : { encontrado: false };
+}
+
+/**
+ * Área plantada / produção / produtividade por safra, painel público
+ * "Série Histórica de Safra - Grãos" da Conab (voltando até 1976/77, mas só
+ * devolve a safra mais recente e a anterior pra dar uma noção de tendência,
+ * sem sobrecarregar o modelo com 50 anos de histórico numa resposta de
+ * WhatsApp). Só cobre as 18 culturas de grãos do painel (ver
+ * CULTURA_PARA_CONAB_HISTORICO) — nada de boi, café, suíno etc.
+ * IMPORTANTE: isso é a área plantada TOTAL estimada pra safra inteira, não
+ * quanto já foi plantado até agora (a Conab não publica esse percentual
+ * semanal como dado estruturado, só em texto dentro do boletim mensal em
+ * PDF) — o prompt precisa deixar essa diferença clara pro produtor.
+ */
+export async function buscarProducaoHistoricaConab(
+  supabase: SupabaseClient,
+  args: { produto: string; uf: string },
+) {
+  const produtoConab = CULTURA_PARA_CONAB_HISTORICO[normalizarCultura(args.produto)];
+  if (!produtoConab) return { disponivel: false };
+
+  const { data } = await supabase
+    .from("producao_historica_conab")
+    .select("safra, area_plantada_mil_ha, producao_mil_t, produtividade_kg_ha")
+    .eq("produto", produtoConab)
+    .eq("uf", args.uf)
+    .order("safra", { ascending: false })
+    .limit(2)
+    .returns<
+      {
+        safra: string;
+        area_plantada_mil_ha: number | null;
+        producao_mil_t: number | null;
+        produtividade_kg_ha: number | null;
+      }[]
+    >();
+
+  const [atual, anterior] = data ?? [];
+  if (!atual) return { disponivel: false };
+  return { disponivel: true, atual, anterior: anterior ?? null };
 }
 
 /**

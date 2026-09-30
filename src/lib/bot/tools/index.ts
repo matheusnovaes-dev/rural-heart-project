@@ -11,6 +11,7 @@ import {
   buscarCambio,
   buscarDiesel,
   buscarFuturosB3,
+  buscarProducaoHistoricaConab,
   buscarProducaoIbge,
   buscarProducaoWasde,
 } from "@/lib/bot/tools/mercado";
@@ -149,6 +150,20 @@ export const TOOLS = [
       name: "buscar_producao_ibge",
       description:
         "Área plantada/colhida e produção (toneladas) do IBGE/LSPA pra uma cultura numa UF — contexto de oferta regional.",
+      parameters: {
+        type: "object",
+        properties: { produto: { type: "string" }, uf: { type: "string" } },
+        required: ["produto", "uf"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "buscar_producao_historica_conab",
+      description:
+        "Área plantada, produção e produtividade da safra atual e da anterior (série histórica da Conab, só grãos: algodão, amendoim, arroz, aveia, canola, centeio, cevada, feijão, gergelim, girassol, mamona, milho, soja, sorgo, trigo, triticale) pra uma UF — dá pra comparar se a área plantada da safra atual cresceu ou caiu em relação à anterior. NÃO é o percentual de quanto já foi plantado até agora nesta safra (esse dado não existe estruturado, só em texto no boletim mensal da Conab) — nunca confunda os dois.",
       parameters: {
         type: "object",
         properties: { produto: { type: "string" }, uf: { type: "string" } },
@@ -392,6 +407,11 @@ export async function executarTool(
       return buscarDiesel(ctx.supabase, args as Parameters<typeof buscarDiesel>[1]);
     case "buscar_producao_ibge":
       return buscarProducaoIbge(ctx.supabase, args as Parameters<typeof buscarProducaoIbge>[1]);
+    case "buscar_producao_historica_conab":
+      return buscarProducaoHistoricaConab(
+        ctx.supabase,
+        args as Parameters<typeof buscarProducaoHistoricaConab>[1],
+      );
     case "buscar_futuros_b3":
       return buscarFuturosB3(ctx.supabase, args as Parameters<typeof buscarFuturosB3>[1]);
     case "buscar_producao_usda_wasde":
