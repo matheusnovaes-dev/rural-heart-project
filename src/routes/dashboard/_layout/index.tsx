@@ -27,6 +27,7 @@ import { CompletarAcessoCard } from "@/components/dashboard/CompletarAcessoCard"
 import { BoletimSemanal } from "@/components/dashboard/BoletimSemanal";
 import { LeiteCard } from "@/components/dashboard/LeiteCard";
 import { JanelaPlantioCard } from "@/components/dashboard/JanelaPlantioCard";
+import { ProgressoSafraCard } from "@/components/dashboard/ProgressoSafraCard";
 import { ReferenciaMercadoCard } from "@/components/dashboard/ReferenciaMercadoCard";
 import { DIAS_DADO_DESATUALIZADO } from "@/lib/referenciaMercado";
 import { diasEntre } from "@/lib/precoFonte";
@@ -468,6 +469,8 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
           <Watchlist produtor={produtor} />
 
           <JanelaPlantioCard produtor={produtor} />
+
+          <ProgressoSafraCard produtor={produtor} />
 
           <BoletimSemanal produtor={produtor} />
         </div>
