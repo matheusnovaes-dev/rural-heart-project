@@ -24,6 +24,7 @@ export function Solution() {
               "Preço do porto e frete até lá, pra você negociar com números",
               "Mais de 70 culturas: soja, milho, boi, café, suíno, frango, caprino, ovino e muito mais",
               "% de plantio e colheita da semana da Conab, comparado com a média dos últimos 5 anos",
+              "Alerta de ferrugem asiática na soja: foco confirmado e esporo no ar na sua região",
               "Boletim da Imea e da USDA (WASDE), câmbio e diesel, tudo cruzado no mesmo lugar",
               "Funciona mesmo com internet fraca no campo",
             ].map((item) => (

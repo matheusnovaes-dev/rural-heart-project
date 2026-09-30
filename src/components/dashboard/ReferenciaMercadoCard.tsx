@@ -76,10 +76,7 @@ export function ReferenciaMercadoCard({
           <>
             {ref.outras_ufs.length > 0 && (
               <div>
-                <p className="mb-1.5 text-xs font-semibold text-foreground">
-                  Em outros estados
-                  {ref.outras_ufs[0]!.unidade === "15 kg" ? " (arroba de 15 kg)" : ""}
-                </p>
+                <p className="mb-1.5 text-xs font-semibold text-foreground">Em outros estados</p>
                 <ul className="flex flex-col gap-1">
                   {ref.outras_ufs.map((o) => (
                     <li key={o.uf} className="flex items-baseline justify-between gap-3 text-sm">
@@ -89,7 +86,14 @@ export function ReferenciaMercadoCard({
                           · {o.fonte}, {dataBr(o.data_referencia)}
                         </span>
                       </span>
-                      <span className="font-mono font-semibold tabular-nums">{brl(o.preco)}</span>
+                      <span className="font-mono font-semibold tabular-nums">
+                        {brl(o.preco)}
+                        {o.unidade === "15 kg" && (
+                          <span className="ml-1 font-sans text-xs font-normal text-muted-foreground">
+                            /arroba
+                          </span>
+                        )}
+                      </span>
                     </li>
                   ))}
                 </ul>

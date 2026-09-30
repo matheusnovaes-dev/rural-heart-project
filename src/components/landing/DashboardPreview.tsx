@@ -17,6 +17,7 @@ import {
   Sprout,
   BadgeCheck,
   FlaskConical,
+  Bug,
 } from "lucide-react";
 
 import { Reveal } from "@/components/landing/Reveal";
@@ -34,7 +35,15 @@ const planoBadge: Record<PlanoId, { label: string; className: string }> = {
 };
 
 type AbaId =
-  "precos" | "sinal" | "alertas" | "clima" | "plantio" | "insumos" | "suporte" | "acompanhamento";
+  | "precos"
+  | "sinal"
+  | "alertas"
+  | "clima"
+  | "plantio"
+  | "ferrugem"
+  | "insumos"
+  | "suporte"
+  | "acompanhamento";
 
 const abas: { id: AbaId; label: string; icon: typeof LineChart; plano: PlanoId }[] = [
   { id: "precos", label: "Preços", icon: LineChart, plano: "bronze" },
@@ -42,6 +51,7 @@ const abas: { id: AbaId; label: string; icon: typeof LineChart; plano: PlanoId }
   { id: "alertas", label: "Alertas & lembretes", icon: Bell, plano: "bronze" },
   { id: "clima", label: "Clima", icon: CloudSun, plano: "bronze" },
   { id: "plantio", label: "Plantio", icon: Sprout, plano: "bronze" },
+  { id: "ferrugem", label: "Ferrugem", icon: Bug, plano: "bronze" },
   { id: "insumos", label: "Insumos", icon: FlaskConical, plano: "prata" },
   { id: "suporte", label: "Suporte", icon: LifeBuoy, plano: "bronze" },
   { id: "acompanhamento", label: "Acompanhamento", icon: Star, plano: "ouro" },
@@ -155,6 +165,7 @@ export function DashboardPreview() {
               {aba === "alertas" && <PreviewAlertas />}
               {aba === "clima" && <PreviewClima />}
               {aba === "plantio" && <PreviewPlantio />}
+              {aba === "ferrugem" && <PreviewFerrugem />}
               {aba === "insumos" && <PreviewInsumos />}
               {aba === "suporte" && <PreviewSuporte />}
               {aba === "acompanhamento" && <PreviewAcompanhamento />}
@@ -513,6 +524,32 @@ function PreviewAcompanhamento() {
               </div>
             </CardContent>
           </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PreviewFerrugem() {
+  const municipios = ["Campo Novo do Parecis", "Primavera do Leste", "Nova Mutum"];
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3">
+      <div className="flex items-center gap-2">
+        <Bug className="size-4 shrink-0 text-destructive" />
+        <p className="text-sm font-semibold text-foreground">Ferrugem asiática · Soja · MT</p>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Foco confirmado em {municipios.length} municípios da sua safra, segundo o Consórcio
+        Antiferrugem.
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {municipios.map((m) => (
+          <span
+            key={m}
+            className="rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive"
+          >
+            {m}
+          </span>
         ))}
       </div>
     </div>

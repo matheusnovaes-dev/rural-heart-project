@@ -64,24 +64,29 @@ export function escolherPrecosOutrasUfs(
       l.preco > 0 &&
       diasEntre(l.data_referencia, hojeIso) <= DIAS_OUTRA_UF,
   );
-  // Um único produto (o mais frequente): estados com variantes diferentes
-  // (boi em kg vivo, "china", etc.) não entram misturados.
-  const contagem = new Map<string, number>();
-  for (const l of validas) contagem.set(l.produto, (contagem.get(l.produto) ?? 0) + 1);
-  const produto = [...contagem.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
-  if (!produto) return [];
 
   const porUf = new Map<string, LinhaOutraUf[]>();
-  for (const l of validas.filter((v) => v.produto === produto)) {
-    porUf.set(l.uf, [...(porUf.get(l.uf) ?? []), l]);
-  }
+  for (const l of validas) porUf.set(l.uf, [...(porUf.get(l.uf) ?? []), l]);
+
   const resultado: PrecoOutraUf[] = [];
   for (const [uf, rows] of porUf) {
-    const maisRecente = rows
+    // Um único produto POR UF (o mais frequente dali): dentro do mesmo
+    // estado, variantes diferentes (boi em kg vivo, "china", etc.) não
+    // entram misturadas numa média só. Achado real: escolher isso GLOBAL
+    // (entre todos os estados) em vez de por UF descartava estados inteiros
+    // sempre que cada um usa uma unidade/embalagem própria pro mesmo produto
+    // (ex: abacaxi por tonelada na BA, por unidade no AC, por kg no AM —
+    // nenhuma bate com a outra, um empate de 5 vias deixava só 1 estado
+    // sobreviver e os outros 4 desapareciam da resposta sem ninguém notar).
+    const contagem = new Map<string, number>();
+    for (const r of rows) contagem.set(r.produto, (contagem.get(r.produto) ?? 0) + 1);
+    const produtoDaUf = [...contagem.entries()].sort((a, b) => b[1] - a[1])[0]![0];
+    const doProduto = rows.filter((r) => r.produto === produtoDaUf);
+    const maisRecente = doProduto
       .map((r) => r.data_referencia)
       .sort()
       .at(-1)!;
-    const doDia = rows.filter((r) => r.data_referencia === maisRecente);
+    const doDia = doProduto.filter((r) => r.data_referencia === maisRecente);
     const media = doDia.reduce((soma, r) => soma + r.preco, 0) / doDia.length;
     resultado.push({
       uf,
@@ -120,17 +125,15 @@ export function montarReferenciaMercado(params: {
     partes.push(`Ainda não temos preço de ${cultura} em ${nomeDaUf(uf)}.`);
   }
   if (outras.length > 0) {
-    const unidade = outras[0]!.unidade;
-    const un = unidade ? ` por ${unidade === "15 kg" ? "arroba (15 kg)" : unidade}` : "";
-    partes.push(
-      `Referências recentes em outros estados${un}: ` +
-        outras
-          .map(
-            (o) => `${nomeDaUf(o.uf)} ${brl(o.preco)} (${o.fonte}, ${dataBr(o.data_referencia)})`,
-          )
-          .join("; ") +
-        ".",
-    );
+    // Unidade por estado, não uma só pra frase inteira: estados diferentes
+    // podem usar unidade/embalagem diferente pro mesmo produto (ver
+    // comentário em escolherPrecosOutrasUfs) — citar uma unidade só "pra
+    // todo mundo" ficaria errado pros estados que usam outra.
+    const comUnidade = (o: PrecoOutraUf) => {
+      const un = o.unidade ? ` por ${o.unidade === "15 kg" ? "arroba (15 kg)" : o.unidade}` : "";
+      return `${nomeDaUf(o.uf)} ${brl(o.preco)}${un} (${o.fonte}, ${dataBr(o.data_referencia)})`;
+    };
+    partes.push(`Referências recentes em outros estados: ${outras.map(comUnidade).join("; ")}.`);
   }
   if (futuros.length > 0) {
     partes.push(
