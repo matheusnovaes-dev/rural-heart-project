@@ -412,6 +412,16 @@ function PreviewPlantio() {
         ))}
       </div>
 
+      <p className="mt-1 text-xs font-semibold text-muted-foreground">
+        Progresso da semana (Conab)
+      </p>
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm text-foreground">
+        Soja semeada no PR
+        <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
+          15% · média 5 anos 12,6%
+        </span>
+      </div>
+
       <p className="text-xs text-muted-foreground">
         Soja, milho, algodão, arroz e feijão. Não é estimativa de produtividade, só risco climático
         da época de plantio.
