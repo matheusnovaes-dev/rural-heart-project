@@ -15,6 +15,7 @@ import {
   LifeBuoy,
   CheckCircle2,
   Sprout,
+  BadgeCheck,
 } from "lucide-react";
 
 import { Reveal } from "@/components/landing/Reveal";
@@ -80,9 +81,10 @@ export function DashboardPreview() {
         </h2>
         <p className="mt-4 text-muted-foreground">
           Preço, sinal de venda, alertas, lembretes, clima (por estado ou cidade), janela de plantio
-          oficial (ZARC) e suporte direto no painel, em qualquer plano, desde o Bronze. Acompanhar
-          outras culturas e estados é do plano Ouro. Role o mouse pra pausar e explorar no seu
-          ritmo.
+          oficial (ZARC) e suporte direto no painel, em qualquer plano, desde o Bronze. Junto com
+          isso, contexto de mercado direto no painel: câmbio, diesel, produção do IBGE, boletim
+          semanal da Imea e o boletim da USDA (WASDE). Acompanhar outras culturas e estados é do
+          plano Ouro. Role o mouse pra pausar e explorar no seu ritmo.
         </p>
       </Reveal>
 
@@ -294,6 +296,14 @@ function PreviewAlertas() {
         <div className="flex items-center gap-2 rounded-lg border border-border p-3 text-sm text-foreground">
           <Fuel className="size-4 shrink-0 text-primary" />
           Diesel em MT: <span className="font-mono font-semibold">R$ 6,65/L</span>
+        </div>
+        <div className="flex items-center gap-2 rounded-lg border border-border p-3 text-sm text-foreground">
+          <Globe className="size-4 shrink-0 text-primary" />
+          Produção de soja (IBGE): <span className="font-mono font-semibold">180,5 mi t</span>
+        </div>
+        <div className="flex items-center gap-2 rounded-lg border border-border p-3 text-sm text-foreground">
+          <BadgeCheck className="size-4 shrink-0 text-primary" />
+          Boletim Imea + USDA: <span className="font-semibold">atualizado essa semana</span>
         </div>
       </div>
     </div>

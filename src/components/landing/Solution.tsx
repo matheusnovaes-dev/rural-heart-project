@@ -22,7 +22,8 @@ export function Solution() {
             {[
               "Fonte e data sempre visíveis em cada resposta",
               "Preço do porto e frete até lá, pra você negociar com números",
-              "Grãos e pecuária, com duas fontes cruzadas onde é possível",
+              "Mais de 70 culturas: soja, milho, boi, café, suíno, frango, caprino, ovino e muito mais",
+              "Boletim da Imea e da USDA (WASDE), câmbio e diesel, tudo cruzado no mesmo lugar",
               "Funciona mesmo com internet fraca no campo",
             ].map((item) => (
               <li key={item} className="flex items-start gap-2 text-sm text-foreground">
