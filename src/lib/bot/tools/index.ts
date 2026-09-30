@@ -5,6 +5,7 @@ import type { HistoricoLinha } from "@/lib/bot/prompt";
 import { buscarPreco } from "@/lib/bot/tools/preco";
 import { buscarClima } from "@/lib/bot/tools/clima";
 import { buscarLeite } from "@/lib/bot/tools/leite";
+import { buscarFerrugemAsiatica } from "@/lib/bot/tools/ferrugem";
 import { buscarSinalVenda } from "@/lib/bot/tools/sinalVenda";
 import {
   buscarBoletimImea,
@@ -184,6 +185,20 @@ export const TOOLS = [
         type: "object",
         properties: { produto: { type: "string" }, uf: { type: "string" } },
         required: ["produto", "uf"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "buscar_ferrugem_asiatica",
+      description:
+        "Ocorrência de ferrugem asiática da soja por município, na UF do produtor, na safra mais recente com dado (Consórcio Antiferrugem, rede oficial de monitoramento). Chame quando o produtor perguntar sobre ferrugem, risco de doença na soja, ou pedir pra saber se já teve foco confirmado na região dele. Só cobre ferrugem asiática, nenhuma outra praga/doença — se perguntarem sobre outra praga, diga honestamente que ainda não tem esse dado. 'municipios_com_ocorrencia_confirmada' são focos reais confirmados; 'municipios_com_esporos_no_ar' é alerta precoce (esporo detectado no ar, antes de sintoma visível na lavoura) — trate como nível de risco diferente (mais grave) do que confirmação. Se a lista vier vazia mas 'encontrado' for true, diga que não há foco confirmado na UF nessa safra até agora, nunca invente um município.",
+      parameters: {
+        type: "object",
+        properties: { uf: { type: "string" } },
+        required: ["uf"],
         additionalProperties: false,
       },
     },
@@ -446,6 +461,11 @@ export async function executarTool(
       return buscarProgressoSafraConab(
         ctx.supabase,
         args as Parameters<typeof buscarProgressoSafraConab>[1],
+      );
+    case "buscar_ferrugem_asiatica":
+      return buscarFerrugemAsiatica(
+        ctx.supabase,
+        args as Parameters<typeof buscarFerrugemAsiatica>[1],
       );
     case "buscar_preco_insumo":
       return buscarPrecoInsumo(
