@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   Sprout,
   BadgeCheck,
+  FlaskConical,
 } from "lucide-react";
 
 import { Reveal } from "@/components/landing/Reveal";
@@ -32,7 +33,8 @@ const planoBadge: Record<PlanoId, { label: string; className: string }> = {
   ouro: { label: "Ouro", className: "bg-gold text-gold-foreground" },
 };
 
-type AbaId = "precos" | "sinal" | "alertas" | "clima" | "plantio" | "suporte" | "acompanhamento";
+type AbaId =
+  "precos" | "sinal" | "alertas" | "clima" | "plantio" | "insumos" | "suporte" | "acompanhamento";
 
 const abas: { id: AbaId; label: string; icon: typeof LineChart; plano: PlanoId }[] = [
   { id: "precos", label: "Preços", icon: LineChart, plano: "bronze" },
@@ -40,6 +42,7 @@ const abas: { id: AbaId; label: string; icon: typeof LineChart; plano: PlanoId }
   { id: "alertas", label: "Alertas & lembretes", icon: Bell, plano: "bronze" },
   { id: "clima", label: "Clima", icon: CloudSun, plano: "bronze" },
   { id: "plantio", label: "Plantio", icon: Sprout, plano: "bronze" },
+  { id: "insumos", label: "Insumos", icon: FlaskConical, plano: "prata" },
   { id: "suporte", label: "Suporte", icon: LifeBuoy, plano: "bronze" },
   { id: "acompanhamento", label: "Acompanhamento", icon: Star, plano: "ouro" },
 ];
@@ -152,6 +155,7 @@ export function DashboardPreview() {
               {aba === "alertas" && <PreviewAlertas />}
               {aba === "clima" && <PreviewClima />}
               {aba === "plantio" && <PreviewPlantio />}
+              {aba === "insumos" && <PreviewInsumos />}
               {aba === "suporte" && <PreviewSuporte />}
               {aba === "acompanhamento" && <PreviewAcompanhamento />}
             </div>
@@ -422,14 +426,6 @@ function PreviewPlantio() {
         </span>
       </div>
 
-      <p className="mt-1 text-xs font-semibold text-muted-foreground">Preço de insumos (Conab)</p>
-      <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm text-foreground">
-        Herbicida no MT
-        <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
-          R$ 28,17 – 66,83/L
-        </span>
-      </div>
-
       <p className="text-xs text-muted-foreground">
         Soja, milho, algodão, arroz e feijão. Não é estimativa de produtividade, só risco climático
         da época de plantio.
@@ -515,6 +511,44 @@ function PreviewAcompanhamento() {
                   {Math.abs(item.variacao)}%
                 </span>
               </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PreviewInsumos() {
+  const itens = [
+    { rotulo: "Herbicida", faixa: "R$ 28,17 – 66,83", unidade: "/L" },
+    { rotulo: "Fertilizante", faixa: "R$ 2.410,00 – 3.155,11", unidade: "/t" },
+  ];
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-zinc-300/60 bg-zinc-100/60 p-3 dark:border-zinc-700/50 dark:bg-zinc-800/30">
+      <div className="flex items-center gap-2">
+        <p className="text-sm font-semibold text-foreground">Preço de insumos</p>
+        <span className="rounded-full bg-zinc-200 px-1.5 py-0.5 text-[9px] font-semibold text-zinc-700">
+          Prata
+        </span>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Faixa de preço de defensivos e fertilizantes por marca, no seu estado, direto da Conab.
+      </p>
+      <div className="flex flex-col gap-2">
+        {itens.map((item) => (
+          <Card key={item.rotulo} className="gap-1 border-zinc-300/60 py-3 dark:border-zinc-700/50">
+            <CardContent className="flex items-center justify-between px-3">
+              <div className="flex items-center gap-2 text-sm text-foreground">
+                <FlaskConical className="size-4 shrink-0 text-zinc-500" />
+                {item.rotulo}
+              </div>
+              <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
+                {item.faixa}
+                <span className="ml-0.5 font-sans text-xs font-normal text-muted-foreground">
+                  {item.unidade}
+                </span>
+              </span>
             </CardContent>
           </Card>
         ))}

@@ -5,6 +5,7 @@ import { CATEGORIA_PARA_SUBGRUPO_INSUMO } from "@/config/conabPrecoInsumo";
 import { CULTURA_PARA_CONAB_PROGRESSO } from "@/config/conabProgressoSafra";
 import { CULTURA_PARA_CONAB_HISTORICO } from "@/config/conabSerieHistorica";
 import { normalizarCultura } from "@/config/culturas";
+import { temAcessoPrata, type Plano } from "@/lib/planos.shared";
 
 const semAcento = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 
@@ -248,7 +249,22 @@ type LinhaInsumo = {
 export async function buscarPrecoInsumo(
   supabase: SupabaseClient,
   args: { termo: string; uf: string },
+  produtorId: string | null,
 ) {
+  // Exclusivo Prata+ (mesmo padrão de checagem usada em criar_alerta_preco)
+  // — pergunta pelo WhatsApp também é uma chamada dessa tool, então o
+  // gating tem que valer aqui também, senão o card do painel vira a única
+  // barreira real e dá pra contornar só perguntando pro bot.
+  if (produtorId) {
+    const { data: assinatura } = await supabase
+      .from("assinaturas")
+      .select("plano")
+      .eq("produtor_id", produtorId)
+      .maybeSingle();
+    const plano = (assinatura?.plano as Plano | undefined) ?? null;
+    if (!temAcessoPrata(plano)) return { encontrado: false, disponivel_no_plano: false };
+  }
+
   const termoBusca = args.termo.trim();
   const colunas = "produto, grupo, subgrupo, uf, ano, mes, preco, unidade_medida";
 

@@ -448,7 +448,11 @@ export async function executarTool(
         args as Parameters<typeof buscarProgressoSafraConab>[1],
       );
     case "buscar_preco_insumo":
-      return buscarPrecoInsumo(ctx.supabase, args as Parameters<typeof buscarPrecoInsumo>[1]);
+      return buscarPrecoInsumo(
+        ctx.supabase,
+        args as Parameters<typeof buscarPrecoInsumo>[1],
+        ctx.produtor.id,
+      );
     case "buscar_futuros_b3":
       return buscarFuturosB3(ctx.supabase, args as Parameters<typeof buscarFuturosB3>[1]);
     case "buscar_producao_usda_wasde":

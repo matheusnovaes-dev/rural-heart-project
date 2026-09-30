@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { FlaskConical } from "lucide-react";
+import { FlaskConical, Lock } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UpgradeButton } from "@/components/dashboard/UpgradeButton";
 import { supabase } from "@/lib/supabase";
+import { temAcessoPrata, useAssinatura } from "@/lib/planos";
 import type { Produtor } from "@/lib/auth";
 
 type LinhaInsumo = {
@@ -58,12 +60,17 @@ const formatarPreco = (v: number) => v.toLocaleString("pt-BR", { maximumFraction
  * 2026-09-30. Cada linha da tabela é por produto/marca específica, então
  * o card não cita UM preço, sempre uma faixa — citar um número único aqui
  * seria inventar uma média que a fonte não dá.
+ *
+ * Exclusivo Prata+ (pedido do Matheus 2026-09-30) — mesmo padrão de
+ * gating/upsell já usado em Watchlist.tsx (lá é Ouro), só que aqui é
+ * Prata: esconde o dado e mostra oferta de upgrade pro Bronze.
  */
 export function PrecoInsumosCard({ produtor }: { produtor: Produtor }) {
+  const { plano, assinaturaId, asaasSubscriptionId, loading: loadingPlano } = useAssinatura();
   const [grupos, setGrupos] = useState<GrupoInsumo[] | null | undefined>(undefined);
 
   useEffect(() => {
-    if (!supabase || !produtor.uf) return;
+    if (!supabase || !produtor.uf || !temAcessoPrata(plano)) return;
     let ativo = true;
 
     (async () => {
@@ -121,7 +128,34 @@ export function PrecoInsumosCard({ produtor }: { produtor: Produtor }) {
     return () => {
       ativo = false;
     };
-  }, [produtor.uf]);
+  }, [produtor.uf, plano]);
+
+  if (loadingPlano) return <Skeleton className="h-16 w-full" />;
+
+  if (!temAcessoPrata(plano)) {
+    return (
+      <Card className="border-border/80 shadow-sm transition-shadow hover:shadow-md">
+        <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
+          <span className="flex size-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Lock className="size-5" />
+          </span>
+          <div className="space-y-1">
+            <CardTitle className="font-display text-base">Preço de insumos</CardTitle>
+            <CardDescription className="mx-auto max-w-sm">
+              Exclusivo do plano Prata. Veja a faixa de preço de defensivos e fertilizantes por
+              marca, direto da Conab, pra negociar com número na mão.
+            </CardDescription>
+          </div>
+          <UpgradeButton
+            planoAlvo="prata"
+            assinaturaId={assinaturaId}
+            asaasSubscriptionId={asaasSubscriptionId}
+            className="bg-cta text-cta-foreground hover:bg-cta/90"
+          />
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!produtor.uf) return null;
   if (grupos === null) return null;

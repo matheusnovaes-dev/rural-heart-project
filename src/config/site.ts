@@ -55,6 +55,7 @@ export const pricingPlans: PricingPlan[] = [
       "Alertas de preço e clima sem limite",
       "Até 3 funcionários com acesso, pra dividir o trabalho",
       "Compara o preço da Conab com o da Imea (MT)",
+      "Preço de defensivos e fertilizantes por marca, direto da Conab",
       "Cooperativas: risco climático agregado entre todos os produtores",
     ],
     highlighted: true,
