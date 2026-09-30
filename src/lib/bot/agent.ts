@@ -22,6 +22,7 @@ import {
   conversaFalaDeCadastro,
   classificarPedidoDeAcesso,
   corrigirLinkDePainelParaClienteSemLogin,
+  garantirDataDoPreco,
   garantirMediaDasPracas,
   garantirParidade,
   garantirReferenciaMercado,
@@ -118,6 +119,32 @@ function extrairUltimoFreteCitado(messages: OpenAIMessage[]): FreteCitado | null
     }
   }
   return ultimo;
+}
+
+// Data do preço que buscar_preco devolveu, só quando a resposta é sobre UMA
+// consulta de preço (achado real: o bot citou o preço da maçã sem nenhuma
+// data, apesar do dado ter mais de um mês — o prompt já pede "sempre inclua
+// a data de referência", mas isso escapou; aqui garante por código).
+function extrairDataDoPreco(messages: OpenAIMessage[]): string | null {
+  const nomePorToolCallId = new Map<string, string>();
+  for (const m of messages) {
+    if (m.role === "assistant" && m.tool_calls) {
+      for (const tc of m.tool_calls) nomePorToolCallId.set(tc.id, tc.function.name);
+    }
+  }
+  const datas: (string | null)[] = [];
+  for (const m of messages) {
+    if (m.role !== "tool" || !m.tool_call_id) continue;
+    if (nomePorToolCallId.get(m.tool_call_id) !== "buscar_preco") continue;
+    try {
+      const parsed = JSON.parse(m.content ?? "{}");
+      const data = parsed?.precos?.[0]?.data_referencia;
+      datas.push(typeof data === "string" ? data : null);
+    } catch {
+      datas.push(null);
+    }
+  }
+  return datas.length === 1 ? datas[0]! : null;
 }
 
 // Mesma rede de segurança determinística de novo: o prompt já proíbe
@@ -482,7 +509,10 @@ export async function runAgent(input: {
             garantirReferenciaMercado(
               garantirParidade(
                 garantirRotaFrete(
-                  removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
+                  garantirDataDoPreco(
+                    removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
+                    extrairDataDoPreco(messages),
+                  ),
                   extrairUltimoFreteCitado(messages),
                 ),
                 extrairParidade(messages),

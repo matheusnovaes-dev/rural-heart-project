@@ -146,6 +146,29 @@ export function garantirRotaFrete(resposta: string, frete: FreteCitado | null): 
   return `${semPontuacaoFinal}${separador}Rota de frete considerada: ${frete.origem} até ${frete.destino}.`;
 }
 
+function dataBr(isoDate: string): string | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(isoDate);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : null;
+}
+
+/**
+ * Garante que a resposta cita a data do preço (o prompt já pede isso, mas
+ * testando ao vivo o bot citou um preço de maçã com um mês de atraso sem
+ * mencionar a data nenhuma vez — quem lê acha que é de hoje).
+ */
+export function garantirDataDoPreco(resposta: string, dataReferencia: string | null): string {
+  if (!dataReferencia) return resposta;
+  const dd = dataBr(dataReferencia);
+  if (!dd) return resposta;
+  const [dia, mes] = dd.split("/");
+  // Aceita com ou sem o ano (a resposta às vezes escreve só "28/08" quando é
+  // óbvio que é o ano corrente) — o que importa é dia e mês baterem.
+  if (resposta.includes(`${dia}/${mes}`)) return resposta;
+  const semPontuacaoFinal = resposta.trimEnd();
+  const separador = /[.!?]$/.test(semPontuacaoFinal) ? " " : ". ";
+  return `${semPontuacaoFinal}${separador}Dado de ${dd}.`;
+}
+
 /**
  * Confirmação de cadastro criado pelo chat, escrita por código e não pelo
  * modelo: antes o modelo prometia "você vai receber as atualizações de
