@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Calculator, Loader2 } from "lucide-react";
+import { ArrowRight, Calculator, ChevronDown, Loader2 } from "lucide-react";
 
 import { Reveal } from "@/components/landing/Reveal";
 import { Button } from "@/components/ui/button";
@@ -299,6 +299,21 @@ export function CalculadoraSafraLanding() {
             )}
           </AnimatePresence>
         </div>
+      </Reveal>
+
+      <Reveal
+        delay={0.2}
+        className="mx-auto mt-10 flex max-w-xl flex-col items-center gap-2 text-center"
+      >
+        <a
+          href="#como-funciona"
+          className="flex flex-col items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-primary"
+        >
+          <span>
+            Confira mais do que o Safralume oferece: sua ferramenta de inteligência agrícola
+          </span>
+          <ChevronDown className="size-5 animate-bounce" />
+        </a>
       </Reveal>
     </section>
   );
