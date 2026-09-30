@@ -5,6 +5,16 @@ import { Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { useAssinatura, type Plano } from "@/lib/planos";
@@ -40,6 +50,7 @@ function AssinarPage() {
   const [selecionado, setSelecionado] = useState<Plano>("bronze");
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
+  const [confirmandoCobrancaAntecipada, setConfirmandoCobrancaAntecipada] = useState(false);
 
   useEffect(() => {
     if (plano) setSelecionado(plano);
@@ -259,10 +270,57 @@ function AssinarPage() {
         {erro && <p className="mt-4 text-center text-sm text-destructive">{erro}</p>}
 
         <div className="mt-6 flex justify-center">
-          <Button size="lg" disabled={enviando} onClick={continuar}>
+          <Button
+            size="lg"
+            disabled={enviando}
+            onClick={() => {
+              // Achado real 2026-09-30: um produtor clicou nisso minutos
+              // depois de se cadastrar, ainda com o trial válido, e foi
+              // cobrado na hora sem perceber — o texto acima já avisa dos
+              // dias restantes, mas isso não é claro o suficiente antes de
+              // uma ação que não tem volta. Confirmação explícita só entra
+              // nesse caso (quem já perdeu o trial não tem nada a perder
+              // clicando direto).
+              if (trialValido) {
+                setConfirmandoCobrancaAntecipada(true);
+              } else {
+                void continuar();
+              }
+            }}
+          >
             {enviando ? <Loader2 className="size-4 animate-spin" /> : "Continuar para pagamento"}
           </Button>
         </div>
+
+        <AlertDialog
+          open={confirmandoCobrancaAntecipada}
+          onOpenChange={setConfirmandoCobrancaAntecipada}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Isso cobra hoje, não é só uma confirmação</AlertDialogTitle>
+              <AlertDialogDescription>
+                Você ainda tem {diasRestantes} dia{diasRestantes === 1 ? "" : "s"} de teste grátis.
+                Continuando, a Safralume gera agora uma cobrança de{" "}
+                {pricingPlans.find((p) => p.id === selecionado)?.price.toLocaleString("pt-BR")}{" "}
+                reais pelo plano {pricingPlans.find((p) => p.id === selecionado)?.name}, vencendo
+                hoje, e o restante do seu teste grátis não é usado. Se só quer continuar testando
+                por enquanto, feche isso e volte pro painel.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Voltar, quero continuar no teste grátis</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setConfirmandoCobrancaAntecipada(false);
+                  void continuar();
+                }}
+              >
+                Sim, cobrar agora
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
