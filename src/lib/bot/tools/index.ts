@@ -14,6 +14,7 @@ import {
   buscarProducaoHistoricaConab,
   buscarProducaoIbge,
   buscarProducaoWasde,
+  buscarProgressoSafraConab,
 } from "@/lib/bot/tools/mercado";
 import { criarAlertaClima, criarAlertaPreco } from "@/lib/bot/tools/alertas";
 import { criarContaTeste } from "@/lib/bot/tools/conta";
@@ -163,7 +164,21 @@ export const TOOLS = [
     function: {
       name: "buscar_producao_historica_conab",
       description:
-        "Área plantada, produção e produtividade da safra atual e da anterior (série histórica da Conab, só grãos: algodão, amendoim, arroz, aveia, canola, centeio, cevada, feijão, gergelim, girassol, mamona, milho, soja, sorgo, trigo, triticale) pra uma UF — dá pra comparar se a área plantada da safra atual cresceu ou caiu em relação à anterior. NÃO é o percentual de quanto já foi plantado até agora nesta safra (esse dado não existe estruturado, só em texto no boletim mensal da Conab) — nunca confunda os dois.",
+        "Área plantada, produção e produtividade TOTAL da safra atual e da anterior (série histórica da Conab, só grãos: algodão, amendoim, arroz, aveia, canola, centeio, cevada, feijão, gergelim, girassol, mamona, milho, soja, sorgo, trigo, triticale) pra uma UF — dá pra comparar se a área plantada da safra atual cresceu ou caiu em relação à anterior. NÃO é quanto já foi plantado/colhido ATÉ AGORA nesta semana (isso é buscar_progresso_safra_conab) — nunca confunda os dois.",
+      parameters: {
+        type: "object",
+        properties: { produto: { type: "string" }, uf: { type: "string" } },
+        required: ["produto", "uf"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "buscar_progresso_safra_conab",
+      description:
+        'Percentual de área já SEMEADA ou COLHIDA na semana mais recente (boletim semanal da Conab), pra uma UF — é o dado de "quanto já foi plantado esse ano" que o produtor pergunta durante a época de plantio/colheita. Só cobre a cultura enquanto ela está na janela de plantio ou colheita (fora dessa época, retorna indisponível). Culturas com 2 safras no ano (milho, feijão) trazem as duas linhas separadas.',
       parameters: {
         type: "object",
         properties: { produto: { type: "string" }, uf: { type: "string" } },
@@ -411,6 +426,11 @@ export async function executarTool(
       return buscarProducaoHistoricaConab(
         ctx.supabase,
         args as Parameters<typeof buscarProducaoHistoricaConab>[1],
+      );
+    case "buscar_progresso_safra_conab":
+      return buscarProgressoSafraConab(
+        ctx.supabase,
+        args as Parameters<typeof buscarProgressoSafraConab>[1],
       );
     case "buscar_futuros_b3":
       return buscarFuturosB3(ctx.supabase, args as Parameters<typeof buscarFuturosB3>[1]);

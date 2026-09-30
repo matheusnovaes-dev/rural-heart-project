@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { CULTURA_PARA_B3 } from "@/config/b3";
+import { CULTURA_PARA_CONAB_PROGRESSO } from "@/config/conabProgressoSafra";
 import { CULTURA_PARA_CONAB_HISTORICO } from "@/config/conabSerieHistorica";
 import { normalizarCultura } from "@/config/culturas";
 
@@ -99,6 +100,63 @@ export async function buscarProducaoHistoricaConab(
   const [atual, anterior] = data ?? [];
   if (!atual) return { disponivel: false };
   return { disponivel: true, atual, anterior: anterior ?? null };
+}
+
+/**
+ * % de área já semeada ou colhida NA SEMANA ATUAL — boletim semanal
+ * "Plantio e Colheita" da Conab (achado 2026-09-30), fonte DIFERENTE da
+ * série histórica acima (aquela só dá o total estimado pra safra inteira).
+ * Isso é o dado que vira notícia tipo "Brasil já plantou X% da soja".
+ * Culturas com mais de uma safra no ano (milho, feijão) vêm com "1ª"/"2ª"
+ * no nome — o ilike pega todas de uma vez, e cada uma aparece como uma
+ * linha própria no retorno. Só cobre a cultura/semana que o boletim mais
+ * recente realmente trouxe (varia por época do ano — fora da janela de
+ * plantio/colheita de uma cultura, ela nem aparece no arquivo daquela
+ * semana).
+ */
+export async function buscarProgressoSafraConab(
+  supabase: SupabaseClient,
+  args: { produto: string; uf: string },
+) {
+  const produtoConab = CULTURA_PARA_CONAB_PROGRESSO[normalizarCultura(args.produto)];
+  if (!produtoConab) return { disponivel: false };
+
+  const { data } = await supabase
+    .from("progresso_safra_conab")
+    .select("produto, safra, tipo, uf, semana_referencia, percentual, media_5_anos")
+    .ilike("produto", `${produtoConab}%`)
+    .in("uf", [args.uf, "BR"])
+    .order("semana_referencia", { ascending: false })
+    .limit(12)
+    .returns<
+      {
+        produto: string;
+        safra: string;
+        tipo: string;
+        uf: string;
+        semana_referencia: string;
+        percentual: number;
+        media_5_anos: number | null;
+      }[]
+    >();
+
+  if (!data || data.length === 0) return { disponivel: false };
+
+  // Só a semana mais recente que existir (pode ser diferente por cultura,
+  // já que cada uma é atualizada quando a Conab tem dado novo pra ela).
+  const semanaMaisRecente = data[0]!.semana_referencia;
+  const linhas = data.filter((l) => l.semana_referencia === semanaMaisRecente);
+  const daUf = linhas.filter((l) => l.uf === args.uf);
+  const nacional = linhas.filter((l) => l.uf === "BR");
+  return {
+    disponivel: true,
+    semana_referencia: semanaMaisRecente,
+    // Vazio quando a UF pedida não está entre os estados que a Conab
+    // acompanha pra essa cultura (só cobre os estados que somam ~90%+ da
+    // área) — nesse caso só o nacional mesmo serve de referência.
+    da_uf: daUf,
+    nacional,
+  };
 }
 
 /**
