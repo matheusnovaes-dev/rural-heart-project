@@ -11,6 +11,7 @@ import {
   buscarCambio,
   buscarDiesel,
   buscarFuturosB3,
+  buscarPrecoInsumo,
   buscarProducaoHistoricaConab,
   buscarProducaoIbge,
   buscarProducaoWasde,
@@ -183,6 +184,20 @@ export const TOOLS = [
         type: "object",
         properties: { produto: { type: "string" }, uf: { type: "string" } },
         required: ["produto", "uf"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "buscar_preco_insumo",
+      description:
+        'Preço de defensivo agrícola (agrotóxico: herbicida, fungicida, inseticida, acaricida, adjuvante, regulador de crescimento) ou fertilizante (químico, orgânico, inoculante), da Conab. O dado é POR PRODUTO COMERCIAL (marca/formulação), não uma categoria única — passe o nome específico que o produtor citou (ex: "glifosato", "MAP", "ureia", "2,4-D") em termo; se ele perguntar de forma genérica sem citar produto (ex: "e o fertilizante, tá subindo?"), passe a categoria (ex: "fertilizante", "herbicida") em termo mesmo assim, a busca cai pra categoria sozinha. Sempre retorna uma FAIXA de preço (mínimo-máximo entre os produtos encontrados), nunca um valor único — não invente um preço "médio" que a ferramenta não deu.',
+      parameters: {
+        type: "object",
+        properties: { termo: { type: "string" }, uf: { type: "string" } },
+        required: ["termo", "uf"],
         additionalProperties: false,
       },
     },
@@ -432,6 +447,8 @@ export async function executarTool(
         ctx.supabase,
         args as Parameters<typeof buscarProgressoSafraConab>[1],
       );
+    case "buscar_preco_insumo":
+      return buscarPrecoInsumo(ctx.supabase, args as Parameters<typeof buscarPrecoInsumo>[1]);
     case "buscar_futuros_b3":
       return buscarFuturosB3(ctx.supabase, args as Parameters<typeof buscarFuturosB3>[1]);
     case "buscar_producao_usda_wasde":

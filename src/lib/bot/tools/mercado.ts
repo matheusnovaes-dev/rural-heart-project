@@ -1,9 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { CULTURA_PARA_B3 } from "@/config/b3";
+import { CATEGORIA_PARA_SUBGRUPO_INSUMO } from "@/config/conabPrecoInsumo";
 import { CULTURA_PARA_CONAB_PROGRESSO } from "@/config/conabProgressoSafra";
 import { CULTURA_PARA_CONAB_HISTORICO } from "@/config/conabSerieHistorica";
 import { normalizarCultura } from "@/config/culturas";
+
+const semAcento = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 
 export async function buscarCambio(supabase: SupabaseClient) {
   const { data } = await supabase
@@ -225,6 +228,100 @@ export async function buscarProducaoWasde(
     .limit(1)
     .maybeSingle();
   return data ?? { encontrado: false };
+}
+
+type LinhaInsumo = {
+  produto: string;
+  grupo: string;
+  subgrupo: string;
+  uf: string;
+  ano: number;
+  mes: number;
+  preco: number;
+  unidade_medida: string;
+};
+
+// precos_insumos_conab é por produto COMERCIAL (marca), não categoria — a
+// busca principal é por substring no nome (ex: "glifosato", "map", "ureia").
+// Só cai pra busca por categoria (subgrupo exato) quando a busca por nome
+// não acha nada, pra "e o fertilizante, como tá?" também dar uma resposta.
+export async function buscarPrecoInsumo(
+  supabase: SupabaseClient,
+  args: { termo: string; uf: string },
+) {
+  const termoBusca = args.termo.trim();
+  const colunas = "produto, grupo, subgrupo, uf, ano, mes, preco, unidade_medida";
+
+  let data = (
+    await supabase
+      .from("precos_insumos_conab")
+      .select(colunas)
+      .ilike("produto", `%${termoBusca}%`)
+      .order("ano", { ascending: false })
+      .order("mes", { ascending: false })
+      .limit(500)
+      .returns<LinhaInsumo[]>()
+  ).data;
+
+  let buscaPorCategoria = false;
+  if (!data || data.length === 0) {
+    const subgrupo = CATEGORIA_PARA_SUBGRUPO_INSUMO[semAcento(termoBusca)];
+    if (!subgrupo) return { encontrado: false };
+    buscaPorCategoria = true;
+    data = (
+      await supabase
+        .from("precos_insumos_conab")
+        .select(colunas)
+        .eq("subgrupo", subgrupo)
+        .order("ano", { ascending: false })
+        .order("mes", { ascending: false })
+        .limit(500)
+        .returns<LinhaInsumo[]>()
+    ).data;
+  }
+
+  if (!data || data.length === 0) return { encontrado: false };
+
+  // Período mais recente entre as linhas encontradas — publicação é
+  // bimestral (meses ímpares), então "o mês atual" quase nunca tem dado;
+  // pega o mais recente que exista de verdade em vez de assumir.
+  const maisRecente = data[0]!;
+  const doPeriodo = data.filter((l) => l.ano === maisRecente.ano && l.mes === maisRecente.mes);
+
+  const daUf = doPeriodo.filter((l) => l.uf === args.uf);
+  const linhas = daUf.length > 0 ? daUf : doPeriodo;
+
+  // Agrupa por unidade de medida — não faz sentido misturar faixa de preço
+  // em R$/L com R$/KG no mesmo min/max.
+  const porUnidade = new Map<string, LinhaInsumo[]>();
+  for (const l of linhas) {
+    if (!porUnidade.has(l.unidade_medida)) porUnidade.set(l.unidade_medida, []);
+    porUnidade.get(l.unidade_medida)!.push(l);
+  }
+
+  const faixas_de_preco = [...porUnidade.entries()].map(([unidade_medida, itens]) => {
+    const precos = itens.map((i) => i.preco);
+    return {
+      unidade_medida,
+      quantidade_produtos: itens.length,
+      preco_minimo: Math.min(...precos),
+      preco_maximo: Math.max(...precos),
+      produtos_exemplo: itens
+        .slice(0, 5)
+        .map((i) => ({ produto: i.produto, uf: i.uf, preco: i.preco })),
+    };
+  });
+
+  return {
+    encontrado: true,
+    busca_por_categoria: buscaPorCategoria,
+    ano: maisRecente.ano,
+    mes: maisRecente.mes,
+    cobertura: daUf.length > 0 ? "uf_do_produtor" : "multiplas_ufs_sem_dado_na_uf_pedida",
+    grupo: maisRecente.grupo,
+    subgrupo: maisRecente.subgrupo,
+    faixas_de_preco,
+  };
 }
 
 export async function buscarBoletimImea(supabase: SupabaseClient, args: { cadeia: string }) {
