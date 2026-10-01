@@ -150,8 +150,23 @@ export async function buscarProgressoSafraConab(
   // já que cada uma é atualizada quando a Conab tem dado novo pra ela).
   const semanaMaisRecente = data[0]!.semana_referencia;
   const linhas = data.filter((l) => l.semana_referencia === semanaMaisRecente);
-  const daUf = linhas.filter((l) => l.uf === args.uf);
-  const nacional = linhas.filter((l) => l.uf === "BR");
+
+  // Achado real testando: o modelo recebia a fração crua (0.039) com a
+  // instrução "multiplique por 100" e, na maioria das vezes, citava
+  // "0,039%" em vez de "3,9%" — um erro de 100x. Em vez de confiar na
+  // conta do modelo (mesmo padrão de frete_e_paridade.frase e outras
+  // ferramentas), a ferramenta já devolve o percentual FORMATADO pronto
+  // pra citar — os campos numéricos crus continuam aqui só pra lógica de
+  // código (ex: decidir se vale mencionar o painel), nunca pro modelo
+  // fazer conta com eles.
+  const comFormatado = (l: (typeof linhas)[number]) => ({
+    ...l,
+    percentual_formatado: formatarPctSafra(l.percentual),
+    media_5_anos_formatado: l.media_5_anos != null ? formatarPctSafra(l.media_5_anos) : null,
+  });
+
+  const daUf = linhas.filter((l) => l.uf === args.uf).map(comFormatado);
+  const nacional = linhas.filter((l) => l.uf === "BR").map(comFormatado);
   return {
     disponivel: true,
     semana_referencia: semanaMaisRecente,
@@ -162,6 +177,9 @@ export async function buscarProgressoSafraConab(
     nacional,
   };
 }
+
+const formatarPctSafra = (fracao: number) =>
+  `${(fracao * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 
 /**
  * Rótulo de fonte escrito por código, não pelo modelo — achado real 2026-09-28:
