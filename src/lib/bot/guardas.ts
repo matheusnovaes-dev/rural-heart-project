@@ -499,3 +499,24 @@ export const RESPOSTA_SO_TEXTO =
 export function garantirCanalDeTexto(resposta: string): string {
   return PADRAO_PROMESSA_IMPOSSIVEL.test(resposta) ? RESPOSTA_SO_TEXTO : resposta;
 }
+
+const FRASE_PAINEL =
+  "Pra ver a lista completa, é só abrir o painel: https://safralume.com.br/dashboard";
+
+/**
+ * Insumo/ferrugem/progresso de safra com mais detalhe do que coube na
+ * resposta (lista grande de marcas, muitos municípios, vários estados) —
+ * acrescenta o convite pro painel só quando genuinamente tem mais coisa pra
+ * ver E o produtor já tem login (sem isso ele cairia numa tela de login à
+ * toa). Testado ao vivo: a instrução de prompt sozinha não é seguida de
+ * forma confiável, por isso a garantia por código.
+ */
+export function garantirMencaoPainel(
+  resposta: string,
+  temDetalheExtra: boolean,
+  temContaNoPainel: boolean,
+): string {
+  if (!temDetalheExtra || !temContaNoPainel) return resposta;
+  if (/painel|dashboard/i.test(resposta)) return resposta;
+  return `${resposta} ${FRASE_PAINEL}`;
+}

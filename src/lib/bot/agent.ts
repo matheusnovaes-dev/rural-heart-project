@@ -28,6 +28,7 @@ import {
   garantirParidade,
   garantirReferenciaMercado,
   garantirCanalDeTexto,
+  garantirMencaoPainel,
   garantirCotacaoLeite,
   garantirRelacaoLeiteMilho,
   medidasNaoAutorizadas,
@@ -211,6 +212,60 @@ function extrairMediaDasPracas(messages: OpenAIMessage[]): number | null {
     }
   }
   return medias.length === 1 ? medias[0]! : null;
+}
+
+// Insumo/ferrugem/progresso de safra trouxeram MAIS detalhe do que cabe
+// numa resposta de WhatsApp (lista grande de marcas, muitos municípios com
+// foco, vários estados com dado real) — achado real testando: a instrução
+// no prompt pra mencionar o painel nesses casos não é seguida de forma
+// confiável (4/4 tentativas ao vivo ignoraram), mesmo padrão de outras
+// guardas desta sessão. Varre os resultados de ferramenta DESTE turno.
+function temDetalheExtraParaPainel(messages: OpenAIMessage[]): boolean {
+  const nomePorToolCallId = new Map<string, string>();
+  for (const m of messages) {
+    if (m.role === "assistant" && m.tool_calls) {
+      for (const tc of m.tool_calls) nomePorToolCallId.set(tc.id, tc.function.name);
+    }
+  }
+  for (const m of messages) {
+    if (m.role !== "tool" || !m.tool_call_id) continue;
+    const nome = nomePorToolCallId.get(m.tool_call_id);
+    if (!nome) continue;
+    let r: unknown;
+    try {
+      r = JSON.parse(m.content ?? "{}");
+    } catch {
+      continue;
+    }
+    if (nome === "buscar_preco_insumo" && r && typeof r === "object") {
+      const faixas = (r as { faixas_de_preco?: unknown }).faixas_de_preco;
+      if (
+        Array.isArray(faixas) &&
+        faixas.some(
+          (f) =>
+            typeof f?.quantidade_produtos === "number" &&
+            f.quantidade_produtos >
+              (Array.isArray(f?.produtos_exemplo) ? f.produtos_exemplo.length : 0),
+        )
+      ) {
+        return true;
+      }
+    }
+    if (nome === "buscar_ferrugem_asiatica" && r && typeof r === "object") {
+      const municipios = (r as { municipios_com_ocorrencia_confirmada?: unknown })
+        .municipios_com_ocorrencia_confirmada;
+      if (Array.isArray(municipios) && municipios.length > 3) return true;
+    }
+    if (nome === "buscar_progresso_safra_conab" && r && typeof r === "object") {
+      const daUf = (r as { da_uf?: unknown }).da_uf;
+      const nacional = (r as { nacional?: unknown }).nacional;
+      const comDado =
+        (Array.isArray(daUf) ? daUf.filter((l) => l?.percentual > 0).length : 0) +
+        (Array.isArray(nacional) ? nacional.filter((l) => l?.percentual > 0).length : 0);
+      if (comDado > 1) return true;
+    }
+  }
+  return false;
 }
 
 // Referência de mercado que buscar_preco trouxe (estado sem dado recente), só
@@ -525,30 +580,34 @@ export async function runAgent(input: {
 
     const numerosPermitidos = coletarNumerosPermitidos(messages, texto, historico);
     const leite = extrairResultadoLeite(messages);
-    const resposta = garantirCanalDeTexto(
-      garantirCotacaoLeite(
-        garantirRelacaoLeiteMilho(
-          garantirMediaDasPracas(
-            garantirReferenciaMercado(
-              garantirParidade(
-                garantirRotaFrete(
-                  garantirDataDoPreco(
-                    removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
-                    extrairDataDoPreco(messages),
+    const resposta = garantirMencaoPainel(
+      garantirCanalDeTexto(
+        garantirCotacaoLeite(
+          garantirRelacaoLeiteMilho(
+            garantirMediaDasPracas(
+              garantirReferenciaMercado(
+                garantirParidade(
+                  garantirRotaFrete(
+                    garantirDataDoPreco(
+                      removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
+                      extrairDataDoPreco(messages),
+                    ),
+                    extrairUltimoFreteCitado(messages),
                   ),
-                  extrairUltimoFreteCitado(messages),
+                  extrairParidade(messages),
                 ),
-                extrairParidade(messages),
+                extrairReferenciaMercado(messages),
               ),
-              extrairReferenciaMercado(messages),
+              extrairMediaDasPracas(messages),
             ),
-            extrairMediaDasPracas(messages),
+            leite.fraseRelacao,
+            numerosPermitidos,
           ),
-          leite.fraseRelacao,
-          numerosPermitidos,
+          leite.cotacao,
         ),
-        leite.cotacao,
       ),
+      temDetalheExtraParaPainel(messages),
+      !!produtor.user_id,
     );
 
     const naoAutorizados = valoresNaoAutorizados(resposta, numerosPermitidos);
