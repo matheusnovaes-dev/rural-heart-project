@@ -297,6 +297,23 @@ export async function buscarPrecoInsumo(
       .returns<LinhaInsumo[]>()
   ).data;
 
+  // ILIKE do Postgres não ignora acento — "ureia" (como o produtor digita
+  // no WhatsApp, sem acento) não bate com "URÉIA" no banco. Achado real
+  // testando ao vivo: busca direto não encontra nada mesmo com o produto
+  // cadastrado. Fallback: busca por substring sem acento em JS (tabela tem
+  // só ~3 mil linhas, cabe buscar tudo quando a busca direta falha).
+  if (!data || data.length === 0) {
+    const termoSemAcento = semAcento(termoBusca);
+    const { data: todos } = await supabase
+      .from("precos_insumos_conab")
+      .select(colunas)
+      .order("ano", { ascending: false })
+      .order("mes", { ascending: false })
+      .limit(5000)
+      .returns<LinhaInsumo[]>();
+    data = (todos ?? []).filter((l) => semAcento(l.produto).includes(termoSemAcento));
+  }
+
   let buscaPorCategoria = false;
   if (!data || data.length === 0) {
     const subgrupo = CATEGORIA_PARA_SUBGRUPO_INSUMO[semAcento(termoBusca)];

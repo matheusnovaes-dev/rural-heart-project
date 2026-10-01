@@ -23,6 +23,7 @@ import { Route as ApiAsaasWebhookRouteImport } from './routes/api/asaas/webhook'
 import { Route as ApiBotResponderRouteImport } from './routes/api/bot/responder'
 import { Route as ApiCronAvisoTrialRouteImport } from './routes/api/cron/aviso-trial'
 import { Route as ApiCronRecuperarCadastroRouteImport } from './routes/api/cron/recuperar-cadastro'
+import { Route as ApiCronReengajamentoRouteImport } from './routes/api/cron/reengajamento'
 import { Route as DashboardLayoutIndexRouteImport } from './routes/dashboard/_layout/index'
 import { Route as DashboardLayoutAlertasRouteImport } from './routes/dashboard/_layout/alertas'
 import { Route as DashboardLayoutAssinaturaRouteImport } from './routes/dashboard/_layout/assinatura'
@@ -109,6 +110,11 @@ const ApiCronRecuperarCadastroRoute =
     path: '/api/cron/recuperar-cadastro',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiCronReengajamentoRoute = ApiCronReengajamentoRouteImport.update({
+  id: '/api/cron/reengajamento',
+  path: '/api/cron/reengajamento',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardLayoutIndexRoute = DashboardLayoutIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -201,6 +207,7 @@ export interface FileRoutesByFullPath {
   '/api/bot/responder': typeof ApiBotResponderRoute
   '/api/cron/aviso-trial': typeof ApiCronAvisoTrialRoute
   '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
+  '/api/cron/reengajamento': typeof ApiCronReengajamentoRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/assinatura': typeof DashboardLayoutAssinaturaRoute
   '/dashboard/calculadora': typeof DashboardLayoutCalculadoraRoute
@@ -230,6 +237,7 @@ export interface FileRoutesByTo {
   '/api/bot/responder': typeof ApiBotResponderRoute
   '/api/cron/aviso-trial': typeof ApiCronAvisoTrialRoute
   '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
+  '/api/cron/reengajamento': typeof ApiCronReengajamentoRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/assinatura': typeof DashboardLayoutAssinaturaRoute
   '/dashboard/calculadora': typeof DashboardLayoutCalculadoraRoute
@@ -261,6 +269,7 @@ export interface FileRoutesById {
   '/api/bot/responder': typeof ApiBotResponderRoute
   '/api/cron/aviso-trial': typeof ApiCronAvisoTrialRoute
   '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
+  '/api/cron/reengajamento': typeof ApiCronReengajamentoRoute
   '/dashboard/_layout/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/_layout/assinatura': typeof DashboardLayoutAssinaturaRoute
   '/dashboard/_layout/calculadora': typeof DashboardLayoutCalculadoraRoute
@@ -293,6 +302,7 @@ export interface FileRouteTypes {
     | '/api/bot/responder'
     | '/api/cron/aviso-trial'
     | '/api/cron/recuperar-cadastro'
+    | '/api/cron/reengajamento'
     | '/dashboard/alertas'
     | '/dashboard/assinatura'
     | '/dashboard/calculadora'
@@ -322,6 +332,7 @@ export interface FileRouteTypes {
     | '/api/bot/responder'
     | '/api/cron/aviso-trial'
     | '/api/cron/recuperar-cadastro'
+    | '/api/cron/reengajamento'
     | '/dashboard/alertas'
     | '/dashboard/assinatura'
     | '/dashboard/calculadora'
@@ -352,6 +363,7 @@ export interface FileRouteTypes {
     | '/api/bot/responder'
     | '/api/cron/aviso-trial'
     | '/api/cron/recuperar-cadastro'
+    | '/api/cron/reengajamento'
     | '/dashboard/_layout/alertas'
     | '/dashboard/_layout/assinatura'
     | '/dashboard/_layout/calculadora'
@@ -383,6 +395,7 @@ export interface RootRouteChildren {
   ApiBotResponderRoute: typeof ApiBotResponderRoute
   ApiCronAvisoTrialRoute: typeof ApiCronAvisoTrialRoute
   ApiCronRecuperarCadastroRoute: typeof ApiCronRecuperarCadastroRoute
+  ApiCronReengajamentoRoute: typeof ApiCronReengajamentoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -483,6 +496,13 @@ declare module '@tanstack/react-router' {
       path: '/api/cron/recuperar-cadastro'
       fullPath: '/api/cron/recuperar-cadastro'
       preLoaderRoute: typeof ApiCronRecuperarCadastroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cron/reengajamento': {
+      id: '/api/cron/reengajamento'
+      path: '/api/cron/reengajamento'
+      fullPath: '/api/cron/reengajamento'
+      preLoaderRoute: typeof ApiCronReengajamentoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/_layout/': {
@@ -639,6 +659,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBotResponderRoute: ApiBotResponderRoute,
   ApiCronAvisoTrialRoute: ApiCronAvisoTrialRoute,
   ApiCronRecuperarCadastroRoute: ApiCronRecuperarCadastroRoute,
+  ApiCronReengajamentoRoute: ApiCronReengajamentoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
