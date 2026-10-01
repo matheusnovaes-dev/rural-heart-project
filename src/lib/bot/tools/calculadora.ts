@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { normalizarCultura } from "@/config/culturas";
 import { calcularValorProducao, type ResultadoCalculadora } from "@/lib/calculadora";
+import type { HistoricoLinha } from "@/lib/bot/prompt";
 
 export type ResultadoCalcularMargem =
   (ResultadoCalculadora & { erro?: undefined }) | { erro: "uf_ausente" | "sacas_ausente" };
@@ -11,6 +12,24 @@ export type ResultadoCalcularMargem =
  * cultura — é só a continuação de uma pergunta anterior. */
 const REGEX_CULTURA_MENCIONADA =
   /\b(soja|milho|boi|gado|arroba|caf[eé]|algod[ãa]o|trigo|arroz|feij[ãa]o|cana)\w*/i;
+
+/** Acha a cultura mencionada mais recente no histórico (varrendo do fim pro
+ * começo, incluindo mensagens do próprio bot) — acompanha a pergunta de
+ * verdade sendo discutida, não só o cadastro do produtor. Achado real
+ * (2026-09-25): bot perguntou "quantas sacas de SOJA?", produtor confirmou só
+ * a quantidade, e o modelo chamou a ferramenta com MILHO — a trava antiga
+ * caía pro cultura_principal do cadastro, que só por coincidência bateria com
+ * o que o bot tinha acabado de perguntar; se o produtor cadastrado for de
+ * milho mas estiver perguntando de soja no meio da conversa, cair direto pro
+ * cadastro reproduziria o mesmo bug por outro caminho. */
+function culturaMaisRecenteNoHistorico(historico: HistoricoLinha[]): string | null {
+  for (let i = historico.length - 1; i >= 0; i--) {
+    const linha = historico[i];
+    const match = linha?.conteudo?.match(REGEX_CULTURA_MENCIONADA);
+    if (match) return match[0];
+  }
+  return null;
+}
 
 /**
  * Mesma conta da Calculadora de Safra do painel (src/lib/calculadora.ts) —
@@ -37,14 +56,22 @@ export async function calcularMargemSafra(
     custo_saca: number | null;
     uf_referencia: string | null;
   },
-  ctx: { lat: number | null; lon: number | null; textoAtual: string; culturaPadrao: string | null },
+  ctx: {
+    lat: number | null;
+    lon: number | null;
+    textoAtual: string;
+    culturaPadrao: string | null;
+    historico: HistoricoLinha[];
+  },
 ): Promise<ResultadoCalcularMargem> {
   if (!args.uf) return { erro: "uf_ausente" };
   if (args.sacas == null || args.sacas <= 0) return { erro: "sacas_ausente" };
 
   const culturaMencionadaAgora = REGEX_CULTURA_MENCIONADA.test(ctx.textoAtual);
-  const produtoFinal =
-    !culturaMencionadaAgora && ctx.culturaPadrao ? ctx.culturaPadrao : args.produto;
+  const culturaDoHistorico = culturaMaisRecenteNoHistorico(ctx.historico);
+  const produtoFinal = culturaMencionadaAgora
+    ? args.produto
+    : (culturaDoHistorico ?? ctx.culturaPadrao ?? args.produto);
 
   const cultura = normalizarCultura(produtoFinal);
   return calcularValorProducao(supabase, {

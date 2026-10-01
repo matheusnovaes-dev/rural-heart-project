@@ -497,6 +497,7 @@ export async function executarTool(
         lon: ctx.produtor.lon,
         textoAtual: ctx.texto,
         culturaPadrao: ctx.produtor.cultura_principal,
+        historico: ctx.historico,
       });
     case "consultar_assinatura":
       return consultarAssinatura(ctx.supabase, ctx);

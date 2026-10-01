@@ -65,6 +65,48 @@ function notaDeNegativaDupla(texto: string): OpenAIMessage | null {
   };
 }
 
+// Bug real visto numa conversa de produção (2026-09-28): produtor disse
+// "não sou produtor, sou técnico agrícola" DUAS vezes seguidas, e o bot
+// repetiu a mesma pergunta de confirmação de cadastro como se nada tivesse
+// sido dito — leu a mensagem como ruído em vez de uma correção. Mesmo padrão
+// dos outros bugs de contexto desse modelo: instrução de prompt sozinha não é
+// confiável aqui, então detecta a recusa/correção na mensagem ATUAL e injeta
+// uma nota de sistema pra esse turno, antes do modelo decidir o que responder.
+const RECUSA_CADASTRO = /n[aã]o\s+sou\s+(produtor|agricultor|do\s+campo)/i;
+
+function notaDeRecusaCadastro(texto: string): OpenAIMessage | null {
+  if (!RECUSA_CADASTRO.test(texto)) return null;
+  return {
+    role: "system",
+    content:
+      "Nota: o produtor acabou de dizer explicitamente que NÃO é produtor rural (ex: é técnico agrícola, agrônomo, ou outra função). NÃO repita a pergunta de confirmação de cadastro nem insista em criar conta de produtor pra ele. Reconheça o que ele disse e pergunte, de forma direta, no que você pode ajudar.",
+  };
+}
+
+// Bug real visto numa conversa de produção (2026-09-26): a mensagem de
+// abertura do anúncio recebeu uma resposta de desabafo pessoal (doença na
+// família, dificuldade financeira, solidão) sem nenhuma relação com o
+// produto, e o bot respondeu com empatia MAS emendou o link de teste grátis
+// na mesma mensagem — um convite de venda em cima de alguém relatando que
+// não tem dinheiro é o tipo de print que machuca a marca. Detecta sinal de
+// aflição pessoal sem menção a nada agrícola/produto na mensagem atual e
+// suprime qualquer oferta/link nesse turno especificamente.
+const SINAL_DE_AFLICAO_PESSOAL =
+  /\b(doente|sozinh[ao]|sem\s+dinheiro|n[ãa]o\s+tenho\s+dinheiro|passando\s+necessidade|desempregad[ao]|faleceu|morreu|perdi\s+(meu|minha))\b/i;
+const MENCIONA_ASSUNTO_AGRICOLA_OU_PRODUTO =
+  /\b(soja|milho|boi|gado|caf[eé]|algod[ãa]o|trigo|arroz|feij[ãa]o|cana|pre[cç]o|clima|previs[ãa]o|alerta|cadastr\w*|plano|assinatura|painel|safra|lavoura|colheita)\w*/i;
+
+function notaDeAflicaoPessoal(texto: string): OpenAIMessage | null {
+  if (!SINAL_DE_AFLICAO_PESSOAL.test(texto) || MENCIONA_ASSUNTO_AGRICOLA_OU_PRODUTO.test(texto)) {
+    return null;
+  }
+  return {
+    role: "system",
+    content:
+      "Nota: essa mensagem do produtor fala de uma dificuldade pessoal (saúde, financeira, emocional) sem relação com o Safralume. Responda com empatia, curto, e NÃO ofereça cadastro, teste grátis, plano, link nem qualquer CTA comercial nessa resposta — seria fora de hora. Marque precisa_humano=true, porque isso não é algo que você resolve.",
+  };
+}
+
 const RESPONSE_FORMAT = {
   type: "json_schema" as const,
   json_schema: {
@@ -532,6 +574,8 @@ export async function runAgent(input: {
   }
 
   const notaNegativaDupla = notaDeNegativaDupla(texto);
+  const notaRecusaCadastro = notaDeRecusaCadastro(texto);
+  const notaAflicaoPessoal = notaDeAflicaoPessoal(texto);
   const messages: OpenAIMessage[] = [
     { role: "system", content: SYSTEM_PROMPT },
     { role: "system", content: buildContextoProdutor(produtor) },
@@ -543,6 +587,8 @@ export async function runAgent(input: {
     { role: "system", content: buildContextoInstitucional() },
     ...buildHistoryMessages(historico),
     ...(notaNegativaDupla ? [notaNegativaDupla] : []),
+    ...(notaRecusaCadastro ? [notaRecusaCadastro] : []),
+    ...(notaAflicaoPessoal ? [notaAflicaoPessoal] : []),
     { role: "user", content: texto },
   ];
 
@@ -664,7 +710,8 @@ export async function runAgent(input: {
 
     return {
       resposta,
-      precisa_humano: parsed.precisa_humano || precisaEscalarPorCobranca(texto),
+      precisa_humano:
+        parsed.precisa_humano || precisaEscalarPorCobranca(texto) || !!notaAflicaoPessoal,
       cadastro_criado: cadastroCriado,
       convite_dispensado: cadastroCriado || conversaFalaDeCadastro(resposta, historico),
     };
