@@ -52,6 +52,7 @@ type Leilao = {
   municipio: string | null;
   uf: string | null;
   leiloeira: string | null;
+  oferta: string | null;
   url: string;
 };
 
@@ -98,7 +99,7 @@ function LeiloesPage() {
     const agora = new Date().toISOString();
     const { data: todos } = await supabase
       .from("leiloes_agendados")
-      .select("id, titulo, data_hora, municipio, uf, leiloeira, url")
+      .select("id, titulo, data_hora, municipio, uf, leiloeira, oferta, url")
       .gte("data_hora", agora)
       .order("data_hora", { ascending: true })
       .limit(100);
@@ -326,6 +327,9 @@ function LeiloesPage() {
                     <span className="text-xs text-muted-foreground">
                       {l.municipio} · {l.leiloeira}
                     </span>
+                    {l.oferta && (
+                      <span className="mt-0.5 text-xs text-foreground/80">{l.oferta}</span>
+                    )}
                   </div>
                 </div>
                 <Badge variant="secondary" className="font-mono text-[11px] tabular-nums">
@@ -366,6 +370,9 @@ function LeiloesPage() {
                   <div className="flex flex-col">
                     <span className="font-medium text-foreground">{l.titulo}</span>
                     <span className="text-xs text-muted-foreground">{l.leiloeira}</span>
+                    {l.oferta && (
+                      <span className="mt-0.5 text-xs text-foreground/80">{l.oferta}</span>
+                    )}
                   </div>
                 </div>
                 <Badge variant="secondary" className="font-mono text-[11px] tabular-nums">

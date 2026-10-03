@@ -8,6 +8,7 @@ type LinhaLeilao = {
   municipio: string | null;
   uf: string | null;
   leiloeira: string | null;
+  oferta: string | null;
 };
 
 const LIMITE_PRESENCIAIS = 5;
@@ -45,7 +46,7 @@ export async function buscarLeiloesProximos(
 
   const { data } = await supabase
     .from("leiloes_agendados")
-    .select("titulo, data_hora, municipio, uf, leiloeira")
+    .select("titulo, data_hora, municipio, uf, leiloeira, oferta")
     .gte("data_hora", new Date().toISOString())
     .order("data_hora", { ascending: true })
     .limit(200)
@@ -63,11 +64,15 @@ export async function buscarLeiloesProximos(
     data_hora: l.data_hora,
     local: l.municipio,
     leiloeira: l.leiloeira,
+    oferta: l.oferta,
   }));
 
-  const virtuais = todosVirtuais
-    .slice(0, LIMITE_VIRTUAIS)
-    .map((l) => ({ titulo: l.titulo, data_hora: l.data_hora, leiloeira: l.leiloeira }));
+  const virtuais = todosVirtuais.slice(0, LIMITE_VIRTUAIS).map((l) => ({
+    titulo: l.titulo,
+    data_hora: l.data_hora,
+    leiloeira: l.leiloeira,
+    oferta: l.oferta,
+  }));
 
   if (presenciais.length === 0 && virtuais.length === 0) return { encontrado: false };
 
