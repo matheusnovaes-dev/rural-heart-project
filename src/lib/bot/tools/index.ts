@@ -6,6 +6,7 @@ import { buscarPreco } from "@/lib/bot/tools/preco";
 import { buscarClima } from "@/lib/bot/tools/clima";
 import { buscarLeite } from "@/lib/bot/tools/leite";
 import { buscarFerrugemAsiatica } from "@/lib/bot/tools/ferrugem";
+import { buscarLeiloesProximos } from "@/lib/bot/tools/leiloes";
 import { buscarSinalVenda } from "@/lib/bot/tools/sinalVenda";
 import {
   buscarBoletimImea,
@@ -198,6 +199,20 @@ export const TOOLS = [
       parameters: {
         type: "object",
         properties: { uf: { type: "string" } },
+        required: ["uf"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "buscar_leiloes_proximos",
+      description:
+        'Agenda de leilões de gado (majoritariamente de genética/reprodutores — touros, fêmeas registradas), fonte ArrobaPlay. Chame quando o produtor perguntar sobre leilão, remate, comprar/vender touro ou reprodutor, ou "tem leilão essa semana?". O retorno vem em dois grupos: "presenciais_na_regiao" (leilão de verdade na UF do produtor, com local real de fazenda) e "virtuais_em_destaque" (transmissão online, nacional — o local que a ferramenta ignora de propósito nesses é só o estúdio da leiloeira, não de onde vêm os lotes, por isso não filtra por UF). Apresente os presenciais da região primeiro quando existirem; só mencione os virtuais como destaque geral, nunca diga que são "na região" dele. Se "encontrado" for false, diga honestamente que não achou leilão agendado no momento, nunca invente data/local.',
+      parameters: {
+        type: "object",
+        properties: { uf: { type: ["string", "null"] } },
         required: ["uf"],
         additionalProperties: false,
       },
@@ -466,6 +481,11 @@ export async function executarTool(
       return buscarFerrugemAsiatica(
         ctx.supabase,
         args as Parameters<typeof buscarFerrugemAsiatica>[1],
+      );
+    case "buscar_leiloes_proximos":
+      return buscarLeiloesProximos(
+        ctx.supabase,
+        args as Parameters<typeof buscarLeiloesProximos>[1],
       );
     case "buscar_preco_insumo":
       return buscarPrecoInsumo(
