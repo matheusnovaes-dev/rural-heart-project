@@ -29,6 +29,7 @@ import {
   garantirReferenciaMercado,
   garantirCanalDeTexto,
   garantirMencaoPainel,
+  garantirMencaoLeilao,
   garantirCotacaoLeite,
   garantirRelacaoLeiteMilho,
   medidasNaoAutorizadas,
@@ -37,6 +38,7 @@ import {
   respostaEntrarNoPainel,
   respostaLinkDeAcesso,
   respostaOfertaDeAcesso,
+  type ResultadoLeilao,
   RESPOSTA_FALHA_AO_GERAR_LINK,
   valoresNaoAutorizados,
   type FreteCitado,
@@ -308,6 +310,45 @@ function temDetalheExtraParaPainel(messages: OpenAIMessage[]): boolean {
     }
   }
   return false;
+}
+
+// Rede de segurança determinística pro cross-sell de leilão: o prompt já
+// pede pra mencionar "X leilões" (Prata+) ou o teaser (Bronze) sempre que o
+// produtor pergunta preço de boi, mas contagem exata e "sempre mencionar" são
+// exatamente os dois tipos de instrução que esse modelo não segue de forma
+// confiável sozinho (mesmo padrão do bug de percentual e do guard do
+// painel) — por isso a contagem real vem do código, nunca do texto do
+// modelo. Varre o resultado de buscar_leiloes_proximos DESTE turno, se
+// chamado.
+function extrairResultadoLeilao(messages: OpenAIMessage[]): ResultadoLeilao | null {
+  const nomePorToolCallId = new Map<string, string>();
+  for (const m of messages) {
+    if (m.role === "assistant" && m.tool_calls) {
+      for (const tc of m.tool_calls) nomePorToolCallId.set(tc.id, tc.function.name);
+    }
+  }
+  for (const m of messages) {
+    if (m.role !== "tool" || !m.tool_call_id) continue;
+    if (nomePorToolCallId.get(m.tool_call_id) !== "buscar_leiloes_proximos") continue;
+    try {
+      const r = JSON.parse(m.content ?? "{}") as Record<string, unknown>;
+      if (r.disponivel_no_plano === false) return { disponivelNoPlano: false };
+      if (r.encontrado === true) {
+        return {
+          disponivelNoPlano: true,
+          encontrado: true,
+          totalPresenciais:
+            typeof r.total_presenciais_na_regiao === "number" ? r.total_presenciais_na_regiao : 0,
+          totalVirtuais:
+            typeof r.total_virtuais_em_destaque === "number" ? r.total_virtuais_em_destaque : 0,
+        };
+      }
+      return { disponivelNoPlano: true, encontrado: false };
+    } catch {
+      // resultado malformado não derruba a resposta — ignora.
+    }
+  }
+  return null;
 }
 
 // Referência de mercado que buscar_preco trouxe (estado sem dado recente), só
@@ -626,34 +667,37 @@ export async function runAgent(input: {
 
     const numerosPermitidos = coletarNumerosPermitidos(messages, texto, historico);
     const leite = extrairResultadoLeite(messages);
-    const resposta = garantirMencaoPainel(
-      garantirCanalDeTexto(
-        garantirCotacaoLeite(
-          garantirRelacaoLeiteMilho(
-            garantirMediaDasPracas(
-              garantirReferenciaMercado(
-                garantirParidade(
-                  garantirRotaFrete(
-                    garantirDataDoPreco(
-                      removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
-                      extrairDataDoPreco(messages),
+    const resposta = garantirMencaoLeilao(
+      garantirMencaoPainel(
+        garantirCanalDeTexto(
+          garantirCotacaoLeite(
+            garantirRelacaoLeiteMilho(
+              garantirMediaDasPracas(
+                garantirReferenciaMercado(
+                  garantirParidade(
+                    garantirRotaFrete(
+                      garantirDataDoPreco(
+                        removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
+                        extrairDataDoPreco(messages),
+                      ),
+                      extrairUltimoFreteCitado(messages),
                     ),
-                    extrairUltimoFreteCitado(messages),
+                    extrairParidade(messages),
                   ),
-                  extrairParidade(messages),
+                  extrairReferenciaMercado(messages),
                 ),
-                extrairReferenciaMercado(messages),
+                extrairMediaDasPracas(messages),
               ),
-              extrairMediaDasPracas(messages),
+              leite.fraseRelacao,
+              numerosPermitidos,
             ),
-            leite.fraseRelacao,
-            numerosPermitidos,
+            leite.cotacao,
           ),
-          leite.cotacao,
         ),
+        temDetalheExtraParaPainel(messages),
+        !!produtor.user_id,
       ),
-      temDetalheExtraParaPainel(messages),
-      !!produtor.user_id,
+      extrairResultadoLeilao(messages),
     );
 
     const naoAutorizados = valoresNaoAutorizados(resposta, numerosPermitidos);

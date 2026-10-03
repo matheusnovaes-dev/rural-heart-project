@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { limiteAlertas, type Plano } from "@/lib/planos.shared";
+import { limiteAlertas, temAcessoPrata, type Plano } from "@/lib/planos.shared";
 import { normalizarWhatsapp } from "@/lib/telefone";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
 
@@ -64,7 +64,7 @@ async function limiteDeAlertasAtingido(supabase: SupabaseClient, produtorId: str
   const limite = limiteAlertas(plano);
   if (limite === Infinity) return false;
 
-  const [{ count: countPreco }, { count: countClima }] = await Promise.all([
+  const [{ count: countPreco }, { count: countClima }, { count: countLeilao }] = await Promise.all([
     supabase
       .from("alertas_preco")
       .select("id", { count: "exact", head: true })
@@ -75,8 +75,13 @@ async function limiteDeAlertasAtingido(supabase: SupabaseClient, produtorId: str
       .select("id", { count: "exact", head: true })
       .eq("produtor_id", produtorId)
       .eq("ativo", true),
+    supabase
+      .from("alertas_leilao")
+      .select("id", { count: "exact", head: true })
+      .eq("produtor_id", produtorId)
+      .eq("ativo", true),
   ]);
-  return (countPreco ?? 0) + (countClima ?? 0) >= limite;
+  return (countPreco ?? 0) + (countClima ?? 0) + (countLeilao ?? 0) >= limite;
 }
 
 export async function criarAlertaPreco(
@@ -154,6 +159,48 @@ export async function criarAlertaClima(
     uf: args.uf,
     condicao: args.condicao,
     limite: args.limite,
+    whatsapp_destino: normalizarWhatsapp(ctx.telefone),
+  });
+  if (error) return { sucesso: false, motivo: "erro_ao_criar" };
+  return { sucesso: true };
+}
+
+/** Confirmação determinística reaproveitada (mesmo padrão dos dois acima),
+ * mas sem checagem de "valor dito pelo produtor" — alerta de leilão não tem
+ * número pro produtor confirmar, só UF e tipo (presencial/virtual/qualquer),
+ * que já vêm da pergunta de confirmação em si. */
+export async function criarAlertaLeilao(
+  supabase: SupabaseClient,
+  args: { uf: string | null; tipo_preferido: "presencial" | "virtual" | "qualquer" },
+  ctx: {
+    produtor: ContextoProdutor;
+    telefone: string;
+    historico: HistoricoLinha[];
+  },
+) {
+  if (!ctx.produtor.id) {
+    return { sucesso: false, motivo: "sem_cadastro" };
+  }
+  if (aindaPrecisaConfirmar(ctx.historico)) {
+    return { sucesso: false, motivo: "precisa_confirmar_primeiro" };
+  }
+  const { data: assinatura } = await supabase
+    .from("assinaturas")
+    .select("plano")
+    .eq("produtor_id", ctx.produtor.id)
+    .maybeSingle();
+  const plano = (assinatura?.plano as Plano | undefined) ?? null;
+  if (!temAcessoPrata(plano)) {
+    return { sucesso: false, motivo: "exclusivo_prata" };
+  }
+  if (await limiteDeAlertasAtingido(supabase, ctx.produtor.id)) {
+    return { sucesso: false, motivo: "limite_atingido" };
+  }
+  const { error } = await supabase.from("alertas_leilao").insert({
+    produtor_id: ctx.produtor.id,
+    criado_por: ctx.produtor.user_id,
+    uf: args.uf,
+    tipo_preferido: args.tipo_preferido,
     whatsapp_destino: normalizarWhatsapp(ctx.telefone),
   });
   if (error) return { sucesso: false, motivo: "erro_ao_criar" };

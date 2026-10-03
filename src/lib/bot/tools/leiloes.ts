@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { temAcessoPrata, type Plano } from "@/lib/planos.shared";
+
 type LinhaLeilao = {
   titulo: string;
   data_hora: string | null;
@@ -21,8 +23,26 @@ const LIMITE_VIRTUAIS = 5;
  * faz sentido pros presenciais; os virtuais são nacionais, qualquer um pode
  * assistir e dar lance de qualquer estado, então entram à parte, sem filtro
  * de UF.
+ *
+ * Exclusivo Prata+ (mesmo padrão de buscar_preco_insumo) — plano Bronze
+ * recebe só disponivel_no_plano=false, pro prompt oferecer um gostinho
+ * (teaser) sem dado real, nunca a contagem de verdade.
  */
-export async function buscarLeiloesProximos(supabase: SupabaseClient, args: { uf: string | null }) {
+export async function buscarLeiloesProximos(
+  supabase: SupabaseClient,
+  args: { uf: string | null },
+  produtorId: string | null,
+) {
+  if (produtorId) {
+    const { data: assinatura } = await supabase
+      .from("assinaturas")
+      .select("plano")
+      .eq("produtor_id", produtorId)
+      .maybeSingle();
+    const plano = (assinatura?.plano as Plano | undefined) ?? null;
+    if (!temAcessoPrata(plano)) return { encontrado: false, disponivel_no_plano: false };
+  }
+
   const { data } = await supabase
     .from("leiloes_agendados")
     .select("titulo, data_hora, municipio, uf, leiloeira")
@@ -35,24 +55,27 @@ export async function buscarLeiloesProximos(supabase: SupabaseClient, args: { uf
 
   const ehVirtual = (l: LinhaLeilao) => (l.municipio ?? "").toUpperCase().startsWith("VIRTUAL");
 
-  const presenciais = args.uf
-    ? data
-        .filter((l) => l.uf === args.uf && !ehVirtual(l))
-        .slice(0, LIMITE_PRESENCIAIS)
-        .map((l) => ({
-          titulo: l.titulo,
-          data_hora: l.data_hora,
-          local: l.municipio,
-          leiloeira: l.leiloeira,
-        }))
-    : [];
+  const todosPresenciais = args.uf ? data.filter((l) => l.uf === args.uf && !ehVirtual(l)) : [];
+  const todosVirtuais = data.filter(ehVirtual);
 
-  const virtuais = data
-    .filter(ehVirtual)
+  const presenciais = todosPresenciais.slice(0, LIMITE_PRESENCIAIS).map((l) => ({
+    titulo: l.titulo,
+    data_hora: l.data_hora,
+    local: l.municipio,
+    leiloeira: l.leiloeira,
+  }));
+
+  const virtuais = todosVirtuais
     .slice(0, LIMITE_VIRTUAIS)
     .map((l) => ({ titulo: l.titulo, data_hora: l.data_hora, leiloeira: l.leiloeira }));
 
   if (presenciais.length === 0 && virtuais.length === 0) return { encontrado: false };
 
-  return { encontrado: true, presenciais_na_regiao: presenciais, virtuais_em_destaque: virtuais };
+  return {
+    encontrado: true,
+    total_presenciais_na_regiao: todosPresenciais.length,
+    total_virtuais_em_destaque: todosVirtuais.length,
+    presenciais_na_regiao: presenciais,
+    virtuais_em_destaque: virtuais,
+  };
 }

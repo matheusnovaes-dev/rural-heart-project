@@ -131,6 +131,11 @@ export function mencionaCidade(resposta: string, cidade: string): boolean {
 
 export type FreteCitado = { origem: string; destino: string };
 
+export type ResultadoLeilao =
+  | { disponivelNoPlano: false }
+  | { disponivelNoPlano: true; encontrado: false }
+  | { disponivelNoPlano: true; encontrado: true; totalPresenciais: number; totalVirtuais: number };
+
 /** Garante origem E destino do frete na resposta (só um dos dois lê como "frete até X" e engana). */
 export function garantirRotaFrete(resposta: string, frete: FreteCitado | null): string {
   if (!frete) return resposta;
@@ -519,4 +524,35 @@ export function garantirMencaoPainel(
   if (!temDetalheExtra || !temContaNoPainel) return resposta;
   if (/painel|dashboard/i.test(resposta)) return resposta;
   return `${resposta} ${FRASE_PAINEL}`;
+}
+
+const FRASE_TEASER_LEILAO =
+  "A propósito: o Safralume também acompanha a agenda de leilão de gado no Brasil inteiro (presencial e virtual) — isso é do plano Prata, dá pra conhecer em safralume.com.br/dashboard/assinatura.";
+
+/**
+ * Cross-sell de leilão em cima de pergunta de preço de boi: Bronze recebe um
+ * teaser (sem número nenhum), Prata+ recebe a contagem real — calculada
+ * aqui, nunca pelo modelo (mesmo motivo do garantirMencaoPainel: "sempre
+ * mencionar X" e "contagem exata" não são confiáveis só com prompt). Só age
+ * quando buscar_leiloes_proximos foi chamado nesse turno (resultado !=
+ * null); fora isso não mexe na resposta.
+ */
+export function garantirMencaoLeilao(resposta: string, resultado: ResultadoLeilao | null): string {
+  if (!resultado) return resposta;
+  if (!resultado.disponivelNoPlano) {
+    if (/prata/i.test(resposta) && /leil[ãa]o/i.test(resposta)) return resposta;
+    return `${resposta} ${FRASE_TEASER_LEILAO}`;
+  }
+  if (!resultado.encontrado) return resposta;
+  if (/leil[ãa]o/i.test(resposta) && /\d/.test(resposta)) return resposta;
+  const { totalPresenciais, totalVirtuais } = resultado;
+  const partes: string[] = [];
+  if (totalPresenciais > 0) {
+    partes.push(`${totalPresenciais} leilão(ões) presencial(is) agendado(s) na sua região`);
+  }
+  if (totalVirtuais > 0) {
+    partes.push(`${totalVirtuais} leilão(ões) virtual(is) em destaque essa semana`);
+  }
+  if (partes.length === 0) return resposta;
+  return `${resposta} Tem ${partes.join(" e ")}.`;
 }

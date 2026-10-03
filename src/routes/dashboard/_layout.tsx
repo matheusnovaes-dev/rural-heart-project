@@ -18,6 +18,7 @@ import {
   LifeBuoy,
   Calculator,
   Megaphone,
+  Gavel,
 } from "lucide-react";
 
 import {
@@ -170,6 +171,7 @@ function CooperativaSidebar({
     { to: "/dashboard/precos", label: "Preços", icon: LineChart },
     { to: "/dashboard/calculadora", label: "Calculadora", icon: Calculator },
     { to: "/dashboard/alertas", label: "Alertas", icon: TrendingUp },
+    { to: "/dashboard/leiloes", label: "Leilões", icon: Gavel },
     { to: "/dashboard/produtores", label: "Produtores", icon: Users },
     { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
     { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
@@ -233,6 +235,7 @@ const produtorNavItemsBase = [
   { to: "/dashboard", label: "Início", icon: LayoutDashboard },
   { to: "/dashboard/calculadora", label: "Calculadora", icon: Calculator },
   { to: "/dashboard/alertas", label: "Alertas", icon: TrendingUp },
+  { to: "/dashboard/leiloes", label: "Leilões", icon: Gavel },
   { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
   { to: "/dashboard/funcionarios", label: "Funcionários", icon: HardHat },
   { to: "/dashboard/clima", label: "Clima", icon: CloudSun },

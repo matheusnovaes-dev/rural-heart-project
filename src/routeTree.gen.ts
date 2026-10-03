@@ -22,6 +22,7 @@ import { Route as DashboardLayoutRouteImport } from './routes/dashboard/_layout'
 import { Route as ApiAsaasWebhookRouteImport } from './routes/api/asaas/webhook'
 import { Route as ApiBotResponderRouteImport } from './routes/api/bot/responder'
 import { Route as ApiCronAvisoTrialRouteImport } from './routes/api/cron/aviso-trial'
+import { Route as ApiCronLeiloesAlertasRouteImport } from './routes/api/cron/leiloes-alertas'
 import { Route as ApiCronRecuperarCadastroRouteImport } from './routes/api/cron/recuperar-cadastro'
 import { Route as ApiCronReengajamentoRouteImport } from './routes/api/cron/reengajamento'
 import { Route as DashboardLayoutIndexRouteImport } from './routes/dashboard/_layout/index'
@@ -32,6 +33,7 @@ import { Route as DashboardLayoutClimaRouteImport } from './routes/dashboard/_la
 import { Route as DashboardLayoutEquipeRouteImport } from './routes/dashboard/_layout/equipe'
 import { Route as DashboardLayoutFuncionariosRouteImport } from './routes/dashboard/_layout/funcionarios'
 import { Route as DashboardLayoutLeadsRouteImport } from './routes/dashboard/_layout/leads'
+import { Route as DashboardLayoutLeiloesRouteImport } from './routes/dashboard/_layout/leiloes'
 import { Route as DashboardLayoutLembretesRouteImport } from './routes/dashboard/_layout/lembretes'
 import { Route as DashboardLayoutMarcaRouteImport } from './routes/dashboard/_layout/marca'
 import { Route as DashboardLayoutPrecosRouteImport } from './routes/dashboard/_layout/precos'
@@ -104,6 +106,11 @@ const ApiCronAvisoTrialRoute = ApiCronAvisoTrialRouteImport.update({
   path: '/api/cron/aviso-trial',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCronLeiloesAlertasRoute = ApiCronLeiloesAlertasRouteImport.update({
+  id: '/api/cron/leiloes-alertas',
+  path: '/api/cron/leiloes-alertas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCronRecuperarCadastroRoute =
   ApiCronRecuperarCadastroRouteImport.update({
     id: '/api/cron/recuperar-cadastro',
@@ -158,6 +165,11 @@ const DashboardLayoutLeadsRoute = DashboardLayoutLeadsRouteImport.update({
   path: '/leads',
   getParentRoute: () => DashboardLayoutRoute,
 } as any)
+const DashboardLayoutLeiloesRoute = DashboardLayoutLeiloesRouteImport.update({
+  id: '/leiloes',
+  path: '/leiloes',
+  getParentRoute: () => DashboardLayoutRoute,
+} as any)
 const DashboardLayoutLembretesRoute =
   DashboardLayoutLembretesRouteImport.update({
     id: '/lembretes',
@@ -206,6 +218,7 @@ export interface FileRoutesByFullPath {
   '/api/asaas/webhook': typeof ApiAsaasWebhookRoute
   '/api/bot/responder': typeof ApiBotResponderRoute
   '/api/cron/aviso-trial': typeof ApiCronAvisoTrialRoute
+  '/api/cron/leiloes-alertas': typeof ApiCronLeiloesAlertasRoute
   '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
   '/api/cron/reengajamento': typeof ApiCronReengajamentoRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
@@ -215,6 +228,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/equipe': typeof DashboardLayoutEquipeRoute
   '/dashboard/funcionarios': typeof DashboardLayoutFuncionariosRoute
   '/dashboard/leads': typeof DashboardLayoutLeadsRoute
+  '/dashboard/leiloes': typeof DashboardLayoutLeiloesRoute
   '/dashboard/lembretes': typeof DashboardLayoutLembretesRoute
   '/dashboard/marca': typeof DashboardLayoutMarcaRoute
   '/dashboard/precos': typeof DashboardLayoutPrecosRoute
@@ -236,6 +250,7 @@ export interface FileRoutesByTo {
   '/api/asaas/webhook': typeof ApiAsaasWebhookRoute
   '/api/bot/responder': typeof ApiBotResponderRoute
   '/api/cron/aviso-trial': typeof ApiCronAvisoTrialRoute
+  '/api/cron/leiloes-alertas': typeof ApiCronLeiloesAlertasRoute
   '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
   '/api/cron/reengajamento': typeof ApiCronReengajamentoRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
@@ -245,6 +260,7 @@ export interface FileRoutesByTo {
   '/dashboard/equipe': typeof DashboardLayoutEquipeRoute
   '/dashboard/funcionarios': typeof DashboardLayoutFuncionariosRoute
   '/dashboard/leads': typeof DashboardLayoutLeadsRoute
+  '/dashboard/leiloes': typeof DashboardLayoutLeiloesRoute
   '/dashboard/lembretes': typeof DashboardLayoutLembretesRoute
   '/dashboard/marca': typeof DashboardLayoutMarcaRoute
   '/dashboard/precos': typeof DashboardLayoutPrecosRoute
@@ -268,6 +284,7 @@ export interface FileRoutesById {
   '/api/asaas/webhook': typeof ApiAsaasWebhookRoute
   '/api/bot/responder': typeof ApiBotResponderRoute
   '/api/cron/aviso-trial': typeof ApiCronAvisoTrialRoute
+  '/api/cron/leiloes-alertas': typeof ApiCronLeiloesAlertasRoute
   '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
   '/api/cron/reengajamento': typeof ApiCronReengajamentoRoute
   '/dashboard/_layout/alertas': typeof DashboardLayoutAlertasRoute
@@ -277,6 +294,7 @@ export interface FileRoutesById {
   '/dashboard/_layout/equipe': typeof DashboardLayoutEquipeRoute
   '/dashboard/_layout/funcionarios': typeof DashboardLayoutFuncionariosRoute
   '/dashboard/_layout/leads': typeof DashboardLayoutLeadsRoute
+  '/dashboard/_layout/leiloes': typeof DashboardLayoutLeiloesRoute
   '/dashboard/_layout/lembretes': typeof DashboardLayoutLembretesRoute
   '/dashboard/_layout/marca': typeof DashboardLayoutMarcaRoute
   '/dashboard/_layout/precos': typeof DashboardLayoutPrecosRoute
@@ -301,6 +319,7 @@ export interface FileRouteTypes {
     | '/api/asaas/webhook'
     | '/api/bot/responder'
     | '/api/cron/aviso-trial'
+    | '/api/cron/leiloes-alertas'
     | '/api/cron/recuperar-cadastro'
     | '/api/cron/reengajamento'
     | '/dashboard/alertas'
@@ -310,6 +329,7 @@ export interface FileRouteTypes {
     | '/dashboard/equipe'
     | '/dashboard/funcionarios'
     | '/dashboard/leads'
+    | '/dashboard/leiloes'
     | '/dashboard/lembretes'
     | '/dashboard/marca'
     | '/dashboard/precos'
@@ -331,6 +351,7 @@ export interface FileRouteTypes {
     | '/api/asaas/webhook'
     | '/api/bot/responder'
     | '/api/cron/aviso-trial'
+    | '/api/cron/leiloes-alertas'
     | '/api/cron/recuperar-cadastro'
     | '/api/cron/reengajamento'
     | '/dashboard/alertas'
@@ -340,6 +361,7 @@ export interface FileRouteTypes {
     | '/dashboard/equipe'
     | '/dashboard/funcionarios'
     | '/dashboard/leads'
+    | '/dashboard/leiloes'
     | '/dashboard/lembretes'
     | '/dashboard/marca'
     | '/dashboard/precos'
@@ -362,6 +384,7 @@ export interface FileRouteTypes {
     | '/api/asaas/webhook'
     | '/api/bot/responder'
     | '/api/cron/aviso-trial'
+    | '/api/cron/leiloes-alertas'
     | '/api/cron/recuperar-cadastro'
     | '/api/cron/reengajamento'
     | '/dashboard/_layout/alertas'
@@ -371,6 +394,7 @@ export interface FileRouteTypes {
     | '/dashboard/_layout/equipe'
     | '/dashboard/_layout/funcionarios'
     | '/dashboard/_layout/leads'
+    | '/dashboard/_layout/leiloes'
     | '/dashboard/_layout/lembretes'
     | '/dashboard/_layout/marca'
     | '/dashboard/_layout/precos'
@@ -394,6 +418,7 @@ export interface RootRouteChildren {
   ApiAsaasWebhookRoute: typeof ApiAsaasWebhookRoute
   ApiBotResponderRoute: typeof ApiBotResponderRoute
   ApiCronAvisoTrialRoute: typeof ApiCronAvisoTrialRoute
+  ApiCronLeiloesAlertasRoute: typeof ApiCronLeiloesAlertasRoute
   ApiCronRecuperarCadastroRoute: typeof ApiCronRecuperarCadastroRoute
   ApiCronReengajamentoRoute: typeof ApiCronReengajamentoRoute
 }
@@ -491,6 +516,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCronAvisoTrialRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/cron/leiloes-alertas': {
+      id: '/api/cron/leiloes-alertas'
+      path: '/api/cron/leiloes-alertas'
+      fullPath: '/api/cron/leiloes-alertas'
+      preLoaderRoute: typeof ApiCronLeiloesAlertasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/cron/recuperar-cadastro': {
       id: '/api/cron/recuperar-cadastro'
       path: '/api/cron/recuperar-cadastro'
@@ -561,6 +593,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLayoutLeadsRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
+    '/dashboard/_layout/leiloes': {
+      id: '/dashboard/_layout/leiloes'
+      path: '/leiloes'
+      fullPath: '/dashboard/leiloes'
+      preLoaderRoute: typeof DashboardLayoutLeiloesRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
     '/dashboard/_layout/lembretes': {
       id: '/dashboard/_layout/lembretes'
       path: '/lembretes'
@@ -614,6 +653,7 @@ interface DashboardLayoutRouteChildren {
   DashboardLayoutEquipeRoute: typeof DashboardLayoutEquipeRoute
   DashboardLayoutFuncionariosRoute: typeof DashboardLayoutFuncionariosRoute
   DashboardLayoutLeadsRoute: typeof DashboardLayoutLeadsRoute
+  DashboardLayoutLeiloesRoute: typeof DashboardLayoutLeiloesRoute
   DashboardLayoutLembretesRoute: typeof DashboardLayoutLembretesRoute
   DashboardLayoutMarcaRoute: typeof DashboardLayoutMarcaRoute
   DashboardLayoutPrecosRoute: typeof DashboardLayoutPrecosRoute
@@ -631,6 +671,7 @@ const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
   DashboardLayoutEquipeRoute: DashboardLayoutEquipeRoute,
   DashboardLayoutFuncionariosRoute: DashboardLayoutFuncionariosRoute,
   DashboardLayoutLeadsRoute: DashboardLayoutLeadsRoute,
+  DashboardLayoutLeiloesRoute: DashboardLayoutLeiloesRoute,
   DashboardLayoutLembretesRoute: DashboardLayoutLembretesRoute,
   DashboardLayoutMarcaRoute: DashboardLayoutMarcaRoute,
   DashboardLayoutPrecosRoute: DashboardLayoutPrecosRoute,
@@ -658,6 +699,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAsaasWebhookRoute: ApiAsaasWebhookRoute,
   ApiBotResponderRoute: ApiBotResponderRoute,
   ApiCronAvisoTrialRoute: ApiCronAvisoTrialRoute,
+  ApiCronLeiloesAlertasRoute: ApiCronLeiloesAlertasRoute,
   ApiCronRecuperarCadastroRoute: ApiCronRecuperarCadastroRoute,
   ApiCronReengajamentoRoute: ApiCronReengajamentoRoute,
 }

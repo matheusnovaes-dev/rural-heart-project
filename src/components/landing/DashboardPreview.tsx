@@ -18,6 +18,7 @@ import {
   BadgeCheck,
   FlaskConical,
   Bug,
+  Gavel,
 } from "lucide-react";
 
 import { Reveal } from "@/components/landing/Reveal";
@@ -42,6 +43,7 @@ type AbaId =
   | "plantio"
   | "ferrugem"
   | "insumos"
+  | "leiloes"
   | "suporte"
   | "acompanhamento";
 
@@ -53,6 +55,7 @@ const abas: { id: AbaId; label: string; icon: typeof LineChart; plano: PlanoId }
   { id: "plantio", label: "Plantio", icon: Sprout, plano: "bronze" },
   { id: "ferrugem", label: "Ferrugem", icon: Bug, plano: "bronze" },
   { id: "insumos", label: "Insumos", icon: FlaskConical, plano: "prata" },
+  { id: "leiloes", label: "Leilões", icon: Gavel, plano: "prata" },
   { id: "suporte", label: "Suporte", icon: LifeBuoy, plano: "bronze" },
   { id: "acompanhamento", label: "Acompanhamento", icon: Star, plano: "ouro" },
 ];
@@ -167,6 +170,7 @@ export function DashboardPreview() {
               {aba === "plantio" && <PreviewPlantio />}
               {aba === "ferrugem" && <PreviewFerrugem />}
               {aba === "insumos" && <PreviewInsumos />}
+              {aba === "leiloes" && <PreviewLeiloes />}
               {aba === "suporte" && <PreviewSuporte />}
               {aba === "acompanhamento" && <PreviewAcompanhamento />}
             </div>
@@ -550,6 +554,44 @@ function PreviewFerrugem() {
           >
             {m}
           </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PreviewLeiloes() {
+  const leiloes = [
+    { titulo: "16º Leilão Nelore WS", local: "Alta Floresta/MT", data: "10/out · 14h" },
+    { titulo: "Leilão Grupo Rezende", local: "Virtual · nacional", data: "17/out · 13h" },
+  ];
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-zinc-300/60 bg-zinc-100/60 p-3 dark:border-zinc-700/50 dark:bg-zinc-800/30">
+      <div className="flex items-center gap-2">
+        <p className="text-sm font-semibold text-foreground">Agenda de leilão</p>
+        <span className="rounded-full bg-zinc-200 px-1.5 py-0.5 text-[9px] font-semibold text-zinc-700">
+          Prata
+        </span>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Leilão presencial na sua região e leilão virtual em destaque, no Brasil inteiro.
+      </p>
+      <div className="flex flex-col gap-2">
+        {leiloes.map((l) => (
+          <Card key={l.titulo} className="gap-1 border-zinc-300/60 py-3 dark:border-zinc-700/50">
+            <CardContent className="flex items-center justify-between px-3">
+              <div className="flex items-center gap-2 text-sm text-foreground">
+                <Gavel className="size-4 shrink-0 text-zinc-500" />
+                <div className="flex flex-col">
+                  <span>{l.titulo}</span>
+                  <span className="text-xs text-muted-foreground">{l.local}</span>
+                </div>
+              </div>
+              <span className="font-mono text-xs font-semibold tabular-nums text-foreground">
+                {l.data}
+              </span>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </div>

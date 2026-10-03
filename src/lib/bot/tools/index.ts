@@ -19,7 +19,7 @@ import {
   buscarProducaoWasde,
   buscarProgressoSafraConab,
 } from "@/lib/bot/tools/mercado";
-import { criarAlertaClima, criarAlertaPreco } from "@/lib/bot/tools/alertas";
+import { criarAlertaClima, criarAlertaLeilao, criarAlertaPreco } from "@/lib/bot/tools/alertas";
 import { criarContaTeste } from "@/lib/bot/tools/conta";
 import { consultarAssinatura } from "@/lib/bot/tools/assinatura";
 import { consultarJanelaPlantio } from "@/lib/bot/tools/plantio";
@@ -321,6 +321,27 @@ export const TOOLS = [
   {
     type: "function",
     function: {
+      name: "criar_alerta_leilao",
+      description:
+        'Cria um alerta de leilão de gado: avisa por WhatsApp quando um novo leilão entrar na agenda. Exclusivo plano Prata+. SÓ chame depois do produtor confirmar claramente UF (quando quiser presencial) e/ou tipo (presencial, virtual ou qualquer) — se ele só quer ser avisado de leilão em geral sem especificar, use tipo_preferido="qualquer" e uf=null.',
+      parameters: {
+        type: "object",
+        properties: {
+          uf: {
+            type: ["string", "null"],
+            description:
+              "UF pra filtrar leilão presencial. null se for só virtual ou qualquer tipo.",
+          },
+          tipo_preferido: { type: "string", enum: ["presencial", "virtual", "qualquer"] },
+        },
+        required: ["uf", "tipo_preferido"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "criar_conta_teste",
       description:
         "Cria um cadastro de teste grátis (7 dias, plano Bronze, sem cartão) direto nesta conversa do WhatsApp, sem precisar ir pro site — só pra quem AINDA NÃO tem conta (conta_no_painel=não). Depois de criada, o produtor já é atendido como assinante Bronze normalmente. SÓ chame depois do produtor confirmar claramente que quer criar a conta, já com estado e cultura principal informados.",
@@ -486,6 +507,7 @@ export async function executarTool(
       return buscarLeiloesProximos(
         ctx.supabase,
         args as Parameters<typeof buscarLeiloesProximos>[1],
+        ctx.produtor.id,
       );
     case "buscar_preco_insumo":
       return buscarPrecoInsumo(
@@ -503,6 +525,8 @@ export async function executarTool(
       return criarAlertaPreco(ctx.supabase, args as Parameters<typeof criarAlertaPreco>[1], ctx);
     case "criar_alerta_clima":
       return criarAlertaClima(ctx.supabase, args as Parameters<typeof criarAlertaClima>[1], ctx);
+    case "criar_alerta_leilao":
+      return criarAlertaLeilao(ctx.supabase, args as Parameters<typeof criarAlertaLeilao>[1], ctx);
     case "criar_conta_teste":
       return criarContaTeste(ctx.supabase, args as Parameters<typeof criarContaTeste>[1], ctx);
     case "atualizar_localizacao":
