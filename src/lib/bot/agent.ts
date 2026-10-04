@@ -95,12 +95,18 @@ function notaDeRecusaCadastro(texto: string): OpenAIMessage | null {
 // pelo modelo, a escolha de estrutura é determinística.
 const GATILHO_ANUNCIO = /ol[áa]!?\s*posso\s+ter\s+mais\s+informa[çc][õo]es\s+sobre\s+isso/i;
 
+// Achado real testando ao vivo (2026-10-04, 2ª rodada): mesmo com a regra
+// geral "cite o nome em algum ponto" reforçada no prompt, o formato de
+// pergunta retórica ainda saiu sem nome em 2 de 6 testes — a instrução
+// específica do formato (que não mencionava nome) competiu com a regra
+// geral solta e ganhou. Por isso cada formato agora inclui a exigência de
+// nome dentro de si mesmo, não só como regra à parte.
 const FORMATOS_ABERTURA_ANUNCIO = [
-  "Formato desta resposta: comece com uma pergunta curiosa e breve sobre a lavoura/produção dela (ex: o que ela planta, como está a safra) ANTES de explicar o Safralume. Só depois dessa pergunta inicial, explique em uma frase o que o Safralume faz.",
-  "Formato desta resposta: seja bem direto e breve — UMA frase só explicando o essencial (preço comparado ao porto, clima e alerta automático, tudo no WhatsApp), sem listar todos os detalhes, e já pergunte cultura e estado.",
-  "Formato desta resposta: abra reconhecendo uma dificuldade comum do produtor (ex: perder tempo ligando pra saber preço, ou descobrir tarde demais que o preço mudou) ANTES de apresentar o Safralume como resposta pra isso.",
-  "Formato desta resposta: vá direto pra pergunta de cultura e estado logo na primeira frase (ex: 'Oi! Me conta rapidinho: você trabalha com o quê, em qual estado?'), e resuma o que o Safralume faz em só uma frase curta, sem listar todas as funcionalidades.",
-  "Formato desta resposta: abra com uma pergunta retórica ligada ao valor do produto (ex: algo como 'sabe quanto sua saca vale agora, comparado ao preço do porto?'), explique brevemente depois, e pergunte cultura e estado.",
+  "Formato desta resposta: comece com uma pergunta curiosa e breve sobre a lavoura/produção dela (ex: o que ela planta, como está a safra) ANTES de explicar o Safralume, chamando-a pelo nome nessa pergunta inicial (ex: 'Oi, [nome]! O que você planta...'). Só depois dessa pergunta inicial, explique em uma frase o que o Safralume faz.",
+  "Formato desta resposta: comece chamando-a pelo nome, depois seja bem direto e breve — UMA frase só explicando o essencial (preço comparado ao porto, clima e alerta automático, tudo no WhatsApp), sem listar todos os detalhes, e já pergunte cultura e estado.",
+  "Formato desta resposta: abra chamando-a pelo nome e reconhecendo uma dificuldade comum do produtor (ex: perder tempo ligando pra saber preço, ou descobrir tarde demais que o preço mudou) ANTES de apresentar o Safralume como resposta pra isso.",
+  "Formato desta resposta: vá direto pra pergunta de cultura e estado logo na primeira frase, já chamando-a pelo nome nessa mesma frase (ex: 'Oi, [nome]! Me conta rapidinho: você trabalha com o quê, em qual estado?'), e resuma o que o Safralume faz em só uma frase curta, sem listar todas as funcionalidades.",
+  "Formato desta resposta: abra com uma pergunta retórica ligada ao valor do produto, chamando-a pelo nome nessa mesma pergunta (ex: algo como 'Sabe quanto sua saca vale agora, [nome], comparado ao preço do porto?'), explique brevemente depois, e pergunte cultura e estado.",
 ];
 
 function notaDeAberturaDeAnuncio(texto: string): OpenAIMessage | null {
