@@ -145,18 +145,25 @@ export type RespostaAgente = {
 // de várias rodadas de reforço no texto do prompt — é um hábito do modelo
 // que instrução sozinha não elimina de forma confiável. Em vez de insistir
 // só no prompt, remove a frase de fechamento aqui, garantido por código.
+// Achado real revisando conversa de produção (2026-10-04): a frase proibida
+// escapava quando NÃO era a última do texto (ex: "Até mais! Se precisar de
+// algo, é só chamar. Boa sorte na lavoura!") — os padrões antigos só
+// cortavam no fim da string (`$`), então uma frase genérica no MEIO passava
+// batido. Trocado pra `g` (sem âncora de fim), removendo a frase onde quer
+// que ela apareça, não só no fechamento.
 const PADRAO_FECHAMENTO_SE_PRECISAR =
-  /(?:^|[.!?]\s+)(?:se precisar|caso precise|precisando)[^.!?]*?\b(?:avis\w*|\bfala\b|\bfalar\b|\bfale\b|pergunt\w*|cham\w*|acess\w*|confer\w*|conf(?:ira|ere)|check\w*|clic\w*|olh\w*)[^.!?]*[.!?]?\s*$/i;
+  /(?<=^|[.!?]\s)(?:se precisar|caso precise|precisando)[^.!?]*?\b(?:avis\w*|\bfala\b|\bfalar\b|\bfale\b|pergunt\w*|cham\w*|acess\w*|confer\w*|conf(?:ira|ere)|check\w*|clic\w*|olh\w*)[^.!?]*[.!?]/gi;
 const PADRAO_FECHAMENTO_DISPOSICAO =
-  /(?:^|[.!?]\s+)(?:qualquer\s+d[uú]vida[^.!?]*)?(?:fico|estou)\s+[aà]\s+disposi[cç][aã]o[^.!?]*[.!?]?\s*$/i;
+  /(?<=^|[.!?]\s)(?:qualquer\s+d[uú]vida[^.!?]*)?(?:fico|estou)\s+[aà]\s+disposi[cç][aã]o[^.!?]*[.!?]/gi;
 
 function removerFechamentoGenerico(resposta: string): string {
-  const semSePrecisar = resposta.replace(PADRAO_FECHAMENTO_SE_PRECISAR, "").trimEnd();
+  const semSePrecisar = resposta.replace(PADRAO_FECHAMENTO_SE_PRECISAR, "").trim();
   const candidato = semSePrecisar || resposta;
-  const semDisposicao = candidato.replace(PADRAO_FECHAMENTO_DISPOSICAO, "").trimEnd();
+  const semDisposicao = candidato.replace(PADRAO_FECHAMENTO_DISPOSICAO, "").trim();
+  const limpo = (semDisposicao || resposta).replace(/\s{2,}/g, " ");
   // Se a resposta inteira era só a frase de fechamento, melhor manter o
   // texto original do que devolver uma mensagem vazia pro produtor.
-  return semDisposicao || resposta;
+  return limpo || resposta;
 }
 
 // Rota de frete: o prompt já pede origem E destino numa frase curta quando
