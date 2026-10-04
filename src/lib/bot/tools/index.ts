@@ -453,6 +453,22 @@ export const TOOLS = [
   },
 ] as const;
 
+// Achado real em produção (2026-10-04): "Como tá o mercado da soja?" ->
+// "Quanto dá o preço?" (sem citar cultura) -> o modelo chamou buscar_preco
+// com MILHO (voltou pro cadastro do produtor) em vez de continuar com SOJA,
+// já estabelecida na conversa. Mesmo bug que já tinha sido visto na
+// calculadora — a trava só existia lá e em buscar_preco, não nas outras 4
+// ferramentas que também recebem "produto"/"cultura" (sinal de venda, IBGE,
+// progresso de safra, futuros B3, WASDE), igualmente vulneráveis ao mesmo
+// padrão. Se a mensagem ATUAL não menciona cultura nenhuma, ignora o que o
+// modelo mandou e usa a cultura mais recente do histórico; só cai pro que o
+// modelo mandou (a essa altura, o cultura_principal do cadastro, conforme o
+// prompt já instrui) se o histórico também não tiver nada.
+function resolverCultura(ctx: ToolContext, produtoDoModelo: string): string {
+  if (culturaMencionada(ctx.texto)) return produtoDoModelo;
+  return culturaMaisRecenteNoHistorico(ctx.historico) ?? produtoDoModelo;
+}
+
 export async function executarTool(
   nome: string,
   args: Record<string, unknown>,
@@ -465,19 +481,7 @@ export async function executarTool(
       // mesmo se o modelo pediu incluir_frete=false (visto ao vivo: respondeu
       // "não tenho frete" pra "quanto é o frete até o porto?").
       const falaDeFrete = /frete|porto|parid|l[ií]quid|sobra|descont/i.test(ctx.texto);
-      // Achado real em produção (2026-10-04): "Como tá o mercado da soja?" ->
-      // "Quanto dá o preço?" (sem citar cultura) -> o modelo chamou buscar_preco
-      // com MILHO (voltou pro cadastro do produtor) em vez de continuar com
-      // SOJA, que já estava estabelecida na conversa. Mesmo bug que já tinha
-      // sido visto na calculadora (culturaMaisRecenteNoHistorico) — a trava só
-      // existia lá, não aqui, que é o caminho muito mais usado. Se a mensagem
-      // ATUAL não menciona cultura nenhuma, ignora o "produto" que o modelo
-      // mandou e usa a cultura mais recente do histórico; só cai pro que o
-      // modelo mandou (que a essa altura é o cultura_principal do cadastro,
-      // conforme o prompt já instrui) se o histórico também não tiver nada.
-      const produtoFinal = culturaMencionada(ctx.texto)
-        ? a.produto
-        : (culturaMaisRecenteNoHistorico(ctx.historico) ?? a.produto);
+      const produtoFinal = a.produto ? resolverCultura(ctx, a.produto) : a.produto;
       return buscarPreco(
         ctx.supabase,
         { ...a, produto: produtoFinal, incluir_frete: a.incluir_frete || falaDeFrete },
@@ -494,24 +498,30 @@ export async function executarTool(
       });
     case "buscar_clima":
       return buscarClima(args as Parameters<typeof buscarClima>[0], { produtor: ctx.produtor });
-    case "buscar_sinal_venda":
-      return buscarSinalVenda(ctx.supabase, args as Parameters<typeof buscarSinalVenda>[1]);
+    case "buscar_sinal_venda": {
+      const a = args as Parameters<typeof buscarSinalVenda>[1];
+      return buscarSinalVenda(ctx.supabase, { ...a, produto: resolverCultura(ctx, a.produto) });
+    }
     case "buscar_cambio":
       return buscarCambio(ctx.supabase);
     case "buscar_diesel":
       return buscarDiesel(ctx.supabase, args as Parameters<typeof buscarDiesel>[1]);
-    case "buscar_producao_ibge":
-      return buscarProducaoIbge(ctx.supabase, args as Parameters<typeof buscarProducaoIbge>[1]);
+    case "buscar_producao_ibge": {
+      const a = args as Parameters<typeof buscarProducaoIbge>[1];
+      return buscarProducaoIbge(ctx.supabase, { ...a, produto: resolverCultura(ctx, a.produto) });
+    }
     case "buscar_producao_historica_conab":
       return buscarProducaoHistoricaConab(
         ctx.supabase,
         args as Parameters<typeof buscarProducaoHistoricaConab>[1],
       );
-    case "buscar_progresso_safra_conab":
-      return buscarProgressoSafraConab(
-        ctx.supabase,
-        args as Parameters<typeof buscarProgressoSafraConab>[1],
-      );
+    case "buscar_progresso_safra_conab": {
+      const a = args as Parameters<typeof buscarProgressoSafraConab>[1];
+      return buscarProgressoSafraConab(ctx.supabase, {
+        ...a,
+        produto: resolverCultura(ctx, a.produto),
+      });
+    }
     case "buscar_ferrugem_asiatica":
       return buscarFerrugemAsiatica(
         ctx.supabase,
@@ -529,10 +539,21 @@ export async function executarTool(
         args as Parameters<typeof buscarPrecoInsumo>[1],
         ctx.produtor.id,
       );
-    case "buscar_futuros_b3":
-      return buscarFuturosB3(ctx.supabase, args as Parameters<typeof buscarFuturosB3>[1]);
-    case "buscar_producao_usda_wasde":
-      return buscarProducaoWasde(ctx.supabase, args as Parameters<typeof buscarProducaoWasde>[1]);
+    case "buscar_futuros_b3": {
+      const a = args as Parameters<typeof buscarFuturosB3>[1];
+      return buscarFuturosB3(ctx.supabase, { ...a, produto: resolverCultura(ctx, a.produto) });
+    }
+    case "buscar_producao_usda_wasde": {
+      const a = args as Parameters<typeof buscarProducaoWasde>[1];
+      // Enum fechado (só soja/milho/algodao) — só troca se a cultura do
+      // histórico for uma dessas 3, nunca força um valor fora do enum.
+      const CULTURAS_WASDE = new Set(["soja", "milho", "algodao"]);
+      const resolvida = resolverCultura(ctx, a.cultura);
+      return buscarProducaoWasde(ctx.supabase, {
+        ...a,
+        cultura: (CULTURAS_WASDE.has(resolvida) ? resolvida : a.cultura) as typeof a.cultura,
+      });
+    }
     case "buscar_boletim_imea":
       return buscarBoletimImea(ctx.supabase, args as Parameters<typeof buscarBoletimImea>[1]);
     case "criar_alerta_preco":
