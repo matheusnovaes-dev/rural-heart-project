@@ -85,6 +85,31 @@ function notaDeRecusaCadastro(texto: string): OpenAIMessage | null {
   };
 }
 
+// Achado real testando ao vivo (2026-10-04): a instrução de prompt "varie a
+// abertura" não pegou de verdade pro gatilho do anúncio — 4 tentativas
+// seguidas saíram todas na mesma estrutura (cumprimento, lista de features,
+// pergunta de cultura/UF), só trocando sinônimo. Mesmo padrão de sempre
+// desse modelo: pedido abstrato de "varie" não é confiável, só exemplo
+// concreto funciona. Aqui o CÓDIGO sorteia um formato estrutural diferente
+// a cada chamada (não o modelo) — só o conteúdo dentro do formato é gerado
+// pelo modelo, a escolha de estrutura é determinística.
+const GATILHO_ANUNCIO = /ol[áa]!?\s*posso\s+ter\s+mais\s+informa[çc][õo]es\s+sobre\s+isso/i;
+
+const FORMATOS_ABERTURA_ANUNCIO = [
+  "Formato desta resposta: comece com uma pergunta curiosa e breve sobre a lavoura/produção dela (ex: o que ela planta, como está a safra) ANTES de explicar o Safralume. Só depois dessa pergunta inicial, explique em uma frase o que o Safralume faz.",
+  "Formato desta resposta: seja bem direto e breve — UMA frase só explicando o essencial (preço comparado ao porto, clima e alerta automático, tudo no WhatsApp), sem listar todos os detalhes, e já pergunte cultura e estado.",
+  "Formato desta resposta: abra reconhecendo uma dificuldade comum do produtor (ex: perder tempo ligando pra saber preço, ou descobrir tarde demais que o preço mudou) ANTES de apresentar o Safralume como resposta pra isso.",
+  "Formato desta resposta: vá direto pra pergunta de cultura e estado logo na primeira frase (ex: 'Oi! Me conta rapidinho: você trabalha com o quê, em qual estado?'), e resuma o que o Safralume faz em só uma frase curta, sem listar todas as funcionalidades.",
+  "Formato desta resposta: abra com uma pergunta retórica ligada ao valor do produto (ex: algo como 'sabe quanto sua saca vale agora, comparado ao preço do porto?'), explique brevemente depois, e pergunte cultura e estado.",
+];
+
+function notaDeAberturaDeAnuncio(texto: string): OpenAIMessage | null {
+  if (!GATILHO_ANUNCIO.test(texto)) return null;
+  const formato =
+    FORMATOS_ABERTURA_ANUNCIO[Math.floor(Math.random() * FORMATOS_ABERTURA_ANUNCIO.length)]!;
+  return { role: "system", content: formato };
+}
+
 // Bug real visto numa conversa de produção (2026-09-26): a mensagem de
 // abertura do anúncio recebeu uma resposta de desabafo pessoal (doença na
 // família, dificuldade financeira, solidão) sem nenhuma relação com o
@@ -624,6 +649,7 @@ export async function runAgent(input: {
   const notaNegativaDupla = notaDeNegativaDupla(texto);
   const notaRecusaCadastro = notaDeRecusaCadastro(texto);
   const notaAflicaoPessoal = notaDeAflicaoPessoal(texto);
+  const notaAberturaDeAnuncio = notaDeAberturaDeAnuncio(texto);
   const messages: OpenAIMessage[] = [
     { role: "system", content: SYSTEM_PROMPT },
     { role: "system", content: buildContextoProdutor(produtor) },
@@ -637,6 +663,7 @@ export async function runAgent(input: {
     ...(notaNegativaDupla ? [notaNegativaDupla] : []),
     ...(notaRecusaCadastro ? [notaRecusaCadastro] : []),
     ...(notaAflicaoPessoal ? [notaAflicaoPessoal] : []),
+    ...(notaAberturaDeAnuncio ? [notaAberturaDeAnuncio] : []),
     { role: "user", content: texto },
   ];
 
