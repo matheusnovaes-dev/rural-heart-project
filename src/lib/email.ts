@@ -7,7 +7,7 @@ const planoLabel: Record<string, string> = {
 const planoPreco: Record<string, string> = {
   bronze: "R$ 39/mês",
   prata: "R$ 129/mês",
-  ouro: "R$ 399/mês",
+  ouro: "R$ 299/mês",
 };
 
 /**

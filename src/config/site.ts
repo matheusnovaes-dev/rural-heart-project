@@ -64,7 +64,7 @@ export const pricingPlans: PricingPlan[] = [
     id: "ouro",
     name: "Ouro",
     audience: "Grandes produtores e consultores",
-    price: 399,
+    price: 299,
     features: [
       "Tudo do Prata, mais:",
       "Acompanhe o preço de outras culturas e estados, não só o seu",
