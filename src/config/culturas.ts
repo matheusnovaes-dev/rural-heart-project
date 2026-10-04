@@ -148,3 +148,40 @@ export function normalizarCultura(cultura: string): string {
 
 export const ehBoi = (cultura: string | null | undefined): boolean =>
   !!cultura && normalizarCultura(cultura) === "boi";
+
+// Todo termo reconhecido (catálogo + apelidos), do mais específico (mais
+// palavras) pro mais genérico — "café arábica" tem que casar antes de
+// "café" sozinho não existir no catálogo evitar, e termos compostos tipo
+// "cana de açúcar" precisam vencer antes de um eventual termo mais curto
+// que seja substring dele.
+const TERMOS_CULTURA = [...CATALOGO.map((c) => c.value), ...Object.keys(ALIAS_CULTURA)].sort(
+  (a, b) => b.length - a.length,
+);
+const REGEX_CULTURA_CATALOGO = new RegExp(
+  `\\b(${TERMOS_CULTURA.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})\\b`,
+  "i",
+);
+
+/**
+ * Acha o termo de cultura (já normalizado pro nome que a base usa) numa
+ * string de texto livre, ou null se nenhuma das 77 culturas/apelidos
+ * aparecer. Usado pra detectar se a mensagem ATUAL (ou uma linha do
+ * histórico) menciona cultura explicitamente, sem depender do modelo
+ * decidir isso sozinho — mesmo motivo de sempre: contexto entre turnos não
+ * é confiável só com prompt (ver calculadora.ts e tools/index.ts).
+ */
+export function culturaMencionada(texto: string): string | null {
+  const m = texto.match(REGEX_CULTURA_CATALOGO);
+  return m ? normalizarCultura(m[1]!) : null;
+}
+
+/** Varre o histórico do fim pro começo (mensagens mais recentes primeiro,
+ * incluindo as do próprio bot) e devolve a cultura mencionada mais
+ * recentemente, ou null se nenhuma linha mencionar cultura nenhuma. */
+export function culturaMaisRecenteNoHistorico(historico: { conteudo: string }[]): string | null {
+  for (let i = historico.length - 1; i >= 0; i--) {
+    const achada = culturaMencionada(historico[i]?.conteudo ?? "");
+    if (achada) return achada;
+  }
+  return null;
+}

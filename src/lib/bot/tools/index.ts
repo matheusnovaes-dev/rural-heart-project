@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ProdutorContexto } from "@/lib/bot/types";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
 import { buscarPreco } from "@/lib/bot/tools/preco";
+import { culturaMencionada, culturaMaisRecenteNoHistorico } from "@/config/culturas";
 import { buscarClima } from "@/lib/bot/tools/clima";
 import { buscarLeite } from "@/lib/bot/tools/leite";
 import { buscarFerrugemAsiatica } from "@/lib/bot/tools/ferrugem";
@@ -464,9 +465,22 @@ export async function executarTool(
       // mesmo se o modelo pediu incluir_frete=false (visto ao vivo: respondeu
       // "não tenho frete" pra "quanto é o frete até o porto?").
       const falaDeFrete = /frete|porto|parid|l[ií]quid|sobra|descont/i.test(ctx.texto);
+      // Achado real em produção (2026-10-04): "Como tá o mercado da soja?" ->
+      // "Quanto dá o preço?" (sem citar cultura) -> o modelo chamou buscar_preco
+      // com MILHO (voltou pro cadastro do produtor) em vez de continuar com
+      // SOJA, que já estava estabelecida na conversa. Mesmo bug que já tinha
+      // sido visto na calculadora (culturaMaisRecenteNoHistorico) — a trava só
+      // existia lá, não aqui, que é o caminho muito mais usado. Se a mensagem
+      // ATUAL não menciona cultura nenhuma, ignora o "produto" que o modelo
+      // mandou e usa a cultura mais recente do histórico; só cai pro que o
+      // modelo mandou (que a essa altura é o cultura_principal do cadastro,
+      // conforme o prompt já instrui) se o histórico também não tiver nada.
+      const produtoFinal = culturaMencionada(ctx.texto)
+        ? a.produto
+        : (culturaMaisRecenteNoHistorico(ctx.historico) ?? a.produto);
       return buscarPreco(
         ctx.supabase,
-        { ...a, incluir_frete: a.incluir_frete || falaDeFrete },
+        { ...a, produto: produtoFinal, incluir_frete: a.incluir_frete || falaDeFrete },
         { lat: ctx.produtor.lat, lon: ctx.produtor.lon, pediuFrete: falaDeFrete },
       );
     }
