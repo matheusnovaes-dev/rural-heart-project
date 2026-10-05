@@ -182,8 +182,15 @@ export type RespostaAgente = {
 // cortavam no fim da string (`$`), então uma frase genérica no MEIO passava
 // batido. Trocado pra `g` (sem âncora de fim), removendo a frase onde quer
 // que ela apareça, não só no fechamento.
+// 2ª rodada (2026-10-05, revisando mais conversa real): achei MAIS 2
+// variações que escapavam mesmo com o fix acima — "Se mudar de ideia ou
+// precisar de algo, é só avisar!" (não começa com "se precisar", começa com
+// "se mudar de ideia") e "...estou aqui pra isso" (verbo de fechamento fora
+// da lista). Ampliado os dois lados do padrão — é a 2ª rodada de escape
+// achada nesse guard especificamente, sinal de que a lista de variações
+// nunca é definitiva; revisar de novo se aparecer um 3º caso.
 const PADRAO_FECHAMENTO_SE_PRECISAR =
-  /(?<=^|[.!?]\s)(?:se precisar|caso precise|precisando)[^.!?]*?\b(?:avis\w*|\bfala\b|\bfalar\b|\bfale\b|pergunt\w*|cham\w*|acess\w*|confer\w*|conf(?:ira|ere)|check\w*|clic\w*|olh\w*)[^.!?]*[.!?]/gi;
+  /(?<=^|[.!?]\s)(?:se precisar|caso precise|precisando|se mudar de ideia)[^.!?]*?\b(?:avis\w*|\bfala\b|\bfalar\b|\bfale\b|pergunt\w*|cham\w*|acess\w*|confer\w*|conf(?:ira|ere)|check\w*|clic\w*|olh\w*|estou\s+aqui|t[oó]\s+aqui|aqui\s+pr[aá])[^.!?]*[.!?]/gi;
 const PADRAO_FECHAMENTO_DISPOSICAO =
   /(?<=^|[.!?]\s)(?:qualquer\s+d[uú]vida[^.!?]*)?(?:fico|estou)\s+[aà]\s+disposi[cç][aã]o[^.!?]*[.!?]/gi;
 
