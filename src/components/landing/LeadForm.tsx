@@ -262,7 +262,13 @@ export function LeadForm({ className }: { className?: string }) {
     // WhatsApp pra chamar — em vez de esperar ela descobrir sozinha, o bot
     // já chama primeiro se apresentando.
     void enviarBoasVindasWhatsApp({
-      data: { nome: values.name, whatsapp, plano: values.plano },
+      data: {
+        nome: values.name,
+        whatsapp,
+        plano: values.plano,
+        uf: values.uf || undefined,
+        culturaPrincipal: values.crop || undefined,
+      },
     });
 
     // Conversão de verdade pro Meta Ads: este formulário é o CTA principal

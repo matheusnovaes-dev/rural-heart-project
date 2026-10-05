@@ -188,7 +188,15 @@ function OnboardingPage() {
 
           // Best-effort — o bot já chama primeiro no WhatsApp, se
           // apresentando, em vez de a pessoa ter que descobrir o número.
-          void enviarBoasVindasWhatsApp({ data: { nome, whatsapp, plano: planoEscolhido } });
+          void enviarBoasVindasWhatsApp({
+            data: {
+              nome,
+              whatsapp,
+              plano: planoEscolhido,
+              uf: uf || undefined,
+              culturaPrincipal: cultura || undefined,
+            },
+          });
         }
       } else if (error.code !== "23505") {
         setErroMsg("Algo deu errado. Confira os dados e tente de novo.");

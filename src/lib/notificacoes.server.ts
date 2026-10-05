@@ -5,6 +5,7 @@ import { z } from "zod";
 import { pricingPlans } from "@/config/site";
 import { supabaseServiceRole } from "@/lib/supabase.server";
 import { normalizarWhatsapp } from "@/lib/telefone";
+import { montarResumoReengajamento } from "@/lib/bot/reengajamento";
 
 const enviarBoasVindasSchema = z.object({
   nome: z.string().min(1),
@@ -15,6 +16,14 @@ const enviarBoasVindasSchema = z.object({
   // (o RLS não libera essa leitura pra quem acabou de entrar agora).
   plano: z.string().min(1).optional(),
   cooperativaId: z.string().uuid().optional(),
+  // Quando vier (cadastro solo, não convite de cooperativa), monta um
+  // resumo com dado REAL de valor (preço/progresso de safra/ferrugem) pra
+  // primeira mensagem já mostrar o produto funcionando, em vez de só
+  // confirmar o cadastro — achado 2026-10-05: 76% dos cadastros nunca
+  // mandam a primeira mensagem sozinhos, então essa é a única chance real
+  // de mostrar valor sem depender da pessoa tomar a iniciativa.
+  uf: z.string().optional(),
+  culturaPrincipal: z.string().optional(),
 });
 
 /**
@@ -54,6 +63,25 @@ export const enviarBoasVindasWhatsApp = createServerFn({ method: "POST" })
     if (!planoId) return { ok: false as const };
     const planoNome = pricingPlans.find((p) => p.id === planoId)?.name ?? planoId;
 
+    // Best-effort, nunca trava o cadastro: sem uf/cultura (ex: convite de
+    // cooperativa, que ainda não tem cultura própria) ou sem dado real pra
+    // essa cultura/UF agora, cai no fallback — template do WhatsApp não
+    // aceita parâmetro vazio, não dá pra mandar null pro n8n.
+    const FALLBACK_SEM_RESUMO =
+      "Já pode perguntar o preço da sua cultura, previsão do tempo ou pedir um alerta automático.";
+    let resumo: string = FALLBACK_SEM_RESUMO;
+    if (data.uf && data.culturaPrincipal) {
+      try {
+        const real = await montarResumoReengajamento(supabaseServiceRole(), {
+          uf: data.uf,
+          cultura_principal: data.culturaPrincipal,
+        });
+        if (real) resumo = real;
+      } catch (err) {
+        console.error("Falha ao montar resumo de valor pro WhatsApp de boas-vindas:", err);
+      }
+    }
+
     try {
       await fetch(webhookUrl, {
         method: "POST",
@@ -62,6 +90,7 @@ export const enviarBoasVindasWhatsApp = createServerFn({ method: "POST" })
           telefone: `55${data.whatsapp.replace(/\D/g, "")}`,
           nome: data.nome.split(" ")[0] || data.nome,
           plano: planoNome,
+          resumo,
         }),
       });
       return { ok: true as const };
