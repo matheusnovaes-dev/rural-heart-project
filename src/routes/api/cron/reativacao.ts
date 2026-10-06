@@ -173,22 +173,33 @@ export const Route = createFileRoute("/api/cron/reativacao")({
   },
 });
 
+// 10 textos diferentes (pedido do Matheus 2026-10-06) — cada um com
+// header/corpo próprios, já aprovados individualmente pela Meta (templates
+// de WhatsApp não aceitam texto livre, só posição fixa de variável, então
+// "variar o texto" aqui significa 10 templates reais, não uma escolha de
+// frase em tempo de execução). Sorteia um a cada envio pra não repetir o
+// mesmo texto pra quem acompanha de fora (ex: o próprio Matheus testando).
+// _v2_01..10 porque o _v2 sem número (primeira tentativa) não pôde ser
+// editado nem apagado — mesmo caso do continuar_cadastro_safralume órfão.
+const TEMPLATES_REATIVACAO = Array.from(
+  { length: 10 },
+  (_, i) => `reativacao_trial_safralume_v2_${String(i + 1).padStart(2, "0")}`,
+);
+
 async function notificarWhatsAppReativacao(whatsapp: string, nome: string, resumo: string) {
   const webhookUrl = process.env["N8N_COBRANCA_WEBHOOK_URL"];
   const token = process.env["N8N_COBRANCA_TOKEN"];
   if (!webhookUrl || !token) return;
 
   const primeiroNome = nome.trim().split(" ")[0] || nome;
+  const template = TEMPLATES_REATIVACAO[Math.floor(Math.random() * TEMPLATES_REATIVACAO.length)]!;
 
   await fetch(webhookUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-safralume-token": token },
     body: JSON.stringify({
       telefone: `55${whatsapp}`,
-      // _v2 porque o token não tem permissão pra editar/apagar o template
-      // anterior enquanto está PENDING na Meta (mesmo caso do
-      // continuar_cadastro_safralume órfão) — o antigo fica sem uso.
-      template: "reativacao_trial_safralume_v2",
+      template,
       nome: primeiroNome,
       resumo,
     }),
