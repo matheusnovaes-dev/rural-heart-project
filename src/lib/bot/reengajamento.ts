@@ -5,6 +5,7 @@ import { ufs } from "@/config/ufs";
 import { buscarPreco } from "@/lib/bot/tools/preco";
 import { buscarFerrugemAsiatica } from "@/lib/bot/tools/ferrugem";
 import { buscarProgressoSafraConab } from "@/lib/bot/tools/mercado";
+import { buscarSinalVenda } from "@/lib/bot/tools/sinalVenda";
 
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const dataBr = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
@@ -77,6 +78,37 @@ export async function montarResumoReengajamento(
       );
     }
   }
+
+  if (partes.length === 0) return null;
+  return partes.join(" ");
+}
+
+/**
+ * Versão rica do resumo, só pra reativação (pedido do Matheus 2026-10-06:
+ * essa mensagem é rara e de alto risco — se a pessoa não voltar agora,
+ * pode não ter mais nenhuma chance — então vale somar mais um sinal real
+ * em vez do resumo enxuto do reengajamento normal, que manda toda semana
+ * e não pode virar textão). Soma o sinal de venda (posição do preço nos
+ * últimos 90 dias + curva de futuros da B3 + risco de clima, já rico em
+ * número real desde o fix de 2026-10-06 em sinalVenda.ts) ao resumo base —
+ * não busca clima separado porque o sinal de venda já embute o risco de
+ * chuva quando existe, evitaria repetir a mesma informação duas vezes.
+ */
+export async function montarResumoReativacao(
+  supabase: SupabaseClient,
+  produtor: { uf: string; cultura_principal: string },
+): Promise<string | null> {
+  const cultura = normalizarCultura(produtor.cultura_principal);
+  const uf = produtor.uf;
+
+  const [base, sinal] = await Promise.all([
+    montarResumoReengajamento(supabase, produtor),
+    buscarSinalVenda(supabase, { produto: cultura, uf }).catch(() => null),
+  ]);
+
+  const partes: string[] = [];
+  if (base) partes.push(base);
+  if (sinal?.disponivel && sinal.texto) partes.push(sinal.texto);
 
   if (partes.length === 0) return null;
   return partes.join(" ");

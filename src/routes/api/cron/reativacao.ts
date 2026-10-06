@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { supabaseServiceRole } from "@/lib/supabase.server";
-import { montarResumoReengajamento } from "@/lib/bot/reengajamento";
+import { montarResumoReativacao } from "@/lib/bot/reengajamento";
 
 type AssinaturaTrialVencido = {
   id: string;
@@ -102,7 +102,7 @@ export const Route = createFileRoute("/api/cron/reativacao")({
               continue;
             }
 
-            const resumo = await montarResumoReengajamento(supabase, {
+            const resumo = await montarResumoReativacao(supabase, {
               uf: produtor.uf,
               cultura_principal: produtor.cultura_principal,
             });
@@ -149,7 +149,10 @@ async function notificarWhatsAppReativacao(whatsapp: string, nome: string, resum
     headers: { "Content-Type": "application/json", "x-safralume-token": token },
     body: JSON.stringify({
       telefone: `55${whatsapp}`,
-      template: "reativacao_trial_safralume",
+      // _v2 porque o token não tem permissão pra editar/apagar o template
+      // anterior enquanto está PENDING na Meta (mesmo caso do
+      // continuar_cadastro_safralume órfão) — o antigo fica sem uso.
+      template: "reativacao_trial_safralume_v2",
       nome: primeiroNome,
       resumo,
     }),
