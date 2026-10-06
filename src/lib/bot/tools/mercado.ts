@@ -191,7 +191,7 @@ const formatarPctSafra = (fracao: number) =>
  * o prompt só precisa mandar citar este campo, sem precisar raciocinar sobre
  * qual fonte é qual.
  */
-function rotuloFonte(produtoCodigo: string): string {
+export function rotuloFonte(produtoCodigo: string): string {
   if (produtoCodigo === "SOY")
     return "preço de porto (Platts, FOB Santos) — não é futuro de Chicago";
   if (produtoCodigo === "SJC") return "negociado na B3, referenciado ao CME (Chicago)";
