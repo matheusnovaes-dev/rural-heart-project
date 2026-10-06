@@ -35,9 +35,19 @@ const brl = (n: number) =>
 
 export async function buscarSinalVenda(
   supabase: SupabaseClient,
-  args: { produto: string; uf: string },
+  args: {
+    produto: string;
+    uf: string;
+    // Boi sem preço direto na UF já cita a curva de futuros da B3 via
+    // referencia_mercado (ver referenciaMercado.ts) — sem essa flag, o
+    // resumo de reativação duplicava a mesma curva duas vezes (achado
+    // testando com ?simular=1 contra dado real 2026-10-06). Default true
+    // porque o uso normal do bot (ferramenta buscar_sinal_venda) não passa
+    // por esse outro caminho, então não tem duplicação pra evitar lá.
+    citarFuturoB3?: boolean;
+  },
 ): Promise<ResultadoSinalVenda> {
-  const { produto, uf } = args;
+  const { produto, uf, citarFuturoB3 = true } = args;
   const desde = new Date();
   desde.setDate(desde.getDate() - 90);
 
@@ -143,7 +153,7 @@ export async function buscarSinalVenda(
     const unidade = formatarUnidadePreco(precoAtual.unidade);
     texto = `${texto} O preço de hoje é ${brl(precoAtual.preco)}${unidade ? ` por ${unidade}` : ""}, contra mínima de ${brl(minSerie)} e máxima de ${brl(maxSerie)} nos últimos 90 dias.`;
   }
-  if (contratoMaisProximo) {
+  if (contratoMaisProximo && citarFuturoB3) {
     const casas = contratoMaisProximo.moeda === "USD" && contratoMaisProximo.preco < 100 ? 4 : 2;
     const precoFormatado = contratoMaisProximo.preco.toLocaleString("pt-BR", {
       minimumFractionDigits: casas,

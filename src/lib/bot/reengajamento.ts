@@ -121,14 +121,26 @@ export async function montarResumoReativacao(
   const cultura = normalizarCultura(produtor.cultura_principal);
   const uf = produtor.uf;
 
-  const [base, sinal, previsao, leiloes] = await Promise.all([
+  // Busca o preço de novo (já buscado dentro de montarResumoReengajamento
+  // também) só pra saber se o resumo base já citou a curva de futuros da
+  // B3 via referencia_mercado (caso boi sem preço direto na UF) — sem isso
+  // o sinal de venda duplicava a mesma curva. Custo de uma chamada extra,
+  // aceitável num cron que roda poucas vezes por dia.
+  const [base, precoParaChecarDuplicata, previsao, leiloes] = await Promise.all([
     montarResumoReengajamento(supabase, produtor),
-    buscarSinalVenda(supabase, { produto: cultura, uf }).catch(() => null),
+    buscarPreco(supabase, { produto: cultura, uf, incluir_frete: false }).catch(() => null),
     buscarPrevisao(uf).catch(() => null),
     ehBoi(cultura)
       ? buscarLeiloesProximos(supabase, { uf }, produtorId).catch(() => null)
       : Promise.resolve(null),
   ]);
+  const baseJaCitouFuturoB3 =
+    (precoParaChecarDuplicata?.referencia_mercado?.futuro_b3?.length ?? 0) > 0;
+  const sinal = await buscarSinalVenda(supabase, {
+    produto: cultura,
+    uf,
+    citarFuturoB3: !baseJaCitouFuturoB3,
+  }).catch(() => null);
 
   const partes: string[] = [];
   if (base) partes.push(base);
