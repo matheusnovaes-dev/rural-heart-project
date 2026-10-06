@@ -20,6 +20,19 @@ export type ResultadoSinalVenda = {
   texto?: string;
 };
 
+function formatarUnidadePreco(unidade: string | null): string {
+  if (!unidade) return "";
+  const normalizado = unidade.trim().toLowerCase();
+  if (normalizado === "60 kg" || normalizado === "saca 60kg" || normalizado === "sc 60 kg") {
+    return "saca de 60kg";
+  }
+  if (normalizado === "arroba") return "arroba";
+  return unidade;
+}
+
+const brl = (n: number) =>
+  `R$${n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 export async function buscarSinalVenda(
   supabase: SupabaseClient,
   args: { produto: string; uf: string },
@@ -36,15 +49,22 @@ export async function buscarSinalVenda(
   // com múltiplas praças no mesmo dia (mesmo produto, linhas extras na série).
   const { data: rows } = await supabase
     .from("precos")
-    .select("preco, data_referencia, produto")
+    .select("preco, data_referencia, produto, unidade")
     .ilike("produto", `%${produto}%`)
     .eq("uf", uf)
     .gte("data_referencia", desde.toISOString().slice(0, 10))
     .order("data_referencia", { ascending: true })
-    .returns<PontoPreco[]>();
+    .returns<(PontoPreco & { unidade: string | null })[]>();
 
   const serie = serieUnica(rows ?? []);
   const posicao = calcularPosicao(serie);
+  // Mesmo achado do contrato futuro (ver comentário abaixo): `posicao` é só
+  // o 0-100 usado pra classificar "alto/baixo/neutro", o preço/mín/máx reais
+  // ficam só aqui dentro — guardados separados pra citar na resposta.
+  const precoAtual = serie.length > 0 ? serie.at(-1)! : null;
+  const precosSerie = serie.map((p) => p.preco);
+  const minSerie = precosSerie.length > 0 ? Math.min(...precosSerie) : null;
+  const maxSerie = precosSerie.length > 0 ? Math.max(...precosSerie) : null;
 
   const codigo = CULTURA_PARA_B3[normalizarCultura(produto)]?.[0];
   let futuros: { mesAnoVencimento: string; preco: number }[] | null = null;
@@ -113,6 +133,10 @@ export async function buscarSinalVenda(
   if (!sinal) return { disponivel: false };
 
   let texto = sinal.texto;
+  if (precoAtual != null && minSerie != null && maxSerie != null) {
+    const unidade = formatarUnidadePreco(precoAtual.unidade);
+    texto = `${texto} O preço de hoje é ${brl(precoAtual.preco)}${unidade ? ` por ${unidade}` : ""}, contra mínima de ${brl(minSerie)} e máxima de ${brl(maxSerie)} nos últimos 90 dias.`;
+  }
   if (contratoMaisProximo) {
     const casas = contratoMaisProximo.moeda === "USD" && contratoMaisProximo.preco < 100 ? 4 : 2;
     const precoFormatado = contratoMaisProximo.preco.toLocaleString("pt-BR", {
