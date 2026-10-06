@@ -43,6 +43,16 @@ function variantesTelefone(whatsapp: string): string[] {
  * conversar": reabre um trial novo de verdade (reseta trial_expira_em) no
  * mesmo instante que manda a mensagem, pra quem clicar já encontrar o
  * painel liberado — nunca promete acesso que não existe ainda.
+ *
+ * Travada por padrão em `automacoes_config` (chave "reativacao_trial",
+ * mesmo padrão do /api/cron/recuperar-cadastro) — diferente do
+ * reengajamento normal, aqui CADA tentativa já reseta `trial_expira_em` de
+ * verdade, então rodar com o template `reativacao_trial_safralume_v2`
+ * ainda PENDING na Meta marcaria todo mundo como "já reativado" sem
+ * nenhuma mensagem de verdade ter chegado — desperdiçando a chance de
+ * cada um deles pra sempre. Só ligar depois de confirmar o template
+ * aprovado. `?simular=1` mostra quem seria notificado, sem mandar
+ * mensagem nem gravar nada (nem precisa da automação ligada).
  */
 export const Route = createFileRoute("/api/cron/reativacao")({
   server: {
@@ -59,7 +69,16 @@ export const Route = createFileRoute("/api/cron/reativacao")({
           return new Response("Token inválido", { status: 401 });
         }
 
+        const simular = new URL(request.url).searchParams.get("simular") === "1";
         const supabase = supabaseServiceRole();
+
+        const { data: config } = await supabase
+          .from("automacoes_config")
+          .select("ativa")
+          .eq("chave", "reativacao_trial")
+          .maybeSingle();
+        if (!config?.ativa && !simular) return Response.json({ ativa: false });
+
         const agora = new Date();
 
         const { data: candidatos } = await supabase
@@ -73,6 +92,7 @@ export const Route = createFileRoute("/api/cron/reativacao")({
 
         let enviados = 0;
         let pulados = 0;
+        const simulados: { nome: string; uf: string; cultura: string; resumo: string }[] = [];
 
         for (const assinatura of candidatos ?? []) {
           try {
@@ -102,15 +122,26 @@ export const Route = createFileRoute("/api/cron/reativacao")({
               continue;
             }
 
-            const resumo = await montarResumoReativacao(supabase, {
-              uf: produtor.uf,
-              cultura_principal: produtor.cultura_principal,
-            });
+            const resumo = await montarResumoReativacao(
+              supabase,
+              { uf: produtor.uf, cultura_principal: produtor.cultura_principal },
+              assinatura.produtor_id,
+            );
             if (!resumo) {
               // Sem dado real pra essa cultura/UF agora — não manda lembrete
               // vazio. Sem marcar reativacao_enviado_em: tenta de novo no
               // próximo cron, quando talvez já tenha dado.
               pulados++;
+              continue;
+            }
+
+            if (simular) {
+              simulados.push({
+                nome: produtor.nome,
+                uf: produtor.uf,
+                cultura: produtor.cultura_principal,
+                resumo,
+              });
               continue;
             }
 
@@ -131,7 +162,12 @@ export const Route = createFileRoute("/api/cron/reativacao")({
           }
         }
 
-        return Response.json({ candidatos: candidatos?.length ?? 0, enviados, pulados });
+        return Response.json({
+          candidatos: candidatos?.length ?? 0,
+          enviados,
+          pulados,
+          ...(simular ? { simulados } : {}),
+        });
       },
     },
   },
