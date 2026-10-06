@@ -133,7 +133,13 @@ export async function buscarSinalVenda(
   if (!sinal) return { disponivel: false };
 
   let texto = sinal.texto;
-  if (precoAtual != null && minSerie != null && maxSerie != null) {
+  // minSerie === maxSerie acontece quando só existe UM preço de verdade nos
+  // 90 dias (cultura pouco reportada) — citar "mínima X, máxima X" nesse
+  // caso é redundante e soa estranho (achado real testando reativação
+  // 2026-10-06, cultura "uva" com uma única cotação no período); nesse caso
+  // calcularPosicao já retorna null e combinarSinalVenda não gera frase de
+  // tendência, então citar só o preço sem a comparação de faixa é honesto.
+  if (precoAtual != null && minSerie != null && maxSerie != null && minSerie !== maxSerie) {
     const unidade = formatarUnidadePreco(precoAtual.unidade);
     texto = `${texto} O preço de hoje é ${brl(precoAtual.preco)}${unidade ? ` por ${unidade}` : ""}, contra mínima de ${brl(minSerie)} e máxima de ${brl(maxSerie)} nos últimos 90 dias.`;
   }
