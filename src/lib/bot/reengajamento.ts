@@ -17,6 +17,26 @@ const brl = (n: number) => `R$${n.toFixed(2).replace(".", ",")}`;
 const pct = (fracao: number) =>
   `${(fracao * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 
+// WhatsApp rejeita template com corpo (texto fixo + variáveis já substituídas)
+// acima de 1024 caracteres — achado real 2026-10-07, enviando reativação de
+// verdade: resumo de 881 caracteres (ferrugem + preço + progresso + sinal de
+// venda + clima, tudo junto) estourou o limite em 3 dos 10 templates (corpo
+// fixo mais longo). 600 dá margem segura pro maior corpo fixo entre
+// boas-vindas/reengajamento/reativação (346) + nome + plano. Corta na última
+// frase completa que couber, nunca no meio de uma frase.
+const LIMITE_RESUMO = 600;
+function limitarResumo(texto: string): string {
+  if (texto.length <= LIMITE_RESUMO) return texto;
+  const cortado = texto.slice(0, LIMITE_RESUMO);
+  const ultimoFinalDeFrase = Math.max(
+    cortado.lastIndexOf(". "),
+    cortado.lastIndexOf("! "),
+    cortado.lastIndexOf("— "),
+  );
+  if (ultimoFinalDeFrase > 0) return cortado.slice(0, ultimoFinalDeFrase + 1);
+  return `${cortado.trimEnd()}...`;
+}
+
 /**
  * Resumo de retomada — pedido do Matheus 2026-09-30: produtor some depois
  * da primeira conversa (achado real analisando os 28 cadastros: 18 nunca
@@ -82,7 +102,7 @@ export async function montarResumoReengajamento(
   }
 
   if (partes.length === 0) return null;
-  return partes.join(" ");
+  return limitarResumo(partes.join(" "));
 }
 
 const dataHoraBr = (iso: string) => {
@@ -177,5 +197,5 @@ export async function montarResumoReativacao(
   }
 
   if (partes.length === 0) return null;
-  return partes.join(" ");
+  return limitarResumo(partes.join(" "));
 }
