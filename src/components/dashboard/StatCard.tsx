@@ -4,6 +4,7 @@ import { Link } from "@tanstack/react-router";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkline } from "@/components/dashboard/Sparkline";
+import { AnimatedNumber } from "@/components/dashboard/AnimatedNumber";
 
 /**
  * Métrica com número grande, delta opcional e sparkline — padrão de painel
@@ -36,7 +37,13 @@ export function StatCard({
       </CardHeader>
       <CardContent className="flex flex-col gap-2 px-4 pb-0">
         <div className="flex items-end justify-between gap-2">
-          <p className="font-mono text-3xl font-semibold tabular-nums text-foreground">{value}</p>
+          <p className="font-mono text-3xl font-semibold tabular-nums text-foreground">
+            {typeof value === "number" ? (
+              <AnimatedNumber value={value} decimals={0} />
+            ) : (
+              value
+            )}
+          </p>
           {variacao != null && (
             <span
               className={`mb-1 inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs font-semibold ${

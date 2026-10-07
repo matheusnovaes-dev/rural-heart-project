@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import {
   ArrowDown,
   ArrowRight,
@@ -41,6 +42,20 @@ import { buscarPrecosDaUf } from "@/lib/precos";
 import { mediaDePracas } from "@/lib/precoFonte";
 import { buildWhatsAppLink } from "@/config/site";
 import { verificarConversaWhatsapp } from "@/lib/notificacoes.server";
+import { AnimatedNumber } from "@/components/dashboard/AnimatedNumber";
+
+// Entrada em stagger dos blocos do painel — pedido do Matheus 2026-10-07
+// pra tirar a sensação de "tudo aparece seco de uma vez". Offset pequeno
+// (10px) e durações curtas de propósito: é pra dar vida, não virar um
+// slideshow que atrasa o produtor de ver o preço.
+const containerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06 } },
+};
+const itemVariants = {
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] as const } },
+};
 
 export const Route = createFileRoute("/dashboard/_layout/")({
   head: () => ({
@@ -290,8 +305,16 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
       DIAS_DADO_DESATUALIZADO;
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
+    <motion.div
+      className="flex flex-col gap-6"
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+    >
+      <motion.div
+        variants={itemVariants}
+        className="flex flex-col gap-1 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between"
+      >
         <div>
           <p className="text-xs font-semibold uppercase text-muted-foreground">Visão geral</p>
           <h1 className="mt-1 font-display text-2xl font-semibold text-foreground text-balance sm:text-3xl">
@@ -299,12 +322,17 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
           </h1>
         </div>
         <p className="mt-2 text-sm font-medium text-muted-foreground sm:mt-0">{todayLabel()}</p>
-      </div>
+      </motion.div>
 
-      <CompletarAcessoCard />
+      <motion.div variants={itemVariants}>
+        <CompletarAcessoCard />
+      </motion.div>
 
       {bannerWhatsappVisivel && !jaConversouNoWhatsapp && (
-        <div className="flex items-start gap-3 rounded-lg border border-primary/25 bg-card p-4 shadow-sm">
+        <motion.div
+          variants={itemVariants}
+          className="flex items-start gap-3 rounded-lg border border-primary/25 bg-card p-4 shadow-sm"
+        >
           <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <MessageCircle className="size-4" />
           </span>
@@ -332,14 +360,30 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
           >
             <X className="size-3.5" />
           </button>
-        </div>
+        </motion.div>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.65fr)_minmax(18rem,.75fr)] lg:items-start">
+      <motion.div
+        variants={itemVariants}
+        className="grid gap-5 lg:grid-cols-[minmax(0,1.65fr)_minmax(18rem,.75fr)] lg:items-start"
+      >
         {/* Coluna principal: preço herói + insights */}
-        <div className="flex min-w-0 flex-col gap-5">
-          <Card className="overflow-hidden border-primary bg-primary text-primary-foreground shadow-lg">
-            <CardHeader className="border-b border-primary-foreground/15 px-5 pb-4 sm:px-6">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="flex min-w-0 flex-col gap-5"
+        >
+          <motion.div variants={itemVariants}>
+            <Card className="relative overflow-hidden border-primary bg-primary text-primary-foreground shadow-lg">
+              {/* Glow sutil atrás do número — o card era bg-primary sólido,
+                  sem nenhuma profundidade. Gradiente radial no canto, não
+                  animado (CPU-barato, sempre visível, não pisca). */}
+              <div
+                className="pointer-events-none absolute -top-24 -right-24 size-64 rounded-full bg-primary-foreground/10 blur-3xl"
+                aria-hidden="true"
+              />
+              <CardHeader className="relative border-b border-primary-foreground/15 px-5 pb-4 sm:px-6">
               <CardTitle className="flex items-center justify-between gap-2 text-sm font-medium opacity-90">
                 <span className="flex items-center gap-2">
                   <TrendingUp className="size-4" />
@@ -350,7 +394,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                 )}
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-4 px-5 pt-5 sm:px-6 sm:pt-6">
+            <CardContent className="relative flex flex-col gap-4 px-5 pt-5 sm:px-6 sm:pt-6">
               {serie === null || frete === undefined ? (
                 <Skeleton className="h-14 w-56 bg-primary-foreground/15" />
               ) : atual && precoExibido != null ? (
@@ -361,7 +405,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                         <span className="mr-1 align-top text-xl font-sans font-semibold opacity-70">
                           R$
                         </span>
-                        {precoExibido.toFixed(2).replace(".", ",")}
+                        <AnimatedNumber value={precoExibido} />
                       </p>
                       {variacao != null && Math.abs(variacao) >= 0.05 && (
                         <span
@@ -460,30 +504,57 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                 Avisar quando o preço mudar
               </Link>
             </CardContent>
-          </Card>
+            </Card>
+          </motion.div>
 
-          {/leite/i.test(produtor.cultura_principal ?? "") && <LeiteCard produtor={produtor} />}
+          {/leite/i.test(produtor.cultura_principal ?? "") && (
+            <motion.div variants={itemVariants}>
+              <LeiteCard produtor={produtor} />
+            </motion.div>
+          )}
 
-          <ReferenciaMercadoCard produtor={produtor} ultimaData={ultimaDataDoEstado} />
+          <motion.div variants={itemVariants}>
+            <ReferenciaMercadoCard produtor={produtor} ultimaData={ultimaDataDoEstado} />
+          </motion.div>
 
-          <InsightsPanel produtor={produtor} />
+          <motion.div variants={itemVariants}>
+            <InsightsPanel produtor={produtor} />
+          </motion.div>
 
-          <Watchlist produtor={produtor} />
+          <motion.div variants={itemVariants}>
+            <Watchlist produtor={produtor} />
+          </motion.div>
 
-          <JanelaPlantioCard produtor={produtor} />
+          <motion.div variants={itemVariants}>
+            <JanelaPlantioCard produtor={produtor} />
+          </motion.div>
 
-          <ProgressoSafraCard produtor={produtor} />
+          <motion.div variants={itemVariants}>
+            <ProgressoSafraCard produtor={produtor} />
+          </motion.div>
 
-          <FerrugemAsiaticaCard produtor={produtor} />
+          <motion.div variants={itemVariants}>
+            <FerrugemAsiaticaCard produtor={produtor} />
+          </motion.div>
 
-          <PrecoInsumosCard produtor={produtor} />
+          <motion.div variants={itemVariants}>
+            <PrecoInsumosCard produtor={produtor} />
+          </motion.div>
 
-          <BoletimSemanal produtor={produtor} />
-        </div>
+          <motion.div variants={itemVariants}>
+            <BoletimSemanal produtor={produtor} />
+          </motion.div>
+        </motion.div>
 
         {/* Coluna lateral: clima + lembretes */}
-        <div className="flex flex-col gap-5 lg:sticky lg:top-24">
-          <Card className="gap-3 border-border/80 shadow-sm transition-shadow hover:shadow-md">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="flex flex-col gap-5 lg:sticky lg:top-24"
+        >
+          <motion.div variants={itemVariants}>
+          <Card className="gap-3 border-border/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
             <CardHeader className="border-b border-border/70 px-4 pb-3">
               <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -538,8 +609,10 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
               </Link>
             </CardContent>
           </Card>
+          </motion.div>
 
-          <Card className="gap-3 border-border/80 shadow-sm transition-shadow hover:shadow-md">
+          <motion.div variants={itemVariants}>
+          <Card className="gap-3 border-border/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
             <CardHeader className="border-b border-border/70 px-4 pb-3">
               <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <span className="flex size-8 items-center justify-center rounded-lg bg-cta/10 text-cta-foreground">
@@ -578,9 +651,10 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
               </Link>
             </CardContent>
           </Card>
-        </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 }
 
