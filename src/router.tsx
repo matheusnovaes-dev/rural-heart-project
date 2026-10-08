@@ -6,6 +6,15 @@ import { LoadingScreen } from "./components/LoadingScreen";
 export const getRouter = () => {
   const queryClient = new QueryClient();
 
+  // O navegador tem sua própria restauração de scroll nativa, que roda ANTES
+  // do React hidratar: ela pula pra posição antiga salva no histórico, e só
+  // depois o scrollRestoration do router (abaixo) corrige pra posição certa
+  // — daí o "desce e volta sozinho" ao entrar na página. Desligando a nativa,
+  // só o router decide, sem a disputa entre os dois.
+  if (typeof document !== "undefined") {
+    window.history.scrollRestoration = "manual";
+  }
+
   const router = createRouter({
     routeTree,
     context: { queryClient },

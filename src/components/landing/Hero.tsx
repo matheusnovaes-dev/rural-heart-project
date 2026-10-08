@@ -17,9 +17,9 @@ export function Hero() {
     target: sectionRef,
     offset: ["start start", "end start"],
   });
-  const fotoY = useTransform(scrollYProgress, [0, 1], ["-4%", "4%"]);
-  const cristaFundoY = useTransform(scrollYProgress, [0, 1], ["0%", "6%"]);
-  const cristaFrenteY = useTransform(scrollYProgress, [0, 1], ["0%", "10%"]);
+  const fotoY = useTransform(scrollYProgress, [0, 1], ["-10%", "10%"]);
+  const cristaFundoY = useTransform(scrollYProgress, [0, 1], ["0px", "30px"]);
+  const cristaFrenteY = useTransform(scrollYProgress, [0, 1], ["0px", "55px"]);
 
   // Luz dourada que segue o cursor sobre a foto — inspirado no site do Lando
   // Norris (blob reativo ao mouse no hero, premiado em design 2026), mas
@@ -47,9 +47,9 @@ export function Hero() {
       onMouseMove={seguirCursor}
     >
       <div className="absolute inset-0">
-        {/* -inset-y-[8%] dá uma "sobra" de foto pra cima e pra baixo: o
-            translateY do parallax (±4%) nunca chega a expor uma borda vazia. */}
-        <motion.div className="absolute inset-x-0 inset-y-[-8%]" style={{ y: fotoY }}>
+        {/* inset-y-[-14%] dá uma "sobra" de foto pra cima e pra baixo: o
+            translateY do parallax (±10%) nunca chega a expor uma borda vazia. */}
+        <motion.div className="absolute inset-x-0 inset-y-[-14%]" style={{ y: fotoY }}>
           <picture>
             {/* A foto fica sob um gradiente escuro que cobre quase toda ela: as versões
                 pequenas (640px/1000px, 14-29 KB) são idênticas a olho nu e tiram ~140 KB
@@ -83,7 +83,7 @@ export function Hero() {
           aria-hidden="true"
           viewBox="0 0 1440 120"
           preserveAspectRatio="none"
-          className="absolute inset-x-0 bottom-0 h-16 w-full sm:h-24"
+          className="absolute inset-x-0 bottom-0 h-20 w-full sm:h-28"
           style={{ y: cristaFundoY }}
         >
           <path
@@ -95,7 +95,7 @@ export function Hero() {
           aria-hidden="true"
           viewBox="0 0 1440 120"
           preserveAspectRatio="none"
-          className="absolute inset-x-0 bottom-0 h-14 w-full sm:h-20"
+          className="absolute inset-x-0 bottom-0 h-16 w-full sm:h-24"
           style={{ y: cristaFrenteY }}
         >
           <path d="M0,80 C360,40 1080,120 1440,70 L1440,120 L0,120 Z" className="fill-background" />
