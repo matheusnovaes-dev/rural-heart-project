@@ -25,7 +25,44 @@ import { Reveal } from "@/components/landing/Reveal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sparkline } from "@/components/dashboard/Sparkline";
+import { AnimatedNumber } from "@/components/dashboard/AnimatedNumber";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
+import { buscarPrecosDaUf } from "@/lib/precos";
+
+/**
+ * Preço real de soja (GO/MT/PR) pra substituir o número ilustrativo no
+ * preview da landing — pedido do Matheus 2026-10-08: reforça a mensagem
+ * "fonte oficial, não achismo" mostrando dado de verdade em vez de mockup.
+ * Busca com a MESMA função que o painel de verdade usa (lib/precos.ts),
+ * client-side com a chave pública (preço não é dado sensível). Nunca
+ * trava a landing: se falhar ou ainda não carregou, cai no número
+ * ilustrativo de sempre — a legenda "dados de exemplo" continua valendo
+ * nesse meio tempo.
+ */
+function usePrecosReaisSoja() {
+  const [precos, setPrecos] = useState<{ GO: number; MT: number; PR: number } | null>(null);
+
+  useEffect(() => {
+    if (!supabase) return;
+    let cancelado = false;
+    Promise.all(
+      (["GO", "MT", "PR"] as const).map((uf) =>
+        buscarPrecosDaUf(supabase, "soja", uf)
+          .then((r) => r.serieEstado.at(-1)?.preco ?? null)
+          .catch(() => null),
+      ),
+    ).then(([go, mt, pr]) => {
+      if (cancelado) return;
+      if (go != null && mt != null && pr != null) setPrecos({ GO: go, MT: mt, PR: pr });
+    });
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  return precos;
+}
 
 type PlanoId = "bronze" | "prata" | "ouro";
 
@@ -66,6 +103,7 @@ export function DashboardPreview() {
   const [aba, setAba] = useState<AbaId>("precos");
   const [autoplay, setAutoplay] = useState(true);
   const retomarTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const precosReais = usePrecosReaisSoja();
 
   useEffect(() => {
     if (!autoplay) return;
@@ -163,7 +201,7 @@ export function DashboardPreview() {
 
             {/* conteúdo, muda com a aba */}
             <div className="min-h-96 flex-1 bg-background p-4 sm:p-6">
-              {aba === "precos" && <PreviewPrecos />}
+              {aba === "precos" && <PreviewPrecos precosReais={precosReais} />}
               {aba === "sinal" && <PreviewSinalVenda />}
               {aba === "alertas" && <PreviewAlertas />}
               {aba === "clima" && <PreviewClima />}
@@ -177,7 +215,9 @@ export function DashboardPreview() {
           </div>
         </div>
         <p className="mt-3 text-center text-xs text-muted-foreground">
-          Prévia ilustrativa do painel, dados de exemplo. Recurso com selo{" "}
+          Prévia ilustrativa do painel
+          {precosReais ? " — preço da soja é o real de hoje, o resto é exemplo" : ", dados de exemplo"}
+          . Recurso com selo{" "}
           <span className="rounded-full bg-gold px-1.5 py-0.5 font-semibold text-gold-foreground">
             Ouro
           </span>{" "}
@@ -192,10 +232,14 @@ export function DashboardPreview() {
   );
 }
 
-function PreviewPrecos() {
+function PreviewPrecos({
+  precosReais,
+}: {
+  precosReais: { GO: number; MT: number; PR: number } | null;
+}) {
   const ufs = [
-    { uf: "MT", preco: "129,80", variacao: 3.4, cor: "var(--chart-2)" },
-    { uf: "PR", preco: "130,80", variacao: -1.2, cor: "var(--chart-3)" },
+    { uf: "MT", preco: precosReais?.MT ?? 129.8, variacao: 3.4, cor: "var(--chart-2)" },
+    { uf: "PR", preco: precosReais?.PR ?? 130.8, variacao: -1.2, cor: "var(--chart-3)" },
   ];
   const sparklineDados = [118, 120, 119, 122, 124, 123, 126, 125, 127, 127];
   return (
@@ -210,7 +254,7 @@ function PreviewPrecos() {
                 <span className="mr-0.5 align-top text-sm font-sans font-semibold opacity-70">
                   R$
                 </span>
-                127,00
+                <AnimatedNumber value={precosReais?.GO ?? 127} />
               </p>
               <span className="mb-1 inline-flex items-center gap-0.5 rounded-full bg-primary-foreground/15 px-1.5 py-0.5 text-[10px] font-semibold">
                 <ArrowUp className="size-2.5" />
@@ -236,7 +280,7 @@ function PreviewPrecos() {
               </div>
               <p className="mt-1 font-mono text-xl font-semibold tabular-nums text-foreground">
                 <span className="mr-0.5 align-top text-xs font-sans text-muted-foreground">R$</span>
-                {item.preco}
+                <AnimatedNumber value={item.preco} />
               </p>
               <span
                 className={cn(

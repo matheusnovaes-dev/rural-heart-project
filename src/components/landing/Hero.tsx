@@ -1,11 +1,30 @@
-import { motion } from "framer-motion";
+import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
+import type { MouseEvent } from "react";
 import { ArrowRight, BadgeCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
 export function Hero() {
+  // Luz dourada que segue o cursor sobre a foto — inspirado no site do Lando
+  // Norris (blob reativo ao mouse no hero, premiado em design 2026), mas
+  // adaptado ao clima calmo da marca: em vez de neon de F1, é "sol se
+  // movendo pela lavoura" (mesma cor do CTA, --cta). Motion values em vez
+  // de state: framer-motion escreve direto no DOM a cada movimento do
+  // mouse, sem re-renderizar o componente React centenas de vezes por
+  // segundo. Só desktop (sm:block) — toque no celular não tem "mouse
+  // passando por cima", e economiza o listener onde mais importa performance.
+  const mouseX = useMotionValue(50);
+  const mouseY = useMotionValue(35);
+  const luz = useMotionTemplate`radial-gradient(500px circle at ${mouseX}% ${mouseY}%, color-mix(in oklab, var(--cta) 55%, transparent), transparent 70%)`;
+
+  function seguirCursor(e: MouseEvent<HTMLElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    mouseX.set(((e.clientX - rect.left) / rect.width) * 100);
+    mouseY.set(((e.clientY - rect.top) / rect.height) * 100);
+  }
+
   return (
-    <section id="topo" className="relative overflow-hidden">
+    <section id="topo" className="relative overflow-hidden" onMouseMove={seguirCursor}>
       <div className="absolute inset-0">
         <picture>
           {/* A foto fica sob um gradiente escuro que cobre quase toda ela: as versões
@@ -25,6 +44,11 @@ export function Hero() {
           />
         </picture>
         <div className="absolute inset-0 bg-gradient-to-b from-[oklch(0.16_0.03_158/0.88)] via-[oklch(0.16_0.03_158/0.78)] to-[oklch(0.988_0.005_95.1)]" />
+        <motion.div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 hidden mix-blend-soft-light sm:block"
+          style={{ background: luz }}
+        />
       </div>
 
       <div className="relative mx-auto flex max-w-4xl flex-col items-center px-4 py-24 text-center sm:px-6 sm:py-32">
