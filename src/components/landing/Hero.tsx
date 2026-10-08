@@ -1,10 +1,26 @@
-import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
-import type { MouseEvent } from "react";
+import { motion, useMotionTemplate, useMotionValue, useScroll, useTransform } from "framer-motion";
+import { useRef, type MouseEvent } from "react";
 import { ArrowRight, BadgeCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
 export function Hero() {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  // Parallax orgânico ligado ao scroll (não ao mouse, por isso funciona em
+  // touch também): a foto e as duas "cristas" de lavoura na base se movem em
+  // velocidades diferentes enquanto a Hero passa pela tela, dando a sensação
+  // de profundidade real — técnica de camadas usada em sites premiados de
+  // agro no Awwwards (Farm Minerals, CleverFarm), adaptada ao clima calmo da
+  // marca em vez do visual vibrante deles.
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start start", "end start"],
+  });
+  const fotoY = useTransform(scrollYProgress, [0, 1], ["-4%", "4%"]);
+  const cristaFundoY = useTransform(scrollYProgress, [0, 1], ["0%", "6%"]);
+  const cristaFrenteY = useTransform(scrollYProgress, [0, 1], ["0%", "10%"]);
+
   // Luz dourada que segue o cursor sobre a foto — inspirado no site do Lando
   // Norris (blob reativo ao mouse no hero, premiado em design 2026), mas
   // adaptado ao clima calmo da marca: em vez de neon de F1, é "sol se
@@ -24,31 +40,66 @@ export function Hero() {
   }
 
   return (
-    <section id="topo" className="relative overflow-hidden" onMouseMove={seguirCursor}>
+    <section
+      ref={sectionRef}
+      id="topo"
+      className="relative overflow-hidden"
+      onMouseMove={seguirCursor}
+    >
       <div className="absolute inset-0">
-        <picture>
-          {/* A foto fica sob um gradiente escuro que cobre quase toda ela: as versões
-              pequenas (640px/1000px, 14-29 KB) são idênticas a olho nu e tiram ~140 KB
-              do caminho crítico de quem chega do anúncio pelo celular. */}
-          <source
-            media="(max-width: 640px)"
-            srcSet="/images/hero-field-640.webp"
-            type="image/webp"
-          />
-          <source srcSet="/images/hero-field-1000.webp" type="image/webp" />
-          <img
-            src="/images/hero-field-1000.jpg"
-            alt="Lavoura ao entardecer"
-            className="size-full object-cover"
-            fetchPriority="high"
-          />
-        </picture>
+        {/* -inset-y-[8%] dá uma "sobra" de foto pra cima e pra baixo: o
+            translateY do parallax (±4%) nunca chega a expor uma borda vazia. */}
+        <motion.div className="absolute inset-x-0 inset-y-[-8%]" style={{ y: fotoY }}>
+          <picture>
+            {/* A foto fica sob um gradiente escuro que cobre quase toda ela: as versões
+                pequenas (640px/1000px, 14-29 KB) são idênticas a olho nu e tiram ~140 KB
+                do caminho crítico de quem chega do anúncio pelo celular. */}
+            <source
+              media="(max-width: 640px)"
+              srcSet="/images/hero-field-640.webp"
+              type="image/webp"
+            />
+            <source srcSet="/images/hero-field-1000.webp" type="image/webp" />
+            <img
+              src="/images/hero-field-1000.jpg"
+              alt="Lavoura ao entardecer"
+              className="size-full object-cover"
+              fetchPriority="high"
+            />
+          </picture>
+        </motion.div>
         <div className="absolute inset-0 bg-gradient-to-b from-[oklch(0.16_0.03_158/0.88)] via-[oklch(0.16_0.03_158/0.78)] to-[oklch(0.988_0.005_95.1)]" />
         <motion.div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 hidden mix-blend-soft-light sm:block"
           style={{ background: luz }}
         />
+
+        {/* Crista de lavoura em duas camadas: a de trás (mais clara, tom
+            verde suave) se move menos que a da frente (cor exata do fundo da
+            página), criando profundidade na transição pra seção seguinte em
+            vez do corte reto de antes. */}
+        <motion.svg
+          aria-hidden="true"
+          viewBox="0 0 1440 120"
+          preserveAspectRatio="none"
+          className="absolute inset-x-0 bottom-0 h-16 w-full sm:h-24"
+          style={{ y: cristaFundoY }}
+        >
+          <path
+            d="M0,60 C240,20 480,100 720,60 C960,20 1200,100 1440,60 L1440,120 L0,120 Z"
+            className="fill-accent"
+          />
+        </motion.svg>
+        <motion.svg
+          aria-hidden="true"
+          viewBox="0 0 1440 120"
+          preserveAspectRatio="none"
+          className="absolute inset-x-0 bottom-0 h-14 w-full sm:h-20"
+          style={{ y: cristaFrenteY }}
+        >
+          <path d="M0,80 C360,40 1080,120 1440,70 L1440,120 L0,120 Z" className="fill-background" />
+        </motion.svg>
       </div>
 
       <div className="relative mx-auto flex max-w-4xl flex-col items-center px-4 py-24 text-center sm:px-6 sm:py-32">
