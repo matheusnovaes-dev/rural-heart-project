@@ -197,7 +197,7 @@ function LoginPage() {
 
       {/* Faixa compacta (mobile) */}
       <div className="relative overflow-hidden p-5 text-white lg:hidden">
-        <BrandBackdrop />
+        <BrandBackdrop animado={false} />
         <div className="relative z-10 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="flex size-8 items-center justify-center rounded-full bg-white/15 backdrop-blur">
@@ -495,26 +495,41 @@ function ParticulasSucesso() {
  * blobs desfocados, cada um com rota e velocidade própria, + textura de
  * pontinhos + duas linhas onduladas no canto + vinheta pra manter o texto
  * legível por cima. Puramente decorativo (aria-hidden). */
-function BrandBackdrop() {
+function BrandBackdrop({ animado = true }: { animado?: boolean }) {
+  // Achado real auditando performance mobile: esse componente renderiza
+  // DUAS vezes na página (painel desktop + faixa compacta do celular), e os
+  // 3 blobs com blur-3xl (filtro caro de GPU) em loop infinito rodavam nas
+  // duas, mesmo a versão mobile sendo uma faixa pequena onde a animação
+  // quase não se percebe. 83% do tráfego é celular — custo real por um
+  // ganho visual que ali é mínimo. Chamado com animado=false na faixa
+  // mobile: os blobs ficam parados (continuam dando profundidade/cor, só
+  // sem o custo de reflow contínuo).
+  const Elemento = animado ? motion.div : "div";
   return (
     <div aria-hidden className="absolute inset-0 -z-0 overflow-hidden bg-[oklch(0.17_0.028_156.5)]">
-      <motion.div
+      <Elemento
         className="absolute top-[-15%] left-[-15%] size-112 rounded-full blur-3xl"
         style={{ background: "oklch(0.5 0.1 156 / 0.6)" }}
-        animate={{ x: [0, 70, -30, 0], y: [0, 50, -40, 0] }}
-        transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+        {...(animado && {
+          animate: { x: [0, 70, -30, 0], y: [0, 50, -40, 0] },
+          transition: { duration: 20, repeat: Infinity, ease: "easeInOut" },
+        })}
       />
-      <motion.div
+      <Elemento
         className="absolute right-[-12%] bottom-[-10%] size-96 rounded-full blur-3xl"
         style={{ background: "oklch(0.66 0.13 76 / 0.45)" }}
-        animate={{ x: [0, -60, 35, 0], y: [0, -45, 25, 0] }}
-        transition={{ duration: 24, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+        {...(animado && {
+          animate: { x: [0, -60, 35, 0], y: [0, -45, 25, 0] },
+          transition: { duration: 24, repeat: Infinity, ease: "easeInOut", delay: 1.5 },
+        })}
       />
-      <motion.div
+      <Elemento
         className="absolute top-[35%] left-[45%] size-80 rounded-full blur-3xl"
         style={{ background: "oklch(0.45 0.09 190 / 0.35)" }}
-        animate={{ x: [0, 45, -45, 0], y: [0, -35, 35, 0] }}
-        transition={{ duration: 27, repeat: Infinity, ease: "easeInOut", delay: 3 }}
+        {...(animado && {
+          animate: { x: [0, 45, -45, 0], y: [0, -35, 35, 0] },
+          transition: { duration: 27, repeat: Infinity, ease: "easeInOut", delay: 3 },
+        })}
       />
       <div
         className="absolute inset-0"
