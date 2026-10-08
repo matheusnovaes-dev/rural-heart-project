@@ -36,6 +36,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -163,7 +164,14 @@ function DashboardGuard() {
         <AppSidebar headerTitle={headerTitle} headerSubtitle={headerSubtitle} items={items} />
         <SidebarInset>
           <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-border/80 bg-background/95 px-4 backdrop-blur-sm sm:px-6">
-            <SidebarTrigger />
+            {/* No celular o produtor entra com a sidebar fechada e o ícone
+                sozinho (PanelLeft) não é óbvio pra quem não é familiarizado
+                com esse padrão de app — vira um botão com rótulo "Menu" até
+                o breakpoint sm, onde a sidebar já fica aberta por padrão. */}
+            <div className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 shadow-sm sm:border-none sm:bg-transparent sm:p-0 sm:shadow-none">
+              <SidebarTrigger />
+              <span className="text-xs font-medium text-muted-foreground sm:hidden">Menu</span>
+            </div>
             <span className="hidden text-xs font-medium text-muted-foreground sm:inline">
               Inteligência de mercado rural
             </span>
@@ -222,6 +230,14 @@ function AppSidebar({
   items: NavItem[];
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  // No celular a sidebar é um Sheet por cima da tela inteira: sem isso, ela
+  // ficava aberta depois de escolher a página — o produtor tinha que fechar
+  // na mão (tocando fora) antes de ver o conteúdo que acabou de abrir.
+  function aoSelecionar() {
+    if (isMobile) setOpenMobile(false);
+  }
 
   return (
     <Sidebar>
@@ -247,7 +263,7 @@ function AppSidebar({
               {items.map((item) => (
                 <SidebarMenuItem key={item.to}>
                   <SidebarMenuButton asChild isActive={pathname === item.to}>
-                    <Link to={item.to} data-tour={item.to}>
+                    <Link to={item.to} data-tour={item.to} onClick={aoSelecionar}>
                       <item.icon />
                       <span>{item.label}</span>
                     </Link>
