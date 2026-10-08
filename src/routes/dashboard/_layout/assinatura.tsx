@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { CreditCard, ExternalLink } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -177,9 +178,12 @@ function AssinaturaPage() {
             />
           ) : (
             <div className="flex flex-col gap-2">
-              {cobrancas.map((c) => (
-                <div
+              {cobrancas.map((c, index) => (
+                <motion.div
                   key={c.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25, delay: index * 0.04 }}
                   className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm"
                 >
                   <div>
@@ -203,7 +207,7 @@ function AssinaturaPage() {
                       <ExternalLink className="size-4" />
                     </a>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           )}

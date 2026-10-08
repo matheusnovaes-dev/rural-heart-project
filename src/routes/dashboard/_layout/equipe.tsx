@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Copy, Check, UsersRound, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -112,59 +113,69 @@ function EquipePage() {
           <CardTitle>Membros da equipe</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
-          {membros.map((m) => {
-            const ehUltimoAdmin = m.papel === "admin" && totalAdmins <= 1;
-            const nomeExibido =
-              m.nome ?? m.email ?? (
+          <AnimatePresence initial={false}>
+            {membros.map((m, index) => {
+              const ehUltimoAdmin = m.papel === "admin" && totalAdmins <= 1;
+              const nomeExibido = m.nome ?? m.email ?? (
                 <span className="font-mono text-xs text-muted-foreground">{m.user_id}</span>
               );
-            return (
-              <div
-                key={m.user_id}
-                className="flex items-center justify-between rounded-lg border border-border p-3 text-sm"
-              >
-                <span className="text-foreground">
-                  {nomeExibido}
-                  {m.user_id === session?.user.id && (
-                    <span className="ml-1.5 text-xs text-muted-foreground">(você)</span>
-                  )}
-                </span>
-                <div className="flex items-center gap-2">
-                  <Badge variant={m.papel === "admin" ? "default" : "secondary"}>{m.papel}</Badge>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8"
-                        disabled={ehUltimoAdmin}
-                        aria-label={`Remover ${m.nome ?? "membro"}`}
-                        title={ehUltimoAdmin ? "Precisa de pelo menos 1 admin na equipe" : undefined}
-                      >
-                        <Trash2 className="size-3.5 text-destructive" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Remover {m.nome ?? "esse membro"} da equipe?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Essa pessoa perde acesso ao painel da cooperativa na hora. O link de
-                          convite continua o mesmo de sempre, então ela consegue entrar de novo se
-                          usar esse link outra vez.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleRemover(m.user_id)}>
-                          Remover
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
-            );
-          })}
+              return (
+                <motion.div
+                  key={m.user_id}
+                  layout
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, height: 0, marginBottom: 0, overflow: "hidden" }}
+                  transition={{ duration: 0.25, delay: index * 0.04 }}
+                  className="flex items-center justify-between rounded-lg border border-border p-3 text-sm"
+                >
+                  <span className="text-foreground">
+                    {nomeExibido}
+                    {m.user_id === session?.user.id && (
+                      <span className="ml-1.5 text-xs text-muted-foreground">(você)</span>
+                    )}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={m.papel === "admin" ? "default" : "secondary"}>{m.papel}</Badge>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          disabled={ehUltimoAdmin}
+                          aria-label={`Remover ${m.nome ?? "membro"}`}
+                          title={
+                            ehUltimoAdmin ? "Precisa de pelo menos 1 admin na equipe" : undefined
+                          }
+                        >
+                          <Trash2 className="size-3.5 text-destructive" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            Remover {m.nome ?? "esse membro"} da equipe?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Essa pessoa perde acesso ao painel da cooperativa na hora. O link de
+                            convite continua o mesmo de sempre, então ela consegue entrar de novo se
+                            usar esse link outra vez.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleRemover(m.user_id)}>
+                            Remover
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </CardContent>
       </Card>
     </div>

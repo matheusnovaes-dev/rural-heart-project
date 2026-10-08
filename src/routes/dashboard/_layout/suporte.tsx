@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { LifeBuoy, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 
@@ -146,8 +147,14 @@ function SuportePage() {
               description="Quando você mandar uma mensagem pra gente, ela aparece aqui."
             />
           ) : (
-            tickets.map((t) => (
-              <div key={t.id} className="flex flex-col gap-1 rounded-lg border p-3">
+            tickets.map((t, index) => (
+              <motion.div
+                key={t.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: index * 0.04 }}
+                className="flex flex-col gap-1 rounded-lg border p-3"
+              >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-medium text-foreground">{t.assunto}</span>
                   <Badge variant="outline">{statusLabel[t.status] ?? t.status}</Badge>
@@ -168,7 +175,7 @@ function SuportePage() {
                     <p className="mt-0.5 text-sm text-foreground">{t.resposta}</p>
                   </div>
                 )}
-              </div>
+              </motion.div>
             ))
           )}
         </CardContent>
