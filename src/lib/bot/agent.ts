@@ -131,15 +131,29 @@ function notaDeAberturaDeAnuncio(texto: string): OpenAIMessage | null {
 // buildRegrasCadastroAnonimo.
 const TURNOS_INICIO_DE_RELACAO = 6;
 
+// Achado real testando ao vivo (2026-10-08, 2ª rodada): com uma única
+// instrução de texto oferecendo "alerta OU outra cultura/clima", o modelo
+// escolheu "alerta" nas 6 tentativas seguidas (3 numa pergunta de preço, 3
+// numa de clima) — nunca ofereceu a outra opção, mesmo pro modelo tendo as
+// duas disponíveis. Mesmo padrão de sempre desse modelo: "ou" dentro de uma
+// instrução solta não garante variedade de verdade. Igual
+// FORMATOS_ABERTURA_ANUNCIO, o CÓDIGO sorteia o ângulo (não o modelo).
+const ANGULOS_INCENTIVO_ATIVACAO = [
+  "Depois de responder a pergunta dele normalmente, pergunte se ele quer que você crie um alerta automático pra isso (preço ou clima, o que for o assunto da pergunta dele) — avisa sozinho quando mudar.",
+  "Depois de responder a pergunta dele normalmente, pergunte se ele também quer acompanhar outra cultura ou outro estado além do principal dele, já que o Safralume cobre mais de 70 culturas.",
+  "Depois de responder a pergunta dele normalmente, pergunte se ele quer saber se é um bom momento pra vender a cultura principal dele (sinal de venda) — cruza o preço dos últimos 90 dias com o mercado futuro da B3.",
+];
+
 function notaDeIncentivoAtivacao(
   produtor: ProdutorContexto,
   historico: HistoricoLinha[],
 ): OpenAIMessage | null {
   if (!produtor.id || historico.length > TURNOS_INICIO_DE_RELACAO) return null;
+  const angulo =
+    ANGULOS_INCENTIVO_ATIVACAO[Math.floor(Math.random() * ANGULOS_INCENTIVO_ATIVACAO.length)]!;
   return {
     role: "system",
-    content:
-      'Nota: esse produtor já tem cadastro e ainda está no início da conversa com você (poucas trocas até agora) — é um momento-chave pra incentivar o uso de verdade do Safralume, não só responder e parar. Depois de responder a pergunta dele normalmente, puxe UMA pergunta concreta e específica sobre o próximo passo natural: se ele quer que você crie um alerta automático pra esse preço (avisa sozinho quando mudar), ou se quer saber de outra cultura/clima da região dele também. Isso não é a mesma coisa que a oferta de ajuda genérica proibida ("se precisar de algo, é só falar") — é um convite específico e acionável pra ele experimentar o que o produto faz de verdade. Não force isso se a resposta já tiver ficado longa ou se o pedido dele já foi sobre criar um alerta.',
+    content: `Nota: esse produtor já tem cadastro e ainda está no início da conversa com você (poucas trocas até agora) — é um momento-chave pra incentivar o uso de verdade do Safralume, não só responder e parar. ${angulo} Isso não é a mesma coisa que a oferta de ajuda genérica proibida ("se precisar de algo, é só falar") — é um convite específico e acionável. Não force isso se a resposta já tiver ficado longa ou se o pedido dele já foi sobre o que essa pergunta sugere (ex: já era sobre criar alerta).`,
   };
 }
 
@@ -297,11 +311,30 @@ const PADRAO_LINHA_DE_LISTA = /^\s*(?:[-*]|\d+[.)])\s+/;
 function removerMarkdownProibido(resposta: string): string {
   const semNegrito = resposta.replace(/\*\*(.+?)\*\*/g, "$1");
   const linhas = semNegrito.split("\n");
-  if (!linhas.some((l) => PADRAO_LINHA_DE_LISTA.test(l))) return semNegrito;
-  return linhas
-    .map((l) => l.replace(PADRAO_LINHA_DE_LISTA, "").trim())
-    .filter((l) => l.length > 0)
-    .join(" · ");
+  if (!linhas.some((l) => PADRAO_LINHA_DE_LISTA.test(l))) {
+    return removerTracoDeListaInline(semNegrito);
+  }
+  return removerTracoDeListaInline(
+    linhas
+      .map((l) => l.replace(PADRAO_LINHA_DE_LISTA, "").trim())
+      .filter((l) => l.length > 0)
+      .join(" · "),
+  );
+}
+
+// Achado real testando ao vivo (2026-10-08, pergunta de clima com vários
+// dias): o modelo às vezes monta uma "lista disfarçada" numa frase só, sem
+// nenhuma quebra de linha — ex: "...semana: - 08/10: ... · 09/10: ..." — só
+// o primeiro item leva "-" (os seguintes já usam "·" corretamente). Como não
+// tem "\n" nenhum, PADRAO_LINHA_DE_LISTA (que divide por linha) nunca
+// detecta isso. ": - " é um padrão raro o bastante em português natural
+// (dois-pontos quase nunca são seguidos de travessão) pra remover com
+// segurança, sem precisar de outro separador no lugar — o resto da frase já
+// usa "·" entre os itens seguintes.
+const PADRAO_TRACO_APOS_DOIS_PONTOS = /:\s+-\s+/g;
+
+function removerTracoDeListaInline(resposta: string): string {
+  return resposta.replace(PADRAO_TRACO_APOS_DOIS_PONTOS, ": ");
 }
 
 // Média das praças que buscar_preco devolveu, só quando a resposta é sobre UMA
