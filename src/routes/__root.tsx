@@ -8,6 +8,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { MotionConfig } from "framer-motion";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -229,13 +230,23 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
-        <Toaster />
-        <CookieConsent />
-      </AuthProvider>
-    </QueryClientProvider>
+    // reducedMotion="user": toda animação de transform/layout (x, y, scale,
+    // top, left...) de qualquer motion.* do site respeita
+    // prefers-reduced-motion automaticamente, sem precisar repetir a checagem
+    // em cada componente — achado da auditoria de performance 2026-10-09:
+    // as animações novas desta sessão (blobs do login, stagger do painel,
+    // parallax) não respeitavam isso. Não cobre clipPath/pathLength/mouse
+    // tracking (não são "positional keys" do framer-motion) — esses ficam
+    // com checagem manual onde existem (Hero, login).
+    <MotionConfig reducedMotion="user">
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+          <Toaster />
+          <CookieConsent />
+        </AuthProvider>
+      </QueryClientProvider>
+    </MotionConfig>
   );
 }

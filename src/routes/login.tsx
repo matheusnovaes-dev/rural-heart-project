@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { MouseEvent } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
+import { motion, useMotionTemplate, useMotionValue, useReducedMotion } from "framer-motion";
 import {
   Sprout,
   Loader2,
@@ -102,6 +102,12 @@ function LoginPage() {
     }, 850);
   }
 
+  // clipPath/pathLength (checkmark de sucesso) e o background da luz não são
+  // "positional keys" do framer-motion, então o <MotionConfig
+  // reducedMotion="user"> do root (achado da auditoria 2026-10-09) não os
+  // desativa sozinho — checagem manual aqui, igual no Hero da landing.
+  const prefereMenosMovimento = useReducedMotion();
+
   // Luz que segue o cursor no painel de marca — mesma técnica do Hero da
   // landing (useMotionValue/useMotionTemplate, sem re-render por frame).
   // Só desktop: é onde o painel de marca aparece.
@@ -109,6 +115,7 @@ function LoginPage() {
   const mouseY = useMotionValue(30);
   const luz = useMotionTemplate`radial-gradient(500px circle at ${mouseX}% ${mouseY}%, color-mix(in oklab, var(--gold) 45%, transparent), transparent 70%)`;
   function seguirCursor(e: MouseEvent<HTMLDivElement>) {
+    if (prefereMenosMovimento) return;
     const rect = e.currentTarget.getBoundingClientRect();
     mouseX.set(((e.clientX - rect.left) / rect.width) * 100);
     mouseY.set(((e.clientY - rect.top) / rect.height) * 100);
@@ -132,11 +139,13 @@ function LoginPage() {
         onMouseMove={seguirCursor}
       >
         <BrandBackdrop />
-        <motion.div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 z-0 mix-blend-soft-light"
-          style={{ background: luz }}
-        />
+        {!prefereMenosMovimento && (
+          <motion.div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 z-0 mix-blend-soft-light"
+            style={{ background: luz }}
+          />
+        )}
 
         <Link to="/" className="relative z-10 flex items-center gap-2">
           <span className="flex size-9 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur">
@@ -216,7 +225,9 @@ function LoginPage() {
       {/* Formulário */}
       <div className="flex flex-1 items-center justify-center px-4 py-10 sm:py-12">
         <div className="relative w-full max-w-sm animate-in overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm fade-in zoom-in-95 duration-300 sm:p-8">
-          {status === "success" && <SucessoCheckmark />}
+          {status === "success" && (
+            <SucessoCheckmark semAnimacao={prefereMenosMovimento ?? false} />
+          )}
           {/* Seletor de abas com indicador deslizante (spring, não CSS ease
               — fica mais "vivo", com leve overshoot ao trocar de aba) */}
           <div className="relative flex rounded-full bg-secondary p-1">
@@ -381,16 +392,24 @@ function LoginPage() {
  * apps premium), checkmark bem maior desenhado em branco, e um estouro de
  * partículas douradas saindo do centro — sensação de celebração, não só
  * "carregando". */
-function SucessoCheckmark() {
+function SucessoCheckmark({ semAnimacao }: { semAnimacao: boolean }) {
+  // clipPath e pathLength não são "positional keys" do framer-motion, então
+  // reducedMotion="user" (root) não os desativa sozinho (achado da auditoria
+  // 2026-10-09) — com duration 0, o resultado final aparece na hora (círculo
+  // já tomado, checkmark já desenhado), sem o efeito de revelação. O estouro
+  // de partículas é só decorativo, sem estado final que importe, então nem
+  // renderiza.
+  const t = (duracao: number, delay = 0) =>
+    semAnimacao ? { duration: 0 } : { duration: duracao, delay };
   return (
     <motion.div
       initial={{ clipPath: "circle(0% at 50% 50%)" }}
       animate={{ clipPath: "circle(150% at 50% 50%)" }}
-      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+      transition={semAnimacao ? { duration: 0 } : { duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
       className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-primary text-primary-foreground"
     >
       <div className="relative flex items-center justify-center">
-        <ParticulasSucesso />
+        {!semAnimacao && <ParticulasSucesso />}
         <motion.svg
           width="96"
           height="96"
@@ -398,7 +417,11 @@ function SucessoCheckmark() {
           fill="none"
           initial={{ scale: 0.6 }}
           animate={{ scale: 1 }}
-          transition={{ delay: 0.2, duration: 0.4, type: "spring", stiffness: 260, damping: 18 }}
+          transition={
+            semAnimacao
+              ? { duration: 0 }
+              : { delay: 0.2, duration: 0.4, type: "spring", stiffness: 260, damping: 18 }
+          }
         >
           <motion.circle
             cx="32"
@@ -408,7 +431,7 @@ function SucessoCheckmark() {
             strokeWidth="4"
             initial={{ pathLength: 0 }}
             animate={{ pathLength: 1 }}
-            transition={{ delay: 0.2, duration: 0.45, ease: "easeOut" }}
+            transition={t(0.45, 0.2)}
           />
           <motion.path
             d="M19 33 L28 42 L46 23"
@@ -418,14 +441,14 @@ function SucessoCheckmark() {
             strokeLinejoin="round"
             initial={{ pathLength: 0 }}
             animate={{ pathLength: 1 }}
-            transition={{ delay: 0.55, duration: 0.35, ease: "easeOut" }}
+            transition={t(0.35, 0.55)}
           />
         </motion.svg>
       </div>
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7, duration: 0.35 }}
+        transition={t(0.35, 0.7)}
         className="text-center"
       >
         <p className="font-display text-xl font-semibold">Tudo certo!</p>

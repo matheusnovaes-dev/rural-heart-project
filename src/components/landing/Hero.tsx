@@ -1,4 +1,11 @@
-import { motion, useMotionTemplate, useMotionValue, useScroll, useTransform } from "framer-motion";
+import {
+  motion,
+  useMotionTemplate,
+  useMotionValue,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+} from "framer-motion";
 import { useRef, type MouseEvent } from "react";
 import { ArrowRight, BadgeCheck } from "lucide-react";
 
@@ -6,6 +13,14 @@ import { Button } from "@/components/ui/button";
 
 export function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
+  // Parallax de scroll e luz-no-cursor são exatamente os dois efeitos que os
+  // guias de acessibilidade mais citam como gatilho de enjoo em
+  // prefers-reduced-motion — e nenhum dos dois é "positional key" do
+  // framer-motion (y via useTransform de scroll, background via
+  // useMotionTemplate), então o <MotionConfig reducedMotion="user"> do root
+  // não os cobre sozinho. Checagem manual aqui (achado da auditoria
+  // 2026-10-09).
+  const prefereMenosMovimento = useReducedMotion();
 
   // Parallax orgânico ligado ao scroll (não ao mouse, por isso funciona em
   // touch também): a foto e as duas "cristas" de lavoura na base se movem em
@@ -34,6 +49,7 @@ export function Hero() {
   const luz = useMotionTemplate`radial-gradient(500px circle at ${mouseX}% ${mouseY}%, color-mix(in oklab, var(--cta) 55%, transparent), transparent 70%)`;
 
   function seguirCursor(e: MouseEvent<HTMLElement>) {
+    if (prefereMenosMovimento) return;
     const rect = e.currentTarget.getBoundingClientRect();
     mouseX.set(((e.clientX - rect.left) / rect.width) * 100);
     mouseY.set(((e.clientY - rect.top) / rect.height) * 100);
@@ -49,7 +65,10 @@ export function Hero() {
       <div className="absolute inset-0">
         {/* inset-y-[-14%] dá uma "sobra" de foto pra cima e pra baixo: o
             translateY do parallax (±10%) nunca chega a expor uma borda vazia. */}
-        <motion.div className="absolute inset-x-0 inset-y-[-14%]" style={{ y: fotoY }}>
+        <motion.div
+          className="absolute inset-x-0 inset-y-[-14%]"
+          style={prefereMenosMovimento ? {} : { y: fotoY }}
+        >
           <picture>
             {/* A foto fica sob um gradiente escuro que cobre quase toda ela: as versões
                 pequenas (640px/1000px, 14-29 KB) são idênticas a olho nu e tiram ~140 KB
@@ -76,11 +95,13 @@ export function Hero() {
             quente (hue 60, like --cta) em vez de frio, pra combinar com a
             própria foto em vez de brigar com ela. */}
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,oklch(0.22_0.03_60/0.3)_0%,oklch(0.17_0.03_60/0.74)_32%,oklch(0.15_0.03_60/0.82)_68%,oklch(0.988_0.005_95.1)_100%)]" />
-        <motion.div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 hidden mix-blend-soft-light sm:block"
-          style={{ background: luz }}
-        />
+        {!prefereMenosMovimento && (
+          <motion.div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 hidden mix-blend-soft-light sm:block"
+            style={{ background: luz }}
+          />
+        )}
 
         {/* Crista de lavoura em duas camadas: a de trás (mais clara, tom
             verde suave) se move menos que a da frente (cor exata do fundo da
@@ -91,7 +112,7 @@ export function Hero() {
           viewBox="0 0 1440 120"
           preserveAspectRatio="none"
           className="absolute inset-x-0 bottom-0 h-20 w-full sm:h-28"
-          style={{ y: cristaFundoY }}
+          style={prefereMenosMovimento ? {} : { y: cristaFundoY }}
         >
           <path
             d="M0,60 C240,20 480,100 720,60 C960,20 1200,100 1440,60 L1440,120 L0,120 Z"
@@ -103,7 +124,7 @@ export function Hero() {
           viewBox="0 0 1440 120"
           preserveAspectRatio="none"
           className="absolute inset-x-0 bottom-0 h-16 w-full sm:h-24"
-          style={{ y: cristaFrenteY }}
+          style={prefereMenosMovimento ? {} : { y: cristaFrenteY }}
         >
           <path d="M0,80 C360,40 1080,120 1440,70 L1440,120 L0,120 Z" className="fill-background" />
         </motion.svg>
