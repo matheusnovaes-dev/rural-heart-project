@@ -513,7 +513,14 @@ export function LeadForm({ className }: { className?: string }) {
               </Button>
 
               {status === "error" && cadastroJaExiste && (
-                <div className="flex flex-col gap-2 text-sm text-destructive">
+                // Não é erro de verdade (é um reconhecimento: "você já tem conta"), por
+                // isso o mesmo estilo neutro do aviso de semDadoNoEstado acima, não o
+                // vermelho de destructive — destructive assustava quem só precisava
+                // pedir o link de acesso de volta.
+                <div
+                  role="status"
+                  className="flex flex-col gap-2 rounded-lg border border-border bg-secondary/60 p-3 text-sm text-foreground"
+                >
                   <p>
                     Esse WhatsApp já tem um cadastro. Pra entrar no painel, peça seu link de acesso
                     pelo WhatsApp: o cadastro e o teste grátis são mantidos.
