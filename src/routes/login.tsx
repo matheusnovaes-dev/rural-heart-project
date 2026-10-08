@@ -261,7 +261,10 @@ function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
-            <div className="space-y-2">
+            <div
+              className="animate-in space-y-2 fade-in slide-in-from-bottom-3 fill-mode-both"
+              style={{ animationDelay: "80ms", animationDuration: "400ms" }}
+            >
               <Label htmlFor="email">E-mail</Label>
               <div className="group relative rounded-md transition-shadow focus-within:ring-4 focus-within:ring-ring/20">
                 <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
@@ -276,7 +279,10 @@ function LoginPage() {
                 />
               </div>
             </div>
-            <div className="space-y-2">
+            <div
+              className="animate-in space-y-2 fade-in slide-in-from-bottom-3 fill-mode-both"
+              style={{ animationDelay: "160ms", animationDuration: "400ms" }}
+            >
               <Label htmlFor="senha">Senha</Label>
               <div className="group relative rounded-md transition-shadow focus-within:ring-4 focus-within:ring-ring/20">
                 <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
@@ -313,21 +319,26 @@ function LoginPage() {
 
             {status === "error" && <p className="text-sm text-destructive">{errorMsg}</p>}
 
-            <Button
-              type="submit"
-              size="lg"
-              disabled={status === "loading"}
-              className="group mt-1 bg-cta text-cta-foreground transition-all hover:-translate-y-0.5 hover:bg-cta/90 hover:shadow-lg hover:shadow-cta/30"
+            <div
+              className="animate-in fade-in slide-in-from-bottom-3 fill-mode-both"
+              style={{ animationDelay: "240ms", animationDuration: "400ms" }}
             >
-              {status === "loading" ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <>
-                  {entrando ? "Entrar" : "Criar conta"}
-                  <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-                </>
-              )}
-            </Button>
+              <Button
+                type="submit"
+                size="lg"
+                disabled={status === "loading"}
+                className="group mt-1 w-full bg-cta text-cta-foreground transition-all hover:-translate-y-0.5 hover:bg-cta/90 hover:shadow-lg hover:shadow-cta/30 active:translate-y-0 active:scale-[0.97]"
+              >
+                {status === "loading" ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <>
+                    {entrando ? "Entrar" : "Criar conta"}
+                    <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                  </>
+                )}
+              </Button>
+            </div>
           </form>
 
           <button
@@ -363,66 +374,124 @@ function LoginPage() {
   );
 }
 
-/** Transição de sucesso: checkmark desenhado com SVG (pathLength + spring)
- * em vez de navegar na hora — padrão de login premiado (achado de pesquisa:
- * "success login card" com checkmark que se desenha sozinho). Cobre o card
- * inteiro (bg-card opaco) pra não deixar o formulário por baixo roubar
- * clique enquanto espera navegar. */
+/** Transição de sucesso, tela cheia: a versão anterior (checkmark discreto
+ * sobre o card branco) ficou sutil demais ("parece que não mudou nada" —
+ * feedback real do Matheus). Agora é um circle-reveal verde que toma o card
+ * inteiro (clip-path 0% → 150%, mesma técnica de "container transform" dos
+ * apps premium), checkmark bem maior desenhado em branco, e um estouro de
+ * partículas douradas saindo do centro — sensação de celebração, não só
+ * "carregando". */
 function SucessoCheckmark() {
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-card"
+      initial={{ clipPath: "circle(0% at 50% 50%)" }}
+      animate={{ clipPath: "circle(150% at 50% 50%)" }}
+      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+      className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-primary text-primary-foreground"
     >
-      <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-        <motion.circle
-          cx="32"
-          cy="32"
-          r="28"
-          stroke="var(--primary)"
-          strokeWidth="4"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-        />
-        <motion.path
-          d="M19 33 L28 42 L46 23"
-          stroke="var(--primary)"
-          strokeWidth="4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 0.3, delay: 0.35, ease: "easeOut" }}
-        />
-      </svg>
+      <div className="relative flex items-center justify-center">
+        <ParticulasSucesso />
+        <motion.svg
+          width="96"
+          height="96"
+          viewBox="0 0 64 64"
+          fill="none"
+          initial={{ scale: 0.6 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.2, duration: 0.4, type: "spring", stiffness: 260, damping: 18 }}
+        >
+          <motion.circle
+            cx="32"
+            cy="32"
+            r="28"
+            stroke="var(--primary-foreground)"
+            strokeWidth="4"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ delay: 0.2, duration: 0.45, ease: "easeOut" }}
+          />
+          <motion.path
+            d="M19 33 L28 42 L46 23"
+            stroke="var(--primary-foreground)"
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ delay: 0.55, duration: 0.35, ease: "easeOut" }}
+          />
+        </motion.svg>
+      </div>
       <motion.div
-        initial={{ opacity: 0, y: 6 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, duration: 0.3 }}
+        transition={{ delay: 0.7, duration: 0.35 }}
         className="text-center"
       >
-        <p className="font-display text-lg font-semibold text-foreground">Tudo certo!</p>
-        <p className="text-sm text-muted-foreground">Preparando seu painel...</p>
+        <p className="font-display text-xl font-semibold">Tudo certo!</p>
+        <p className="text-sm text-primary-foreground/75">Preparando seu painel...</p>
       </motion.div>
     </motion.div>
   );
 }
 
-/** Fundo vivo do painel de marca: wash de gradiente girando bem devagar +
- * textura de pontinhos + duas linhas onduladas no canto (mesmo motivo
- * decorativo usado nos criativos de anúncio) + vinheta pra manter o texto
+/** Estouro de partículas douradas saindo do centro do checkmark — 10 pontos
+ * em círculo completo, cada um com uma distância levemente diferente (i % 3)
+ * pra não ficar um anel perfeito demais, o que lia como "gerado por
+ * computador" em vez de orgânico. */
+function ParticulasSucesso() {
+  const particulas = Array.from({ length: 10 });
+  return (
+    <>
+      {particulas.map((_, i) => {
+        const angulo = (i / particulas.length) * 2 * Math.PI;
+        const distancia = 70 + (i % 3) * 22;
+        return (
+          <motion.span
+            key={i}
+            className="absolute size-2 rounded-full bg-gold"
+            initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+            animate={{
+              x: Math.cos(angulo) * distancia,
+              y: Math.sin(angulo) * distancia,
+              opacity: 0,
+              scale: 0.3,
+            }}
+            transition={{ duration: 0.75, delay: 0.25, ease: "easeOut" }}
+          />
+        );
+      })}
+    </>
+  );
+}
+
+/** Fundo vivo do painel de marca — versão com blobs animados em loop
+ * contínuo (sem precisar de mouse/interação pra perceber movimento, ao
+ * contrário do wash estático de antes, que o Matheus achou parado demais
+ * olhando ao lado de sites de referência que são bem mais animados). 3
+ * blobs desfocados, cada um com rota e velocidade própria, + textura de
+ * pontinhos + duas linhas onduladas no canto + vinheta pra manter o texto
  * legível por cima. Puramente decorativo (aria-hidden). */
 function BrandBackdrop() {
   return (
-    <div aria-hidden className="absolute inset-0 -z-0 bg-[oklch(0.20_0.028_156.5)]">
-      <div
-        className="absolute -inset-x-[40%] -inset-y-[60%] animate-slow-drift opacity-55"
-        style={{
-          background:
-            "conic-gradient(from 0deg, oklch(0.331 0.049 156.2), oklch(0.20 0.03 156) 30%, oklch(0.62 0.13 75 / 0.35) 55%, oklch(0.20 0.03 156) 75%, oklch(0.331 0.049 156.2) 100%)",
-        }}
+    <div aria-hidden className="absolute inset-0 -z-0 overflow-hidden bg-[oklch(0.17_0.028_156.5)]">
+      <motion.div
+        className="absolute top-[-15%] left-[-15%] size-112 rounded-full blur-3xl"
+        style={{ background: "oklch(0.5 0.1 156 / 0.6)" }}
+        animate={{ x: [0, 70, -30, 0], y: [0, 50, -40, 0] }}
+        transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute right-[-12%] bottom-[-10%] size-96 rounded-full blur-3xl"
+        style={{ background: "oklch(0.66 0.13 76 / 0.45)" }}
+        animate={{ x: [0, -60, 35, 0], y: [0, -45, 25, 0] }}
+        transition={{ duration: 24, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+      />
+      <motion.div
+        className="absolute top-[35%] left-[45%] size-80 rounded-full blur-3xl"
+        style={{ background: "oklch(0.45 0.09 190 / 0.35)" }}
+        animate={{ x: [0, 45, -45, 0], y: [0, -35, 35, 0] }}
+        transition={{ duration: 27, repeat: Infinity, ease: "easeInOut", delay: 3 }}
       />
       <div
         className="absolute inset-0"
