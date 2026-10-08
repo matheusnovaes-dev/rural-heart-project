@@ -18,6 +18,7 @@ import { buscarPrevisaoServidor } from "@/lib/clima.server";
 import { temAcessoPrata, useAssinatura } from "@/lib/planos";
 import type { Produtor } from "@/lib/auth";
 import { InsightCard } from "@/components/dashboard/InsightCard";
+import { SinalVendaGauge } from "@/components/dashboard/SinalVendaGauge";
 import { CULTURA_PARA_B3 } from "@/config/b3";
 import { normalizarCultura } from "@/config/culturas";
 import {
@@ -318,6 +319,7 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
 
       {sinalVenda && (
         <InsightCard icon={Target} tone={sinalVenda.tone} title="Sinal de venda">
+          {posicao != null && <SinalVendaGauge posicao={posicao} />}
           {sinalVenda.texto}
           <p className="mt-1.5 text-xs text-muted-foreground">
             Cruza a posição do preço nos últimos 90 dias, a curva de futuros da B3 e o risco de
