@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import {
   ArrowDown,
   ArrowRight,
@@ -15,6 +16,12 @@ import {
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
 import { supabase } from "@/lib/supabase";
 import { useAuth, type Produtor } from "@/lib/auth";
 import { InsightsPanel } from "@/components/dashboard/InsightsPanel";
@@ -196,6 +203,75 @@ type PrecoRegional = { regiao: string; preco: number; data_referencia: string; f
 function dataCurta(iso: string): string {
   const [ano, mes, dia] = iso.slice(0, 10).split("-");
   return `${dia}/${mes}/${ano}`;
+}
+
+function dataEixo(iso: string): string {
+  const [, mes, dia] = iso.slice(0, 10).split("-");
+  return `${dia}/${mes}`;
+}
+
+/**
+ * Gráfico de verdade (eixo, tooltip) pro preço hoje, não só a sparkline
+ * minúscula de antes — achado real 2026-10-08: o painel de preços
+ * (/dashboard/precos) já tinha um gráfico completo com recharts, mas a
+ * primeira tela que o produtor vê (essa aqui) só mostrava uma linha SVG sem
+ * nenhum eixo. "Bater o olho e parecer profissional" significa ter o
+ * gráfico de verdade logo na entrada, não só no segundo clique. Usa a MESMA
+ * série de 90 dias que buscarPrecosDaUf já busca (lib/precos.ts,
+ * DIAS_DE_HISTORICO), só visualizada melhor — nenhum dado novo.
+ */
+function PrecoHeroChart({ serie, cultura }: { serie: PrecoHistorico[]; cultura: string | null }) {
+  const gradId = `preco-hero-${useId().replace(/:/g, "")}`;
+  const dados = serie.map((s) => ({ data: dataEixo(s.data_referencia), preco: s.preco }));
+  const config: ChartConfig = {
+    preco: { label: cultura ?? "Preço", color: "var(--primary-foreground)" },
+  };
+
+  return (
+    <ChartContainer config={config} className="aspect-auto h-36 w-full sm:h-40">
+      <AreaChart data={dados} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--primary-foreground)" stopOpacity={0.35} />
+            <stop offset="100%" stopColor="var(--primary-foreground)" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid
+          vertical={false}
+          strokeDasharray="3 3"
+          stroke="color-mix(in oklab, var(--primary-foreground) 15%, transparent)"
+        />
+        <XAxis
+          dataKey="data"
+          tickLine={false}
+          axisLine={false}
+          minTickGap={48}
+          tick={{ fontSize: 10, fill: "var(--primary-foreground)", fillOpacity: 0.65 }}
+        />
+        <ChartTooltip
+          content={
+            <ChartTooltipContent
+              indicator="line"
+              formatter={(value) => (
+                <span className="font-mono font-medium tabular-nums text-foreground">
+                  R$ {Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </span>
+              )}
+            />
+          }
+        />
+        <Area
+          dataKey="preco"
+          type="monotone"
+          stroke="var(--primary-foreground)"
+          strokeWidth={2}
+          fill={`url(#${gradId})`}
+          dot={false}
+          activeDot={{ r: 4, fill: "var(--primary-foreground)", strokeWidth: 0 }}
+        />
+      </AreaChart>
+    </ChartContainer>
+  );
 }
 
 function ProdutorHome({ produtor }: { produtor: Produtor }) {
@@ -384,126 +460,132 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                 aria-hidden="true"
               />
               <CardHeader className="relative border-b border-primary-foreground/15 px-5 pb-4 sm:px-6">
-              <CardTitle className="flex items-center justify-between gap-2 text-sm font-medium opacity-90">
-                <span className="flex items-center gap-2">
-                  <TrendingUp className="size-4" />
-                  Seu preço hoje
-                </span>
-                {atual?.updated_at && (
-                  <AtualizadoEm iso={atual.updated_at} className="opacity-75" />
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="relative flex flex-col gap-4 px-5 pt-5 sm:px-6 sm:pt-6">
-              {serie === null || frete === undefined ? (
-                <Skeleton className="h-14 w-56 bg-primary-foreground/15" />
-              ) : atual && precoExibido != null ? (
-                <div className="flex flex-wrap items-end justify-between gap-4">
-                  <div>
-                    <div className="flex items-end gap-2">
-                      <p className="font-mono text-4xl font-semibold tabular-nums sm:text-5xl">
-                        <span className="mr-1 align-top text-xl font-sans font-semibold opacity-70">
-                          R$
-                        </span>
-                        <AnimatedNumber value={precoExibido} />
-                      </p>
-                      {variacao != null && Math.abs(variacao) >= 0.05 && (
-                        <span
-                          className={`mb-2 inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
-                            variacao > 0
-                              ? "bg-primary-foreground/15"
-                              : "bg-destructive/25 text-primary-foreground"
-                          }`}
-                        >
-                          {variacao > 0 ? (
-                            <ArrowUp className="size-3" />
-                          ) : (
-                            <ArrowDown className="size-3" />
+                <CardTitle className="flex items-center justify-between gap-2 text-sm font-medium opacity-90">
+                  <span className="flex items-center gap-2">
+                    <TrendingUp className="size-4" />
+                    Seu preço hoje
+                  </span>
+                  {atual?.updated_at && (
+                    <AtualizadoEm iso={atual.updated_at} className="opacity-75" />
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="relative flex flex-col gap-4 px-5 pt-5 sm:px-6 sm:pt-6">
+                {serie === null || frete === undefined ? (
+                  <Skeleton className="h-14 w-56 bg-primary-foreground/15" />
+                ) : atual && precoExibido != null ? (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-end justify-between gap-4">
+                      <div>
+                        <div className="flex items-end gap-2">
+                          <p className="font-mono text-4xl font-semibold tabular-nums sm:text-5xl">
+                            <span className="mr-1 align-top text-xl font-sans font-semibold opacity-70">
+                              R$
+                            </span>
+                            <AnimatedNumber value={precoExibido} />
+                          </p>
+                          {variacao != null && Math.abs(variacao) >= 0.05 && (
+                            <span
+                              className={`mb-2 inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                variacao > 0
+                                  ? "bg-primary-foreground/15"
+                                  : "bg-destructive/25 text-primary-foreground"
+                              }`}
+                            >
+                              {variacao > 0 ? (
+                                <ArrowUp className="size-3" />
+                              ) : (
+                                <ArrowDown className="size-3" />
+                              )}
+                              <span className="font-mono tabular-nums">
+                                {Math.abs(variacao).toFixed(1)}%
+                              </span>
+                            </span>
                           )}
-                          <span className="font-mono tabular-nums">
-                            {Math.abs(variacao).toFixed(1)}%
+                        </div>
+                        <div className="mt-1 flex items-center gap-1.5 text-sm opacity-80">
+                          <span className="capitalize">
+                            {produtor.cultura_principal} · {produtor.uf}
                           </span>
-                        </span>
+                          <TrocarCulturaDialog produtor={produtor} />
+                        </div>
+                        <p className="mt-1 text-xs opacity-70">
+                          Preço na sua região: é o que você recebe, com o frete até o porto já
+                          incluído.
+                        </p>
+                        <p className="mt-1 max-w-md text-xs opacity-80">
+                          {frete
+                            ? frete.frase
+                            : "Ainda não temos rota de frete de referência pra essa cultura na sua região."}
+                        </p>
+                      </div>
+                      {serie.length >= 2 && serie.length < 5 && (
+                        <div className="w-full max-w-56">
+                          <Sparkline
+                            data={serie.map((s) => s.preco)}
+                            color="currentColor"
+                            className="h-12 w-full"
+                          />
+                        </div>
                       )}
                     </div>
+                    {serie.length >= 5 && (
+                      <PrecoHeroChart serie={serie} cultura={produtor.cultura_principal} />
+                    )}
+                  </div>
+                ) : precosRegionais.length > 0 ? (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm opacity-80">
+                      {regionalDesatualizado
+                        ? `O último preço por região em ${produtor.uf} é de ${dataCurta(precosRegionais[0]!.data_referencia)} e está desatualizado (veja as referências abaixo):`
+                        : motivoRegional === "estado_defasado"
+                          ? `O preço do estado (${produtor.uf}) está desatualizado. Estes são os preços mais recentes por região, de ${dataCurta(precosRegionais[0]!.data_referencia)}:`
+                          : `${produtor.uf} não tem um preço único pro estado, só por região:`}
+                    </p>
+                    <div className="flex flex-col gap-1">
+                      {precosRegionais.map((r) => (
+                        <div
+                          key={r.regiao}
+                          className="flex items-baseline justify-between gap-3 text-sm"
+                        >
+                          <span className="opacity-90">{r.regiao}</span>
+                          <span className="font-mono font-semibold tabular-nums">
+                            R${r.preco.toFixed(2).replace(".", ",")}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    {mediaRegional != null && (
+                      <p className="mt-1 text-xs opacity-80">
+                        Média das regiões: R${mediaRegional.toFixed(2).replace(".", ",")}
+                        {precosRegionais[0]?.fonte && <> · fonte: {precosRegionais[0].fonte}</>}
+                      </p>
+                    )}
+                    {frete && <p className="max-w-md text-xs opacity-80">{frete.frase}</p>}
                     <div className="mt-1 flex items-center gap-1.5 text-sm opacity-80">
                       <span className="capitalize">
                         {produtor.cultura_principal} · {produtor.uf}
                       </span>
                       <TrocarCulturaDialog produtor={produtor} />
                     </div>
-                    <p className="mt-1 text-xs opacity-70">
-                      Preço na sua região: é o que você recebe, com o frete até o porto já incluído.
-                    </p>
-                    <p className="mt-1 max-w-md text-xs opacity-80">
-                      {frete
-                        ? frete.frase
-                        : "Ainda não temos rota de frete de referência pra essa cultura na sua região."}
-                    </p>
                   </div>
-                  {serie.length >= 2 && (
-                    <div className="w-full max-w-56">
-                      <Sparkline
-                        data={serie.slice(-14).map((s) => s.preco)}
-                        color="currentColor"
-                        className="h-12 w-full"
-                      />
-                    </div>
-                  )}
-                </div>
-              ) : precosRegionais.length > 0 ? (
-                <div className="flex flex-col gap-2">
-                  <p className="text-sm opacity-80">
-                    {regionalDesatualizado
-                      ? `O último preço por região em ${produtor.uf} é de ${dataCurta(precosRegionais[0]!.data_referencia)} e está desatualizado (veja as referências abaixo):`
-                      : motivoRegional === "estado_defasado"
-                        ? `O preço do estado (${produtor.uf}) está desatualizado. Estes são os preços mais recentes por região, de ${dataCurta(precosRegionais[0]!.data_referencia)}:`
-                        : `${produtor.uf} não tem um preço único pro estado, só por região:`}
-                  </p>
-                  <div className="flex flex-col gap-1">
-                    {precosRegionais.map((r) => (
-                      <div
-                        key={r.regiao}
-                        className="flex items-baseline justify-between gap-3 text-sm"
-                      >
-                        <span className="opacity-90">{r.regiao}</span>
-                        <span className="font-mono font-semibold tabular-nums">
-                          R${r.preco.toFixed(2).replace(".", ",")}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  {mediaRegional != null && (
-                    <p className="mt-1 text-xs opacity-80">
-                      Média das regiões: R${mediaRegional.toFixed(2).replace(".", ",")}
-                      {precosRegionais[0]?.fonte && <> · fonte: {precosRegionais[0].fonte}</>}
-                    </p>
-                  )}
-                  {frete && <p className="max-w-md text-xs opacity-80">{frete.frase}</p>}
-                  <div className="mt-1 flex items-center gap-1.5 text-sm opacity-80">
-                    <span className="capitalize">
-                      {produtor.cultura_principal} · {produtor.uf}
+                ) : (
+                  <div className="flex items-center gap-1.5 text-sm opacity-80">
+                    <span>
+                      {/leite/i.test(produtor.cultura_principal ?? "")
+                        ? `Leite não tem cotação pública diária em ${produtor.uf ?? "sua região"}. Veja as referências abaixo.`
+                        : `Ainda não temos preço pra ${produtor.cultura_principal ?? "sua cultura"} em ${produtor.uf ?? "sua região"}. Veja as referências de outros estados logo abaixo.`}
                     </span>
                     <TrocarCulturaDialog produtor={produtor} />
                   </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5 text-sm opacity-80">
-                  <span>
-                    {/leite/i.test(produtor.cultura_principal ?? "")
-                      ? `Leite não tem cotação pública diária em ${produtor.uf ?? "sua região"}. Veja as referências abaixo.`
-                      : `Ainda não temos preço pra ${produtor.cultura_principal ?? "sua cultura"} em ${produtor.uf ?? "sua região"}. Veja as referências de outros estados logo abaixo.`}
-                  </span>
-                  <TrocarCulturaDialog produtor={produtor} />
-                </div>
-              )}
-              <Link
-                to="/dashboard/alertas"
-                className="inline-block text-sm font-medium text-primary-foreground underline underline-offset-2 opacity-90 hover:opacity-100"
-              >
-                Avisar quando o preço mudar
-              </Link>
-            </CardContent>
+                )}
+                <Link
+                  to="/dashboard/alertas"
+                  className="inline-block text-sm font-medium text-primary-foreground underline underline-offset-2 opacity-90 hover:opacity-100"
+                >
+                  Avisar quando o preço mudar
+                </Link>
+              </CardContent>
             </Card>
           </motion.div>
 
@@ -554,103 +636,105 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
           className="flex flex-col gap-5 lg:sticky lg:top-24"
         >
           <motion.div variants={itemVariants}>
-          <Card className="gap-3 border-border/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
-            <CardHeader className="border-b border-border/70 px-4 pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <CloudSun className="size-4" />
-                </span>
-                Clima em {produtor.municipio ?? produtor.uf ?? "sua região"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-4">
-              {previsao === undefined ? (
-                <div className="grid grid-cols-5 gap-1.5">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Skeleton key={i} className="h-16 w-full" />
-                  ))}
-                </div>
-              ) : previsao === null ? (
-                <p className="text-sm text-muted-foreground">Previsão indisponível.</p>
-              ) : (
-                <div className="grid grid-cols-5 gap-1.5">
-                  {previsao.dias.slice(0, 5).map((dia, i) => {
-                    const pct = previsao.chuvaPct[i] ?? 0;
-                    return (
-                      <div
-                        key={dia}
-                        className={`flex min-w-0 flex-col items-center gap-0.5 rounded-md border p-1.5 text-center ${
-                          pct >= 60
-                            ? "border-destructive/20 bg-destructive/10 text-destructive"
-                            : "border-transparent bg-secondary text-muted-foreground"
-                        }`}
-                      >
-                        <span className="text-[10px] font-semibold uppercase">
-                          {i === 0
-                            ? "hoje"
-                            : new Date(`${dia}T00:00:00`).toLocaleDateString("pt-BR", {
-                                weekday: "short",
-                              })}
-                        </span>
-                        <span className="font-mono text-xs font-semibold tabular-nums">{pct}%</span>
-                        <span className="font-mono text-[10px] tabular-nums">
-                          {Math.round(previsao.tempMax[i] ?? 0)}°
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              <Link
-                to="/dashboard/clima"
-                className="mt-3 inline-block text-sm font-medium text-primary hover:underline"
-              >
-                Ver previsão completa
-              </Link>
-            </CardContent>
-          </Card>
+            <Card className="gap-3 border-border/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+              <CardHeader className="border-b border-border/70 px-4 pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <CloudSun className="size-4" />
+                  </span>
+                  Clima em {produtor.municipio ?? produtor.uf ?? "sua região"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4">
+                {previsao === undefined ? (
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                ) : previsao === null ? (
+                  <p className="text-sm text-muted-foreground">Previsão indisponível.</p>
+                ) : (
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {previsao.dias.slice(0, 5).map((dia, i) => {
+                      const pct = previsao.chuvaPct[i] ?? 0;
+                      return (
+                        <div
+                          key={dia}
+                          className={`flex min-w-0 flex-col items-center gap-0.5 rounded-md border p-1.5 text-center ${
+                            pct >= 60
+                              ? "border-destructive/20 bg-destructive/10 text-destructive"
+                              : "border-transparent bg-secondary text-muted-foreground"
+                          }`}
+                        >
+                          <span className="text-[10px] font-semibold uppercase">
+                            {i === 0
+                              ? "hoje"
+                              : new Date(`${dia}T00:00:00`).toLocaleDateString("pt-BR", {
+                                  weekday: "short",
+                                })}
+                          </span>
+                          <span className="font-mono text-xs font-semibold tabular-nums">
+                            {pct}%
+                          </span>
+                          <span className="font-mono text-[10px] tabular-nums">
+                            {Math.round(previsao.tempMax[i] ?? 0)}°
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                <Link
+                  to="/dashboard/clima"
+                  className="mt-3 inline-block text-sm font-medium text-primary hover:underline"
+                >
+                  Ver previsão completa
+                </Link>
+              </CardContent>
+            </Card>
           </motion.div>
 
           <motion.div variants={itemVariants}>
-          <Card className="gap-3 border-border/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
-            <CardHeader className="border-b border-border/70 px-4 pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <span className="flex size-8 items-center justify-center rounded-lg bg-cta/10 text-cta-foreground">
-                  <Bell className="size-4" />
-                </span>
-                Seus lembretes
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2 px-4">
-              {lembretes.length === 0 && (
-                <p className="py-2 text-sm text-muted-foreground">
-                  Nenhum lembrete agendado. Crie um pra não esquecer uma tarefa da lavoura.
-                </p>
-              )}
-              {lembretes.map((l) => (
-                <div
-                  key={l.id}
-                  className="flex items-center justify-between gap-2 rounded-md border border-border p-2.5 text-sm transition-colors hover:bg-accent/50"
-                >
-                  <span className="truncate font-medium text-foreground">{l.titulo}</span>
-                  <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
-                    {new Date(l.enviar_em).toLocaleString("pt-BR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+            <Card className="gap-3 border-border/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+              <CardHeader className="border-b border-border/70 px-4 pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <span className="flex size-8 items-center justify-center rounded-lg bg-cta/10 text-cta-foreground">
+                    <Bell className="size-4" />
                   </span>
-                </div>
-              ))}
-              <Link
-                to="/dashboard/lembretes"
-                className="mt-1 text-sm font-medium text-primary hover:underline"
-              >
-                Ver todos / criar novo
-              </Link>
-            </CardContent>
-          </Card>
+                  Seus lembretes
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-2 px-4">
+                {lembretes.length === 0 && (
+                  <p className="py-2 text-sm text-muted-foreground">
+                    Nenhum lembrete agendado. Crie um pra não esquecer uma tarefa da lavoura.
+                  </p>
+                )}
+                {lembretes.map((l) => (
+                  <div
+                    key={l.id}
+                    className="flex items-center justify-between gap-2 rounded-md border border-border p-2.5 text-sm transition-colors hover:bg-accent/50"
+                  >
+                    <span className="truncate font-medium text-foreground">{l.titulo}</span>
+                    <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
+                      {new Date(l.enviar_em).toLocaleString("pt-BR", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                ))}
+                <Link
+                  to="/dashboard/lembretes"
+                  className="mt-1 text-sm font-medium text-primary hover:underline"
+                >
+                  Ver todos / criar novo
+                </Link>
+              </CardContent>
+            </Card>
           </motion.div>
         </motion.div>
       </motion.div>
