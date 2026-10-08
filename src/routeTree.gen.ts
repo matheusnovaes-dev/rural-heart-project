@@ -26,6 +26,7 @@ import { Route as ApiCronLeiloesAlertasRouteImport } from './routes/api/cron/lei
 import { Route as ApiCronRecuperarCadastroRouteImport } from './routes/api/cron/recuperar-cadastro'
 import { Route as ApiCronReengajamentoRouteImport } from './routes/api/cron/reengajamento'
 import { Route as ApiCronReativacaoRouteImport } from './routes/api/cron/reativacao'
+import { Route as ApiCronVerificarEntregasRouteImport } from './routes/api/cron/verificar-entregas'
 import { Route as DashboardLayoutIndexRouteImport } from './routes/dashboard/_layout/index'
 import { Route as DashboardLayoutAlertasRouteImport } from './routes/dashboard/_layout/alertas'
 import { Route as DashboardLayoutAssinaturaRouteImport } from './routes/dashboard/_layout/assinatura'
@@ -128,6 +129,11 @@ const ApiCronReativacaoRoute = ApiCronReativacaoRouteImport.update({
   path: '/api/cron/reativacao',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCronVerificarEntregasRoute = ApiCronVerificarEntregasRouteImport.update({
+  id: '/api/cron/verificar-entregas',
+  path: '/api/cron/verificar-entregas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardLayoutIndexRoute = DashboardLayoutIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -228,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
   '/api/cron/reengajamento': typeof ApiCronReengajamentoRoute
   '/api/cron/reativacao': typeof ApiCronReativacaoRoute
+  '/api/cron/verificar-entregas': typeof ApiCronVerificarEntregasRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/assinatura': typeof DashboardLayoutAssinaturaRoute
   '/dashboard/calculadora': typeof DashboardLayoutCalculadoraRoute
@@ -261,6 +268,7 @@ export interface FileRoutesByTo {
   '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
   '/api/cron/reengajamento': typeof ApiCronReengajamentoRoute
   '/api/cron/reativacao': typeof ApiCronReativacaoRoute
+  '/api/cron/verificar-entregas': typeof ApiCronVerificarEntregasRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/assinatura': typeof DashboardLayoutAssinaturaRoute
   '/dashboard/calculadora': typeof DashboardLayoutCalculadoraRoute
@@ -296,6 +304,7 @@ export interface FileRoutesById {
   '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
   '/api/cron/reengajamento': typeof ApiCronReengajamentoRoute
   '/api/cron/reativacao': typeof ApiCronReativacaoRoute
+  '/api/cron/verificar-entregas': typeof ApiCronVerificarEntregasRoute
   '/dashboard/_layout/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/_layout/assinatura': typeof DashboardLayoutAssinaturaRoute
   '/dashboard/_layout/calculadora': typeof DashboardLayoutCalculadoraRoute
@@ -332,6 +341,7 @@ export interface FileRouteTypes {
     | '/api/cron/recuperar-cadastro'
     | '/api/cron/reengajamento'
     | '/api/cron/reativacao'
+    | '/api/cron/verificar-entregas'
     | '/dashboard/alertas'
     | '/dashboard/assinatura'
     | '/dashboard/calculadora'
@@ -365,6 +375,7 @@ export interface FileRouteTypes {
     | '/api/cron/recuperar-cadastro'
     | '/api/cron/reengajamento'
     | '/api/cron/reativacao'
+    | '/api/cron/verificar-entregas'
     | '/dashboard/alertas'
     | '/dashboard/assinatura'
     | '/dashboard/calculadora'
@@ -399,6 +410,7 @@ export interface FileRouteTypes {
     | '/api/cron/recuperar-cadastro'
     | '/api/cron/reengajamento'
     | '/api/cron/reativacao'
+    | '/api/cron/verificar-entregas'
     | '/dashboard/_layout/alertas'
     | '/dashboard/_layout/assinatura'
     | '/dashboard/_layout/calculadora'
@@ -434,6 +446,7 @@ export interface RootRouteChildren {
   ApiCronRecuperarCadastroRoute: typeof ApiCronRecuperarCadastroRoute
   ApiCronReengajamentoRoute: typeof ApiCronReengajamentoRoute
   ApiCronReativacaoRoute: typeof ApiCronReativacaoRoute
+  ApiCronVerificarEntregasRoute: typeof ApiCronVerificarEntregasRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -555,6 +568,13 @@ declare module '@tanstack/react-router' {
       path: '/api/cron/reativacao'
       fullPath: '/api/cron/reativacao'
       preLoaderRoute: typeof ApiCronReativacaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cron/verificar-entregas': {
+      id: '/api/cron/verificar-entregas'
+      path: '/api/cron/verificar-entregas'
+      fullPath: '/api/cron/verificar-entregas'
+      preLoaderRoute: typeof ApiCronVerificarEntregasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/_layout/': {
@@ -723,6 +743,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCronRecuperarCadastroRoute: ApiCronRecuperarCadastroRoute,
   ApiCronReengajamentoRoute: ApiCronReengajamentoRoute,
   ApiCronReativacaoRoute: ApiCronReativacaoRoute,
+  ApiCronVerificarEntregasRoute: ApiCronVerificarEntregasRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
