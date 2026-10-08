@@ -116,6 +116,33 @@ function notaDeAberturaDeAnuncio(texto: string): OpenAIMessage | null {
   return { role: "system", content: formato };
 }
 
+// Achado real numa conversa de produção (2026-10-08): produtor recém-cadastrado
+// (Gerson) perguntou "Café", o bot respondeu o preço certinho e parou — sem
+// puxar pro próximo passo. A regra geral de "não feche com oferta genérica"
+// já existe no prompt fixo, mas ela só cobre a conversa "terminando"
+// (agradecimento/resposta curta) — não cobre alguém ainda no início,
+// respondendo sua primeira pergunta de verdade, que é o momento mais quente
+// pra puxar pra um alerta automático. Mesmo motivo dos outros "nota*": isso é
+// condicional ("se é cedo na conversa, faça X depois de responder") e o
+// modelo não segue essa condição de forma confiável só com texto fixo no
+// prompt — o código decide se é cedo (historico.length pequeno) e injeta a
+// instrução só nesse turno. Só pra quem já tem cadastro (produtor.id): alerta
+// não existe pra quem ainda não se cadastrou, isso já é regra em
+// buildRegrasCadastroAnonimo.
+const TURNOS_INICIO_DE_RELACAO = 6;
+
+function notaDeIncentivoAtivacao(
+  produtor: ProdutorContexto,
+  historico: HistoricoLinha[],
+): OpenAIMessage | null {
+  if (!produtor.id || historico.length > TURNOS_INICIO_DE_RELACAO) return null;
+  return {
+    role: "system",
+    content:
+      'Nota: esse produtor já tem cadastro e ainda está no início da conversa com você (poucas trocas até agora) — é um momento-chave pra incentivar o uso de verdade do Safralume, não só responder e parar. Depois de responder a pergunta dele normalmente, puxe UMA pergunta concreta e específica sobre o próximo passo natural: se ele quer que você crie um alerta automático pra esse preço (avisa sozinho quando mudar), ou se quer saber de outra cultura/clima da região dele também. Isso não é a mesma coisa que a oferta de ajuda genérica proibida ("se precisar de algo, é só falar") — é um convite específico e acionável pra ele experimentar o que o produto faz de verdade. Não force isso se a resposta já tiver ficado longa ou se o pedido dele já foi sobre criar um alerta.',
+  };
+}
+
 // Bug real visto numa conversa de produção (2026-09-26): a mensagem de
 // abertura do anúncio recebeu uma resposta de desabafo pessoal (doença na
 // família, dificuldade financeira, solidão) sem nenhuma relação com o
@@ -663,6 +690,7 @@ export async function runAgent(input: {
   const notaRecusaCadastro = notaDeRecusaCadastro(texto);
   const notaAflicaoPessoal = notaDeAflicaoPessoal(texto);
   const notaAberturaDeAnuncio = notaDeAberturaDeAnuncio(texto);
+  const notaIncentivoAtivacao = notaDeIncentivoAtivacao(produtor, historico);
   const messages: OpenAIMessage[] = [
     { role: "system", content: SYSTEM_PROMPT },
     { role: "system", content: buildContextoProdutor(produtor) },
@@ -677,6 +705,7 @@ export async function runAgent(input: {
     ...(notaRecusaCadastro ? [notaRecusaCadastro] : []),
     ...(notaAflicaoPessoal ? [notaAflicaoPessoal] : []),
     ...(notaAberturaDeAnuncio ? [notaAberturaDeAnuncio] : []),
+    ...(notaIncentivoAtivacao ? [notaIncentivoAtivacao] : []),
     { role: "user", content: texto },
   ];
 
