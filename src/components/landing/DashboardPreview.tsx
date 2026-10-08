@@ -20,6 +20,7 @@ import {
   FlaskConical,
   Bug,
   Gavel,
+  MousePointer2,
 } from "lucide-react";
 
 import { Reveal } from "@/components/landing/Reveal";
@@ -106,6 +107,27 @@ export function DashboardPreview() {
   const retomarTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const precosReais = usePrecosReaisSoja();
 
+  // Cursor fantasma: mede a posição real do botão ativo (getBoundingClientRect,
+  // não um cálculo de índice × altura fixa, que quebraria se o texto quebrasse
+  // linha) e anima até lá — pedido do Matheus depois de achar o preview
+  // "parecido com antes": em vez de só decorar a troca de aba, agora parece
+  // alguém de verdade clicando, não um carrossel de imagens.
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const botaoRefs = useRef<Partial<Record<AbaId, HTMLButtonElement | null>>>({});
+  const [cursorPos, setCursorPos] = useState<{ top: number; left: number } | null>(null);
+
+  useEffect(() => {
+    const sidebar = sidebarRef.current;
+    const botao = botaoRefs.current[aba];
+    if (!sidebar || !botao) return;
+    const rectSidebar = sidebar.getBoundingClientRect();
+    const rectBotao = botao.getBoundingClientRect();
+    setCursorPos({
+      top: rectBotao.top - rectSidebar.top + rectBotao.height / 2,
+      left: rectBotao.left - rectSidebar.left + rectBotao.width - 10,
+    });
+  }, [aba]);
+
   useEffect(() => {
     if (!autoplay) return;
     const id = setInterval(() => {
@@ -161,10 +183,17 @@ export function DashboardPreview() {
 
           <div className="flex flex-col sm:flex-row">
             {/* mini sidebar, clicável de verdade e com selo do plano */}
-            <div className="flex shrink-0 gap-1 border-b border-border p-2 sm:w-48 sm:flex-col sm:border-b-0 sm:border-r sm:p-3">
+            <div
+              ref={sidebarRef}
+              className="relative flex shrink-0 gap-1 border-b border-border p-2 sm:w-48 sm:flex-col sm:border-b-0 sm:border-r sm:p-3"
+            >
+              <CursorFantasma pos={cursorPos} />
               {abas.map((item) => (
                 <button
                   key={item.id}
+                  ref={(el) => {
+                    botaoRefs.current[item.id] = el;
+                  }}
                   type="button"
                   onClick={() => selecionarManual(item.id)}
                   className={cn(
@@ -242,6 +271,31 @@ export function DashboardPreview() {
         </p>
       </Reveal>
     </section>
+  );
+}
+
+/** Cursor que se move até o item ativo (posição medida de verdade via
+ * getBoundingClientRect, não um cálculo de índice × altura fixa) + um
+ * pulso de "clique" que se repete a cada troca de aba — só desktop, onde a
+ * sidebar é vertical e a metáfora de mouse faz sentido. */
+function CursorFantasma({ pos }: { pos: { top: number; left: number } | null }) {
+  if (!pos) return null;
+  return (
+    <motion.div
+      className="pointer-events-none absolute z-30 hidden sm:block"
+      animate={{ top: pos.top, left: pos.left }}
+      transition={{ type: "spring", stiffness: 300, damping: 28 }}
+      style={{ marginTop: -4, marginLeft: -4 }}
+    >
+      <MousePointer2 className="size-4 fill-foreground text-foreground drop-shadow-md" />
+      <motion.span
+        key={`${pos.top}-${pos.left}`}
+        className="absolute top-1 left-1 size-2.5 rounded-full bg-primary"
+        initial={{ scale: 0.5, opacity: 0.6 }}
+        animate={{ scale: 2.2, opacity: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+      />
+    </motion.div>
   );
 }
 
