@@ -88,12 +88,12 @@ export function CalculadoraSafraLanding() {
         </h2>
         <p className="mt-2.5 text-muted-foreground">
           Essa é a Calculadora de Safra, uma amostra do que o Safralume faz. Cultura, estado e
-          quantidade de sacas — o preço é real, do dia, das mesmas fontes oficiais que usamos em
+          quantidade de sacas. O preço é real, do dia, das mesmas fontes oficiais que usamos em
           tudo.
         </p>
         <p className="mt-1.5 text-sm font-semibold text-primary">
           O produto completo tem muito mais: preço comparado com o porto e o frete, sinal de venda,
-          previsão do tempo, alertas automáticos, janela de plantio e histórico de safra da Conab —
+          previsão do tempo, alertas automáticos, janela de plantio e histórico de safra da Conab,
           no painel ou direto pelo WhatsApp.
         </p>
       </Reveal>
@@ -211,7 +211,7 @@ export function CalculadoraSafraLanding() {
                   {!resultado.disponivel && resultado.outrasUfsDisponiveis.length === 0 && (
                     <p className="text-center text-sm text-muted-foreground">
                       Ainda não temos preço recente dessa cultura em nenhum estado. Tenta outra
-                      cultura, ou se cadastre — assim que sair um preço, você é avisado.
+                      cultura, ou se cadastre: assim que sair um preço, você é avisado.
                     </p>
                   )}
 
@@ -246,7 +246,7 @@ export function CalculadoraSafraLanding() {
                     <>
                       {resultado.usandoOutraUf && (
                         <p className="mb-3 text-center text-xs text-muted-foreground">
-                          Sem preço próprio em {nomeDaUf(uf)} ainda — usando{" "}
+                          Sem preço próprio em {nomeDaUf(uf)} ainda, usando{" "}
                           <strong>{nomeDaUf(resultado.ufUsada ?? "")}</strong> como referência (
                           {resultado.fonteFrase}).{" "}
                           {resultado.outrasUfsDisponiveis.length > 1 && (
@@ -270,7 +270,7 @@ export function CalculadoraSafraLanding() {
                         {sacasNum.toLocaleString("pt-BR")} sacas × {brl(resultado.precoAtual!)}
                       </p>
                       <p className="mt-2 text-center text-[11px] font-semibold uppercase tracking-wide text-gold-foreground">
-                        Isso é só uma amostra — oferecemos muito mais
+                        Isso é só uma amostra, oferecemos muito mais
                       </p>
 
                       {resultado.frete && (
@@ -289,7 +289,7 @@ export function CalculadoraSafraLanding() {
                       <p className="mt-3 text-center text-xs text-muted-foreground">
                         Essa é só a ponta do que a Safralume faz. Crie sua conta grátis por 7 dias e
                         veja também sua margem por saca, comparação com o porto e o frete, alertas
-                        automáticos de preço, previsão do tempo e a janela certa pra plantar — tudo
+                        automáticos de preço, previsão do tempo e a janela certa pra plantar, tudo
                         com dado real, no painel ou direto pelo WhatsApp. Sem cartão de crédito.
                       </p>
                     </>

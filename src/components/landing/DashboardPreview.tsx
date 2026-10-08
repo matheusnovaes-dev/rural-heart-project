@@ -216,7 +216,7 @@ export function DashboardPreview() {
         </div>
         <p className="mt-3 text-center text-xs text-muted-foreground">
           Prévia ilustrativa do painel
-          {precosReais ? " — preço da soja é o real de hoje, o resto é exemplo" : ", dados de exemplo"}
+          {precosReais ? ", preço da soja é o real de hoje, o resto é exemplo" : ", dados de exemplo"}
           . Recurso com selo{" "}
           <span className="rounded-full bg-gold px-1.5 py-0.5 font-semibold text-gold-foreground">
             Ouro
