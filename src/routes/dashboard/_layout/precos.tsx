@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { ArrowDown, ArrowUp, LineChart as LineChartIcon, Minus } from "lucide-react";
 
@@ -244,62 +245,69 @@ function PrecosPage() {
         stats.length > 0 && (
           <div className="@container">
             <div className="grid gap-4 @lg:grid-cols-2 @2xl:grid-cols-3">
-              {stats.map((s) => (
-                <Card key={s.serie} className="gap-3 py-4">
-                  <CardHeader className="gap-1 pb-0">
-                    <CardDescription className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                      <span
-                        className="size-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: s.color }}
-                      />
-                      {culturaLabel} · {s.serie}
-                    </CardDescription>
-                    <CardTitle className="font-mono text-3xl font-semibold tabular-nums tracking-tight">
-                      {s.atual != null ? (
-                        <>
-                          <span className="mr-0.5 align-top text-base font-sans font-semibold text-muted-foreground">
-                            R$
-                          </span>
-                          {formatBRL(s.atual)}
-                        </>
-                      ) : (
-                        "—"
-                      )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex flex-col gap-2 pb-0">
-                    <div className="flex items-center justify-between">
-                      {s.variacao != null ? (
+              {stats.map((s, index) => (
+                <motion.div
+                  key={s.serie}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                >
+                  <Card className="gap-3 py-4">
+                    <CardHeader className="gap-1 pb-0">
+                      <CardDescription className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                         <span
-                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
-                            s.variacao > 0
-                              ? "bg-primary/10 text-primary"
-                              : s.variacao < 0
-                                ? "bg-destructive/10 text-destructive"
-                                : "bg-muted text-muted-foreground"
-                          }`}
-                        >
-                          {s.variacao > 0 ? (
-                            <ArrowUp className="size-3" />
-                          ) : s.variacao < 0 ? (
-                            <ArrowDown className="size-3" />
-                          ) : (
-                            <Minus className="size-3" />
-                          )}
-                          {Math.abs(s.variacao).toFixed(1)}% sem.
-                        </span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">Sem histórico</span>
-                      )}
-                      {s.min != null && s.max != null && (
-                        <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
-                          {formatBRL(s.min)} – {formatBRL(s.max)}
-                        </span>
-                      )}
-                    </div>
-                    <Sparkline data={s.sparkline} color={s.color} />
-                  </CardContent>
-                </Card>
+                          className="size-2 shrink-0 rounded-full"
+                          style={{ backgroundColor: s.color }}
+                        />
+                        {culturaLabel} · {s.serie}
+                      </CardDescription>
+                      <CardTitle className="font-mono text-3xl font-semibold tabular-nums tracking-tight">
+                        {s.atual != null ? (
+                          <>
+                            <span className="mr-0.5 align-top text-base font-sans font-semibold text-muted-foreground">
+                              R$
+                            </span>
+                            {formatBRL(s.atual)}
+                          </>
+                        ) : (
+                          "—"
+                        )}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-col gap-2 pb-0">
+                      <div className="flex items-center justify-between">
+                        {s.variacao != null ? (
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                              s.variacao > 0
+                                ? "bg-primary/10 text-primary"
+                                : s.variacao < 0
+                                  ? "bg-destructive/10 text-destructive"
+                                  : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            {s.variacao > 0 ? (
+                              <ArrowUp className="size-3" />
+                            ) : s.variacao < 0 ? (
+                              <ArrowDown className="size-3" />
+                            ) : (
+                              <Minus className="size-3" />
+                            )}
+                            {Math.abs(s.variacao).toFixed(1)}% sem.
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Sem histórico</span>
+                        )}
+                        {s.min != null && s.max != null && (
+                          <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
+                            {formatBRL(s.min)} – {formatBRL(s.max)}
+                          </span>
+                        )}
+                      </div>
+                      <Sparkline data={s.sparkline} color={s.color} />
+                    </CardContent>
+                  </Card>
+                </motion.div>
               ))}
             </div>
           </div>

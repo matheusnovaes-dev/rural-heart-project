@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   TrendingUp,
   Loader2,
@@ -401,101 +402,108 @@ function AlertasPage() {
                   description="Crie um alerta pra ser avisado assim que a saca passar (ou cair abaixo) do valor que te interessa."
                 />
               )}
-              {alertas.map((a) => (
-                <div
-                  key={a.id}
-                  className="flex flex-col gap-1 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="flex items-center gap-2 text-sm">
-                    {a.direcao === "acima" ? (
-                      <ArrowUp className="size-4 text-primary" />
-                    ) : (
-                      <ArrowDown className="size-4 text-destructive" />
-                    )}
-                    <span className="font-medium text-foreground">
-                      {a.cultura} · {a.uf} {a.direcao} de{" "}
-                      <span className="font-mono tabular-nums">
-                        R${a.limite.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+              <AnimatePresence initial={false}>
+                {alertas.map((a, index) => (
+                  <motion.div
+                    key={a.id}
+                    layout
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, height: 0, marginBottom: 0, overflow: "hidden" }}
+                    transition={{ duration: 0.25, delay: index * 0.04 }}
+                    className="flex flex-col gap-1 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="flex items-center gap-2 text-sm">
+                      {a.direcao === "acima" ? (
+                        <ArrowUp className="size-4 text-primary" />
+                      ) : (
+                        <ArrowDown className="size-4 text-destructive" />
+                      )}
+                      <span className="font-medium text-foreground">
+                        {a.cultura} · {a.uf} {a.direcao} de{" "}
+                        <span className="font-mono tabular-nums">
+                          R${a.limite.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        </span>
                       </span>
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Badge
-                      variant={a.disparado_em ? "default" : "secondary"}
-                      className="mr-1 font-mono text-[11px] tabular-nums"
-                    >
-                      {a.disparado_em
-                        ? `Disparado em ${new Date(a.disparado_em).toLocaleDateString("pt-BR")}`
-                        : a.ativo
-                          ? "Ativo, aguardando"
-                          : "Cancelado"}
-                    </Badge>
-                    {a.ativo && !a.disparado_em && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="size-8 p-0 text-muted-foreground hover:text-foreground"
-                          aria-label={`Editar alerta ${a.cultura} ${a.uf}`}
-                          onClick={() => setEditando(a)}
-                        >
-                          <Pencil className="size-3.5" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="size-8 p-0 text-muted-foreground hover:text-destructive"
-                          disabled={cancelandoId === a.id}
-                          title="Cancelar (mantém no histórico)"
-                          aria-label={`Cancelar alerta ${a.cultura} ${a.uf}`}
-                          onClick={() => cancelar(a.id)}
-                        >
-                          {cancelandoId === a.id ? (
-                            <Loader2 className="size-3.5 animate-spin" />
-                          ) : (
-                            <X className="size-3.5" />
-                          )}
-                        </Button>
-                      </>
-                    )}
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="size-8 p-0 text-muted-foreground hover:text-destructive"
-                          disabled={excluindoId === a.id}
-                          title="Excluir (remove do histórico)"
-                          aria-label={`Excluir alerta ${a.cultura} ${a.uf}`}
-                        >
-                          {excluindoId === a.id ? (
-                            <Loader2 className="size-3.5 animate-spin" />
-                          ) : (
-                            <Trash2 className="size-3.5" />
-                          )}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            Excluir alerta de {a.cultura} · {a.uf}?
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Essa ação não pode ser desfeita — diferente de cancelar, remove o alerta
-                            do histórico por completo.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => excluir(a.id)}>
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
-              ))}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Badge
+                        variant={a.disparado_em ? "default" : "secondary"}
+                        className="mr-1 font-mono text-[11px] tabular-nums"
+                      >
+                        {a.disparado_em
+                          ? `Disparado em ${new Date(a.disparado_em).toLocaleDateString("pt-BR")}`
+                          : a.ativo
+                            ? "Ativo, aguardando"
+                            : "Cancelado"}
+                      </Badge>
+                      {a.ativo && !a.disparado_em && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="size-8 p-0 text-muted-foreground hover:text-foreground"
+                            aria-label={`Editar alerta ${a.cultura} ${a.uf}`}
+                            onClick={() => setEditando(a)}
+                          >
+                            <Pencil className="size-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="size-8 p-0 text-muted-foreground hover:text-destructive"
+                            disabled={cancelandoId === a.id}
+                            title="Cancelar (mantém no histórico)"
+                            aria-label={`Cancelar alerta ${a.cultura} ${a.uf}`}
+                            onClick={() => cancelar(a.id)}
+                          >
+                            {cancelandoId === a.id ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : (
+                              <X className="size-3.5" />
+                            )}
+                          </Button>
+                        </>
+                      )}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="size-8 p-0 text-muted-foreground hover:text-destructive"
+                            disabled={excluindoId === a.id}
+                            title="Excluir (remove do histórico)"
+                            aria-label={`Excluir alerta ${a.cultura} ${a.uf}`}
+                          >
+                            {excluindoId === a.id ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="size-3.5" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Excluir alerta de {a.cultura} · {a.uf}?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Essa ação não pode ser desfeita — diferente de cancelar, remove o
+                              alerta do histórico por completo.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => excluir(a.id)}>
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </>
           )}
         </CardContent>
@@ -519,94 +527,101 @@ function AlertasPage() {
                   description="Avisa automaticamente só quando tiver chuva forte, geada, seca prolongada ou vento forte previsto — não manda mensagem à toa."
                 />
               )}
-              {alertasClima.map((a) => (
-                <div
-                  key={a.id}
-                  className="flex flex-col gap-1 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="flex items-center gap-2 text-sm">
-                    <CloudRain className="size-4 text-primary" />
-                    <span className="font-medium text-foreground">
-                      {condicaoInfo[a.condicao].label} — {descreverCondicaoClima(a)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Badge
-                      variant={a.ultimo_disparo_data ? "default" : "secondary"}
-                      className="mr-1 font-mono text-[11px] tabular-nums"
-                    >
-                      {!a.ativo
-                        ? "Cancelado"
-                        : a.ultimo_disparo_data
-                          ? `Último aviso em ${new Date(`${a.ultimo_disparo_data}T00:00:00`).toLocaleDateString("pt-BR")}`
-                          : "Ativo, monitorando"}
-                    </Badge>
-                    {a.ativo && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="size-8 p-0 text-muted-foreground hover:text-foreground"
-                          aria-label={`Editar alerta de clima ${a.uf}`}
-                          onClick={() => setEditandoClima(a)}
-                        >
-                          <Pencil className="size-3.5" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="size-8 p-0 text-muted-foreground hover:text-destructive"
-                          disabled={cancelandoClimaId === a.id}
-                          title="Cancelar (mantém no histórico)"
-                          aria-label={`Cancelar alerta de clima ${a.uf}`}
-                          onClick={() => cancelarClima(a.id)}
-                        >
-                          {cancelandoClimaId === a.id ? (
-                            <Loader2 className="size-3.5 animate-spin" />
-                          ) : (
-                            <X className="size-3.5" />
-                          )}
-                        </Button>
-                      </>
-                    )}
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="size-8 p-0 text-muted-foreground hover:text-destructive"
-                          disabled={excluindoClimaId === a.id}
-                          title="Excluir (remove do histórico)"
-                          aria-label={`Excluir alerta de clima ${a.uf}`}
-                        >
-                          {excluindoClimaId === a.id ? (
-                            <Loader2 className="size-3.5 animate-spin" />
-                          ) : (
-                            <Trash2 className="size-3.5" />
-                          )}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            Excluir alerta de {condicaoInfo[a.condicao].label} · {a.uf}?
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Essa ação não pode ser desfeita — diferente de cancelar, remove o alerta
-                            do histórico por completo.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => excluirClima(a.id)}>
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
-              ))}
+              <AnimatePresence initial={false}>
+                {alertasClima.map((a, index) => (
+                  <motion.div
+                    key={a.id}
+                    layout
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, height: 0, marginBottom: 0, overflow: "hidden" }}
+                    transition={{ duration: 0.25, delay: index * 0.04 }}
+                    className="flex flex-col gap-1 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="flex items-center gap-2 text-sm">
+                      <CloudRain className="size-4 text-primary" />
+                      <span className="font-medium text-foreground">
+                        {condicaoInfo[a.condicao].label} — {descreverCondicaoClima(a)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Badge
+                        variant={a.ultimo_disparo_data ? "default" : "secondary"}
+                        className="mr-1 font-mono text-[11px] tabular-nums"
+                      >
+                        {!a.ativo
+                          ? "Cancelado"
+                          : a.ultimo_disparo_data
+                            ? `Último aviso em ${new Date(`${a.ultimo_disparo_data}T00:00:00`).toLocaleDateString("pt-BR")}`
+                            : "Ativo, monitorando"}
+                      </Badge>
+                      {a.ativo && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="size-8 p-0 text-muted-foreground hover:text-foreground"
+                            aria-label={`Editar alerta de clima ${a.uf}`}
+                            onClick={() => setEditandoClima(a)}
+                          >
+                            <Pencil className="size-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="size-8 p-0 text-muted-foreground hover:text-destructive"
+                            disabled={cancelandoClimaId === a.id}
+                            title="Cancelar (mantém no histórico)"
+                            aria-label={`Cancelar alerta de clima ${a.uf}`}
+                            onClick={() => cancelarClima(a.id)}
+                          >
+                            {cancelandoClimaId === a.id ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : (
+                              <X className="size-3.5" />
+                            )}
+                          </Button>
+                        </>
+                      )}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="size-8 p-0 text-muted-foreground hover:text-destructive"
+                            disabled={excluindoClimaId === a.id}
+                            title="Excluir (remove do histórico)"
+                            aria-label={`Excluir alerta de clima ${a.uf}`}
+                          >
+                            {excluindoClimaId === a.id ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="size-3.5" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Excluir alerta de {condicaoInfo[a.condicao].label} · {a.uf}?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Essa ação não pode ser desfeita — diferente de cancelar, remove o
+                              alerta do histórico por completo.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => excluirClima(a.id)}>
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </>
           )}
         </CardContent>
