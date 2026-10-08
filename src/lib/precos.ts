@@ -48,6 +48,13 @@ export async function buscarPrecosDaUf(
   fonte: FonteDePreco;
   serieEstado: LinhaEstado[];
   regionais: LinhaRegional[];
+  /** Histórico completo (90 dias) de todas as praças, mesmo quando a fonte
+   * escolhida é "estado" — diferente de `regionais`, que só traz a data mais
+   * recente. Usado pelo gráfico da home quando o estado não tem preço único
+   * (só praças): sem isso, o card de preço do produtor ficava sem nenhum
+   * elemento gráfico, só uma lista de texto (achado real 2026-10-09, UF sem
+   * série de estado, só praças regionais). */
+  regionaisHistorico: LinhaRegional[];
   motivoRegional: "sem_estado" | "estado_defasado" | null;
 }> {
   const cultura = normalizarCultura(culturaCadastrada);
@@ -96,7 +103,13 @@ export async function buscarPrecosDaUf(
 
   const serieEstado = estado ?? [];
   // Praça CIF (porto/indústria) é outro nível de preço: fora da média e da lista do interior.
+  // regionaisTodas fica do jeito que a consulta devolveu (mais recente primeiro) porque
+  // ultimaRegional depende disso; regionaisHistorico é a mesma lista em ordem
+  // cronológica, pro gráfico (precisa ser crescente, igual serieEstado).
   const regionaisTodas = (regionalRaw ?? []).filter((r) => !ehPracaDePorto(r.regiao));
+  const regionaisHistorico = [...regionaisTodas].sort((a, b) =>
+    a.data_referencia.localeCompare(b.data_referencia),
+  );
   const ultimaRegional = regionaisTodas[0]?.data_referencia ?? null;
   const fonte = escolherFontePreco(serieEstado.at(-1)?.data_referencia, ultimaRegional);
 
@@ -105,10 +118,17 @@ export async function buscarPrecosDaUf(
       fonte,
       serieEstado: [],
       regionais: regionaisTodas.filter((r) => r.data_referencia === ultimaRegional),
+      regionaisHistorico,
       motivoRegional: serieEstado.length > 0 ? "estado_defasado" : "sem_estado",
     };
   }
-  return { fonte, serieEstado, regionais: [], motivoRegional: null };
+  return {
+    fonte,
+    serieEstado,
+    regionais: [],
+    regionaisHistorico,
+    motivoRegional: null,
+  };
 }
 
 /** Data da praça mais recente de uma cultura numa UF (ou null). Mesma variante principal de buscarPrecosDaUf. */
