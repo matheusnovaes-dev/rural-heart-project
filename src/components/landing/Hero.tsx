@@ -148,6 +148,9 @@ export function Hero() {
               <ArrowRight className="size-4" />
             </a>
           </Button>
+          {/* Mesmo padrão do Stripe/Linear: tira o atrito percebido bem no
+              ponto da decisão, não só lá embaixo no FinalCta. */}
+          <p className="mt-3 text-xs font-medium text-white/60">Sem cartão de crédito</p>
         </motion.div>
       </div>
     </section>
