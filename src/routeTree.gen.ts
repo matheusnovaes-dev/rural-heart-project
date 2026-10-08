@@ -23,9 +23,9 @@ import { Route as ApiAsaasWebhookRouteImport } from './routes/api/asaas/webhook'
 import { Route as ApiBotResponderRouteImport } from './routes/api/bot/responder'
 import { Route as ApiCronAvisoTrialRouteImport } from './routes/api/cron/aviso-trial'
 import { Route as ApiCronLeiloesAlertasRouteImport } from './routes/api/cron/leiloes-alertas'
+import { Route as ApiCronReativacaoRouteImport } from './routes/api/cron/reativacao'
 import { Route as ApiCronRecuperarCadastroRouteImport } from './routes/api/cron/recuperar-cadastro'
 import { Route as ApiCronReengajamentoRouteImport } from './routes/api/cron/reengajamento'
-import { Route as ApiCronReativacaoRouteImport } from './routes/api/cron/reativacao'
 import { Route as ApiCronVerificarEntregasRouteImport } from './routes/api/cron/verificar-entregas'
 import { Route as DashboardLayoutIndexRouteImport } from './routes/dashboard/_layout/index'
 import { Route as DashboardLayoutAlertasRouteImport } from './routes/dashboard/_layout/alertas'
@@ -113,6 +113,11 @@ const ApiCronLeiloesAlertasRoute = ApiCronLeiloesAlertasRouteImport.update({
   path: '/api/cron/leiloes-alertas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCronReativacaoRoute = ApiCronReativacaoRouteImport.update({
+  id: '/api/cron/reativacao',
+  path: '/api/cron/reativacao',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCronRecuperarCadastroRoute =
   ApiCronRecuperarCadastroRouteImport.update({
     id: '/api/cron/recuperar-cadastro',
@@ -124,16 +129,12 @@ const ApiCronReengajamentoRoute = ApiCronReengajamentoRouteImport.update({
   path: '/api/cron/reengajamento',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiCronReativacaoRoute = ApiCronReativacaoRouteImport.update({
-  id: '/api/cron/reativacao',
-  path: '/api/cron/reativacao',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiCronVerificarEntregasRoute = ApiCronVerificarEntregasRouteImport.update({
-  id: '/api/cron/verificar-entregas',
-  path: '/api/cron/verificar-entregas',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const ApiCronVerificarEntregasRoute =
+  ApiCronVerificarEntregasRouteImport.update({
+    id: '/api/cron/verificar-entregas',
+    path: '/api/cron/verificar-entregas',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DashboardLayoutIndexRoute = DashboardLayoutIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -231,9 +232,9 @@ export interface FileRoutesByFullPath {
   '/api/bot/responder': typeof ApiBotResponderRoute
   '/api/cron/aviso-trial': typeof ApiCronAvisoTrialRoute
   '/api/cron/leiloes-alertas': typeof ApiCronLeiloesAlertasRoute
+  '/api/cron/reativacao': typeof ApiCronReativacaoRoute
   '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
   '/api/cron/reengajamento': typeof ApiCronReengajamentoRoute
-  '/api/cron/reativacao': typeof ApiCronReativacaoRoute
   '/api/cron/verificar-entregas': typeof ApiCronVerificarEntregasRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/assinatura': typeof DashboardLayoutAssinaturaRoute
@@ -265,9 +266,9 @@ export interface FileRoutesByTo {
   '/api/bot/responder': typeof ApiBotResponderRoute
   '/api/cron/aviso-trial': typeof ApiCronAvisoTrialRoute
   '/api/cron/leiloes-alertas': typeof ApiCronLeiloesAlertasRoute
+  '/api/cron/reativacao': typeof ApiCronReativacaoRoute
   '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
   '/api/cron/reengajamento': typeof ApiCronReengajamentoRoute
-  '/api/cron/reativacao': typeof ApiCronReativacaoRoute
   '/api/cron/verificar-entregas': typeof ApiCronVerificarEntregasRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/assinatura': typeof DashboardLayoutAssinaturaRoute
@@ -301,9 +302,9 @@ export interface FileRoutesById {
   '/api/bot/responder': typeof ApiBotResponderRoute
   '/api/cron/aviso-trial': typeof ApiCronAvisoTrialRoute
   '/api/cron/leiloes-alertas': typeof ApiCronLeiloesAlertasRoute
+  '/api/cron/reativacao': typeof ApiCronReativacaoRoute
   '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
   '/api/cron/reengajamento': typeof ApiCronReengajamentoRoute
-  '/api/cron/reativacao': typeof ApiCronReativacaoRoute
   '/api/cron/verificar-entregas': typeof ApiCronVerificarEntregasRoute
   '/dashboard/_layout/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/_layout/assinatura': typeof DashboardLayoutAssinaturaRoute
@@ -338,9 +339,9 @@ export interface FileRouteTypes {
     | '/api/bot/responder'
     | '/api/cron/aviso-trial'
     | '/api/cron/leiloes-alertas'
+    | '/api/cron/reativacao'
     | '/api/cron/recuperar-cadastro'
     | '/api/cron/reengajamento'
-    | '/api/cron/reativacao'
     | '/api/cron/verificar-entregas'
     | '/dashboard/alertas'
     | '/dashboard/assinatura'
@@ -372,9 +373,9 @@ export interface FileRouteTypes {
     | '/api/bot/responder'
     | '/api/cron/aviso-trial'
     | '/api/cron/leiloes-alertas'
+    | '/api/cron/reativacao'
     | '/api/cron/recuperar-cadastro'
     | '/api/cron/reengajamento'
-    | '/api/cron/reativacao'
     | '/api/cron/verificar-entregas'
     | '/dashboard/alertas'
     | '/dashboard/assinatura'
@@ -407,9 +408,9 @@ export interface FileRouteTypes {
     | '/api/bot/responder'
     | '/api/cron/aviso-trial'
     | '/api/cron/leiloes-alertas'
+    | '/api/cron/reativacao'
     | '/api/cron/recuperar-cadastro'
     | '/api/cron/reengajamento'
-    | '/api/cron/reativacao'
     | '/api/cron/verificar-entregas'
     | '/dashboard/_layout/alertas'
     | '/dashboard/_layout/assinatura'
@@ -443,9 +444,9 @@ export interface RootRouteChildren {
   ApiBotResponderRoute: typeof ApiBotResponderRoute
   ApiCronAvisoTrialRoute: typeof ApiCronAvisoTrialRoute
   ApiCronLeiloesAlertasRoute: typeof ApiCronLeiloesAlertasRoute
+  ApiCronReativacaoRoute: typeof ApiCronReativacaoRoute
   ApiCronRecuperarCadastroRoute: typeof ApiCronRecuperarCadastroRoute
   ApiCronReengajamentoRoute: typeof ApiCronReengajamentoRoute
-  ApiCronReativacaoRoute: typeof ApiCronReativacaoRoute
   ApiCronVerificarEntregasRoute: typeof ApiCronVerificarEntregasRoute
 }
 
@@ -549,6 +550,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCronLeiloesAlertasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/cron/reativacao': {
+      id: '/api/cron/reativacao'
+      path: '/api/cron/reativacao'
+      fullPath: '/api/cron/reativacao'
+      preLoaderRoute: typeof ApiCronReativacaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/cron/recuperar-cadastro': {
       id: '/api/cron/recuperar-cadastro'
       path: '/api/cron/recuperar-cadastro'
@@ -561,13 +569,6 @@ declare module '@tanstack/react-router' {
       path: '/api/cron/reengajamento'
       fullPath: '/api/cron/reengajamento'
       preLoaderRoute: typeof ApiCronReengajamentoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/cron/reativacao': {
-      id: '/api/cron/reativacao'
-      path: '/api/cron/reativacao'
-      fullPath: '/api/cron/reativacao'
-      preLoaderRoute: typeof ApiCronReativacaoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/cron/verificar-entregas': {
@@ -740,9 +741,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBotResponderRoute: ApiBotResponderRoute,
   ApiCronAvisoTrialRoute: ApiCronAvisoTrialRoute,
   ApiCronLeiloesAlertasRoute: ApiCronLeiloesAlertasRoute,
+  ApiCronReativacaoRoute: ApiCronReativacaoRoute,
   ApiCronRecuperarCadastroRoute: ApiCronRecuperarCadastroRoute,
   ApiCronReengajamentoRoute: ApiCronReengajamentoRoute,
-  ApiCronReativacaoRoute: ApiCronReativacaoRoute,
   ApiCronVerificarEntregasRoute: ApiCronVerificarEntregasRoute,
 }
 export const routeTree = rootRouteImport

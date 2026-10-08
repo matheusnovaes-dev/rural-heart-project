@@ -77,8 +77,8 @@ export function Hero() {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="mt-5 max-w-2xl text-pretty text-lg text-white/85"
         >
-          O porto paga mais do que você recebe, e o frete muda a conta. O Safralume cruza os dois
-          e te avisa no WhatsApp, na hora de decidir.
+          O porto paga mais do que você recebe, e o frete muda a conta. O Safralume cruza os dois e
+          te avisa no WhatsApp, na hora de decidir.
         </motion.p>
 
         <motion.div

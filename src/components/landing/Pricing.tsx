@@ -1,10 +1,15 @@
-import { Check } from "lucide-react";
+import { Check, Leaf, Sprout, Wheat } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 import { Reveal } from "@/components/landing/Reveal";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { pricingPlans } from "@/config/site";
+
+// Mesma lógica do Sprout da marca (Header/Footer): cada plano é um estágio de
+// crescimento da lavoura, não só um nome. Reforça a identidade em vez de
+// repetir o card de preço genérico de qualquer SaaS.
+const planIcons = { bronze: Sprout, prata: Leaf, ouro: Wheat } as const;
 
 export function Pricing({ semTrial = false }: { semTrial?: boolean }) {
   return (
@@ -21,6 +26,7 @@ export function Pricing({ semTrial = false }: { semTrial?: boolean }) {
       <div className="mt-12 grid gap-6 sm:grid-cols-3">
         {pricingPlans.map((plan, index) => {
           const isOuro = plan.id === "ouro";
+          const PlanIcon = planIcons[plan.id as keyof typeof planIcons];
           return (
             <Reveal key={plan.id} delay={index * 0.1}>
               <div
@@ -33,6 +39,14 @@ export function Pricing({ semTrial = false }: { semTrial?: boolean }) {
                       : "border-border bg-card",
                 )}
               >
+                <span
+                  className={cn(
+                    "mb-3 flex size-11 items-center justify-center rounded-lg",
+                    isOuro ? "bg-gold text-gold-foreground" : "bg-primary text-primary-foreground",
+                  )}
+                >
+                  <PlanIcon className="size-5" />
+                </span>
                 {plan.highlighted && (
                   <span className="mb-3 w-fit rounded-full bg-cta px-3 py-1 text-xs font-semibold text-cta-foreground">
                     Mais popular
