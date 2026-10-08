@@ -68,7 +68,14 @@ export function Hero() {
             />
           </picture>
         </motion.div>
-        <div className="absolute inset-0 bg-gradient-to-b from-[oklch(0.16_0.03_158/0.88)] via-[oklch(0.16_0.03_158/0.78)] to-[oklch(0.988_0.005_95.1)]" />
+        {/* A foto é um pôr do sol de verdade (céu dramático, trigo dourado) —
+            o overlay antigo (preto-esverdeado, hue 158, até 88% opaco já no
+            topo) enterrava exatamente essa cor. 4 paradas em vez de 2: o
+            topo (onde só tem céu) fica bem mais claro pra mostrar as nuvens,
+            escurece com força só a partir de onde o texto começa, e o tom é
+            quente (hue 60, like --cta) em vez de frio, pra combinar com a
+            própria foto em vez de brigar com ela. */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,oklch(0.22_0.03_60/0.3)_0%,oklch(0.17_0.03_60/0.74)_32%,oklch(0.15_0.03_60/0.82)_68%,oklch(0.988_0.005_95.1)_100%)]" />
         <motion.div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 hidden mix-blend-soft-light sm:block"
