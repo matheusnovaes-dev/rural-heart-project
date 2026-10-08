@@ -68,7 +68,7 @@ export function Hero() {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="text-balance font-display text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl"
         >
-          Saiba o preço da sua saca e quanto o porto paga, direto no WhatsApp
+          Você vende sem saber se o preço tá bom?
         </motion.h1>
 
         <motion.p
@@ -77,8 +77,8 @@ export function Hero() {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="mt-5 max-w-2xl text-pretty text-lg text-white/85"
         >
-          Sem planilha, sem relatório complicado. O Safralume te manda o preço da sua região, o do
-          porto e o frete, na hora que você precisa decidir.
+          O porto paga mais do que você recebe, e o frete muda a conta. O Safralume cruza os dois
+          e te avisa no WhatsApp, na hora de decidir.
         </motion.p>
 
         <motion.div

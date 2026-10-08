@@ -13,8 +13,9 @@ export function FinalCta() {
             Teste grátis por 7 dias
           </h2>
           <p className="mt-4 max-w-md text-muted-foreground">
-            Preencha seus dados e comece agora mesmo, direto no seu painel. Sem cartão de crédito,
-            sem esperar contato.
+            Enquanto você lê isso, o preço de hoje já pode estar diferente do de ontem. Preencha
+            seus dados e comece agora mesmo, direto no seu painel. Sem cartão de crédito, sem
+            esperar contato.
           </p>
 
           <Link

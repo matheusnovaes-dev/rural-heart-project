@@ -6,7 +6,7 @@ const pains = [
   {
     icon: Calculator,
     title: "Planilha manual",
-    description: "Você perde tempo atualizando preço na mão, todo dia, para cada cliente.",
+    description: "Você perde tempo todo dia ligando pro corretor ou abrindo site só pra saber se o preço mudou.",
   },
   {
     icon: Truck,
