@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Calculator, ChevronDown, Loader2 } from "lucide-react";
 
@@ -6,6 +6,7 @@ import { Reveal } from "@/components/landing/Reveal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import {
   Select,
   SelectContent,
@@ -19,6 +20,7 @@ import { culturas, DESTAQUES } from "@/config/culturas";
 import { ufs } from "@/config/ufs";
 import { calcularValorProducaoPublico } from "@/lib/calculadora.server";
 import type { ResultadoCalculadora } from "@/lib/calculadora";
+import type { ResultadoFrete } from "@/lib/paridade";
 
 const culturasMaisUsadas = culturas.filter((c) => DESTAQUES.includes(c.value));
 const culturasOutras = culturas.filter((c) => !DESTAQUES.includes(c.value));
@@ -269,15 +271,19 @@ export function CalculadoraSafraLanding() {
                       <p className="text-center text-xs text-muted-foreground">
                         {sacasNum.toLocaleString("pt-BR")} sacas × {brl(resultado.precoAtual!)}
                       </p>
-                      <p className="mt-2 text-center text-[11px] font-semibold uppercase tracking-wide text-gold-foreground">
-                        Isso é só uma amostra, oferecemos muito mais
-                      </p>
 
-                      {resultado.frete && (
+                      {resultado.frete?.tipo === "paridade" && (
+                        <SimuladorFrete freteReal={resultado.frete} />
+                      )}
+                      {resultado.frete?.tipo === "frete_referencia" && (
                         <p className="mt-3 text-center text-xs text-muted-foreground">
                           {resultado.frete.frase}
                         </p>
                       )}
+
+                      <p className="mt-3 text-center text-[11px] font-semibold uppercase tracking-wide text-gold-foreground">
+                        Isso é só uma amostra, oferecemos muito mais
+                      </p>
 
                       <a
                         href="#comece"
@@ -316,5 +322,76 @@ export function CalculadoraSafraLanding() {
         </a>
       </Reveal>
     </section>
+  );
+}
+
+/**
+ * Pedido do Matheus 2026-10-08 (baseado em referência de SaaS premiado): a
+ * mesma frase estática do frete virou um slider de verdade. O preço do porto
+ * e o frete real da rota (origem → porto, tabela `fretes`) já vêm calculados
+ * do servidor; o slider só deixa a pessoa EXPLORAR em cima desse número real
+ * em vez de só ler ele — por padrão começa exatamente no frete real, pra não
+ * parecer um valor inventado.
+ */
+function SimuladorFrete({
+  freteReal,
+}: {
+  freteReal: Extract<ResultadoFrete, { tipo: "paridade" }>;
+}) {
+  const freteRealArredondado = Math.round(freteReal.frete_por_saca * 100) / 100;
+  const maxFrete = Math.max(10, Math.ceil(freteRealArredondado * 2.5));
+  const [frete, setFrete] = useState(freteRealArredondado);
+
+  // Troca de cultura/UF/sacas recalcula o resultado: resincroniza o slider
+  // com o novo frete real em vez de carregar o valor explorado da combinação
+  // anterior.
+  useEffect(() => {
+    setFrete(freteRealArredondado);
+  }, [freteRealArredondado]);
+
+  const precoLiquido = Math.max(0, freteReal.preco_porto - frete);
+  const noValorReal = Math.abs(frete - freteRealArredondado) < 0.01;
+
+  return (
+    <div className="mt-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4">
+      <p className="text-center text-[11px] font-semibold uppercase tracking-wide text-primary">
+        Arraste e veja o que o frete faz no seu preço
+      </p>
+
+      <div className="mt-3 flex items-center justify-between text-xs font-medium text-muted-foreground">
+        <span>Porto paga {brl(freteReal.preco_porto)}</span>
+        <span>Frete: {brl(frete)}/saca</span>
+      </div>
+      <Slider
+        value={[frete]}
+        onValueChange={([v]) => setFrete(v ?? freteRealArredondado)}
+        min={0}
+        max={maxFrete}
+        step={0.5}
+        className="mt-2.5"
+        aria-label="Simular frete por saca"
+      />
+
+      <p className="mt-3 text-center text-sm text-muted-foreground">
+        Seu preço líquido:{" "}
+        <span className="font-display text-lg font-bold text-primary">{brl(precoLiquido)}</span>
+      </p>
+      <p className="mt-1 text-center text-[11px] text-muted-foreground">
+        {noValorReal ? (
+          <>
+            Esse é o frete real de {freteReal.rota.municipio_origem} até{" "}
+            {freteReal.rota.municipio_destino}.
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setFrete(freteRealArredondado)}
+            className="font-semibold text-primary underline underline-offset-2"
+          >
+            Voltar pro frete real da sua rota
+          </button>
+        )}
+      </p>
+    </div>
   );
 }
