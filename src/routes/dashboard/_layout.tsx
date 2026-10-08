@@ -1,5 +1,7 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard,
   LineChart,
@@ -41,7 +43,6 @@ import { CommandPalette } from "@/components/dashboard/CommandPalette";
 import { DashboardTour } from "@/components/dashboard/DashboardTour";
 import { EMAIL_SAFRALUME_ADMIN, useAuth } from "@/lib/auth";
 import { useAcessoDashboard } from "@/lib/planos";
-import { supabase } from "@/lib/supabase";
 import { useSair } from "@/components/dashboard/useSair";
 import { LoadingScreen } from "@/components/LoadingScreen";
 
@@ -49,6 +50,46 @@ export const Route = createFileRoute("/dashboard/_layout")({
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
   component: DashboardGuard,
 });
+
+type NavItem = { to: string; label: string; icon: LucideIcon };
+
+const produtorNavItemsBase: NavItem[] = [
+  { to: "/dashboard", label: "Início", icon: LayoutDashboard },
+  { to: "/dashboard/calculadora", label: "Calculadora", icon: Calculator },
+  { to: "/dashboard/alertas", label: "Alertas", icon: TrendingUp },
+  { to: "/dashboard/leiloes", label: "Leilões", icon: Gavel },
+  { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
+  { to: "/dashboard/funcionarios", label: "Funcionários", icon: HardHat },
+  { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
+  { to: "/dashboard/suporte", label: "Suporte", icon: LifeBuoy },
+];
+
+const assinaturaNavItem: NavItem = {
+  to: "/dashboard/assinatura",
+  label: "Assinatura",
+  icon: CreditCard,
+};
+
+const leadsNavItem: NavItem = { to: "/dashboard/leads", label: "Leads", icon: Megaphone };
+
+const cooperativaNavItemsBase: NavItem[] = [
+  { to: "/dashboard", label: "Visão geral", icon: LayoutDashboard },
+  { to: "/dashboard/precos", label: "Preços", icon: LineChart },
+  { to: "/dashboard/calculadora", label: "Calculadora", icon: Calculator },
+  { to: "/dashboard/alertas", label: "Alertas", icon: TrendingUp },
+  { to: "/dashboard/leiloes", label: "Leilões", icon: Gavel },
+  { to: "/dashboard/produtores", label: "Produtores", icon: Users },
+  { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
+  { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
+  { to: "/dashboard/suporte", label: "Suporte", icon: LifeBuoy },
+];
+
+const cooperativaAdminNavItems: NavItem[] = [
+  { to: "/dashboard/equipe", label: "Equipe", icon: UsersRound },
+  { to: "/dashboard/marca", label: "Marca própria", icon: Palette },
+  { to: "/dashboard/relatorios", label: "Relatórios", icon: FileDown },
+  { to: "/dashboard/assinatura", label: "Assinatura", icon: CreditCard },
+];
 
 function DashboardGuard() {
   const { loading, session, produtor, cooperativa, papel } = useAuth();
@@ -96,51 +137,67 @@ function DashboardGuard() {
     return <LoadingScreen />;
   }
 
-  if (cooperativa) {
-    return (
-      <TooltipProvider delayDuration={200}>
-        <SidebarProvider className="dashboard-shell">
-          <CooperativaSidebar
-            cooperativaNome={cooperativa.nome}
-            isAdmin={papel === "admin"}
-            emailDoUsuario={session.user.email}
-          />
-          <SidebarInset>
-            <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-border/80 bg-background/95 px-4 backdrop-blur-sm sm:px-6">
-              <SidebarTrigger />
-              <span className="hidden text-xs font-medium text-muted-foreground sm:inline">
-                Inteligência de mercado rural
-              </span>
-              <AtalhoBusca />
-            </header>
-            <div className="flex-1 p-4 sm:p-6 lg:p-8">
-              <Outlet />
-            </div>
-          </SidebarInset>
-          <CommandPalette />
-          <DashboardTour />
-        </SidebarProvider>
-      </TooltipProvider>
-    );
-  }
+  // Produtor e cooperativa usavam dois chassis de navegação diferentes: a
+  // cooperativa já tinha sidebar de verdade, o produtor (o tipo de conta mais
+  // comum do produto) ficava com uma barra de abas horizontal pequena — a
+  // experiência "mais básica" ia pro usuário mais comum. Unificado num só
+  // <AppSidebar>, só trocando os itens e o cabeçalho.
+  const emailDoUsuario = session.user.email;
+  const items: NavItem[] = cooperativa
+    ? [
+        ...cooperativaNavItemsBase,
+        ...(emailDoUsuario === EMAIL_SAFRALUME_ADMIN ? [leadsNavItem] : []),
+        ...(papel === "admin" ? cooperativaAdminNavItems : []),
+      ]
+    : [
+        ...produtorNavItemsBase,
+        ...(!produtor!.cooperativa_id ? [assinaturaNavItem] : []),
+        ...(emailDoUsuario === EMAIL_SAFRALUME_ADMIN ? [leadsNavItem] : []),
+      ];
+  const headerTitle = cooperativa ? cooperativa.nome : produtor!.nome;
+  const headerSubtitle = cooperativa ? "Painel executivo" : "Produtor rural";
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="dashboard-shell min-h-screen bg-background">
-        <ProdutorHeader
-          nome={produtor!.nome}
-          temAssinaturaPropria={!produtor!.cooperativa_id}
-          emailDoUsuario={session.user.email}
-        />
-        {/* max-w-6xl, não max-w-lg: a coluna de 512px fazia o painel parecer
-            um app de celular esticado no desktop. Mobile segue coluna única. */}
-        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
-          <Outlet />
-        </main>
-      </div>
-      <CommandPalette />
-      <DashboardTour />
+      <SidebarProvider className="dashboard-shell">
+        <AppSidebar headerTitle={headerTitle} headerSubtitle={headerSubtitle} items={items} />
+        <SidebarInset>
+          <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-border/80 bg-background/95 px-4 backdrop-blur-sm sm:px-6">
+            <SidebarTrigger />
+            <span className="hidden text-xs font-medium text-muted-foreground sm:inline">
+              Inteligência de mercado rural
+            </span>
+            <AtalhoBusca />
+          </header>
+          <div className="flex-1 p-4 sm:p-6 lg:p-8">
+            <AnimatedOutlet />
+          </div>
+        </SidebarInset>
+        <CommandPalette />
+        <DashboardTour />
+      </SidebarProvider>
     </TooltipProvider>
+  );
+}
+
+/** Troca de página dentro do painel ganha uma transição suave em vez de
+ * trocar de conteúdo seco — mesma linguagem de motion da landing (Reveal),
+ * só mais rápida (180ms) porque aqui é navegação de trabalho, não
+ * apresentação: rápido o bastante pra nunca parecer travando o clique. */
+function AnimatedOutlet() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={pathname}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -8 }}
+        transition={{ duration: 0.18, ease: "easeOut" }}
+      >
+        <Outlet />
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
@@ -155,39 +212,16 @@ function AtalhoBusca() {
   );
 }
 
-function CooperativaSidebar({
-  cooperativaNome,
-  isAdmin,
-  emailDoUsuario,
+function AppSidebar({
+  headerTitle,
+  headerSubtitle,
+  items,
 }: {
-  cooperativaNome: string;
-  isAdmin: boolean;
-  emailDoUsuario: string | undefined;
+  headerTitle: string;
+  headerSubtitle: string;
+  items: NavItem[];
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-
-  const items = [
-    { to: "/dashboard", label: "Visão geral", icon: LayoutDashboard },
-    { to: "/dashboard/precos", label: "Preços", icon: LineChart },
-    { to: "/dashboard/calculadora", label: "Calculadora", icon: Calculator },
-    { to: "/dashboard/alertas", label: "Alertas", icon: TrendingUp },
-    { to: "/dashboard/leiloes", label: "Leilões", icon: Gavel },
-    { to: "/dashboard/produtores", label: "Produtores", icon: Users },
-    { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
-    { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
-    { to: "/dashboard/suporte", label: "Suporte", icon: LifeBuoy },
-    ...(emailDoUsuario === EMAIL_SAFRALUME_ADMIN
-      ? [{ to: "/dashboard/leads", label: "Leads", icon: Megaphone }]
-      : []),
-    ...(isAdmin
-      ? [
-          { to: "/dashboard/equipe", label: "Equipe", icon: UsersRound },
-          { to: "/dashboard/marca", label: "Marca própria", icon: Palette },
-          { to: "/dashboard/relatorios", label: "Relatórios", icon: FileDown },
-          { to: "/dashboard/assinatura", label: "Assinatura", icon: CreditCard },
-        ]
-      : []),
-  ];
 
   return (
     <Sidebar>
@@ -198,10 +232,10 @@ function CooperativaSidebar({
           </span>
           <div className="min-w-0">
             <span className="block truncate font-display text-sm font-semibold text-sidebar-foreground">
-              {cooperativaNome}
+              {headerTitle}
             </span>
             <span className="block text-[10px] font-medium uppercase text-sidebar-foreground/55">
-              Painel executivo
+              {headerSubtitle}
             </span>
           </div>
         </div>
@@ -228,79 +262,6 @@ function CooperativaSidebar({
         <SignOutButton />
       </SidebarFooter>
     </Sidebar>
-  );
-}
-
-const produtorNavItemsBase = [
-  { to: "/dashboard", label: "Início", icon: LayoutDashboard },
-  { to: "/dashboard/calculadora", label: "Calculadora", icon: Calculator },
-  { to: "/dashboard/alertas", label: "Alertas", icon: TrendingUp },
-  { to: "/dashboard/leiloes", label: "Leilões", icon: Gavel },
-  { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
-  { to: "/dashboard/funcionarios", label: "Funcionários", icon: HardHat },
-  { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
-  { to: "/dashboard/suporte", label: "Suporte", icon: LifeBuoy },
-] as const;
-
-const assinaturaNavItem = {
-  to: "/dashboard/assinatura",
-  label: "Assinatura",
-  icon: CreditCard,
-} as const;
-
-const leadsNavItem = { to: "/dashboard/leads", label: "Leads", icon: Megaphone } as const;
-
-function ProdutorHeader({
-  nome,
-  temAssinaturaPropria,
-  emailDoUsuario,
-}: {
-  nome: string;
-  temAssinaturaPropria: boolean;
-  emailDoUsuario: string | undefined;
-}) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const produtorNavItems = [
-    ...produtorNavItemsBase,
-    ...(temAssinaturaPropria ? [assinaturaNavItem] : []),
-    ...(emailDoUsuario === EMAIL_SAFRALUME_ADMIN ? [leadsNavItem] : []),
-  ];
-
-  return (
-    <header className="sticky top-0 z-20 border-b border-border/80 bg-card/95 backdrop-blur-sm">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-        <div className="flex items-center gap-2">
-          <span className="flex size-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Sprout className="size-4" />
-          </span>
-          <div>
-            <p className="text-xs text-muted-foreground">Olá,</p>
-            <p className="text-sm font-semibold text-foreground">{nome}</p>
-          </div>
-        </div>
-        <SignOutButton compact />
-      </div>
-      <nav className="mx-auto flex max-w-7xl items-center gap-1 overflow-x-auto px-3 pb-2 sm:px-5">
-        {produtorNavItems.map((item) => {
-          const active = pathname === item.to;
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              data-tour={item.to}
-              className={`flex shrink-0 items-center gap-1.5 rounded-md border-b-2 px-3 py-2 text-xs font-medium transition-colors ${
-                active
-                  ? "border-primary bg-accent text-primary"
-                  : "border-transparent text-muted-foreground hover:bg-accent/70 hover:text-foreground"
-              }`}
-            >
-              <item.icon className="size-3.5" />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
-    </header>
   );
 }
 
