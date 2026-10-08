@@ -1,5 +1,7 @@
 import { useState } from "react";
+import type { MouseEvent } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
 import {
   Sprout,
   Loader2,
@@ -55,7 +57,7 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
-  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "error" | "success">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -81,16 +83,35 @@ function LoginPage() {
       return;
     }
 
-    // Veio de um plano específico e está criando conta agora: manda direto
-    // pro onboarding já com o plano, em vez de deixar o guard do /dashboard
-    // redirecionar sem esse contexto. Login normal (sem plano) continua
-    // indo pro /dashboard, que redireciona sozinho pro onboarding se for
-    // conta nova sem perfil ainda.
-    if (plano && mode === "criar") {
-      navigate({ to: "/onboarding", search: { plano, semTrial } });
-      return;
-    }
-    navigate({ to: "/dashboard" });
+    // Transição com checkmark em vez de navegar na hora — dá tempo da
+    // animação de sucesso ser percebida antes da troca de tela (achado de
+    // pesquisa: 300-500ms é a janela certa pra transição de página, menos
+    // que isso passa batido, mais vira demora).
+    setStatus("success");
+    setTimeout(() => {
+      // Veio de um plano específico e está criando conta agora: manda direto
+      // pro onboarding já com o plano, em vez de deixar o guard do /dashboard
+      // redirecionar sem esse contexto. Login normal (sem plano) continua
+      // indo pro /dashboard, que redireciona sozinho pro onboarding se for
+      // conta nova sem perfil ainda.
+      if (plano && mode === "criar") {
+        navigate({ to: "/onboarding", search: { plano, semTrial } });
+        return;
+      }
+      navigate({ to: "/dashboard" });
+    }, 850);
+  }
+
+  // Luz que segue o cursor no painel de marca — mesma técnica do Hero da
+  // landing (useMotionValue/useMotionTemplate, sem re-render por frame).
+  // Só desktop: é onde o painel de marca aparece.
+  const mouseX = useMotionValue(50);
+  const mouseY = useMotionValue(30);
+  const luz = useMotionTemplate`radial-gradient(500px circle at ${mouseX}% ${mouseY}%, color-mix(in oklab, var(--gold) 45%, transparent), transparent 70%)`;
+  function seguirCursor(e: MouseEvent<HTMLDivElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    mouseX.set(((e.clientX - rect.left) / rect.width) * 100);
+    mouseY.set(((e.clientY - rect.top) / rect.height) * 100);
   }
 
   if (!isSupabaseConfigured) {
@@ -106,8 +127,16 @@ function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col bg-secondary/40 lg:flex-row">
       {/* Painel de marca (desktop) */}
-      <div className="relative hidden w-full max-w-xl flex-col justify-between overflow-hidden p-10 text-white lg:flex">
+      <div
+        className="relative hidden w-full max-w-xl flex-col justify-between overflow-hidden p-10 text-white lg:flex"
+        onMouseMove={seguirCursor}
+      >
         <BrandBackdrop />
+        <motion.div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-0 mix-blend-soft-light"
+          style={{ background: luz }}
+        />
 
         <Link to="/" className="relative z-10 flex items-center gap-2">
           <span className="flex size-9 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur">
@@ -186,12 +215,15 @@ function LoginPage() {
 
       {/* Formulário */}
       <div className="flex flex-1 items-center justify-center px-4 py-10 sm:py-12">
-        <div className="w-full max-w-sm animate-in rounded-2xl border border-border bg-card p-6 shadow-sm fade-in zoom-in-95 duration-300 sm:p-8">
-          {/* Seletor de abas com indicador deslizante */}
+        <div className="relative w-full max-w-sm animate-in overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm fade-in zoom-in-95 duration-300 sm:p-8">
+          {status === "success" && <SucessoCheckmark />}
+          {/* Seletor de abas com indicador deslizante (spring, não CSS ease
+              — fica mais "vivo", com leve overshoot ao trocar de aba) */}
           <div className="relative flex rounded-full bg-secondary p-1">
-            <span
-              className="absolute inset-y-1 w-[calc(50%-4px)] rounded-full bg-primary shadow-sm transition-transform duration-300 ease-out"
-              style={{ transform: entrando ? "translateX(0%)" : "translateX(calc(100% + 8px))" }}
+            <motion.span
+              className="absolute inset-y-1 w-[calc(50%-4px)] rounded-full bg-primary shadow-sm"
+              animate={{ x: entrando ? 0 : "calc(100% + 8px)" }}
+              transition={{ type: "spring", stiffness: 500, damping: 32 }}
             />
             <button
               type="button"
@@ -328,6 +360,53 @@ function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Transição de sucesso: checkmark desenhado com SVG (pathLength + spring)
+ * em vez de navegar na hora — padrão de login premiado (achado de pesquisa:
+ * "success login card" com checkmark que se desenha sozinho). Cobre o card
+ * inteiro (bg-card opaco) pra não deixar o formulário por baixo roubar
+ * clique enquanto espera navegar. */
+function SucessoCheckmark() {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-card"
+    >
+      <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+        <motion.circle
+          cx="32"
+          cy="32"
+          r="28"
+          stroke="var(--primary)"
+          strokeWidth="4"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        />
+        <motion.path
+          d="M19 33 L28 42 L46 23"
+          stroke="var(--primary)"
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.3, delay: 0.35, ease: "easeOut" }}
+        />
+      </svg>
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.3 }}
+        className="text-center"
+      >
+        <p className="font-display text-lg font-semibold text-foreground">Tudo certo!</p>
+        <p className="text-sm text-muted-foreground">Preparando seu painel...</p>
+      </motion.div>
+    </motion.div>
   );
 }
 
