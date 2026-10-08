@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Gavel, Loader2, MapPin, Plus, Radio, Trash2, X } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -231,67 +232,76 @@ function LeiloesPage() {
         <Card>
           <CardContent className="flex flex-col gap-3 pt-6">
             <p className="text-sm font-semibold text-foreground">Seus alertas</p>
-            {alertas.map((a) => (
-              <div
-                key={a.id}
-                className="flex flex-col gap-1 rounded-lg border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <span className="text-sm text-foreground">
-                  {a.uf ? `${a.uf} · ` : "Brasil inteiro · "}
-                  {tipoLabel[a.tipo_preferido]}
-                </span>
-                <div className="flex items-center gap-1">
-                  <Badge variant={a.ativo ? "secondary" : "outline"} className="mr-1 text-[11px]">
-                    {a.ativo ? "Ativo" : "Cancelado"}
-                  </Badge>
-                  {a.ativo && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="size-8 p-0 text-muted-foreground hover:text-foreground"
-                      disabled={cancelandoId === a.id}
-                      title="Cancelar"
-                      onClick={() => cancelar(a.id)}
-                    >
-                      {cancelandoId === a.id ? (
-                        <Loader2 className="size-3.5 animate-spin" />
-                      ) : (
-                        <X className="size-3.5" />
-                      )}
-                    </Button>
-                  )}
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
+            <AnimatePresence initial={false}>
+              {alertas.map((a, index) => (
+                <motion.div
+                  key={a.id}
+                  layout
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, height: 0, marginBottom: 0, overflow: "hidden" }}
+                  transition={{ duration: 0.25, delay: index * 0.04 }}
+                  className="flex flex-col gap-1 rounded-lg border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <span className="text-sm text-foreground">
+                    {a.uf ? `${a.uf} · ` : "Brasil inteiro · "}
+                    {tipoLabel[a.tipo_preferido]}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Badge variant={a.ativo ? "secondary" : "outline"} className="mr-1 text-[11px]">
+                      {a.ativo ? "Ativo" : "Cancelado"}
+                    </Badge>
+                    {a.ativo && (
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="size-8 p-0 text-muted-foreground hover:text-destructive"
-                        disabled={excluindoId === a.id}
-                        title="Excluir"
+                        className="size-8 p-0 text-muted-foreground hover:text-foreground"
+                        disabled={cancelandoId === a.id}
+                        title="Cancelar"
+                        onClick={() => cancelar(a.id)}
                       >
-                        {excluindoId === a.id ? (
+                        {cancelandoId === a.id ? (
                           <Loader2 className="size-3.5 animate-spin" />
                         ) : (
-                          <Trash2 className="size-3.5" />
+                          <X className="size-3.5" />
                         )}
                       </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Excluir esse alerta de leilão?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Essa ação não pode ser desfeita.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => excluir(a.id)}>Excluir</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
-            ))}
+                    )}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="size-8 p-0 text-muted-foreground hover:text-destructive"
+                          disabled={excluindoId === a.id}
+                          title="Excluir"
+                        >
+                          {excluindoId === a.id ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="size-3.5" />
+                          )}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir esse alerta de leilão?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Essa ação não pode ser desfeita.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => excluir(a.id)}>
+                            Excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </CardContent>
         </Card>
       )}
@@ -312,12 +322,15 @@ function LeiloesPage() {
               description="Assim que entrar um leilão novo na UF cadastrada, ele aparece aqui."
             />
           ) : (
-            presenciais.map((l) => (
-              <a
+            presenciais.map((l, index) => (
+              <motion.a
                 key={l.id}
                 href={l.url}
                 target="_blank"
                 rel="noopener noreferrer"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: index * 0.04 }}
                 className="flex flex-col gap-1 rounded-lg border border-border p-4 transition-colors hover:bg-secondary/40 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="flex items-center gap-2 text-sm">
@@ -335,7 +348,7 @@ function LeiloesPage() {
                 <Badge variant="secondary" className="font-mono text-[11px] tabular-nums">
                   {formatarDataHora(l.data_hora)}
                 </Badge>
-              </a>
+              </motion.a>
             ))
           )}
         </CardContent>
@@ -357,12 +370,15 @@ function LeiloesPage() {
               description="Transmissão online, nacional — qualquer um pode assistir e dar lance."
             />
           ) : (
-            virtuais.slice(0, 10).map((l) => (
-              <a
+            virtuais.slice(0, 10).map((l, index) => (
+              <motion.a
                 key={l.id}
                 href={l.url}
                 target="_blank"
                 rel="noopener noreferrer"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: index * 0.04 }}
                 className="flex flex-col gap-1 rounded-lg border border-border p-4 transition-colors hover:bg-secondary/40 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="flex items-center gap-2 text-sm">
@@ -378,7 +394,7 @@ function LeiloesPage() {
                 <Badge variant="secondary" className="font-mono text-[11px] tabular-nums">
                   {formatarDataHora(l.data_hora)}
                 </Badge>
-              </a>
+              </motion.a>
             ))
           )}
         </CardContent>

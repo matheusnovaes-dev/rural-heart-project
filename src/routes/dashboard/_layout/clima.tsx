@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertTriangle,
   CloudRain,
@@ -249,95 +250,108 @@ function ClimaConteudo() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        {locais.map((local) => {
-          const previsao = previsoes[local.chave];
-          const insight = previsao ? insightDoUf(previsao) : null;
-          const extra = locaisExtras.find(
-            (l) => l.chave === local.chave && !chavesPrimarias.has(l.chave),
-          );
+        <AnimatePresence initial={false}>
+          {locais.map((local, index) => {
+            const previsao = previsoes[local.chave];
+            const insight = previsao ? insightDoUf(previsao) : null;
+            const extra = locaisExtras.find(
+              (l) => l.chave === local.chave && !chavesPrimarias.has(l.chave),
+            );
 
-          return (
-            <Card key={local.chave} className="gap-3">
-              <CardHeader className="flex items-center justify-between gap-2">
-                <CardTitle className="flex items-center gap-2 font-display text-lg font-semibold">
-                  {labelDoLocal(local)}
-                  {extra && (
-                    <button
-                      type="button"
-                      onClick={() => removerExtra(extra.id)}
-                      aria-label={`Parar de acompanhar ${labelDoLocal(local)}`}
-                      className="text-muted-foreground opacity-60 transition-opacity hover:text-destructive hover:opacity-100"
-                    >
-                      <X className="size-3.5" />
-                    </button>
-                  )}
-                </CardTitle>
-                {insight && (
-                  <Badge variant="outline" className={`border ${toneClasses[insight.tone]}`}>
-                    {insight.tone === "chuva-alta"
-                      ? "Chuva forte"
-                      : insight.tone === "chuva-media"
-                        ? "Chuva moderada"
-                        : "Tempo seco"}
-                  </Badge>
-                )}
-              </CardHeader>
-              <CardContent className="flex flex-col gap-3">
-                {previsao === undefined ? (
-                  <div className="grid grid-cols-5 gap-1.5">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Skeleton key={i} className="h-18 w-full" />
-                    ))}
-                  </div>
-                ) : previsao === null ? (
-                  <p className="py-2 text-sm text-muted-foreground">Previsão indisponível agora.</p>
-                ) : (
-                  <>
+            return (
+              <motion.div
+                key={local.chave}
+                layout
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.25, delay: index * 0.05 }}
+              >
+                <Card className="gap-3">
+                  <CardHeader className="flex items-center justify-between gap-2">
+                    <CardTitle className="flex items-center gap-2 font-display text-lg font-semibold">
+                      {labelDoLocal(local)}
+                      {extra && (
+                        <button
+                          type="button"
+                          onClick={() => removerExtra(extra.id)}
+                          aria-label={`Parar de acompanhar ${labelDoLocal(local)}`}
+                          className="text-muted-foreground opacity-60 transition-opacity hover:text-destructive hover:opacity-100"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      )}
+                    </CardTitle>
                     {insight && (
-                      <p className="flex items-start gap-1.5 text-sm text-foreground">
-                        {insight.tone !== "chuva-baixa" && (
-                          <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-cta-foreground" />
-                        )}
-                        {insight.texto}
-                      </p>
+                      <Badge variant="outline" className={`border ${toneClasses[insight.tone]}`}>
+                        {insight.tone === "chuva-alta"
+                          ? "Chuva forte"
+                          : insight.tone === "chuva-media"
+                            ? "Chuva moderada"
+                            : "Tempo seco"}
+                      </Badge>
                     )}
-                    <div className="grid grid-cols-5 gap-1.5">
-                      {previsao.dias.map((dia, i) => {
-                        const pct = previsao.chuvaPct[i] ?? 0;
-                        const { tone } = faixaChuva(pct);
-                        return (
-                          <div
-                            key={dia}
-                            className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-center ${
-                              i === 0 ? "ring-1 ring-primary/40" : ""
-                            } ${toneClasses[tone]}`}
-                          >
-                            <span className="text-[10px] font-semibold tracking-wide uppercase">
-                              {i === 0
-                                ? "hoje"
-                                : new Date(`${dia}T00:00:00`).toLocaleDateString("pt-BR", {
-                                    weekday: "short",
-                                  })}
-                            </span>
-                            <span className="flex items-center gap-1 font-mono text-sm font-semibold tabular-nums">
-                              <CloudRain className="size-3" />
-                              {Math.round(pct)}%
-                            </span>
-                            <span className="flex items-center gap-1 font-mono text-[11px] tabular-nums">
-                              <Thermometer className="size-3" />
-                              {Math.round(previsao.tempMax[i] ?? 0)}°/
-                              {Math.round(previsao.tempMin[i] ?? 0)}°
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-3">
+                    {previsao === undefined ? (
+                      <div className="grid grid-cols-5 gap-1.5">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Skeleton key={i} className="h-18 w-full" />
+                        ))}
+                      </div>
+                    ) : previsao === null ? (
+                      <p className="py-2 text-sm text-muted-foreground">
+                        Previsão indisponível agora.
+                      </p>
+                    ) : (
+                      <>
+                        {insight && (
+                          <p className="flex items-start gap-1.5 text-sm text-foreground">
+                            {insight.tone !== "chuva-baixa" && (
+                              <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-cta-foreground" />
+                            )}
+                            {insight.texto}
+                          </p>
+                        )}
+                        <div className="grid grid-cols-5 gap-1.5">
+                          {previsao.dias.map((dia, i) => {
+                            const pct = previsao.chuvaPct[i] ?? 0;
+                            const { tone } = faixaChuva(pct);
+                            return (
+                              <div
+                                key={dia}
+                                className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-center ${
+                                  i === 0 ? "ring-1 ring-primary/40" : ""
+                                } ${toneClasses[tone]}`}
+                              >
+                                <span className="text-[10px] font-semibold tracking-wide uppercase">
+                                  {i === 0
+                                    ? "hoje"
+                                    : new Date(`${dia}T00:00:00`).toLocaleDateString("pt-BR", {
+                                        weekday: "short",
+                                      })}
+                                </span>
+                                <span className="flex items-center gap-1 font-mono text-sm font-semibold tabular-nums">
+                                  <CloudRain className="size-3" />
+                                  {Math.round(pct)}%
+                                </span>
+                                <span className="flex items-center gap-1 font-mono text-[11px] tabular-nums">
+                                  <Thermometer className="size-3" />
+                                  {Math.round(previsao.tempMax[i] ?? 0)}°/
+                                  {Math.round(previsao.tempMin[i] ?? 0)}°
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
       </div>
     </div>
   );

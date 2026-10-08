@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Bell, Loader2, Plus, Clock, Pencil, Trash2, X } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -225,99 +226,108 @@ function LembretesPage() {
                   description="Agende tarefas da lavoura (aplicação, manutenção, vistoria) pra não depender da memória."
                 />
               )}
-              {lembretes.map((l) => (
-                <div
-                  key={l.id}
-                  className="flex flex-col gap-1 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div>
-                    <p className="font-medium text-foreground">{l.titulo}</p>
-                    {l.descricao && <p className="text-sm text-muted-foreground">{l.descricao}</p>}
-                    <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                      <Clock className="size-3" />
-                      <span className="font-mono tabular-nums">
-                        {new Date(l.enviar_em).toLocaleString("pt-BR", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                      {l.recorrencia &&
-                        ` · repete ${l.recorrencia === "diaria" ? "todo dia" : "toda semana"}`}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Badge
-                      variant={statusLabel[l.status].variant}
-                      className="mr-1 text-[11px] font-semibold"
-                    >
-                      {statusLabel[l.status].label}
-                    </Badge>
-                    {l.status === "pendente" && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="size-8 p-0 text-muted-foreground hover:text-foreground"
-                          aria-label={`Editar ${l.titulo}`}
-                          onClick={() => setEditando(l)}
-                        >
-                          <Pencil className="size-3.5" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="size-8 p-0 text-muted-foreground hover:text-destructive"
-                          disabled={cancelandoId === l.id}
-                          aria-label={`Cancelar ${l.titulo}`}
-                          title="Cancelar (mantém no histórico)"
-                          onClick={() => cancelar(l.id)}
-                        >
-                          {cancelandoId === l.id ? (
-                            <Loader2 className="size-3.5 animate-spin" />
-                          ) : (
-                            <X className="size-3.5" />
-                          )}
-                        </Button>
-                      </>
-                    )}
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="size-8 p-0 text-muted-foreground hover:text-destructive"
-                          disabled={excluindoId === l.id}
-                          aria-label={`Excluir ${l.titulo}`}
-                          title="Excluir (remove do histórico)"
-                        >
-                          {excluindoId === l.id ? (
-                            <Loader2 className="size-3.5 animate-spin" />
-                          ) : (
-                            <Trash2 className="size-3.5" />
-                          )}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Excluir "{l.titulo}"?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Essa ação não pode ser desfeita — diferente de cancelar, remove o
-                            lembrete do histórico por completo.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => excluir(l.id)}>
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
-              ))}
+              <AnimatePresence initial={false}>
+                {lembretes.map((l, index) => (
+                  <motion.div
+                    key={l.id}
+                    layout
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, height: 0, marginBottom: 0, overflow: "hidden" }}
+                    transition={{ duration: 0.25, delay: index * 0.04 }}
+                    className="flex flex-col gap-1 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div>
+                      <p className="font-medium text-foreground">{l.titulo}</p>
+                      {l.descricao && (
+                        <p className="text-sm text-muted-foreground">{l.descricao}</p>
+                      )}
+                      <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock className="size-3" />
+                        <span className="font-mono tabular-nums">
+                          {new Date(l.enviar_em).toLocaleString("pt-BR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                        {l.recorrencia &&
+                          ` · repete ${l.recorrencia === "diaria" ? "todo dia" : "toda semana"}`}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Badge
+                        variant={statusLabel[l.status].variant}
+                        className="mr-1 text-[11px] font-semibold"
+                      >
+                        {statusLabel[l.status].label}
+                      </Badge>
+                      {l.status === "pendente" && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="size-8 p-0 text-muted-foreground hover:text-foreground"
+                            aria-label={`Editar ${l.titulo}`}
+                            onClick={() => setEditando(l)}
+                          >
+                            <Pencil className="size-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="size-8 p-0 text-muted-foreground hover:text-destructive"
+                            disabled={cancelandoId === l.id}
+                            aria-label={`Cancelar ${l.titulo}`}
+                            title="Cancelar (mantém no histórico)"
+                            onClick={() => cancelar(l.id)}
+                          >
+                            {cancelandoId === l.id ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : (
+                              <X className="size-3.5" />
+                            )}
+                          </Button>
+                        </>
+                      )}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="size-8 p-0 text-muted-foreground hover:text-destructive"
+                            disabled={excluindoId === l.id}
+                            aria-label={`Excluir ${l.titulo}`}
+                            title="Excluir (remove do histórico)"
+                          >
+                            {excluindoId === l.id ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="size-3.5" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Excluir "{l.titulo}"?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Essa ação não pode ser desfeita — diferente de cancelar, remove o
+                              lembrete do histórico por completo.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => excluir(l.id)}>
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </>
           )}
         </CardContent>
