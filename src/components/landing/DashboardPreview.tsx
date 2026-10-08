@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   LineChart,
   TrendingUp,
@@ -200,17 +201,27 @@ export function DashboardPreview() {
             </div>
 
             {/* conteúdo, muda com a aba */}
-            <div className="min-h-96 flex-1 bg-background p-4 sm:p-6">
-              {aba === "precos" && <PreviewPrecos precosReais={precosReais} />}
-              {aba === "sinal" && <PreviewSinalVenda />}
-              {aba === "alertas" && <PreviewAlertas />}
-              {aba === "clima" && <PreviewClima />}
-              {aba === "plantio" && <PreviewPlantio />}
-              {aba === "ferrugem" && <PreviewFerrugem />}
-              {aba === "insumos" && <PreviewInsumos />}
-              {aba === "leiloes" && <PreviewLeiloes />}
-              {aba === "suporte" && <PreviewSuporte />}
-              {aba === "acompanhamento" && <PreviewAcompanhamento />}
+            <div className="min-h-96 flex-1 overflow-hidden bg-background p-4 sm:p-6">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={aba}
+                  initial={{ opacity: 0, x: 14 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -14 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                >
+                  {aba === "precos" && <PreviewPrecos precosReais={precosReais} />}
+                  {aba === "sinal" && <PreviewSinalVenda />}
+                  {aba === "alertas" && <PreviewAlertas />}
+                  {aba === "clima" && <PreviewClima />}
+                  {aba === "plantio" && <PreviewPlantio />}
+                  {aba === "ferrugem" && <PreviewFerrugem />}
+                  {aba === "insumos" && <PreviewInsumos />}
+                  {aba === "leiloes" && <PreviewLeiloes />}
+                  {aba === "suporte" && <PreviewSuporte />}
+                  {aba === "acompanhamento" && <PreviewAcompanhamento />}
+                </motion.div>
+              </AnimatePresence>
             </div>
           </div>
         </div>
