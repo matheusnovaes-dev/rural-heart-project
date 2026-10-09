@@ -157,8 +157,22 @@ export const ehBoi = (cultura: string | null | undefined): boolean =>
 const TERMOS_CULTURA = [...CATALOGO.map((c) => c.value), ...Object.keys(ALIAS_CULTURA)].sort(
   (a, b) => b.length - a.length,
 );
+
+// Achado real testando ao vivo (2026-10-09): "cafe conillon" (sem acento,
+// como gente digita de verdade no WhatsApp) não casava contra "café
+// conillon" do catálogo — comparação de string trata "e" e "é" como
+// caracteres diferentes. Casa ambos os lados sem acento, mas devolve a
+// forma ORIGINAL do catálogo (com acento), que é o que normalizarCultura e
+// o resto do código esperam.
+function removerAcentos(s: string): string {
+  return s.normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
+const TERMO_SEM_ACENTO_PARA_ORIGINAL = new Map(
+  TERMOS_CULTURA.map((t) => [removerAcentos(t).toLowerCase(), t]),
+);
 const REGEX_CULTURA_CATALOGO = new RegExp(
-  `\\b(${TERMOS_CULTURA.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})\\b`,
+  `\\b(${TERMOS_CULTURA.map((t) => removerAcentos(t).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})\\b`,
   "i",
 );
 
@@ -171,8 +185,10 @@ const REGEX_CULTURA_CATALOGO = new RegExp(
  * é confiável só com prompt (ver calculadora.ts e tools/index.ts).
  */
 export function culturaMencionada(texto: string): string | null {
-  const m = texto.match(REGEX_CULTURA_CATALOGO);
-  return m ? normalizarCultura(m[1]!) : null;
+  const m = removerAcentos(texto).match(REGEX_CULTURA_CATALOGO);
+  if (!m) return null;
+  const original = TERMO_SEM_ACENTO_PARA_ORIGINAL.get(m[1]!.toLowerCase()) ?? m[1]!;
+  return normalizarCultura(original);
 }
 
 /** Varre o histórico do fim pro começo (mensagens mais recentes primeiro,

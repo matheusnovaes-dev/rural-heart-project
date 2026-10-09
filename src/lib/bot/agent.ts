@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { culturaMencionada } from "@/config/culturas";
 import {
   buildContextoInstitucional,
   buildContextoPlanos,
@@ -144,16 +145,77 @@ const ANGULOS_INCENTIVO_ATIVACAO = [
   "Depois de responder a pergunta dele normalmente, pergunte se ele quer saber se é um bom momento pra vender a cultura principal dele (sinal de venda) — cruza o preço dos últimos 90 dias com o mercado futuro da B3.",
 ];
 
+// Pedido real do Matheus (2026-10-09): o incentivo acima só cobre quem
+// ACABOU de se cadastrar (poucas trocas). Pra quem já é cliente antigo
+// (a maioria das conversas reais, depois da janela inicial), o bot nunca
+// oferecia nada — só respondia e parava pra sempre. Pedido explícito: "pode
+// sim, mas em momentos-chave que façam sentido sem parecer enjoativo,
+// não toda hora". Dois filtros pra isso, os dois por código (mesmo motivo de
+// sempre — "só quando fizer sentido" sozinho no prompt não é confiável):
+// (1) só quando a pergunta ATUAL é sobre algo que dá pra alertar de verdade
+// (cultura específica ou clima) — não em qualquer mensagem solta; (2) só se
+// não ofereceu esse mesmo tipo de convite recentemente nesta conversa, pra
+// não repetir toda hora e soar insistente.
+const JANELA_SEM_REPETIR_INCENTIVO = 10; // linhas de histórico, ~5 trocas
+
+const PADROES_INCENTIVO_JA_OFERECIDO = [
+  /alerta autom[áa]tico/i,
+  /outra cultura ou outro estado/i,
+  /bom momento pra vender/i,
+  /sinal de venda/i,
+];
+
+function incentivoRecenteNoHistorico(historico: HistoricoLinha[]): boolean {
+  const recentes = historico.slice(-JANELA_SEM_REPETIR_INCENTIVO);
+  return recentes.some(
+    (h) => h.role === "assistant" && PADROES_INCENTIVO_JA_OFERECIDO.some((p) => p.test(h.conteudo)),
+  );
+}
+
+// 1ª versão só tinha "chuva" (substantivo) — não casava "vai chover", "tá
+// chovendo" etc (achado real testando ao vivo: era a causa real de um "bug
+// de não-compliance do modelo" que na verdade nunca era isso, a nota nem
+// chegava a ser criada). \w* nas raízes cobre as flexões de verbo também.
+const ASSUNTO_CLIMA = /\b(clima|tempo|previs[ãa]o|geada|seca|chuv\w*|chov\w*|umidade)\b/i;
+
+function assuntoAlertavel(texto: string): boolean {
+  return culturaMencionada(texto) !== null || ASSUNTO_CLIMA.test(texto);
+}
+
 function notaDeIncentivoAtivacao(
   produtor: ProdutorContexto,
   historico: HistoricoLinha[],
+  texto: string,
 ): OpenAIMessage | null {
-  if (!produtor.id || historico.length > TURNOS_INICIO_DE_RELACAO) return null;
+  if (!produtor.id) return null;
+  const cedoNaConversa = historico.length <= TURNOS_INICIO_DE_RELACAO;
+  if (!cedoNaConversa && (!assuntoAlertavel(texto) || incentivoRecenteNoHistorico(historico))) {
+    return null;
+  }
   const angulo =
     ANGULOS_INCENTIVO_ATIVACAO[Math.floor(Math.random() * ANGULOS_INCENTIVO_ATIVACAO.length)]!;
+  const contexto = cedoNaConversa
+    ? "esse produtor já tem cadastro e ainda está no início da conversa com você (poucas trocas até agora)"
+    : "esse produtor já é cliente e acabou de perguntar algo que dá pra transformar em alerta automático — um momento-chave real, não só uma pergunta qualquer";
+  // Achado real testando ao vivo (2026-10-09): com a permissão "não force se
+  // a resposta já tiver ficado longa", o modelo usou essa desculpa pra pular
+  // o convite em 8 de 8 tentativas (4 de preço com frete/paridade, 4 de
+  // previsão de 5 dias) — exatamente as respostas mais detalhadas do
+  // produto, que são a maioria das respostas reais. Removida essa desculpa,
+  // mas isso sozinho NÃO resolveu: numa conversa já longa (histórico de
+  // cliente antigo, não mais o início), o modelo seguiu pulando 8 de 8 vezes
+  // de novo, mesmo sem a desculpa — provável "contágio" do padrão das
+  // respostas anteriores do próprio histórico (nenhuma delas tinha convite,
+  // o modelo repetiu esse padrão). A mesma nota funcionava bem no início da
+  // conversa (3 de 3), só falhava com histórico longo. Por isso agora o
+  // texto é mais imperativo ("OBRIGATÓRIO", não "é um momento-chave pra") e
+  // explicitamente desautoriza copiar o padrão das respostas anteriores.
+  const imperativo = cedoNaConversa
+    ? `Nota: ${contexto} — é um momento-chave pra incentivar o uso de verdade do Safralume, não só responder e parar.`
+    : `Nota OBRIGATÓRIA pra esta resposta: ${contexto}. Mesmo que suas respostas anteriores nesta mesma conversa não tenham incluído nenhum convite, ESTA precisa incluir — não copie o padrão das respostas de antes, esta pergunta é o momento-chave, aquelas não eram.`;
   return {
     role: "system",
-    content: `Nota: esse produtor já tem cadastro e ainda está no início da conversa com você (poucas trocas até agora) — é um momento-chave pra incentivar o uso de verdade do Safralume, não só responder e parar. ${angulo} Isso não é a mesma coisa que a oferta de ajuda genérica proibida ("se precisar de algo, é só falar") — é um convite específico e acionável. Não force isso se a resposta já tiver ficado longa ou se o pedido dele já foi sobre o que essa pergunta sugere (ex: já era sobre criar alerta).`,
+    content: `${imperativo} ${angulo} Isso não é a mesma coisa que a oferta de ajuda genérica proibida ("se precisar de algo, é só falar") — é um convite específico e acionável. O tamanho da resposta (mesmo com vários dados/dias/valores) NÃO é motivo pra pular isso — o convite é só uma frase curta a mais no final, independente de quão detalhada a resposta já ficou. Só pule se o pedido dele já foi exatamente sobre o que essa pergunta sugere (ex: já era sobre criar alerta).`,
   };
 }
 
@@ -723,7 +785,7 @@ export async function runAgent(input: {
   const notaRecusaCadastro = notaDeRecusaCadastro(texto);
   const notaAflicaoPessoal = notaDeAflicaoPessoal(texto);
   const notaAberturaDeAnuncio = notaDeAberturaDeAnuncio(texto);
-  const notaIncentivoAtivacao = notaDeIncentivoAtivacao(produtor, historico);
+  const notaIncentivoAtivacao = notaDeIncentivoAtivacao(produtor, historico, texto);
   const messages: OpenAIMessage[] = [
     { role: "system", content: SYSTEM_PROMPT },
     { role: "system", content: buildContextoProdutor(produtor) },
@@ -750,6 +812,7 @@ export async function runAgent(input: {
   let cadastroCriado = false;
   let contaCriada: { uf: string; cultura: string } | null = null;
   let jaTentouCorrigirValor = false;
+  let jaTentouForcarIncentivo = false;
 
   // Fecha a resposta: aplica as redes de segurança de texto, troca a resposta
   // do modelo pela confirmação escrita por código quando o cadastro acabou
@@ -849,6 +912,31 @@ export async function runAgent(input: {
         cadastro_criado: cadastroCriado,
         convite_dispensado: cadastroCriado,
       };
+    }
+
+    // Rede de segurança determinística pro incentivo de ativação: mesmo com
+    // a nota ficando mais imperativa ("OBRIGATÓRIO"), achado real testando
+    // ao vivo (2026-10-09) é que isso sozinho não é suficiente numa conversa
+    // já longa — 0 de 4 tentativas incluíram o convite mesmo com a versão
+    // mais forte do texto (a versão pro início da conversa funciona, 3 de 3;
+    // só a extensão pra cliente antigo falhava). Em vez de insistir só em
+    // reforçar o prompt, verifica se a resposta realmente tem um convite
+    // reconhecível e, se não tiver, pede uma rodada extra pra reescrever —
+    // mesmo padrão já usado aqui pro valor inventado.
+    if (
+      notaIncentivoAtivacao &&
+      podeCorrigir &&
+      !jaTentouForcarIncentivo &&
+      !PADROES_INCENTIVO_JA_OFERECIDO.some((p) => p.test(resposta))
+    ) {
+      jaTentouForcarIncentivo = true;
+      messages.push({ role: "assistant", content: conteudoBruto ?? parsed.resposta });
+      messages.push({
+        role: "system",
+        content:
+          "Sua resposta anterior não incluiu o convite obrigatório que a nota pediu (alerta automático, outra cultura/estado, ou sinal de venda). Reescreva a MESMA resposta, mantendo os dados que você já deu, mas acrescente no final uma frase curta com esse convite — dessa vez não pode faltar.",
+      });
+      return null;
     }
 
     // Cliente cadastrado só pelo WhatsApp (sem login no site): nenhum link
