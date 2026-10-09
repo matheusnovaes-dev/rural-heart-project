@@ -600,11 +600,24 @@ export async function executarTool(
       const a = args as Parameters<typeof buscarProducaoWasde>[1];
       // Enum fechado (só soja/milho/algodao) — só troca se a cultura do
       // histórico for uma dessas 3, nunca força um valor fora do enum.
-      const CULTURAS_WASDE = new Set(["soja", "milho", "algodao"]);
+      // Achado real testando ao vivo (2026-10-09): o catálogo não tem
+      // "algodao" solto, só "algodão em caroço"/"algodão em pluma" (com
+      // acento e sufixo) — resolverCultura devolvia isso certinho, mas o
+      // `.has()` exato nunca batia contra o enum, então a correção por
+      // histórico nunca funcionava pra algodão aqui (sempre caía pro chute
+      // do modelo). Normaliza sem acento e casa por prefixo em vez de
+      // igualdade exata.
+      const CULTURAS_WASDE: Record<string, "soja" | "milho" | "algodao"> = {
+        soja: "soja",
+        milho: "milho",
+        algodao: "algodao",
+      };
       const resolvida = resolverCultura(ctx, a.cultura);
+      const semAcento = resolvida.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+      const raizWasde = Object.keys(CULTURAS_WASDE).find((raiz) => semAcento.startsWith(raiz));
       return buscarProducaoWasde(ctx.supabase, {
         ...a,
-        cultura: (CULTURAS_WASDE.has(resolvida) ? resolvida : a.cultura) as typeof a.cultura,
+        cultura: (raizWasde ? CULTURAS_WASDE[raizWasde]! : a.cultura) as typeof a.cultura,
       });
     }
     case "buscar_boletim_imea":
