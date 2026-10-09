@@ -160,10 +160,18 @@ const ANGULOS_INCENTIVO_ATIVACAO = [
 // não repetir toda hora e soar insistente.
 const JANELA_SEM_REPETIR_INCENTIVO = 10; // linhas de histórico, ~5 trocas
 
+// Achado real testando ao vivo (bateria de 10, 2026-10-09): resposta real
+// incluía convite genuíno ("posso criar um alerta pra acompanhar a geada ou
+// monitorar outra cultura ou estado!") mas não batia em NENHUM destes 4
+// padrões (eram literais demais — "alerta automático" não casa "um
+// alerta", "outra cultura ou outro estado" não casa "outra cultura ou
+// estado"). Isso forçava um retry desnecessário (a resposta já estava boa)
+// e às vezes o retry seguinte também "falhava" na detecção — não no
+// convite em si. Alargado pros radicais/formas mais curtas.
 const PADROES_INCENTIVO_JA_OFERECIDO = [
-  /alerta autom[áa]tico/i,
-  /outra cultura ou outro estado/i,
-  /bom momento pra vender/i,
+  /\balertas?\b/i,
+  /outra cultura|outro estado/i,
+  /bom momento (pra|para) vender/i,
   /sinal de venda/i,
 ];
 
@@ -849,7 +857,7 @@ export async function runAgent(input: {
   let cadastroCriado = false;
   let contaCriada: { uf: string; cultura: string } | null = null;
   let jaTentouCorrigirValor = false;
-  let jaTentouForcarIncentivo = false;
+  let tentativasForcarIncentivo = 0;
 
   // Fecha a resposta: aplica as redes de segurança de texto, troca a resposta
   // do modelo pela confirmação escrita por código quando o cadastro acabou
@@ -960,13 +968,20 @@ export async function runAgent(input: {
     // reforçar o prompt, verifica se a resposta realmente tem um convite
     // reconhecível e, se não tiver, pede uma rodada extra pra reescrever —
     // mesmo padrão já usado aqui pro valor inventado.
+    // 2ª rodada (mesmo dia, bateria de 10 variações): 1 tentativa de retry
+    // recuperava ~80% dos casos (4 de 5 runs do mesmo caso "boi gordo sem
+    // preço em MG"), mas o 1 de 5 que falhava nas duas rodadas (original +
+    // retry) ficava sem convite de vez — não tinha mais chance. Subiu de 1
+    // pra 2 retries (3 tentativas no total); com MAX_TOOL_ROUNDS=6 e uso
+    // típico de 1-2 rodadas de tool antes disso, sobra folga de sobra.
+    const MAX_TENTATIVAS_FORCAR_INCENTIVO = 2;
     if (
       notaIncentivoAtivacao &&
       podeCorrigir &&
-      !jaTentouForcarIncentivo &&
+      tentativasForcarIncentivo < MAX_TENTATIVAS_FORCAR_INCENTIVO &&
       !PADROES_INCENTIVO_JA_OFERECIDO.some((p) => p.test(resposta))
     ) {
-      jaTentouForcarIncentivo = true;
+      tentativasForcarIncentivo++;
       messages.push({ role: "assistant", content: conteudoBruto ?? parsed.resposta });
       messages.push({
         role: "system",
