@@ -26,6 +26,7 @@ import { consultarAssinatura } from "@/lib/bot/tools/assinatura";
 import { consultarJanelaPlantio } from "@/lib/bot/tools/plantio";
 import { atualizarLocalizacao } from "@/lib/bot/tools/localizacao";
 import { calcularMargemSafra } from "@/lib/bot/tools/calculadora";
+import { esquecerMemoriaProdutor, salvarMemoriaProdutor } from "@/lib/bot/tools/memoria";
 
 export type ToolContext = {
   supabase: SupabaseClient;
@@ -451,6 +452,39 @@ export const TOOLS = [
       parameters: { type: "object", properties: {}, additionalProperties: false },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "salvar_memoria_produtor",
+      description:
+        "Guarda um fato DURÁVEL sobre esse produtor, que vai importar em conversas FUTURAS (não só nesta) — ex: uma preocupação real que ele contou (medo de perder a safra, dificuldade financeira), contexto da fazenda (pra quem ele vende, onde fica, como armazena), ou um plano futuro (pensando em diversificar cultura, trocar de fornecedor). NUNCA chame isto pra dado efêmero que já tem fonte própria (preço, clima, cotação de hoje) — só fato pessoal/relacional que não tá em nenhuma tabela. Chame no máximo uma vez por conversa, só quando o produtor contar algo assim de forma clara (não invente nem deduza).",
+      parameters: {
+        type: "object",
+        properties: {
+          fato: {
+            type: "string",
+            description:
+              "Frase curta e objetiva descrevendo o fato, em 3ª pessoa (ex: 'tem medo de perder parte da safra pra seca'). Não copie a frase literal do produtor, resuma o fato.",
+          },
+          categoria: {
+            type: "string",
+            enum: ["preocupacao", "contexto_fazenda", "relacao_comercial", "plano_futuro"],
+          },
+        },
+        required: ["fato", "categoria"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "esquecer_memoria_produtor",
+      description:
+        "Apaga TODOS os fatos guardados sobre esse produtor (ver salvar_memoria_produtor). Chame SOMENTE quando ele pedir explicitamente pra esquecer/apagar o que o Safralume sabe sobre ele — nunca por conta própria. Depois de chamar, confirme pra ele que foi apagado, nunca prometa isso sem ter chamado a ferramenta.",
+      parameters: { type: "object", properties: {}, additionalProperties: false },
+    },
+  },
 ] as const;
 
 // Achado real em produção (2026-10-04): "Como tá o mercado da soja?" ->
@@ -599,6 +633,14 @@ export async function executarTool(
       });
     case "consultar_assinatura":
       return consultarAssinatura(ctx.supabase, ctx);
+    case "salvar_memoria_produtor":
+      return salvarMemoriaProdutor(
+        ctx.supabase,
+        args as Parameters<typeof salvarMemoriaProdutor>[1],
+        ctx.produtor.id,
+      );
+    case "esquecer_memoria_produtor":
+      return esquecerMemoriaProdutor(ctx.supabase, ctx.produtor.id);
     case "consultar_janela_plantio":
       return consultarJanelaPlantio(
         ctx.supabase,

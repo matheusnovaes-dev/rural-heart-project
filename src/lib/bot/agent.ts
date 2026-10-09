@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { culturaMencionada } from "@/config/culturas";
 import {
   buildContextoInstitucional,
+  buildContextoMemoria,
   buildContextoPlanos,
   buildContextoProdutor,
   buildHistoryMessages,
@@ -15,6 +16,7 @@ import { executarTool, TOOLS } from "@/lib/bot/tools/index";
 import { mensagemBloqueioAcesso, verificarAcessoWhatsapp } from "@/lib/bot/tools/acesso";
 import { gerarLinkDeAcesso, tipoDeAcesso } from "@/lib/bot/tools/linkAcesso";
 import type { ResultadoBuscarLeite } from "@/lib/bot/tools/leite";
+import { buscarMemoriasProdutor } from "@/lib/bot/tools/memoria";
 import { ehPedidoDeSair, RESPOSTA_SAIDA_DE_MENSAGENS } from "@/lib/recuperacaoCadastro";
 import { normalizarWhatsapp } from "@/lib/telefone";
 import type { ProdutorContexto } from "@/lib/bot/types";
@@ -240,6 +242,34 @@ function notaDeAflicaoPessoal(texto: string): OpenAIMessage | null {
     role: "system",
     content:
       "Nota: essa mensagem do produtor fala de uma dificuldade pessoal (saúde, financeira, emocional) sem relação com o Safralume. Responda com empatia, curto, e NÃO ofereça cadastro, teste grátis, plano, link nem qualquer CTA comercial nessa resposta — seria fora de hora. Marque precisa_humano=true, porque isso não é algo que você resolve.",
+  };
+}
+
+// Achado real testando ao vivo (2026-10-09): o produtor contou uma
+// preocupação clara e durável ("medo de perder a safra pra seca") e o
+// modelo NUNCA chamou salvar_memoria_produtor, mesmo a ferramenta tendo
+// descrição detalhada de quando usar — mesmo padrão de sempre desse
+// modelo, não age sozinho numa ação secundária só por ela estar
+// disponível. Detecta sinal de fato pessoal/durável (preocupação, plano
+// futuro, relação comercial) JUNTO com assunto agrícola/produto (evita
+// disparar em mensagem sem nada a ver, tipo só "medo" solto) e nudge só
+// nesse turno — mesmo mecanismo das outras notas.
+// 2ª rodada (mesmo dia): 1ª versão só tinha "vendo pro/pra" (presente) e não
+// casava "vou vender pro Zé Carlos" (futuro) — mesmo tipo de lacuna de
+// flexão verbal já visto em ASSUNTO_CLIMA. Trocado pros radicais vend\w*/
+// compr\w*/forneced\w* pra cobrir qualquer tempo verbal.
+const SINAL_FATO_DURAVEL =
+  /\b(medo|com\s+medo|receios?|preocupad[ao]|preocupa[çc][ãa]o|perdi|pretendo|penso\s+em|pensando\s+em|planejo|diversificar|vend\w*|compr\w*|forneced\w*|armazen\w*|trocar\s+de|mudar\s+de)\b/i;
+
+function notaDeMemoriaPotencial(produtor: ProdutorContexto, texto: string): OpenAIMessage | null {
+  if (!produtor.id) return null;
+  if (!SINAL_FATO_DURAVEL.test(texto) || !MENCIONA_ASSUNTO_AGRICOLA_OU_PRODUTO.test(texto)) {
+    return null;
+  }
+  return {
+    role: "system",
+    content:
+      "Nota: essa mensagem parece conter um fato pessoal/durável sobre o produtor (preocupação real, contexto da fazenda, relação comercial, ou plano futuro) que pode valer guardar pra conversas futuras. Responda a pergunta dele normalmente primeiro; se o fato for genuíno (não invente nem deduza), chame salvar_memoria_produtor depois de responder. Se, lendo com calma, não for um fato durável de verdade, ignore esta nota.",
   };
 }
 
@@ -786,9 +816,15 @@ export async function runAgent(input: {
   const notaAflicaoPessoal = notaDeAflicaoPessoal(texto);
   const notaAberturaDeAnuncio = notaDeAberturaDeAnuncio(texto);
   const notaIncentivoAtivacao = notaDeIncentivoAtivacao(produtor, historico, texto);
+  const notaMemoriaPotencial = notaDeMemoriaPotencial(produtor, texto);
+  // Memória entre conversas (não confundir com `historico`, que é só desta
+  // conversa) — ver tools/memoria.ts. Só existe pra quem já tem cadastro.
+  const memorias = produtor.id ? await buscarMemoriasProdutor(supabase, produtor.id) : [];
+  const contextoMemoria = buildContextoMemoria(memorias);
   const messages: OpenAIMessage[] = [
     { role: "system", content: SYSTEM_PROMPT },
     { role: "system", content: buildContextoProdutor(produtor) },
+    ...(contextoMemoria ? [{ role: "system" as const, content: contextoMemoria }] : []),
     ...(produtor.id ? [] : [{ role: "system" as const, content: buildRegrasCadastroAnonimo() }]),
     ...(produtor.id && !produtor.user_id
       ? [{ role: "system" as const, content: buildRegrasClienteSemLogin() }]
@@ -801,6 +837,7 @@ export async function runAgent(input: {
     ...(notaAflicaoPessoal ? [notaAflicaoPessoal] : []),
     ...(notaAberturaDeAnuncio ? [notaAberturaDeAnuncio] : []),
     ...(notaIncentivoAtivacao ? [notaIncentivoAtivacao] : []),
+    ...(notaMemoriaPotencial ? [notaMemoriaPotencial] : []),
     { role: "user", content: texto },
   ];
 
