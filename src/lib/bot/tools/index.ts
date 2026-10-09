@@ -461,12 +461,24 @@ export const TOOLS = [
 // ferramentas que também recebem "produto"/"cultura" (sinal de venda, IBGE,
 // progresso de safra, futuros B3, WASDE), igualmente vulneráveis ao mesmo
 // padrão. Se a mensagem ATUAL não menciona cultura nenhuma, ignora o que o
-// modelo mandou e usa a cultura mais recente do histórico; só cai pro que o
-// modelo mandou (a essa altura, o cultura_principal do cadastro, conforme o
-// prompt já instrui) se o histórico também não tiver nada.
+// modelo mandou e usa a cultura mais recente do histórico.
+// 2ª rodada (2026-10-09, achado real de novo — conversa do próprio Matheus,
+// soja/MG): "Como tá a soja?" -> "Qual foi a última exportação, deu quanto?"
+// -> buscar_producao_ibge voltou MILHO, mesmo com a trava de histórico já
+// ativa. Causa: quando NEM a pergunta atual NEM o histórico têm cultura (ex:
+// histórico ainda não chegou no contexto desta chamada), o último fallback
+// caía pro que o modelo mandou — que não tem nenhuma garantia de ser o
+// cultura_principal real do cadastro, mesmo o prompt já instruindo isso
+// como 3º critério. Cultura do cadastro é um dado real, determinístico,
+// não precisa confiar no modelo lembrar de usá-lo: agora é o código que
+// aplica esse 3º critério, não só o texto do prompt.
 function resolverCultura(ctx: ToolContext, produtoDoModelo: string): string {
   if (culturaMencionada(ctx.texto)) return produtoDoModelo;
-  return culturaMaisRecenteNoHistorico(ctx.historico) ?? produtoDoModelo;
+  return (
+    culturaMaisRecenteNoHistorico(ctx.historico) ??
+    ctx.produtor.cultura_principal ??
+    produtoDoModelo
+  );
 }
 
 export async function executarTool(
@@ -510,11 +522,18 @@ export async function executarTool(
       const a = args as Parameters<typeof buscarProducaoIbge>[1];
       return buscarProducaoIbge(ctx.supabase, { ...a, produto: resolverCultura(ctx, a.produto) });
     }
-    case "buscar_producao_historica_conab":
-      return buscarProducaoHistoricaConab(
-        ctx.supabase,
-        args as Parameters<typeof buscarProducaoHistoricaConab>[1],
-      );
+    case "buscar_producao_historica_conab": {
+      const a = args as Parameters<typeof buscarProducaoHistoricaConab>[1];
+      // Ficou de fora da leva original (commit "Estende a trava de
+      // cultura-por-contexto pra mais 4 ferramentas") mesmo recebendo o
+      // mesmo "produto"+"uf" que buscar_progresso_safra_conab, sua ferramenta
+      // irmã logo abaixo — mesma vulnerabilidade, nunca tinha sido exercitada
+      // ao vivo até agora.
+      return buscarProducaoHistoricaConab(ctx.supabase, {
+        ...a,
+        produto: resolverCultura(ctx, a.produto),
+      });
+    }
     case "buscar_progresso_safra_conab": {
       const a = args as Parameters<typeof buscarProgressoSafraConab>[1];
       return buscarProgressoSafraConab(ctx.supabase, {
