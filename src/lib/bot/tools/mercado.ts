@@ -4,7 +4,7 @@ import { CULTURA_PARA_B3 } from "@/config/b3";
 import { CATEGORIA_PARA_SUBGRUPO_INSUMO } from "@/config/conabPrecoInsumo";
 import { CULTURA_PARA_CONAB_PROGRESSO } from "@/config/conabProgressoSafra";
 import { CULTURA_PARA_CONAB_HISTORICO } from "@/config/conabSerieHistorica";
-import { normalizarCultura } from "@/config/culturas";
+import { normalizarCultura, padraoIlikePorPalavra } from "@/config/culturas";
 import { temAcessoPrata, type Plano } from "@/lib/planos.shared";
 
 const semAcento = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
@@ -47,7 +47,7 @@ export async function buscarProducaoIbge(
     .from("ibge_producao")
     .select("produto, producao_ton, area_plantada_ha, area_colhida_ha, rendimento_kg_ha, periodo")
     .eq("uf", args.uf)
-    .ilike("produto", `%${args.produto}%`)
+    .ilike("produto", padraoIlikePorPalavra(args.produto))
     .order("periodo", { ascending: false })
     .limit(10)
     .returns<

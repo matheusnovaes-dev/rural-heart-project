@@ -149,6 +149,19 @@ export function normalizarCultura(cultura: string): string {
 export const ehBoi = (cultura: string | null | undefined): boolean =>
   !!cultura && normalizarCultura(cultura) === "boi";
 
+// Achado real testando ao vivo (2026-10-09): termo composto com espaço (ex:
+// "cana de açúcar", como o catálogo grava) nunca bate via `.ilike("produto",
+// "%termo%")` contra uma fonte que grava o mesmo produto com hífen (ex:
+// "Cana-de-açúcar" no IBGE, "CANA-DE-AÇÚCAR (DERAL-PR)" nos preços do
+// Paraná) — ilike é busca por SUBSTRING literal, espaço não é hífen. Usado
+// em qualquer `.ilike("produto", ...)` que recebe um termo vindo do
+// catálogo (buscar_preco, buscar_producao_ibge, buscar_sinal_venda):
+// junta cada palavra com "%" (curinga do padrão LIKE) em vez de espaço
+// literal, casando hífen, espaço ou nenhum separador.
+export function padraoIlikePorPalavra(termo: string): string {
+  return `%${termo.trim().split(/\s+/).join("%")}%`;
+}
+
 // Todo termo reconhecido (catálogo + apelidos), do mais específico (mais
 // palavras) pro mais genérico — "café arábica" tem que casar antes de
 // "café" sozinho não existir no catálogo evitar, e termos compostos tipo

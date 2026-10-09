@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { buscarFrete, ehPracaDePorto, type ResultadoFrete } from "@/lib/paridade";
 import { buscarReferenciaMercado, type ReferenciaMercado } from "@/lib/referenciaMercado";
-import { normalizarCultura } from "@/config/culturas";
+import { normalizarCultura, padraoIlikePorPalavra } from "@/config/culturas";
 import { escolherFontePreco, mediaDePracas } from "@/lib/precoFonte";
 import { produtoPrincipal } from "@/lib/precos";
 
@@ -74,7 +74,7 @@ export async function buscarPreco(
     let q = supabase
       .from("precos")
       .select("produto, preco, unidade, regiao, data_referencia, fonte")
-      .ilike("produto", `%${produto}%`)
+      .ilike("produto", padraoIlikePorPalavra(produto))
       .eq("uf", uf);
     q = regional ? q.neq("regiao", "") : q.eq("regiao", "");
     if (soPrincipal && principal) q = q.eq("produto", principal);
@@ -118,7 +118,7 @@ export async function buscarPreco(
     const { data: outrasUfs } = await supabase
       .from("precos")
       .select("uf")
-      .ilike("produto", `%${produto}%`)
+      .ilike("produto", padraoIlikePorPalavra(produto))
       .gte("data_referencia", desde.toISOString().slice(0, 10))
       .returns<{ uf: string }[]>();
     const referencia = await buscarReferenciaMercado(supabase, {

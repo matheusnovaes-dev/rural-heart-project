@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { buscarPrevisao } from "@/lib/clima";
 import { CULTURA_PARA_B3 } from "@/config/b3";
-import { normalizarCultura } from "@/config/culturas";
+import { normalizarCultura, padraoIlikePorPalavra } from "@/config/culturas";
 import { rotuloFonte } from "@/lib/bot/tools/mercado";
 import {
   calcularPosicao,
@@ -60,7 +60,7 @@ export async function buscarSinalVenda(
   const { data: rows } = await supabase
     .from("precos")
     .select("preco, data_referencia, produto, unidade")
-    .ilike("produto", `%${produto}%`)
+    .ilike("produto", padraoIlikePorPalavra(produto))
     .eq("uf", uf)
     .gte("data_referencia", desde.toISOString().slice(0, 10))
     .order("data_referencia", { ascending: true })
