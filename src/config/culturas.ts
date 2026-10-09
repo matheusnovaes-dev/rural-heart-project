@@ -13,6 +13,10 @@ const CATALOGO: Cultura[] = [
   { value: "amêndoa de baru", label: "Amêndoa de baru" },
   { value: "amendoim", label: "Amendoim" },
   { value: "arroz", label: "Arroz" },
+  // Achado real testando bateria adversarial (2026-10-09): tinha preço de
+  // verdade na base (EPAGRI-SC) mas nunca tinha entrado no catálogo —
+  // omissão, não exclusão deliberada como os 3 casos documentados acima.
+  { value: "aveia", label: "Aveia" },
   { value: "azeite de babaçu", label: "Azeite de babaçu" },
   { value: "azeite de macaúba", label: "Azeite de macaúba" },
   { value: "banana", label: "Banana" },
@@ -52,6 +56,9 @@ const CATALOGO: Cultura[] = [
   { value: "malva", label: "Malva" },
   { value: "mamona em baga", label: "Mamona em baga" },
   { value: "manga", label: "Manga" },
+  // Mesmo achado do aveia acima: tem preço real (EPAGRI-SC, IEA-SP), só
+  // "farinha de mandioca" e "raiz de mandioca" (derivados) tinham entrado.
+  { value: "mandioca", label: "Mandioca" },
   { value: "mangaba", label: "Mangaba" },
   { value: "maracujá", label: "Maracujá" },
   { value: "mel de abelha", label: "Mel de abelha" },
@@ -138,6 +145,10 @@ const ALIAS_CULTURA: Record<string, string> = {
   galinha: "frango",
   galinhas: "frango",
   frangos: "frango",
+  // Achado real testando bateria adversarial (2026-10-09): produtor fala
+  // "sorgo" (forma comum), a base só tem o nome técnico completo "sorgo
+  // granífero" — sem o apelido, "sorgo" sozinho nunca batia.
+  sorgo: "sorgo granífero",
 };
 
 /** Cultura como a base de preços a conhece: minúscula, sem espaço nas pontas e sem apelido. */
