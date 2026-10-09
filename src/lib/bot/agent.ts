@@ -266,8 +266,13 @@ function notaDeAflicaoPessoal(texto: string): OpenAIMessage | null {
 // casava "vou vender pro Zé Carlos" (futuro) — mesmo tipo de lacuna de
 // flexão verbal já visto em ASSUNTO_CLIMA. Trocado pros radicais vend\w*/
 // compr\w*/forneced\w* pra cobrir qualquer tempo verbal.
+// 3ª rodada (bateria adversarial de 20, mesmo dia): "Eu entrego minha
+// produção pra cooperativa local" (relação comercial bem real) não casava
+// em nada — faltava entreg\w*/cooperativ\w*. Também não cobria praga/
+// doença na lavoura como motivo de preocupação (só cobria a palavra "medo"
+// solta, não a causa agrícola em si).
 const SINAL_FATO_DURAVEL =
-  /\b(medo|com\s+medo|receios?|preocupad[ao]|preocupa[çc][ãa]o|perdi|pretendo|penso\s+em|pensando\s+em|planejo|diversificar|vend\w*|compr\w*|forneced\w*|armazen\w*|trocar\s+de|mudar\s+de)\b/i;
+  /\b(medo|com\s+medo|receios?|preocupad[ao]|preocupa[çc][ãa]o|perdi|pretendo|penso\s+em|pensando\s+em|planejo|diversificar|vend\w*|compr\w*|forneced\w*|entreg\w*|cooperativ\w*|armazen\w*|trocar\s+de|mudar\s+de|praga|ferrugem|doenç\w*|doenc\w*)\b/i;
 
 function notaDeMemoriaPotencial(produtor: ProdutorContexto, texto: string): OpenAIMessage | null {
   if (!produtor.id) return null;
