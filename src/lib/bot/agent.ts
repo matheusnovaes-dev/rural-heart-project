@@ -186,7 +186,9 @@ function incentivoRecenteNoHistorico(historico: HistoricoLinha[]): boolean {
 // chovendo" etc (achado real testando ao vivo: era a causa real de um "bug
 // de não-compliance do modelo" que na verdade nunca era isso, a nota nem
 // chegava a ser criada). \w* nas raízes cobre as flexões de verbo também.
-const ASSUNTO_CLIMA = /\b(clima|tempo|previs[ãa]o|geada|seca|chuv\w*|chov\w*|umidade)\b/i;
+// 2ª rodada (bateria final de 20, mesmo dia): "Vai molhar essa semana ou
+// não?" — sinônimo coloquial de chover que nenhuma raiz cobria.
+const ASSUNTO_CLIMA = /\b(clima|tempo|previs[ãa]o|geada|seca|chuv\w*|chov\w*|molh\w*|umidade)\b/i;
 
 function assuntoAlertavel(texto: string): boolean {
   return culturaMencionada(texto) !== null || ASSUNTO_CLIMA.test(texto);
