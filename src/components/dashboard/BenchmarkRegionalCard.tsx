@@ -40,6 +40,7 @@ export function BenchmarkRegionalCard({
 
   if (!cultura || !uf || benchmark === null) return null;
   const nomeCultura = ehBoi(cultura) ? "boi gordo" : normalizarCultura(cultura);
+  const nomeCulturaCapitalizado = nomeCultura[0]!.toUpperCase() + nomeCultura.slice(1);
   const Icone =
     benchmark && benchmark.percentualVsMedia > 0.5
       ? TrendingUp
@@ -50,11 +51,11 @@ export function BenchmarkRegionalCard({
   return (
     <Card className="border-border/80 shadow-sm transition-shadow hover:shadow-md">
       <CardHeader className="border-b border-border/70 px-4 pb-3">
-        <CardTitle className="flex items-center gap-2 text-base capitalize">
+        <CardTitle className="flex items-center gap-2 text-base">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <Icone className="size-4" />
           </span>
-          {nomeCultura}: você vs. outros estados
+          {nomeCulturaCapitalizado}: você vs. outros estados
         </CardTitle>
         <CardDescription>Como o preço do seu estado se compara aos vizinhos.</CardDescription>
       </CardHeader>

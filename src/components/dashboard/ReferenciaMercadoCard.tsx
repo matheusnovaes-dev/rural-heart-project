@@ -50,6 +50,7 @@ export function ReferenciaMercadoCard({
 
   if (!cultura || !uf || ref === null) return null;
   const nomeCultura = ehBoi(cultura) ? "boi gordo" : normalizarCultura(cultura);
+  const nomeCulturaCapitalizado = nomeCultura[0]!.toUpperCase() + nomeCultura.slice(1);
   // A primeira frase da referência é o aviso sobre o estado (desatualizado ou sem dado).
   const aviso =
     ref && /^(O último dado|Ainda não temos)/.test(ref.frase)
@@ -59,11 +60,11 @@ export function ReferenciaMercadoCard({
   return (
     <Card className="border-border/80 shadow-sm transition-shadow hover:shadow-md">
       <CardHeader className="border-b border-border/70 px-4 pb-3">
-        <CardTitle className="flex items-center gap-2 text-base capitalize">
+        <CardTitle className="flex items-center gap-2 text-base">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <BarChart3 className="size-4" />
           </span>
-          {nomeCultura}: referências de mercado
+          {nomeCulturaCapitalizado}: referências de mercado
         </CardTitle>
         <CardDescription>
           {aviso ?? "Preços recentes em outros estados e o mercado futuro, pra você comparar."}

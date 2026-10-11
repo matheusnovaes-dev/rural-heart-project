@@ -23,6 +23,9 @@ export function Solution() {
               "Fonte e data sempre visíveis em cada resposta",
               "Preço do porto e frete até lá, pra você negociar com números",
               "Mais de 70 culturas: soja, milho, boi, café, suíno, frango, caprino, ovino e muito mais",
+              "Compare seu estado com outros: saiba se tá vendendo acima ou abaixo da média da região",
+              "Alertas automáticos de preço e clima, direto no seu WhatsApp, sem precisar perguntar",
+              "Calculadora de Safra: sua margem real, com o preço de hoje",
               "% de plantio e colheita da semana da Conab, comparado com a média dos últimos 5 anos",
               "Alerta de ferrugem asiática na soja: foco confirmado e esporo no ar na sua região",
               "Agenda de leilão de gado no Brasil inteiro: presencial na sua região e virtual em destaque",
@@ -91,6 +94,9 @@ function PhoneMockup() {
             <p>
               Soja em Cascavel/PR hoje: <strong>R$ 151,00/saca</strong>. Porto de Paranaguá: R$
               162,50, frete R$ 12,30: paridade de R$ 150,20.
+            </p>
+            <p className="mt-1">
+              Paraná está vendendo 3,8% acima da média de 5 outros estados que acompanhamos.
             </p>
             <p className="mt-1 text-xs text-[#667781]">Fonte: BBM · atualizado às 08:12</p>
           </motion.div>
