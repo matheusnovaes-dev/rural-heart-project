@@ -5,6 +5,7 @@ import { FileDown, Loader2 } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/dashboard/PageHeader";
+import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -178,7 +179,8 @@ function RelatoriosPage() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        icon={FileDown}
+        icon={IconesSafralume.relatorio}
+        iconePersonalizado
         title="Relatórios"
         description="PDF com a marca da sua cooperativa e os preços mais recentes — por estado, e por região onde só existir isso."
         action={seletorCultura}

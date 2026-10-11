@@ -5,6 +5,7 @@ import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { ArrowDown, ArrowUp, LineChart as LineChartIcon, Minus } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 import {
   ChartContainer,
   ChartTooltip,
@@ -214,7 +215,8 @@ function PrecosPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        icon={LineChartIcon}
+        icon={IconesSafralume.preco}
+        iconePersonalizado
         title="Preços"
         description="Cotação por estado — e por região, onde só existir isso"
         action={

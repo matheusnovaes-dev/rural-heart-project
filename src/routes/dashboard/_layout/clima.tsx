@@ -1,18 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  AlertTriangle,
-  CloudRain,
-  CloudSun,
-  Loader2,
-  MapPin,
-  Plus,
-  Thermometer,
-  X,
-} from "lucide-react";
+import { AlertTriangle, CloudRain, Loader2, MapPin, Plus, Thermometer, X } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -215,7 +207,8 @@ function ClimaConteudo() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        icon={CloudSun}
+        icon={IconesSafralume["clima-sol"]}
+        iconePersonalizado
         title="Tendências climáticas"
         description="Previsão de chuva e temperatura pros próximos 5 dias, por estado ou cidade."
         action={dialogAdicionarLocal}

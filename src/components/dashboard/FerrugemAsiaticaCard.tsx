@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { Bug } from "lucide-react";
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SafralumeIcon } from "@/components/icons/SafralumeIcon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/lib/supabase";
 import { normalizarCultura } from "@/config/culturas";
@@ -80,17 +79,7 @@ export function FerrugemAsiaticaCard({ produtor }: { produtor: Produtor }) {
     >
       <CardHeader className="border-b border-border/70 px-4 pb-3">
         <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-          <span
-            className={`flex size-8 items-center justify-center rounded-lg ${
-              temFoco
-                ? "bg-destructive/10 text-destructive"
-                : temEsporo
-                  ? "bg-cta/10 text-cta-foreground"
-                  : "bg-primary/10 text-primary"
-            }`}
-          >
-            <Bug className="size-4" />
-          </span>
+          <SafralumeIcon nome="ferrugem-asiatica" className="size-8" />
           Ferrugem asiática
         </CardTitle>
         <CardDescription>Ocorrências na safra, segundo o Consórcio Antiferrugem.</CardDescription>

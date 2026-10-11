@@ -1,21 +1,20 @@
-import { BadgeCheck, MessageCircle, SearchCheck } from "lucide-react";
-
 import { Reveal } from "@/components/landing/Reveal";
+import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 
 const steps = [
   {
-    icon: MessageCircle,
+    icon: IconesSafralume.whatsapp,
     title: "1. Mande uma mensagem",
     description: "Pergunte o preço da sua cultura e cidade, do jeito que você já usa o WhatsApp.",
   },
   {
-    icon: SearchCheck,
+    icon: IconesSafralume["dado-oficial"],
     title: "2. Cruzamos os dados oficiais",
     description:
       "Consultamos Conab e órgãos estaduais na hora e comparamos com o preço do porto e o frete.",
   },
   {
-    icon: BadgeCheck,
+    icon: IconesSafralume.preco,
     title: "3. Você recebe o número certo",
     description:
       "Preço da sua região, do porto e o frete, com fonte e data, pronto para decidir sem depender de planilha.",
@@ -38,8 +37,8 @@ export function HowItWorks() {
         />
         {steps.map((step, index) => (
           <Reveal key={step.title} delay={index * 0.1} className="relative text-center">
-            <span className="relative z-10 mx-auto flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground ring-4 ring-background">
-              <step.icon className="size-6" />
+            <span className="relative z-10 mx-auto block w-fit rounded-full ring-4 ring-background">
+              <step.icon className="size-14" />
             </span>
             <h3 className="mt-4 font-display text-lg font-semibold text-foreground">
               {step.title}

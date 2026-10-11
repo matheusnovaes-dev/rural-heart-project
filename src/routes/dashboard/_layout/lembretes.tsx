@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Bell, Loader2, Plus, Clock, Pencil, Trash2, X } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -204,7 +205,8 @@ function LembretesPage() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        icon={Bell}
+        icon={IconesSafralume.lembrete}
+        iconePersonalizado
         title="Lembretes"
         description="Tarefas agendadas pra chegar no WhatsApp na hora certa."
         action={dialogNovo}

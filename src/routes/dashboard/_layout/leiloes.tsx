@@ -6,6 +6,7 @@ import { Gavel, Loader2, MapPin, Plus, Radio, Trash2, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { EmptyState } from "@/components/dashboard/EmptyState";
+import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -161,7 +162,8 @@ function LeiloesPage() {
     return (
       <div className="flex flex-col gap-5">
         <PageHeader
-          icon={Gavel}
+          icon={IconesSafralume.leilao}
+          iconePersonalizado
           title="Leilões"
           description="Agenda de leilão de gado (presencial e virtual) no Brasil inteiro."
         />
@@ -188,7 +190,8 @@ function LeiloesPage() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        icon={Gavel}
+        icon={IconesSafralume.leilao}
+        iconePersonalizado
         title="Leilões"
         description="Agenda de leilão de gado — presencial na sua região e virtual em destaque."
         action={

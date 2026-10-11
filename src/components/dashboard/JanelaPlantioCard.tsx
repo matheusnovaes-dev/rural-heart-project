@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { Sprout } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrocarCulturaDialog } from "@/components/dashboard/TrocarCulturaDialog";
+import { SafralumeIcon } from "@/components/icons/SafralumeIcon";
 import { supabase } from "@/lib/supabase";
 import {
   consultarJanelaPlantio,
@@ -57,9 +57,7 @@ export function JanelaPlantioCard({ produtor }: { produtor: Produtor }) {
     <Card className="gap-3 border-border/80 shadow-sm transition-shadow hover:shadow-md">
       <CardHeader className="border-b border-border/70 px-4 pb-3">
         <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Sprout className="size-4" />
-          </span>
+          <SafralumeIcon nome="janela-plantio" className="size-8" />
           Janela de plantio
         </CardTitle>
         <CardDescription>Risco climático oficial do ZARC/MAPA pra plantar agora.</CardDescription>

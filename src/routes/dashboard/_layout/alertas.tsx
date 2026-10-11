@@ -12,6 +12,7 @@ import {
   X,
   CloudRain,
 } from "lucide-react";
+import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/dashboard/PageHeader";
@@ -368,7 +369,8 @@ function AlertasPage() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        icon={TrendingUp}
+        icon={IconesSafralume.alerta}
+        iconePersonalizado
         title="Alertas"
         description="Preço e clima — só avisa quando tiver algo relevante pra você decidir."
         action={

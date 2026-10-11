@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Calculator } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -128,7 +128,8 @@ function CalculadoraConteudo() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        icon={Calculator}
+        icon={IconesSafralume["calculadora-safra"]}
+        iconePersonalizado
         title="Calculadora de Safra"
         description="Quanto sua produção vale hoje, com preço real da sua região."
       />

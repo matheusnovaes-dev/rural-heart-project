@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Copy, Check, UsersRound, Trash2 } from "lucide-react";
+import { Copy, Check, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -84,7 +85,8 @@ function EquipePage() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        icon={UsersRound}
+        icon={IconesSafralume.equipe}
+        iconePersonalizado
         title="Equipe"
         description="Quem tem acesso ao painel da sua cooperativa"
       />
