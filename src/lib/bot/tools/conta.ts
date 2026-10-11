@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizarWhatsapp } from "@/lib/telefone";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
 import { trackConversaoServidor } from "@/lib/metaCapi.server";
+import { culturaMencionada, normalizarCultura } from "@/config/culturas";
 
 // Mesma rede de segurança determinística usada em alertas.ts: o prompt já
 // exige confirmação numa mensagem separada antes de criar a conta, mas
@@ -14,6 +15,29 @@ function aindaPrecisaConfirmar(historico: HistoricoLinha[]): boolean {
   const ultima = [...ordenado].reverse().find((h) => h.role === "assistant")?.conteudo;
   if (!ultima) return true;
   return !(/confirma/i.test(ultima) && /(conta|cadastr)/i.test(ultima));
+}
+
+// Achado real 2026-10-11: produtor respondeu "música, sou do funk" quando
+// perguntado a cultura, o modelo mesmo assim propôs "SOJA" na pergunta de
+// confirmação (cultura real, só que inventada — o produtor nunca disse
+// soja), e a confirmação vaga dele na mensagem seguinte ("ah sim entendi")
+// bateria no regex de aindaPrecisaConfirmar acima, que só olha a ÚLTIMA
+// mensagem do assistente, não se a cultura dela apareceu de verdade na
+// fala do produtor. Mesma rede de segurança que os alertas já têm pro
+// valor (nunca criar com um número que o produtor não disse): aqui a
+// cultura só é aceita se alguma mensagem DO PRODUTOR (texto atual ou
+// histórico) de fato mencionar essa cultura — nunca a que só o bot propôs.
+function culturaConfirmadaPeloProdutor(
+  culturaAlvo: string,
+  textoAtual: string,
+  historico: HistoricoLinha[],
+): boolean {
+  const alvo = normalizarCultura(culturaAlvo);
+  const falasDoProdutor = [
+    textoAtual,
+    ...historico.filter((h) => h.role === "user").map((h) => h.conteudo),
+  ];
+  return falasDoProdutor.some((fala) => culturaMencionada(fala) === alvo);
 }
 
 /**
@@ -29,6 +53,7 @@ export async function criarContaTeste(
   args: { uf: string; cultura_principal: string },
   ctx: {
     telefone: string;
+    texto: string;
     produtor: { nome: string; user_id: string | null };
     historico: HistoricoLinha[];
   },
@@ -38,6 +63,9 @@ export async function criarContaTeste(
   }
   if (aindaPrecisaConfirmar(ctx.historico)) {
     return { sucesso: false, motivo: "precisa_confirmar_primeiro" };
+  }
+  if (!culturaConfirmadaPeloProdutor(args.cultura_principal, ctx.texto, ctx.historico)) {
+    return { sucesso: false, motivo: "cultura_nao_confirmada" };
   }
 
   const whatsapp = normalizarWhatsapp(ctx.telefone);
