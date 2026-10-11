@@ -147,7 +147,7 @@ export function Hero() {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="text-balance font-display text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl"
         >
-          Você vende sem saber se o preço tá bom?
+          Preço você já sabe. Mas sabe se é hora de vender?
         </motion.h1>
 
         <motion.p
@@ -156,8 +156,8 @@ export function Hero() {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="mt-5 max-w-2xl text-pretty text-lg text-white/85"
         >
-          O porto paga mais do que você recebe, e o frete muda a conta. O Safralume cruza os dois e
-          te avisa no WhatsApp, na hora de decidir.
+          O Safralume cruza o preço de hoje, o mercado futuro da B3 e os últimos 90 dias, e te avisa
+          no WhatsApp na hora certa — não só o número, a decisão.
         </motion.p>
 
         <motion.div
