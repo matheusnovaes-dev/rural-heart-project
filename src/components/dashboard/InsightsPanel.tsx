@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/lib/supabase";
-import { produtoPrincipal, ultimaDataRegional } from "@/lib/precos";
+import { buscarPrecosDaUf, produtoPrincipal, ultimaDataRegional } from "@/lib/precos";
 import { escolherFontePreco } from "@/lib/precoFonte";
 import { buscarPrevisaoServidor } from "@/lib/clima.server";
 import { temAcessoPrata, useAssinatura } from "@/lib/planos";
@@ -44,7 +44,7 @@ const IMEA_CULTURAS: Record<string, { cadeia: string; indicador: string }> = {
 
 type ImeaPonto = { valor: number; data_referencia: string };
 
-function variacaoDuasSemanas(serie: PrecoPonto[]) {
+function variacaoDuasSemanas<T extends { preco: number; data_referencia: string }>(serie: T[]) {
   const atual = serie.at(-1);
   if (!atual) return null;
   const limite = new Date(atual.data_referencia);
@@ -59,6 +59,25 @@ function variacaoDuasSemanas(serie: PrecoPonto[]) {
     referencia,
     variacao: ((atual.preco - referencia.preco) / referencia.preco) * 100,
   };
+}
+
+// UF sem preço único do estado (só praças, ex: milho em MG) não precisa
+// ficar sem tendência nenhuma — o histórico por região (mesmo usado no
+// gráfico do card "Seu preço hoje") dá pra virar uma série só, com a média
+// das praças de cada data, e calcular a mesma variação de 2 semanas em cima
+// dela. Pedido do Matheus 2026-10-11, depois de ver o aviso "não dá pra
+// calcular tendência" pra soja em MG — o dado pra calcular já existia, só
+// não era usado.
+function mediaRegionalPorData(regioes: { preco: number; data_referencia: string }[]) {
+  const porData = new Map<string, number[]>();
+  for (const r of regioes)
+    porData.set(r.data_referencia, [...(porData.get(r.data_referencia) ?? []), r.preco]);
+  return [...porData.entries()]
+    .map(([data_referencia, precos]) => ({
+      data_referencia,
+      preco: precos.reduce((s, p) => s + p, 0) / precos.length,
+    }))
+    .sort((a, b) => a.data_referencia.localeCompare(b.data_referencia));
 }
 
 function mediana(valores: number[]) {
@@ -103,6 +122,9 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
   const [serie, setSerie] = useState<PrecoPonto[] | null>(null);
   const [todasUfs, setTodasUfs] = useState<PrecoPonto[]>([]);
   const [temDadoRegional, setTemDadoRegional] = useState(false);
+  const [serieRegionalMedia, setSerieRegionalMedia] = useState<
+    { preco: number; data_referencia: string }[]
+  >([]);
   const [temAlertaAtivo, setTemAlertaAtivo] = useState<boolean | null>(null);
   const [diasDeChuva, setDiasDeChuva] = useState<number | null>(null);
   const [imeaPonto, setImeaPonto] = useState<ImeaPonto | null>(null);
@@ -143,6 +165,10 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
         if (escolherFontePreco(daUf.at(-1)?.data_referencia, ultimaRegional) === "regional") {
           setSerie([]);
           setTemDadoRegional(true);
+          if (supabase) {
+            const { regionaisHistorico } = await buscarPrecosDaUf(supabase, cultura, uf);
+            setSerieRegionalMedia(mediaRegionalPorData(regionaisHistorico));
+          }
           return;
         }
         setSerie(daUf);
@@ -152,17 +178,12 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
         }
         // Sem preço único do estado não é o mesmo que "sem preço nenhum" —
         // fontes como BBM/IEA-SP só publicam por praça (ex: milho em MG).
-        // Não dá pra calcular tendência sem um preço único, mas o aviso
-        // final precisa dizer a verdade em vez de "ainda não temos preço"
-        // quando na verdade tem, só que dividido por região.
+        // Sem um preço único do estado, a tendência cai pra média das
+        // praças por data (ver mediaRegionalPorData) em vez de sumir.
         if (!supabase) return;
-        supabase
-          .from("precos")
-          .select("id", { count: "exact", head: true })
-          .ilike("produto", `%${cultura}%`)
-          .eq("uf", uf)
-          .neq("regiao", "")
-          .then(({ count }) => setTemDadoRegional((count ?? 0) > 0));
+        const { regionaisHistorico } = await buscarPrecosDaUf(supabase, cultura, uf);
+        setTemDadoRegional(regionaisHistorico.length > 0);
+        setSerieRegionalMedia(mediaRegionalPorData(regionaisHistorico));
       });
 
     supabase
@@ -264,6 +285,8 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
   // aviso explicando o motivo é melhor que nada aparecer.
   const semHistorico = serie.length === 0;
   const tendencia = semHistorico ? null : variacaoDuasSemanas(serie);
+  const tendenciaRegional =
+    semHistorico && temDadoRegional ? variacaoDuasSemanas(serieRegionalMedia) : null;
   const precos = serie.map((p) => p.preco);
   const min = Math.min(...precos);
   const max = Math.max(...precos);
@@ -303,11 +326,40 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      {semHistorico && temDadoRegional && (
+      {semHistorico && temDadoRegional && tendenciaRegional && (
+        <InsightCard
+          icon={tendenciaRegional.variacao >= 0 ? TrendingUp : TrendingDown}
+          tone={
+            tendenciaRegional.variacao > 0.5
+              ? "up"
+              : tendenciaRegional.variacao < -0.5
+                ? "down"
+                : "neutral"
+          }
+          title="Tendência (2 semanas)"
+        >
+          {Math.abs(tendenciaRegional.variacao) < 0.5 ? (
+            "Preço estável, sem variação relevante."
+          ) : (
+            <>
+              {tendenciaRegional.variacao > 0 ? "Subiu" : "Caiu"}{" "}
+              <span className="font-mono font-semibold tabular-nums">
+                {Math.abs(tendenciaRegional.variacao).toFixed(1)}%
+              </span>{" "}
+              nas últimas 2 semanas.
+            </>
+          )}
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            <strong>{cultura}</strong> em <strong>{uf}</strong> não tem preço único de estado — essa
+            tendência é a média das praças por região, não um número oficial único.
+          </p>
+        </InsightCard>
+      )}
+      {semHistorico && temDadoRegional && !tendenciaRegional && (
         <InsightCard icon={Gauge} tone="neutral" title="Sem histórico ainda">
           <strong>{cultura}</strong> em <strong>{uf}</strong> só tem preço por região (não um número
-          único do estado) — dá pra ver isso no card "Seu preço hoje" acima. Ainda não dá pra
-          calcular tendência sem um preço único do estado.
+          único do estado) — dá pra ver isso no card "Seu preço hoje" acima. Ainda não tem histórico
+          suficiente das praças pra calcular tendência.
         </InsightCard>
       )}
       {semHistorico && !temDadoRegional && (
@@ -396,7 +448,9 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
             preço cruzar um valor.
           </p>
           <Button asChild size="sm" variant="outline">
-            <Link to="/dashboard/alertas">Criar alerta</Link>
+            <Link to="/dashboard/alertas" search={{ abrir: "preco" }}>
+              Criar alerta
+            </Link>
           </Button>
         </InsightCard>
       )}

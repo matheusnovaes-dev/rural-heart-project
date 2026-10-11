@@ -54,6 +54,12 @@ import { UpgradeButton } from "@/components/dashboard/UpgradeButton";
 
 export const Route = createFileRoute("/dashboard/_layout/alertas")({
   component: AlertasPage,
+  // Link "Criar alerta" nos cards da home (preço/clima) chega aqui já
+  // abrindo o diálogo certo, em vez de só cair na página — reduz a
+  // fricção de "achar o botão" (pedido do Matheus 2026-10-11).
+  validateSearch: (search: Record<string, unknown>): { abrir?: "preco" | "clima" | undefined } => ({
+    abrir: search["abrir"] === "preco" || search["abrir"] === "clima" ? search["abrir"] : undefined,
+  }),
 });
 
 type Alerta = {
@@ -127,7 +133,8 @@ function AlertasPage() {
   const [funcionarios, setFuncionarios] = useState<
     { id: string; nome: string; whatsapp: string }[]
   >([]);
-  const [open, setOpen] = useState(false);
+  const { abrir } = Route.useSearch();
+  const [open, setOpen] = useState(abrir === "preco");
   const [editando, setEditando] = useState<Alerta | null>(null);
 
   async function load() {
@@ -269,7 +276,7 @@ function AlertasPage() {
       .map((p) => ({ ...p, produtorId: p.id })),
   ];
 
-  const [openClima, setOpenClima] = useState(false);
+  const [openClima, setOpenClima] = useState(abrir === "clima");
   const [editandoClima, setEditandoClima] = useState<AlertaClima | null>(null);
 
   // Preço + clima somados contam pro mesmo teto — editar um alerta já

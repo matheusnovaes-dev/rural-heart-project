@@ -668,6 +668,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                 )}
                 <Link
                   to="/dashboard/alertas"
+                  search={{ abrir: "preco" }}
                   className="inline-block text-sm font-medium text-primary-foreground underline underline-offset-2 opacity-90 hover:opacity-100"
                 >
                   Avisar quando o preço mudar
@@ -776,12 +777,21 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                     })}
                   </div>
                 )}
-                <Link
-                  to="/dashboard/clima"
-                  className="mt-3 inline-block text-sm font-medium text-primary hover:underline"
-                >
-                  Ver previsão completa
-                </Link>
+                <div className="mt-3 flex items-center gap-3">
+                  <Link
+                    to="/dashboard/clima"
+                    className="text-sm font-medium text-primary hover:underline"
+                  >
+                    Ver previsão completa
+                  </Link>
+                  <Link
+                    to="/dashboard/alertas"
+                    search={{ abrir: "clima" }}
+                    className="text-sm font-medium text-primary hover:underline"
+                  >
+                    Criar alerta de clima
+                  </Link>
+                </div>
               </CardContent>
             </Card>
           </motion.div>
