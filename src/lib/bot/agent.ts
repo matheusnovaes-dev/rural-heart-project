@@ -175,6 +175,25 @@ const PADROES_INCENTIVO_JA_OFERECIDO = [
   /sinal de venda/i,
 ];
 
+// Pra verificar se a resposta realmente mostrou as 2 funcionalidades extras
+// que notaDePrimeiraRespostaPosCadastro pediu — mesmo padrão de detecção
+// (regex ampla, não literal) já provado necessário hoje pro incentivo normal.
+const PADROES_FUNCIONALIDADE_EXTRA = [
+  /\balertas?\b/i,
+  /sinal de venda|bom momento (pra|para) vender/i,
+  /insumo|defensivo|fertilizante/i,
+  /c[aâ]mbio|d[oó]lar|chicago|futuro/i,
+  /janela de plantio|plantar/i,
+  /outra cultura|outro estado/i,
+  /previs[ãa]o do tempo|clima/i,
+  /leil[ãa]o/i,
+  /ferrugem/i,
+];
+
+function temDuasFuncionalidadesExtras(resposta: string): boolean {
+  return PADROES_FUNCIONALIDADE_EXTRA.filter((p) => p.test(resposta)).length >= 2;
+}
+
 function incentivoRecenteNoHistorico(historico: HistoricoLinha[]): boolean {
   const recentes = historico.slice(-JANELA_SEM_REPETIR_INCENTIVO);
   return recentes.some(
@@ -228,6 +247,48 @@ function notaDeIncentivoAtivacao(
   return {
     role: "system",
     content: `${imperativo} ${angulo} Isso não é a mesma coisa que a oferta de ajuda genérica proibida ("se precisar de algo, é só falar") — é um convite específico e acionável. O tamanho da resposta (mesmo com vários dados/dias/valores) NÃO é motivo pra pular isso — o convite é só uma frase curta a mais no final, independente de quão detalhada a resposta já ficou. Só pule se o pedido dele já foi exatamente sobre o que essa pergunta sugere (ex: já era sobre criar alerta).`,
+  };
+}
+
+// Pedido real do Matheus (2026-10-10), direto do dado: 12 produtores com
+// trial vencido tinham ZERO mensagem no bot e nunca voltaram ao painel —
+// a conta era criada e a pessoa simplesmente sumia. A mensagem de
+// boas-vindas ia ser reescrita pra puxar a primeira resposta de verdade
+// (ver template do WhatsApp), mas o pedido vai além: quando essa primeira
+// resposta vem, o bot não pode só responder a pergunta (geralmente preço)
+// e parar — tem que deixar claro, logo de cara, que o plano cobre MUITO
+// mais do que isso (mais de 10 funcionalidades reais: clima, alerta
+// automático, sinal de venda, janela de plantio, câmbio/futuros, preço de
+// insumo, ferrugem, leilão...). Esse é o momento de maior atenção que a
+// pessoa vai dar ao produto — a primeira troca de verdade depois do
+// cadastro — por isso o ângulo aqui é mais forte que o incentivo normal
+// (que só sugere UMA coisa): mostra DUAS funcionalidades concretas de uma
+// vez, pra passar a ideia de catálogo, não de "bot de preço".
+// Cada combinação junta só funcionalidades reais, já confirmadas no
+// código (nunca uma promessa que o produto não cumpre — foi exatamente o
+// erro achado nos 2 vídeos de anúncio analisados nesta mesma sessão).
+const GANCHOS_FUNCIONALIDADES_PRIMEIRA_RESPOSTA = [
+  "clima da região dele com alerta automático de geada, seca ou chuva forte, e também quando é a janela oficial de plantio pra cultura dele",
+  "sinal de venda (se é um bom momento pra vender, cruzando o preço dos últimos 90 dias com o mercado futuro da B3) e preço de defensivo/fertilizante",
+  "câmbio e mercado futuro (dólar e Chicago) e alerta automático de preço, que avisa sozinho quando bater o valor que ele quiser",
+  "acompanhar outra cultura ou outro estado além do principal dele (o Safralume cobre mais de 70 culturas) e previsão do tempo oficial",
+];
+
+function notaDePrimeiraRespostaPosCadastro(
+  produtor: ProdutorContexto,
+  historico: HistoricoLinha[],
+): OpenAIMessage | null {
+  // Só faz sentido pra quem JÁ tem cadastro e esta é a primeira troca real
+  // da conversa (historico vazio) — exatamente o momento em que a pessoa
+  // responde a mensagem de boas-vindas pela primeira vez.
+  if (!produtor.id || historico.length > 0) return null;
+  const gancho =
+    GANCHOS_FUNCIONALIDADES_PRIMEIRA_RESPOSTA[
+      Math.floor(Math.random() * GANCHOS_FUNCIONALIDADES_PRIMEIRA_RESPOSTA.length)
+    ]!;
+  return {
+    role: "system",
+    content: `Nota OBRIGATÓRIA pra esta resposta: esta é a PRIMEIRA mensagem de verdade desse produtor depois de criar a conta — o momento de maior atenção que ele vai dar ao Safralume. Responda a pergunta dele normalmente primeiro (com o dado real, igual sempre). Depois, numa ou duas frases curtas a mais, deixe claro que o plano dele cobre muito mais do que só isso — mencione especificamente: ${gancho}. O objetivo é ele entender que não está pagando só por "responder preço", são mais de 10 funcionalidades reais. Isso não é a mesma coisa que a oferta de ajuda genérica proibida ("se precisar de algo, é só falar") — são funcionalidades concretas e nomeadas. O tamanho da resposta não é motivo pra pular isso.`,
   };
 }
 
@@ -830,7 +891,14 @@ export async function runAgent(input: {
   const notaRecusaCadastro = notaDeRecusaCadastro(texto);
   const notaAflicaoPessoal = notaDeAflicaoPessoal(texto);
   const notaAberturaDeAnuncio = notaDeAberturaDeAnuncio(texto);
-  const notaIncentivoAtivacao = notaDeIncentivoAtivacao(produtor, historico, texto);
+  const notaPrimeiraResposta = notaDePrimeiraRespostaPosCadastro(produtor, historico);
+  // Quando é a primeira resposta pós-cadastro, a nota acima já cobre "mostre
+  // valor" com mais força (2 funcionalidades, não 1) — não empilha com o
+  // incentivo normal na mesma mensagem, senão vira uma lista grande demais
+  // logo na primeira troca.
+  const notaIncentivoAtivacao = notaPrimeiraResposta
+    ? null
+    : notaDeIncentivoAtivacao(produtor, historico, texto);
   const notaMemoriaPotencial = notaDeMemoriaPotencial(produtor, texto);
   // Memória entre conversas (não confundir com `historico`, que é só desta
   // conversa) — ver tools/memoria.ts. Só existe pra quem já tem cadastro.
@@ -851,6 +919,7 @@ export async function runAgent(input: {
     ...(notaRecusaCadastro ? [notaRecusaCadastro] : []),
     ...(notaAflicaoPessoal ? [notaAflicaoPessoal] : []),
     ...(notaAberturaDeAnuncio ? [notaAberturaDeAnuncio] : []),
+    ...(notaPrimeiraResposta ? [notaPrimeiraResposta] : []),
     ...(notaIncentivoAtivacao ? [notaIncentivoAtivacao] : []),
     ...(notaMemoriaPotencial ? [notaMemoriaPotencial] : []),
     { role: "user", content: texto },
@@ -865,6 +934,7 @@ export async function runAgent(input: {
   let contaCriada: { uf: string; cultura: string } | null = null;
   let jaTentouCorrigirValor = false;
   let tentativasForcarIncentivo = 0;
+  let tentativasForcarPrimeiraResposta = 0;
 
   // Fecha a resposta: aplica as redes de segurança de texto, troca a resposta
   // do modelo pela confirmação escrita por código quando o cadastro acabou
@@ -994,6 +1064,26 @@ export async function runAgent(input: {
         role: "system",
         content:
           "Sua resposta anterior não incluiu o convite obrigatório que a nota pediu (alerta automático, outra cultura/estado, ou sinal de venda). Reescreva a MESMA resposta, mantendo os dados que você já deu, mas acrescente no final uma frase curta com esse convite — dessa vez não pode faltar.",
+      });
+      return null;
+    }
+
+    // Mesma rede de segurança, agora pra primeira resposta pós-cadastro —
+    // é o momento mais importante de todos (ver notaDePrimeiraRespostaPosCadastro),
+    // não dá pra deixar na mão do modelo seguir ou não sem checar.
+    const MAX_TENTATIVAS_FORCAR_PRIMEIRA_RESPOSTA = 2;
+    if (
+      notaPrimeiraResposta &&
+      podeCorrigir &&
+      tentativasForcarPrimeiraResposta < MAX_TENTATIVAS_FORCAR_PRIMEIRA_RESPOSTA &&
+      !temDuasFuncionalidadesExtras(resposta)
+    ) {
+      tentativasForcarPrimeiraResposta++;
+      messages.push({ role: "assistant", content: conteudoBruto ?? parsed.resposta });
+      messages.push({
+        role: "system",
+        content:
+          "Sua resposta anterior não mostrou as duas funcionalidades extras que a nota pediu (além da pergunta que ele fez). Reescreva a MESMA resposta, mantendo o dado real que você já deu, mas acrescente de 1 a 2 frases curtas citando especificamente as duas funcionalidades da nota — dessa vez não pode faltar.",
       });
       return null;
     }
