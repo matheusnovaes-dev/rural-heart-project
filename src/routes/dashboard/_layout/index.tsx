@@ -687,7 +687,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
           </motion.div>
 
           <motion.div variants={itemVariants}>
-            <BenchmarkRegionalCard produtor={produtor} precoUf={precoExibido} />
+            <BenchmarkRegionalCard produtor={produtor} precoUf={precoExibido ?? mediaRegional} />
           </motion.div>
 
           <motion.div variants={itemVariants}>
