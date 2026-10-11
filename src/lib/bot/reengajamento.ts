@@ -8,6 +8,7 @@ import { buscarProgressoSafraConab } from "@/lib/bot/tools/mercado";
 import { buscarSinalVenda } from "@/lib/bot/tools/sinalVenda";
 import { buscarLeiloesProximos } from "@/lib/bot/tools/leiloes";
 import { buscarPrevisao } from "@/lib/clima";
+import { buscarPrecosDaUf } from "@/lib/precos";
 
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const dataBr = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
@@ -103,6 +104,68 @@ export async function montarResumoReengajamento(
 
   if (partes.length === 0) return null;
   return limitarResumo(partes.join(" "));
+}
+
+// Limiares próprios desta mensagem proativa (não reaproveitam os de nenhum
+// outro alerta existente — são a régua de "vale a pena mandar sem ele
+// pedir" especificamente aqui, escolhida pra ser rara e nunca virar
+// recado vazio): 3% de variação de preço desde a última cotação, 70% de
+// chance de chuva, ou mínima prevista <= 3°C (geada).
+const LIMIAR_VARIACAO_PRECO = 0.03;
+const LIMIAR_CHUVA_FORTE_PCT = 70;
+const LIMIAR_GEADA_TEMP_MIN = 3;
+
+/**
+ * Resumo da mensagem proativa diária (pedido do Matheus 2026-10-11): manda,
+ * no máximo 1x por dia, só pra quem JÁ conversou com o bot alguma vez
+ * (ver /api/cron/mensagem-proativa), e só quando tem algo que realmente
+ * mudaria a decisão do produtor hoje — nunca um "bom dia" vazio. Prioridade:
+ * (1) preço moveu de verdade desde a última cotação, (2) clima severo hoje
+ * (chuva forte ou geada). Sem nenhum dos dois, retorna null e o cron não
+ * manda nada — degradar pro silêncio é o comportamento certo aqui, não um
+ * texto de preenchimento (risco de "quality score" do WhatsApp se mandar
+ * mensagem sem valor real, ver memória do projeto).
+ */
+export async function montarResumoProativoDiario(
+  supabase: SupabaseClient,
+  produtor: { uf: string; cultura_principal: string },
+): Promise<string | null> {
+  const cultura = normalizarCultura(produtor.cultura_principal);
+  const uf = produtor.uf;
+
+  const [serie, previsao] = await Promise.all([
+    buscarPrecosDaUf(supabase, cultura, uf).catch(() => null),
+    buscarPrevisao(uf).catch(() => null),
+  ]);
+
+  const atual = serie?.serieEstado.at(-1);
+  const anterior = serie?.serieEstado.at(-2);
+  if (atual && anterior && anterior.preco !== 0) {
+    const fracao = (atual.preco - anterior.preco) / anterior.preco;
+    if (Math.abs(fracao) >= LIMIAR_VARIACAO_PRECO) {
+      const direcao = fracao > 0 ? "subiu" : "caiu";
+      return limitarResumo(
+        `O preço de ${cultura} em ${nomeDaUf(uf)} ${direcao} ${pct(Math.abs(fracao))} desde a última cotação: agora está ${brl(atual.preco)}, referência de ${dataBr(atual.data_referencia)}.`,
+      );
+    }
+  }
+
+  if (previsao && previsao.dias.length > 0) {
+    const chuvaHoje = previsao.chuvaPct[0];
+    const minHoje = previsao.tempMin[0];
+    if (chuvaHoje != null && chuvaHoje >= LIMIAR_CHUVA_FORTE_PCT) {
+      return limitarResumo(
+        `Previsão de chuva forte hoje na capital do seu estado (referência): ${Math.round(chuvaHoje)}% de chance.`,
+      );
+    }
+    if (minHoje != null && minHoje <= LIMIAR_GEADA_TEMP_MIN) {
+      return limitarResumo(
+        `Risco de geada hoje na capital do seu estado (referência): mínima prevista de ${Math.round(minHoje)}°C.`,
+      );
+    }
+  }
+
+  return null;
 }
 
 const dataHoraBr = (iso: string) => {

@@ -39,6 +39,7 @@ import { JanelaPlantioCard } from "@/components/dashboard/JanelaPlantioCard";
 import { PrecoInsumosCard } from "@/components/dashboard/PrecoInsumosCard";
 import { ProgressoSafraCard } from "@/components/dashboard/ProgressoSafraCard";
 import { ReferenciaMercadoCard } from "@/components/dashboard/ReferenciaMercadoCard";
+import { BenchmarkRegionalCard } from "@/components/dashboard/BenchmarkRegionalCard";
 import { DIAS_DADO_DESATUALIZADO } from "@/lib/referenciaMercado";
 import { diasEntre } from "@/lib/precoFonte";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -683,6 +684,10 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
 
           <motion.div variants={itemVariants}>
             <ReferenciaMercadoCard produtor={produtor} ultimaData={ultimaDataDoEstado} />
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <BenchmarkRegionalCard produtor={produtor} precoUf={precoExibido} />
           </motion.div>
 
           <motion.div variants={itemVariants}>

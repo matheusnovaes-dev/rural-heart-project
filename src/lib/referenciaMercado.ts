@@ -203,6 +203,68 @@ export async function buscarFuturoBoi(
   }));
 }
 
+export type BenchmarkRegional = {
+  uf: string;
+  precoUf: number;
+  mediaOutrasUfs: number;
+  /** Positivo = UF do produtor está ACIMA da média das outras; negativo = abaixo. */
+  percentualVsMedia: number;
+  qtdUfsComparadas: number;
+  /** Frase pronta em português, escrita por código (bot/painel citam como está). */
+  frase: string;
+};
+
+/**
+ * Comparação "como meu estado tá vendendo em relação aos outros" (pedido do
+ * Matheus 2026-10-11: gatilho de retenção — "ninguém quer ser o que vende
+ * pior que o vizinho"). Diferente de buscarReferenciaMercado (que só aparece
+ * quando o estado NÃO tem dado recente, como fallback), este é sempre
+ * calculado quando o estado TEM preço — é a mesma lista de outras UFs
+ * (escolherPrecosOutrasUfs), só que usada pra comparar, não pra substituir.
+ * Não compara o preço de venda individual do produtor (isso não existe na
+ * base pra maioria das culturas) — compara o preço de referência do estado
+ * dele contra o de outros estados que vendem a mesma cultura.
+ */
+export function montarBenchmarkRegional(params: {
+  uf: string;
+  precoUf: number;
+  outras: PrecoOutraUf[];
+}): BenchmarkRegional | null {
+  const { uf, precoUf, outras } = params;
+  if (outras.length === 0 || precoUf <= 0) return null;
+  const mediaOutrasUfs = outras.reduce((soma, o) => soma + o.preco, 0) / outras.length;
+  if (mediaOutrasUfs <= 0) return null;
+  const percentualVsMedia = Math.round(((precoUf - mediaOutrasUfs) / mediaOutrasUfs) * 1000) / 10;
+
+  const direcao = percentualVsMedia >= 0 ? "acima" : "abaixo";
+  const frase = `${nomeDaUf(uf)} está vendendo a ${brl(precoUf)}, ${Math.abs(percentualVsMedia).toFixed(1).replace(".", ",")}% ${direcao} da média de ${outras.length} ${outras.length === 1 ? "outro estado" : "outros estados"} que acompanhamos (${brl(Math.round(mediaOutrasUfs * 100) / 100)}).`;
+
+  return {
+    uf,
+    precoUf,
+    mediaOutrasUfs: Math.round(mediaOutrasUfs * 100) / 100,
+    percentualVsMedia,
+    qtdUfsComparadas: outras.length,
+    frase,
+  };
+}
+
+/**
+ * Wrapper assíncrono de montarBenchmarkRegional: busca as outras UFs de
+ * verdade (mesma função usada pela referência de fallback) e monta a
+ * comparação. `precoUf`/`dataReferenciaUf` vêm de quem já buscou o preço do
+ * estado do produtor (painel e bot já fazem essa busca pra outra coisa —
+ * não duplica aqui).
+ */
+export async function buscarBenchmarkRegional(
+  supabase: SupabaseClient,
+  params: { cultura: string; uf: string; precoUf: number | null; hoje?: Date },
+): Promise<BenchmarkRegional | null> {
+  if (params.precoUf == null || params.precoUf <= 0) return null;
+  const outras = await buscarPrecosOutrasUfs(supabase, params.cultura, params.uf, params.hoje);
+  return montarBenchmarkRegional({ uf: params.uf, precoUf: params.precoUf, outras });
+}
+
 /**
  * Referência de mercado pra um estado sem dado recente: preço em outros
  * estados e, no boi, o futuro da B3. `ultimaDataUf` é a data mais recente que o

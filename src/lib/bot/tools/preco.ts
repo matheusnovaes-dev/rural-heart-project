@@ -1,7 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { buscarFrete, ehPracaDePorto, type ResultadoFrete } from "@/lib/paridade";
-import { buscarReferenciaMercado, type ReferenciaMercado } from "@/lib/referenciaMercado";
+import {
+  buscarReferenciaMercado,
+  buscarBenchmarkRegional,
+  type ReferenciaMercado,
+  type BenchmarkRegional,
+} from "@/lib/referenciaMercado";
 import { normalizarCultura, padraoIlikePorPalavra } from "@/config/culturas";
 import { escolherFontePreco, mediaDePracas } from "@/lib/precoFonte";
 import { produtoPrincipal } from "@/lib/precos";
@@ -43,6 +48,12 @@ export type ResultadoBuscarPreco = {
    * outros estados e, no boi, o futuro da B3. `frase` é texto pronto pra citar.
    */
   referencia_mercado?: ReferenciaMercado;
+  /**
+   * "Como o meu estado tá vendendo em relação aos outros" — sempre presente
+   * quando existe preço de verdade (diferente de referencia_mercado, que só
+   * aparece como substituto quando o estado NÃO tem dado recente).
+   */
+  comparativo_regional?: BenchmarkRegional;
   erro?: "produto_ausente" | "uf_ausente";
 };
 
@@ -158,8 +169,23 @@ export async function buscarPreco(
       ? { origem_preco: "regional" as const, preco_medio_regioes: precoMedioRegioes }
       : { origem_preco: "estado" as const };
 
+  const precoRepresentativo =
+    origem === "regional" ? precoMedioRegioes : (atuais[0]?.preco ?? null);
+  const benchmark = await buscarBenchmarkRegional(supabase, {
+    cultura: produto,
+    uf,
+    precoUf: precoRepresentativo,
+  });
+  const comComparativo = benchmark ? { comparativo_regional: benchmark } : {};
+
   if (!incluir_frete) {
-    return { encontrado: true, precos: atuais, ...dadosDeOrigem, ...comReferencia };
+    return {
+      encontrado: true,
+      precos: atuais,
+      ...dadosDeOrigem,
+      ...comReferencia,
+      ...comComparativo,
+    };
   }
 
   // O preço da região é o que o produtor recebe (já descontado do frete até o
@@ -173,14 +199,20 @@ export async function buscarPreco(
   });
   if (!frete) {
     return ctx?.pediuFrete
-      ? { encontrado: true, precos: atuais, frete: null, ...dadosDeOrigem }
-      : { encontrado: true, precos: atuais, ...dadosDeOrigem, ...comReferencia };
+      ? { encontrado: true, precos: atuais, frete: null, ...dadosDeOrigem, ...comComparativo }
+      : { encontrado: true, precos: atuais, ...dadosDeOrigem, ...comReferencia, ...comComparativo };
   }
   // Frete de referência sem paridade (MT, GO, milho...) só entra se o produtor
   // perguntou de frete: sem porto pra comparar, é ruído que o modelo repetia
   // em toda resposta.
   if (frete.tipo === "frete_referencia" && !ctx?.pediuFrete) {
-    return { encontrado: true, precos: atuais, ...dadosDeOrigem, ...comReferencia };
+    return {
+      encontrado: true,
+      precos: atuais,
+      ...dadosDeOrigem,
+      ...comReferencia,
+      ...comComparativo,
+    };
   }
 
   return {
@@ -190,5 +222,6 @@ export async function buscarPreco(
     frete_e_paridade: frete,
     ...dadosDeOrigem,
     ...comReferencia,
+    ...comComparativo,
   };
 }
