@@ -168,9 +168,13 @@ const JANELA_SEM_REPETIR_INCENTIVO = 10; // linhas de histórico, ~5 trocas
 // estado"). Isso forçava um retry desnecessário (a resposta já estava boa)
 // e às vezes o retry seguinte também "falhava" na detecção — não no
 // convite em si. Alargado pros radicais/formas mais curtas.
+// 2ª rodada (2026-10-10, testando notaDePrimeiraRespostaPosCadastro): o
+// mesmo gap voltou numa forma nova — o modelo respondeu "outraS culturaS e
+// estadoS" (plural) e o singular aqui não casou, quase causando retry à
+// toa de novo. "s?" em cada palavra cobre singular e plural.
 const PADROES_INCENTIVO_JA_OFERECIDO = [
   /\balertas?\b/i,
-  /outra cultura|outro estado/i,
+  /outras? culturas?|outros? estados?/i,
   /bom momento (pra|para) vender/i,
   /sinal de venda/i,
 ];
@@ -181,12 +185,12 @@ const PADROES_INCENTIVO_JA_OFERECIDO = [
 const PADROES_FUNCIONALIDADE_EXTRA = [
   /\balertas?\b/i,
   /sinal de venda|bom momento (pra|para) vender/i,
-  /insumo|defensivo|fertilizante/i,
-  /c[aâ]mbio|d[oó]lar|chicago|futuro/i,
+  /insumos?|defensivos?|fertilizantes?/i,
+  /c[aâ]mbio|d[oó]lar|chicago|futuros?/i,
   /janela de plantio|plantar/i,
-  /outra cultura|outro estado/i,
+  /outras? culturas?|outros? estados?/i,
   /previs[ãa]o do tempo|clima/i,
-  /leil[ãa]o/i,
+  /leil\w*/i,
   /ferrugem/i,
 ];
 
