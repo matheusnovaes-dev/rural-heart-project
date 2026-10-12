@@ -193,7 +193,7 @@ function LeiloesPage() {
         icon={IconesSafralume.leilao}
         iconePersonalizado
         title="Leilões"
-        description="Agenda de leilão de gado — presencial na sua região e virtual em destaque."
+        description="Agenda de leilão de gado: presencial na sua região e virtual em destaque."
         action={
           <div className="flex gap-2">
             <Dialog open={open} onOpenChange={setOpen}>
@@ -370,7 +370,7 @@ function LeiloesPage() {
             <EmptyState
               icon={Radio}
               title="Nenhum leilão virtual em destaque agora"
-              description="Transmissão online, nacional — qualquer um pode assistir e dar lance."
+              description="Transmissão online, nacional. Qualquer um pode assistir e dar lance."
             />
           ) : (
             virtuais.slice(0, 10).map((l, index) => (

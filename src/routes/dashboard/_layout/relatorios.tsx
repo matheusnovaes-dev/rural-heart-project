@@ -182,7 +182,7 @@ function RelatoriosPage() {
         icon={IconesSafralume.relatorio}
         iconePersonalizado
         title="Relatórios"
-        description="PDF com a marca da sua cooperativa e os preços mais recentes — por estado, e por região onde só existir isso."
+        description="PDF com a marca da sua cooperativa e os preços mais recentes: por estado, e por região onde só existir isso."
         action={seletorCultura}
       />
       <Card>

@@ -470,7 +470,7 @@ function AlertasPage() {
         icon={IconesSafralume.alerta}
         iconePersonalizado
         title="Alertas"
-        description="Preço e clima — só avisa quando tiver algo relevante pra você decidir."
+        description="Preço, câmbio e clima: só avisa quando tiver algo relevante pra você decidir."
         action={
           <div className="flex gap-2">
             {dialogNovoClima}
@@ -488,8 +488,8 @@ function AlertasPage() {
       />
       {atingiuLimite && (
         <p className="text-sm text-muted-foreground">
-          Você já usou os {limite} alertas do plano atual. Pra criar mais, é só fazer upgrade —
-          editar ou cancelar os que já existem continua liberado.
+          Você já usou os {limite} alertas do plano atual. Pra criar mais, é só fazer upgrade.
+          Editar ou cancelar os que já existem continua liberado.
         </p>
       )}
       <p className="text-sm font-semibold text-foreground">Alertas de preço</p>
@@ -596,7 +596,7 @@ function AlertasPage() {
                               Excluir alerta de {a.cultura} · {a.uf}?
                             </AlertDialogTitle>
                             <AlertDialogDescription>
-                              Essa ação não pode ser desfeita — diferente de cancelar, remove o
+                              Essa ação não pode ser desfeita. Diferente de cancelar, remove o
                               alerta do histórico por completo.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
@@ -720,7 +720,7 @@ function AlertasPage() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Excluir alerta de câmbio?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Essa ação não pode ser desfeita — diferente de cancelar, remove o
+                              Essa ação não pode ser desfeita. Diferente de cancelar, remove o
                               alerta do histórico por completo.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
@@ -756,7 +756,7 @@ function AlertasPage() {
                 <EmptyState
                   icon={CloudRain}
                   title="Nenhum alerta de clima ainda"
-                  description="Avisa automaticamente só quando tiver chuva forte, geada, seca prolongada ou vento forte previsto — não manda mensagem à toa."
+                  description="Avisa automaticamente só quando tiver chuva forte, geada, seca prolongada ou vento forte previsto. Não manda mensagem à toa."
                 />
               )}
               <AnimatePresence initial={false}>
@@ -773,7 +773,7 @@ function AlertasPage() {
                     <div className="flex items-center gap-2 text-sm">
                       <CloudRain className="size-4 text-primary" />
                       <span className="font-medium text-foreground">
-                        {condicaoInfo[a.condicao].label} — {descreverCondicaoClima(a)}
+                        {condicaoInfo[a.condicao].label} · {descreverCondicaoClima(a)}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
@@ -838,7 +838,7 @@ function AlertasPage() {
                               Excluir alerta de {condicaoInfo[a.condicao].label} · {a.uf}?
                             </AlertDialogTitle>
                             <AlertDialogDescription>
-                              Essa ação não pode ser desfeita — diferente de cancelar, remove o
+                              Essa ação não pode ser desfeita. Diferente de cancelar, remove o
                               alerta do histórico por completo.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
@@ -942,7 +942,7 @@ function AlertaForm({
           </Select>
         ) : (
           <p className="rounded-md border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground">
-            {destinatarios[0]?.nome ?? "—"}
+            {destinatarios[0]?.nome ?? "-"}
           </p>
         )}
       </div>
@@ -1075,7 +1075,7 @@ function AlertaCambioForm({
           </Select>
         ) : (
           <p className="rounded-md border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground">
-            {destinatarios[0]?.nome ?? "—"}
+            {destinatarios[0]?.nome ?? "-"}
           </p>
         )}
       </div>
@@ -1198,7 +1198,7 @@ function AlertaClimaForm({
           </Select>
         ) : (
           <p className="rounded-md border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground">
-            {destinatarios[0]?.nome ?? "—"}
+            {destinatarios[0]?.nome ?? "-"}
           </p>
         )}
       </div>

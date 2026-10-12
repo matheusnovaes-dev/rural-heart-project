@@ -314,7 +314,7 @@ function LembretesPage() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Excluir "{l.titulo}"?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Essa ação não pode ser desfeita — diferente de cancelar, remove o
+                              Essa ação não pode ser desfeita. Diferente de cancelar, remove o
                               lembrete do histórico por completo.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
@@ -415,7 +415,7 @@ function LembreteForm({
           </Select>
         ) : (
           <p className="rounded-md border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground">
-            {destinatarios[0]?.nome ?? "—"}
+            {destinatarios[0]?.nome ?? "-"}
           </p>
         )}
       </div>

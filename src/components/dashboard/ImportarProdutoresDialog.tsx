@@ -126,7 +126,7 @@ export function ImportarProdutoresDialog({
               />
               <p className="text-xs text-muted-foreground">
                 Ordem das colunas: Nome, WhatsApp, Cultura (opcional), UF (opcional). Cabeçalho é
-                opcional — se colar direto do Excel, a primeira linha com "nome"/"whatsapp" é
+                opcional: se colar direto do Excel, a primeira linha com "nome"/"whatsapp" é
                 detectada e ignorada.
               </p>
             </div>
@@ -157,8 +157,8 @@ export function ImportarProdutoresDialog({
                   {linhas.map((l) => (
                     <tr key={l.linha} className="border-b border-border last:border-0">
                       <td className="p-2 text-muted-foreground">{l.linha}</td>
-                      <td className="p-2">{l.nome || "—"}</td>
-                      <td className="p-2 font-mono">{l.whatsapp || "—"}</td>
+                      <td className="p-2">{l.nome || "-"}</td>
+                      <td className="p-2 font-mono">{l.whatsapp || "-"}</td>
                       <td className="p-2">
                         {l.erro ? (
                           <span className="flex items-center gap-1 text-destructive">
@@ -192,7 +192,7 @@ export function ImportarProdutoresDialog({
                 <tbody>
                   {resultados.map((r) => (
                     <tr key={r.linha} className="border-b border-border last:border-0">
-                      <td className="p-2">{r.nome || "—"}</td>
+                      <td className="p-2">{r.nome || "-"}</td>
                       <td className="p-2">
                         {r.status === "pendente" && (
                           <Loader2 className="size-3 animate-spin text-muted-foreground" />

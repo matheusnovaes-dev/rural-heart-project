@@ -350,7 +350,7 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
             </>
           )}
           <p className="mt-1.5 text-xs text-muted-foreground">
-            <strong>{cultura}</strong> em <strong>{uf}</strong> não tem preço único de estado — essa
+            <strong>{cultura}</strong> em <strong>{uf}</strong> não tem preço único de estado. Essa
             tendência é a média das praças por região, não um número oficial único.
           </p>
         </InsightCard>
@@ -358,7 +358,7 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
       {semHistorico && temDadoRegional && !tendenciaRegional && (
         <InsightCard icon={Gauge} tone="neutral" title="Sem histórico ainda">
           <strong>{cultura}</strong> em <strong>{uf}</strong> só tem preço por região (não um número
-          único do estado) — dá pra ver isso no card "Seu preço hoje" acima. Ainda não tem histórico
+          único do estado), dá pra ver isso no card "Seu preço hoje" acima. Ainda não tem histórico
           suficiente das praças pra calcular tendência.
         </InsightCard>
       )}
@@ -375,7 +375,7 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
           {sinalVenda.texto}
           <p className="mt-1.5 text-xs text-muted-foreground">
             Cruza a posição do preço nos últimos 90 dias, a curva de futuros da B3 e o risco de
-            clima na sua região — não é recomendação de investimento.
+            clima na sua região. Não é recomendação de investimento.
           </p>
         </InsightCard>
       )}

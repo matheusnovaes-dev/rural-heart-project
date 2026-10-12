@@ -135,7 +135,7 @@ export function ProgressoSafraCard({ produtor }: { produtor: Produtor }) {
                 <div key={grupo.chave} className="flex flex-col gap-2">
                   <p className="text-xs text-muted-foreground">
                     {grupo.produto} · {grupo.tipo === "semeadura" ? "semeadura" : "colheita"}
-                    {!temUfPropria && ` — ${produtor.uf} sem avanço relevante ainda`}
+                    {!temUfPropria && ` · ${produtor.uf} sem avanço relevante ainda`}
                   </p>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-foreground">

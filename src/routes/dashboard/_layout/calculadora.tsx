@@ -220,7 +220,7 @@ function CalculadoraConteudo() {
               <p className="text-sm text-muted-foreground">
                 {resultado?.disponivel
                   ? "Escolha o estado pra usar como referência:"
-                  : `Ainda não temos preço de ${nomeCultura.toLowerCase()} em ${uf}. Mas tem dado real e recente em outros estados — escolha um pra usar como referência:`}
+                  : `Ainda não temos preço de ${nomeCultura.toLowerCase()} em ${uf}. Mas tem dado real e recente em outros estados, escolha um pra usar como referência:`}
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {resultado?.outrasUfsDisponiveis.map((o) => (
@@ -329,7 +329,7 @@ function CalculadoraConteudo() {
                 {resultado.usandoOutraUf
                   ? ` de ${nomeDaUf(resultado.ufUsada ?? "")}`
                   : " da sua região"}{" "}
-                hoje. O custo de produção é o que você informou acima — a Safralume não estima seu
+                hoje. O custo de produção é o que você informou acima. A Safralume não estima seu
                 custo, só faz a conta com o número que você digitar.
               </p>
             </div>

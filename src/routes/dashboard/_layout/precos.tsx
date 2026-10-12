@@ -218,7 +218,7 @@ function PrecosPage() {
         icon={IconesSafralume.preco}
         iconePersonalizado
         title="Preços"
-        description="Cotação por estado — e por região, onde só existir isso"
+        description="Cotação por estado, e por região onde só existir isso"
         action={
           <Select value={cultura} onValueChange={setCultura}>
             <SelectTrigger className="w-55" aria-label="Cultura">
@@ -272,7 +272,7 @@ function PrecosPage() {
                             {formatBRL(s.atual)}
                           </>
                         ) : (
-                          "—"
+                          "-"
                         )}
                       </CardTitle>
                     </CardHeader>
@@ -322,7 +322,7 @@ function PrecosPage() {
             Histórico de preço · {culturaLabel}
           </CardTitle>
           <CardDescription>
-            Últimos 6 meses — estado inteiro quando tem, por região quando a fonte só publica assim
+            Últimos 6 meses · estado inteiro quando tem, por região quando a fonte só publica assim
             {series.length > QTD_VISIVEL_PADRAO &&
               ` · mostrando as ${QTD_VISIVEL_PADRAO} séries com mais histórico, clique pra ver outras`}
             .

@@ -157,7 +157,7 @@ export function Hero() {
           className="mt-5 max-w-2xl text-pretty text-lg text-white/85"
         >
           O Safralume cruza o preço de hoje, o mercado futuro da B3 e os últimos 90 dias, e te avisa
-          no WhatsApp na hora certa — não só o número, a decisão.
+          no WhatsApp na hora certa. Não só o número, a decisão.
         </motion.p>
 
         <motion.div

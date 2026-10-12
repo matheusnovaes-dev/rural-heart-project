@@ -30,7 +30,7 @@ const PASSOS = [
     rota: "/dashboard/lembretes",
     titulo: "Lembretes",
     descricao:
-      "Agenda tarefas do dia a dia pra chegar no WhatsApp na hora certa — pra você ou pra sua equipe.",
+      "Agenda tarefas do dia a dia pra chegar no WhatsApp na hora certa, pra você ou pra sua equipe.",
   },
   {
     rota: "/dashboard/funcionarios",
@@ -66,7 +66,7 @@ const PASSOS = [
   {
     rota: "/dashboard/suporte",
     titulo: "Suporte",
-    descricao: "Abra um chamado quando precisar de ajuda — a resposta chega no WhatsApp.",
+    descricao: "Abra um chamado quando precisar de ajuda. A resposta chega no WhatsApp.",
   },
   {
     rota: "/dashboard/assinatura",

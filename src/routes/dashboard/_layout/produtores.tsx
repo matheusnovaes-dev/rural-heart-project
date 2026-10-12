@@ -194,8 +194,8 @@ function ProdutoresPage() {
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">{p.nome}</TableCell>
                       <TableCell>{p.whatsapp}</TableCell>
-                      <TableCell>{p.cultura_principal ?? "—"}</TableCell>
-                      <TableCell>{p.uf ?? "—"}</TableCell>
+                      <TableCell>{p.cultura_principal ?? "-"}</TableCell>
+                      <TableCell>{p.uf ?? "-"}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
                           <Button

@@ -86,6 +86,14 @@ export async function compararProposta(
   };
 }
 
+// Achado real testando ao vivo (bateria adversarial 2026-10-12): boi é
+// vendido por ARROBA, não por saca — mas a frase pronta dizia "sacas" pra
+// qualquer produto. 4 de 5 vezes o modelo até preencheu o valor certo (ex:
+// 18 arrobas) no campo `sacas`, só a palavra que saía errada pro produtor.
+function unidadeDoProduto(produto: string): string {
+  return produto.toUpperCase() === "BOI" ? "arrobas" : "sacas";
+}
+
 function montarFrase(params: {
   produto: string;
   comprador: string | null;
@@ -95,8 +103,15 @@ function montarFrase(params: {
   diferencaTotal: number | null;
   sacas: number | null;
 }): string {
-  const { comprador, precoOferecido, precoReferencia, diferencaPercentual, diferencaTotal, sacas } =
-    params;
+  const {
+    produto,
+    comprador,
+    precoOferecido,
+    precoReferencia,
+    diferencaPercentual,
+    diferencaTotal,
+    sacas,
+  } = params;
   const quemOfereceu = comprador ? ` da ${comprador}` : "";
   const direcao = diferencaPercentual >= 0 ? "acima" : "abaixo";
   const partes = [
@@ -105,7 +120,7 @@ function montarFrase(params: {
   if (diferencaTotal != null && sacas != null) {
     const ganhouOuPerdeu = diferencaTotal >= 0 ? "a mais" : "a menos";
     partes.push(
-      `Nas suas ${sacas} sacas, isso é ${brl(Math.abs(diferencaTotal))} ${ganhouOuPerdeu}.`,
+      `Nas suas ${sacas} ${unidadeDoProduto(produto)}, isso é ${brl(Math.abs(diferencaTotal))} ${ganhouOuPerdeu}.`,
     );
   }
   return partes.join(" ");

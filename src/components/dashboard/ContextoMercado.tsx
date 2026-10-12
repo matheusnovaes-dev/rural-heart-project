@@ -245,7 +245,7 @@ export function ContextoMercado({ cultura }: { cultura?: string }) {
     itens.push({
       chave: `b3-${produto}`,
       icone: TrendingUp,
-      label: `${futuros[0]?.nome_produto} — futuro (B3)`,
+      label: `${futuros[0]?.nome_produto} · futuro (B3)`,
       valor: (
         <>
           {futuros.map((f, i) => (

@@ -10,7 +10,7 @@ const painDestaque = {
   icon: IconesSafralume["sinal-venda"],
   title: "Vende no escuro, sem saber se é a hora certa",
   description:
-    "Você decide olhando só o preço de hoje — sem saber se o mercado futuro da B3 aponta alta, se o clima vai pesar, ou se esperar valeria mais. Decisão no escuro custa caro.",
+    "Você decide olhando só o preço de hoje, sem saber se o mercado futuro da B3 aponta alta, se o clima vai pesar, ou se esperar valeria mais. Decisão no escuro custa caro.",
 };
 
 const painsSecundarios = [

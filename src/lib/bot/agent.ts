@@ -1291,6 +1291,21 @@ export async function runAgent(input: {
         for (const r of resultados) {
           messages.push({ role: "tool", tool_call_id: r.tool_call_id, content: r.content });
         }
+        // Achado real testando ao vivo (bateria adversarial 2026-10-12): ao
+        // receber "precisa_confirmar_primeiro" (alertas, cadastro, resumo
+        // diário — qualquer ferramenta que exige a pergunta de confirmação
+        // antes), o modelo às vezes só chama a MESMA ferramenta de novo com
+        // os mesmos argumentos em vez de perguntar em texto — gastava até
+        // MAX_TOOL_ROUNDS chamadas repetidas (custo e latência) antes de se
+        // corrigir sozinho. Em vez de esperar isso se resolver por conta,
+        // força a correção direto na próxima rodada.
+        if (resultados.some((r) => /"motivo":"precisa_confirmar_primeiro"/.test(r.content))) {
+          messages.push({
+            role: "system",
+            content:
+              "A ferramenta não executou porque ainda falta a pergunta de confirmação. NÃO chame essa ferramenta de novo agora — responda em TEXTO perguntando/confirmando com o produtor antes.",
+          });
+        }
         continue;
       }
 
