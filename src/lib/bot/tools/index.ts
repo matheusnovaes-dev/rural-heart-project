@@ -31,6 +31,7 @@ import { consultarAssinatura } from "@/lib/bot/tools/assinatura";
 import { consultarJanelaPlantio } from "@/lib/bot/tools/plantio";
 import { atualizarLocalizacao } from "@/lib/bot/tools/localizacao";
 import { calcularMargemSafra } from "@/lib/bot/tools/calculadora";
+import { compararProposta } from "@/lib/bot/tools/compararProposta";
 import { esquecerMemoriaProdutor, salvarMemoriaProdutor } from "@/lib/bot/tools/memoria";
 import { configurarResumoDiario } from "@/lib/bot/tools/resumoDiario";
 
@@ -431,6 +432,30 @@ export const TOOLS = [
   {
     type: "function",
     function: {
+      name: "comparar_proposta",
+      description:
+        "Compara uma proposta/oferta de preço que o produtor RECEBEU de um comprador (trading, cooperativa, armazém) com a referência de mercado, e diz se está sendo bem pago. SÓ chame quando o produtor descrever uma proposta real em palavras (ex: 'a Cargill ofereceu 126 na soja', 'me propuseram 62 no milho') — você não vê foto nem PDF, só o que ele escreveu. Nunca invente o nome do comprador nem o preço se ele não disse.",
+      parameters: {
+        type: "object",
+        properties: {
+          produto: { type: "string" },
+          uf: { type: "string" },
+          preco_oferecido: { type: "number", description: "Preço em R$ que o comprador ofereceu." },
+          comprador: { type: ["string", "null"], description: "Nome do comprador, se ele disse." },
+          sacas: {
+            type: ["number", "null"],
+            description:
+              "Quantidade de sacas, só se o produtor disser — pra calcular o total em R$.",
+          },
+        },
+        required: ["produto", "uf", "preco_oferecido", "comprador", "sacas"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "calcular_margem_safra",
       description:
         "Calcula quanto a produção do produtor vale hoje e a margem estimada: sacas × preço real da região, menos o custo de produção que ele informar. SÓ chame depois que ele disser a QUANTIDADE de sacas (nunca estime isso) — custo por saca é opcional, sem ele calcula só o valor bruto, sem margem. Se a cultura não tiver preço na UF pedida, o retorno traz outras_ufs_disponiveis (preço real e recente em outros estados) — nesse caso pergunte qual estado ele quer usar como referência e chame de novo passando uf_referencia com a sigla escolhida.",
@@ -681,6 +706,8 @@ export async function executarTool(
         args as Parameters<typeof atualizarLocalizacao>[1],
         ctx,
       );
+    case "comparar_proposta":
+      return compararProposta(ctx.supabase, args as Parameters<typeof compararProposta>[1], ctx);
     case "calcular_margem_safra":
       return calcularMargemSafra(ctx.supabase, args as Parameters<typeof calcularMargemSafra>[1], {
         lat: ctx.produtor.lat,
