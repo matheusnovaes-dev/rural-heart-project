@@ -132,7 +132,7 @@ function LoginPage() {
   const entrando = mode === "entrar";
 
   return (
-    <div className="flex min-h-screen flex-col bg-secondary/40 lg:flex-row">
+    <div className="flex h-dvh flex-col overflow-hidden bg-secondary/40 lg:h-screen lg:flex-row lg:overflow-visible">
       {/* Painel de marca (desktop) */}
       <div
         className="relative hidden w-full max-w-xl flex-col justify-between overflow-hidden p-10 text-white lg:flex"
@@ -195,37 +195,31 @@ function LoginPage() {
         <Ticker />
       </div>
 
-      {/* Faixa compacta (mobile) — pedido do Matheus 2026-10-12: fixa no
-          topo ao rolar, em vez de rolar junto e cortar o título no meio. */}
-      <div className="sticky top-0 z-20 min-w-0 overflow-hidden p-5 text-white lg:hidden">
+      {/* Faixa compacta (mobile) — pedido do Matheus 2026-10-12: a tela de
+          login tem que caber inteira num quadrante só, sem rolar. Cortado o
+          título grande, o chip flutuante e deixado só a marca + ticker
+          pequeno, pra sobrar espaço pro que importa aqui (o formulário). */}
+      <div className="sticky top-0 z-20 min-w-0 shrink-0 overflow-hidden px-5 py-3 text-white lg:hidden">
         <BrandBackdrop animado={false} />
         <div className="relative z-10 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="flex size-8 items-center justify-center rounded-full bg-white/15 backdrop-blur">
-              <Sprout className="size-4" />
+            <span className="flex size-7 items-center justify-center rounded-full bg-white/15 backdrop-blur">
+              <Sprout className="size-3.5" />
             </span>
-            <span className="text-base font-bold tracking-tight">{siteConfig.name}</span>
+            <span className="text-sm font-bold tracking-tight">{siteConfig.name}</span>
           </div>
           <Link to="/" className="text-xs text-white/60">
             Voltar
           </Link>
         </div>
-        <h1 className="relative z-10 mt-4 max-w-72 text-balance font-display text-xl font-bold leading-tight tracking-tight">
-          O preço da sua saca e o do porto, direto no WhatsApp
-        </h1>
-        <div className="relative z-10 mt-3.5 inline-flex animate-float-chip items-center gap-2 rounded-lg bg-white/95 px-2.5 py-1.5 text-foreground shadow-lg shadow-black/30">
-          <span className="text-[10px] font-semibold text-muted-foreground">SOJA MT</span>
-          <span className="font-display text-sm font-bold">R$142,50</span>
-          <span className="text-[10px] font-bold text-primary">+2,1%</span>
-        </div>
-        <div className="relative z-10 mt-3.5">
+        <div className="relative z-10 mt-2">
           <Ticker compact />
         </div>
       </div>
 
       {/* Formulário */}
-      <div className="flex flex-1 items-center justify-center px-4 py-10 sm:py-12">
-        <div className="relative w-full max-w-sm animate-in overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm fade-in zoom-in-95 duration-300 sm:p-8">
+      <div className="flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 py-3 lg:items-center lg:justify-center lg:overflow-visible lg:py-10">
+        <div className="relative mx-auto w-full max-w-sm animate-in overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-sm fade-in zoom-in-95 duration-300 lg:p-8">
           {status === "success" && (
             <SucessoCheckmark semAnimacao={prefereMenosMovimento ?? false} />
           )}
@@ -263,7 +257,7 @@ function LoginPage() {
             </button>
           </div>
 
-          <div className="mt-6 text-center">
+          <div className="mt-3 text-center lg:mt-6">
             <h1 className="font-display text-xl font-semibold text-foreground">
               {entrando ? "Entrar na sua conta" : "Criar sua conta"}
             </h1>
@@ -272,7 +266,7 @@ function LoginPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
+          <form onSubmit={handleSubmit} className="mt-3 flex flex-col gap-2.5 lg:mt-6 lg:gap-4">
             <div
               className="animate-in space-y-2 fade-in slide-in-from-bottom-3 fill-mode-both"
               style={{ animationDelay: "80ms", animationDuration: "400ms" }}
@@ -359,13 +353,13 @@ function LoginPage() {
               setMode(entrando ? "criar" : "entrar");
               setStatus("idle");
             }}
-            className="mt-4 w-full text-center text-sm text-muted-foreground hover:underline"
+            className="mt-2.5 w-full text-center text-sm text-muted-foreground hover:underline lg:mt-4"
           >
             {entrando ? "Não tem conta? Criar uma agora" : "Já tem conta? Entrar"}
           </button>
 
           {entrando && (
-            <div className="mt-6 flex flex-col gap-2 border-t border-border pt-5 text-center">
+            <div className="mt-3 flex flex-col gap-1.5 border-t border-border pt-3 text-center lg:mt-6 lg:gap-2 lg:pt-5">
               <p className="text-xs text-muted-foreground">
                 Se cadastrou pelo WhatsApp ou pelo formulário e não criou e-mail e senha?
               </p>
@@ -373,7 +367,7 @@ function LoginPage() {
                 href={buildWhatsAppLink("Quero acessar meu painel")}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
+                className="inline-flex items-center justify-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary lg:py-2"
               >
                 <MessageCircle className="size-4 text-[#25D366]" />
                 Pedir meu acesso pelo WhatsApp
