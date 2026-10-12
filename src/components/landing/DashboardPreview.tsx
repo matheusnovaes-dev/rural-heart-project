@@ -21,6 +21,7 @@ import {
   Bug,
   Gavel,
   MousePointer2,
+  LogOut,
 } from "lucide-react";
 
 import { Reveal } from "@/components/landing/Reveal";
@@ -166,66 +167,96 @@ export function DashboardPreview() {
       </Reveal>
 
       <Reveal delay={0.15} className="mx-auto mt-12 max-w-3xl">
+        {/* dashboard-shell: escopa as MESMAS variáveis de cor/fonte do painel
+            de verdade (sidebar verde-escuro, DM Sans, Space Grotesk nos
+            títulos), em vez das cores da própria landing — era por isso que
+            o preview nunca parecia o produto real, por mais que o conteúdo
+            batesse. Pedido do Matheus 2026-10-12: "tem que ser FODA, o mais
+            realista possível". */}
         <div
-          className="overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
+          className="dashboard-shell overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
           onMouseEnter={() => setAutoplay(false)}
           onMouseLeave={() => setAutoplay(true)}
         >
           {/* barra de navegador, só decorativa */}
           <div className="flex items-center gap-2 border-b border-border bg-secondary/60 px-4 py-2.5">
             <span className="size-2.5 rounded-full bg-destructive/60" />
-            <span className="size-2.5 rounded-full bg-primary/40" />
+            <span className="size-2.5 rounded-full bg-gold/50" />
             <span className="size-2.5 rounded-full bg-primary/60" />
-            <span className="ml-3 rounded-md bg-background px-3 py-1 text-xs text-muted-foreground">
+            <span className="ml-3 rounded-md bg-background px-3 py-1 font-mono text-xs text-muted-foreground">
               app.safralume.com.br/dashboard
             </span>
           </div>
 
           <div className="flex flex-col sm:flex-row">
-            {/* mini sidebar, clicável de verdade e com selo do plano */}
+            {/* mini sidebar — mesma cor/estrutura da sidebar real (bg-sidebar
+                verde-escuro, badge de logo, item ativo em sidebar-accent) */}
             <div
               ref={sidebarRef}
-              className="relative flex shrink-0 gap-1 border-b border-border p-2 sm:w-48 sm:flex-col sm:border-b-0 sm:border-r sm:p-3"
+              className="relative flex shrink-0 flex-col gap-1 border-b border-sidebar-border bg-sidebar p-2 sm:w-52 sm:border-r sm:border-b-0 sm:p-3"
             >
+              <div className="mb-2 hidden items-center gap-2.5 px-1 pb-3 sm:flex">
+                <span className="flex size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+                  <Sprout className="size-4" />
+                </span>
+                <div className="min-w-0">
+                  <span className="block truncate font-display text-sm font-semibold text-sidebar-foreground">
+                    Safralume
+                  </span>
+                  <span className="block text-[10px] font-medium tracking-wide text-sidebar-foreground/55 uppercase">
+                    Fazenda Santa Luzia
+                  </span>
+                </div>
+              </div>
+
               <CursorFantasma pos={cursorPos} />
-              {abas.map((item) => (
-                <button
-                  key={item.id}
-                  ref={(el) => {
-                    botaoRefs.current[item.id] = el;
-                  }}
-                  type="button"
-                  onClick={() => selecionarManual(item.id)}
-                  className={cn(
-                    "flex flex-1 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors sm:flex-none",
-                    aba === item.id
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-                  )}
-                >
-                  <item.icon className="size-4 shrink-0" />
-                  <span className="hidden flex-1 sm:inline">{item.label}</span>
-                  <span
+              <div className="flex gap-1 sm:flex-col">
+                {abas.map((item) => (
+                  <button
+                    key={item.id}
+                    ref={(el) => {
+                      botaoRefs.current[item.id] = el;
+                    }}
+                    type="button"
+                    onClick={() => selecionarManual(item.id)}
                     className={cn(
-                      "hidden shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold sm:inline",
-                      aba === item.id ? "bg-white/20 text-white" : planoBadge[item.plano].className,
+                      "flex flex-1 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors sm:flex-none",
+                      aba === item.id
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
                     )}
                   >
-                    {planoBadge[item.plano].label}
-                  </span>
-                </button>
-              ))}
+                    <item.icon className="size-4 shrink-0" />
+                    <span className="hidden flex-1 sm:inline">{item.label}</span>
+                    <span
+                      className={cn(
+                        "hidden shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold sm:inline",
+                        aba === item.id
+                          ? "bg-sidebar-primary/25 text-sidebar-primary"
+                          : planoBadge[item.plano].className,
+                      )}
+                    >
+                      {planoBadge[item.plano].label}
+                    </span>
+                  </button>
+                ))}
+              </div>
 
-              <div className="mt-1 hidden items-center gap-1.5 border-t border-border px-3 pt-3 sm:flex">
+              <div className="mt-1 flex items-center gap-1.5 border-t border-sidebar-border px-3 pt-3 sm:hidden">
                 {abas.map((item) => (
                   <span
                     key={item.id}
                     className={cn(
                       "h-1 flex-1 rounded-full transition-colors",
-                      aba === item.id ? "bg-primary" : "bg-border",
+                      aba === item.id ? "bg-sidebar-primary" : "bg-sidebar-border",
                     )}
                   />
                 ))}
+              </div>
+
+              <div className="mt-auto hidden items-center gap-2 border-t border-sidebar-border px-1 pt-3 text-sidebar-foreground/55 sm:flex">
+                <LogOut className="size-3.5" />
+                <span className="text-xs">Sair</span>
               </div>
             </div>
 
@@ -311,13 +342,21 @@ function PreviewPrecos({
   const sparklineDados = [118, 120, 119, 122, 124, 123, 126, 125, 127, 127];
   return (
     <div className="flex flex-col gap-3">
-      {/* cartão principal — o mesmo "Seu preço hoje" que abre o painel de verdade */}
-      <Card className="border-primary/30 bg-primary py-4 text-primary-foreground">
-        <CardContent className="flex flex-wrap items-end justify-between gap-3 px-4">
+      {/* cartão principal — o mesmo "Seu preço hoje" que abre o painel de
+          verdade, com o mesmo glow radial no canto (ver dashboard/index.tsx) */}
+      <Card className="relative overflow-hidden border-primary bg-primary py-4 text-primary-foreground shadow-lg">
+        <div
+          className="pointer-events-none absolute -top-16 -right-16 size-48 rounded-full bg-primary-foreground/10 blur-3xl"
+          aria-hidden="true"
+        />
+        <CardContent className="relative flex flex-wrap items-end justify-between gap-3 px-4">
           <div>
-            <p className="text-xs font-medium opacity-80">Seu preço hoje</p>
+            <p className="flex items-center gap-1.5 text-xs font-medium opacity-80">
+              <TrendingUp className="size-3" />
+              Seu preço hoje
+            </p>
             <div className="mt-1 flex items-end gap-2">
-              <p className="font-mono text-3xl font-bold tabular-nums">
+              <p className="font-mono text-3xl font-semibold tabular-nums">
                 <span className="mr-0.5 align-top text-sm font-sans font-semibold opacity-70">
                   R$
                 </span>
