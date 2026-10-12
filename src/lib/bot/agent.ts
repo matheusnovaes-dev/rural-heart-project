@@ -198,8 +198,13 @@ function temDuasFuncionalidadesExtras(resposta: string): boolean {
   return PADROES_FUNCIONALIDADE_EXTRA.filter((p) => p.test(resposta)).length >= 2;
 }
 
+// Mesmo achado de 2026-10-12 que corrigiu culturaMaisRecenteNoHistorico:
+// `historico` chega do n8n em ordem DESC (mais recente primeiro), então
+// `.slice(-N)` pegava as N mensagens mais ANTIGAS da janela de 50, não as
+// mais recentes — ordena por `ordem` crescente antes de fatiar.
 function incentivoRecenteNoHistorico(historico: HistoricoLinha[]): boolean {
-  const recentes = historico.slice(-JANELA_SEM_REPETIR_INCENTIVO);
+  const ordenado = [...historico].sort((a, b) => a.ordem - b.ordem);
+  const recentes = ordenado.slice(-JANELA_SEM_REPETIR_INCENTIVO);
   return recentes.some(
     (h) => h.role === "assistant" && PADROES_INCENTIVO_JA_OFERECIDO.some((p) => p.test(h.conteudo)),
   );

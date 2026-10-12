@@ -215,12 +215,24 @@ export function culturaMencionada(texto: string): string | null {
   return normalizarCultura(original);
 }
 
-/** Varre o histórico do fim pro começo (mensagens mais recentes primeiro,
- * incluindo as do próprio bot) e devolve a cultura mencionada mais
- * recentemente, ou null se nenhuma linha mencionar cultura nenhuma. */
-export function culturaMaisRecenteNoHistorico(historico: { conteudo: string }[]): string | null {
-  for (let i = historico.length - 1; i >= 0; i--) {
-    const achada = culturaMencionada(historico[i]?.conteudo ?? "");
+/**
+ * Achado real 2026-10-12 (print do Matheus: perguntou produção de soja,
+ * pergunta de acompanhamento sem citar cultura voltou falando de preço de
+ * MILHO): essa função assumia que `historico` já vinha em ordem cronológica
+ * crescente (mais antiga primeiro) pra poder escanear de trás pra frente e
+ * achar a mais recente. Só que o n8n busca o histórico com `ORDER BY ordem
+ * DESC LIMIT 50` (mais recente primeiro) e manda esse array direto pro bot
+ * — então escanear "de trás pra frente" num array DESC acha a cultura mais
+ * ANTIGA da janela de 50 mensagens, não a mais recente. Nunca pegava em
+ * teste local porque todo teste monta o histórico já em ordem crescente à
+ * mão. Agora ordena por `ordem` primeiro, não confia na ordem de entrada.
+ */
+export function culturaMaisRecenteNoHistorico(
+  historico: { conteudo: string; ordem: number }[],
+): string | null {
+  const ordenado = [...historico].sort((a, b) => a.ordem - b.ordem);
+  for (let i = ordenado.length - 1; i >= 0; i--) {
+    const achada = culturaMencionada(ordenado[i]?.conteudo ?? "");
     if (achada) return achada;
   }
   return null;
