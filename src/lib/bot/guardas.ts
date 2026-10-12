@@ -43,15 +43,24 @@ function extrairNumerosSoltos(texto: string): number[] {
   return achados;
 }
 
-function coletarNumerosDeJson(valor: unknown, saida: number[]): void {
+// Achado real testando ao vivo (2026-10-12): buscar_producao_historica_conab
+// devolve area_plantada_mil_ha/producao_mil_t em MILHARES (ex: 9158.8), e o
+// modelo corretamente escreve o número cheio na resposta ("9.158.800
+// toneladas") — sem a palavra "mil" do lado, porque já fez a conta. Essa
+// função só guardava o valor cru do JSON (9158.8), então a resposta certa
+// (9158800) nunca batia com nenhum "permitido" e caía no bloqueio de "valor
+// não confiável". Chave terminando em "_mil_ha"/"_mil_t" também autoriza o
+// valor × 1000.
+function coletarNumerosDeJson(valor: unknown, saida: number[], chave?: string): void {
   if (typeof valor === "number" && Number.isFinite(valor)) {
     saida.push(valor);
+    if (chave && /_mil_(ha|t)$/.test(chave)) saida.push(valor * 1000);
   } else if (typeof valor === "string") {
     saida.push(...extrairNumerosSoltos(valor));
   } else if (Array.isArray(valor)) {
-    for (const v of valor) coletarNumerosDeJson(v, saida);
+    for (const v of valor) coletarNumerosDeJson(v, saida, chave);
   } else if (valor && typeof valor === "object") {
-    for (const v of Object.values(valor)) coletarNumerosDeJson(v, saida);
+    for (const [k, v] of Object.entries(valor)) coletarNumerosDeJson(v, saida, k);
   }
 }
 
