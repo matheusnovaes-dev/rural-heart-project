@@ -32,6 +32,7 @@ import { consultarJanelaPlantio } from "@/lib/bot/tools/plantio";
 import { atualizarLocalizacao } from "@/lib/bot/tools/localizacao";
 import { calcularMargemSafra } from "@/lib/bot/tools/calculadora";
 import { esquecerMemoriaProdutor, salvarMemoriaProdutor } from "@/lib/bot/tools/memoria";
+import { configurarResumoDiario } from "@/lib/bot/tools/resumoDiario";
 
 export type ToolContext = {
   supabase: SupabaseClient;
@@ -468,6 +469,26 @@ export const TOOLS = [
   {
     type: "function",
     function: {
+      name: "configurar_resumo_diario",
+      description:
+        "Liga, desliga ou muda o horário do resumo diário ('bom dia' automático com preço, progresso de safra, ferrugem, sinal de venda e previsão do tempo, todo dia nesse horário). Só chame depois do produtor confirmar claramente que quer ligar (com o horário) ou desligar — mesma regra de 2 mensagens dos alertas: primeiro confirme o que entendeu, só chama na mensagem seguinte.",
+      parameters: {
+        type: "object",
+        properties: {
+          ativo: { type: "boolean" },
+          hora: {
+            type: ["integer", "null"],
+            description: "Hora do dia, 0-23, horário de Brasília. Obrigatório se ativo=true.",
+          },
+        },
+        required: ["ativo", "hora"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "consultar_assinatura",
       description:
         "Consulta o plano, status (trial/ativa/inadimplente/cancelada) e data de vencimento do trial da assinatura REAL do produtor. SEMPRE chame isto quando ele perguntar qual é o plano dele, se está ativo, quando o trial vence, ou quantos alertas/funcionários ele pode ter — nunca responda essas perguntas de cabeça ou supondo, mesmo que pareça óbvio pelo contexto da conversa.",
@@ -670,6 +691,12 @@ export async function executarTool(
       });
     case "consultar_assinatura":
       return consultarAssinatura(ctx.supabase, ctx);
+    case "configurar_resumo_diario":
+      return configurarResumoDiario(
+        ctx.supabase,
+        args as Parameters<typeof configurarResumoDiario>[1],
+        ctx,
+      );
     case "salvar_memoria_produtor":
       return salvarMemoriaProdutor(
         ctx.supabase,

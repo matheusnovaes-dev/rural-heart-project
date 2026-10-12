@@ -280,6 +280,32 @@ function respostaInventouValorDeCambio(
   return !historico.some((h) => h.role === "user" && h.conteudo.includes(inteiro));
 }
 
+// Achado real testando ao vivo (bateria de 10, 2026-10-12): pedindo resumo
+// diário sem dizer o horário, o modelo repetidamente propôs "7h" (às vezes
+// 0h) como se o produtor tivesse pedido — e numa tentativa propôs "25h" (que
+// nem é hora válida) na própria pergunta de confirmação. Mesmo padrão dos
+// outros dois: rede de segurança por código, não só prompt.
+function horaDaConfirmacaoDeResumo(resposta: string): number | null {
+  if (!/confirma/i.test(resposta) || !/resumo/i.test(resposta)) return null;
+  const m = /\b(\d{1,2})\s*h\b/i.exec(resposta);
+  if (!m) return null;
+  const n = Number(m[1]);
+  return Number.isFinite(n) ? n : null;
+}
+
+function respostaInventouHoraDeResumo(
+  resposta: string,
+  texto: string,
+  historico: HistoricoLinha[],
+): boolean {
+  const hora = horaDaConfirmacaoDeResumo(resposta);
+  if (hora == null) return false;
+  if (hora < 0 || hora > 23) return true; // hora inválida nunca pode ser proposta
+  const str = String(hora);
+  if (texto.includes(str)) return false;
+  return !historico.some((h) => h.role === "user" && h.conteudo.includes(str));
+}
+
 function notaDeIncentivoAtivacao(
   produtor: ProdutorContexto,
   historico: HistoricoLinha[],
@@ -1004,6 +1030,7 @@ export async function runAgent(input: {
   let tentativasForcarPrimeiraResposta = 0;
   let tentativasCorrigirAlertaCambio = 0;
   let tentativasCorrigirValorCambio = 0;
+  let tentativasCorrigirHoraResumo = 0;
 
   // Fecha a resposta: aplica as redes de segurança de texto, troca a resposta
   // do modelo pela confirmação escrita por código quando o cadastro acabou
@@ -1185,6 +1212,22 @@ export async function runAgent(input: {
         role: "system",
         content:
           "Erro: sua pergunta de confirmação do alerta de câmbio propôs um valor (a cotação atual do dólar) que o produtor nunca disse — ele só confirmou que quer o alerta, não deu nenhum número. Responda de novo perguntando direto 'A partir de qual valor?', sem propor nenhum número, nem a cotação de hoje.",
+      });
+      return null;
+    }
+
+    const MAX_TENTATIVAS_CORRIGIR_HORA_RESUMO = 2;
+    if (
+      podeCorrigir &&
+      tentativasCorrigirHoraResumo < MAX_TENTATIVAS_CORRIGIR_HORA_RESUMO &&
+      respostaInventouHoraDeResumo(resposta, texto, historico)
+    ) {
+      tentativasCorrigirHoraResumo++;
+      messages.push({ role: "assistant", content: conteudoBruto ?? parsed.resposta });
+      messages.push({
+        role: "system",
+        content:
+          "Erro: sua pergunta de confirmação do resumo diário propôs um horário que o produtor nunca disse (ou que nem é válido). Responda de novo perguntando direto 'Que horário você prefere?', sem propor nenhum horário.",
       });
       return null;
     }

@@ -27,6 +27,7 @@ import { Route as ApiCronMensagemProativaRouteImport } from './routes/api/cron/m
 import { Route as ApiCronReativacaoRouteImport } from './routes/api/cron/reativacao'
 import { Route as ApiCronRecuperarCadastroRouteImport } from './routes/api/cron/recuperar-cadastro'
 import { Route as ApiCronReengajamentoRouteImport } from './routes/api/cron/reengajamento'
+import { Route as ApiCronResumoDiarioRouteImport } from './routes/api/cron/resumo-diario'
 import { Route as ApiCronVerificarEntregasRouteImport } from './routes/api/cron/verificar-entregas'
 import { Route as DashboardLayoutIndexRouteImport } from './routes/dashboard/_layout/index'
 import { Route as DashboardLayoutAlertasRouteImport } from './routes/dashboard/_layout/alertas'
@@ -133,6 +134,11 @@ const ApiCronRecuperarCadastroRoute =
 const ApiCronReengajamentoRoute = ApiCronReengajamentoRouteImport.update({
   id: '/api/cron/reengajamento',
   path: '/api/cron/reengajamento',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCronResumoDiarioRoute = ApiCronResumoDiarioRouteImport.update({
+  id: '/api/cron/resumo-diario',
+  path: '/api/cron/resumo-diario',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiCronVerificarEntregasRoute =
@@ -242,6 +248,7 @@ export interface FileRoutesByFullPath {
   '/api/cron/reativacao': typeof ApiCronReativacaoRoute
   '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
   '/api/cron/reengajamento': typeof ApiCronReengajamentoRoute
+  '/api/cron/resumo-diario': typeof ApiCronResumoDiarioRoute
   '/api/cron/verificar-entregas': typeof ApiCronVerificarEntregasRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/assinatura': typeof DashboardLayoutAssinaturaRoute
@@ -277,6 +284,7 @@ export interface FileRoutesByTo {
   '/api/cron/reativacao': typeof ApiCronReativacaoRoute
   '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
   '/api/cron/reengajamento': typeof ApiCronReengajamentoRoute
+  '/api/cron/resumo-diario': typeof ApiCronResumoDiarioRoute
   '/api/cron/verificar-entregas': typeof ApiCronVerificarEntregasRoute
   '/dashboard/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/assinatura': typeof DashboardLayoutAssinaturaRoute
@@ -314,6 +322,7 @@ export interface FileRoutesById {
   '/api/cron/reativacao': typeof ApiCronReativacaoRoute
   '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
   '/api/cron/reengajamento': typeof ApiCronReengajamentoRoute
+  '/api/cron/resumo-diario': typeof ApiCronResumoDiarioRoute
   '/api/cron/verificar-entregas': typeof ApiCronVerificarEntregasRoute
   '/dashboard/_layout/alertas': typeof DashboardLayoutAlertasRoute
   '/dashboard/_layout/assinatura': typeof DashboardLayoutAssinaturaRoute
@@ -352,6 +361,7 @@ export interface FileRouteTypes {
     | '/api/cron/reativacao'
     | '/api/cron/recuperar-cadastro'
     | '/api/cron/reengajamento'
+    | '/api/cron/resumo-diario'
     | '/api/cron/verificar-entregas'
     | '/dashboard/alertas'
     | '/dashboard/assinatura'
@@ -387,6 +397,7 @@ export interface FileRouteTypes {
     | '/api/cron/reativacao'
     | '/api/cron/recuperar-cadastro'
     | '/api/cron/reengajamento'
+    | '/api/cron/resumo-diario'
     | '/api/cron/verificar-entregas'
     | '/dashboard/alertas'
     | '/dashboard/assinatura'
@@ -423,6 +434,7 @@ export interface FileRouteTypes {
     | '/api/cron/reativacao'
     | '/api/cron/recuperar-cadastro'
     | '/api/cron/reengajamento'
+    | '/api/cron/resumo-diario'
     | '/api/cron/verificar-entregas'
     | '/dashboard/_layout/alertas'
     | '/dashboard/_layout/assinatura'
@@ -460,6 +472,7 @@ export interface RootRouteChildren {
   ApiCronReativacaoRoute: typeof ApiCronReativacaoRoute
   ApiCronRecuperarCadastroRoute: typeof ApiCronRecuperarCadastroRoute
   ApiCronReengajamentoRoute: typeof ApiCronReengajamentoRoute
+  ApiCronResumoDiarioRoute: typeof ApiCronResumoDiarioRoute
   ApiCronVerificarEntregasRoute: typeof ApiCronVerificarEntregasRoute
 }
 
@@ -589,6 +602,13 @@ declare module '@tanstack/react-router' {
       path: '/api/cron/reengajamento'
       fullPath: '/api/cron/reengajamento'
       preLoaderRoute: typeof ApiCronReengajamentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cron/resumo-diario': {
+      id: '/api/cron/resumo-diario'
+      path: '/api/cron/resumo-diario'
+      fullPath: '/api/cron/resumo-diario'
+      preLoaderRoute: typeof ApiCronResumoDiarioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/cron/verificar-entregas': {
@@ -765,6 +785,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCronReativacaoRoute: ApiCronReativacaoRoute,
   ApiCronRecuperarCadastroRoute: ApiCronRecuperarCadastroRoute,
   ApiCronReengajamentoRoute: ApiCronReengajamentoRoute,
+  ApiCronResumoDiarioRoute: ApiCronResumoDiarioRoute,
   ApiCronVerificarEntregasRoute: ApiCronVerificarEntregasRoute,
 }
 export const routeTree = rootRouteImport
