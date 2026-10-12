@@ -40,6 +40,7 @@ import { PrecoInsumosCard } from "@/components/dashboard/PrecoInsumosCard";
 import { ProgressoSafraCard } from "@/components/dashboard/ProgressoSafraCard";
 import { ReferenciaMercadoCard } from "@/components/dashboard/ReferenciaMercadoCard";
 import { BenchmarkRegionalCard } from "@/components/dashboard/BenchmarkRegionalCard";
+import { DolarCard } from "@/components/dashboard/DolarCard";
 import { DIAS_DADO_DESATUALIZADO } from "@/lib/referenciaMercado";
 import { diasEntre } from "@/lib/precoFonte";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -794,6 +795,10 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                 </div>
               </CardContent>
             </Card>
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <DolarCard />
           </motion.div>
 
           <motion.div variants={itemVariants}>
