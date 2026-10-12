@@ -4,7 +4,7 @@ import { ehBoi, normalizarCultura } from "@/config/culturas";
 import { ufs } from "@/config/ufs";
 import { buscarPreco } from "@/lib/bot/tools/preco";
 import { buscarFerrugemAsiatica } from "@/lib/bot/tools/ferrugem";
-import { buscarProgressoSafraConab } from "@/lib/bot/tools/mercado";
+import { buscarProgressoSafraConab, buscarVariacaoCambio } from "@/lib/bot/tools/mercado";
 import { buscarSinalVenda } from "@/lib/bot/tools/sinalVenda";
 import { buscarLeiloesProximos } from "@/lib/bot/tools/leiloes";
 import { buscarPrevisao } from "@/lib/clima";
@@ -110,10 +110,14 @@ export async function montarResumoReengajamento(
 // outro alerta existente — são a régua de "vale a pena mandar sem ele
 // pedir" especificamente aqui, escolhida pra ser rara e nunca virar
 // recado vazio): 3% de variação de preço desde a última cotação, 70% de
-// chance de chuva, ou mínima prevista <= 3°C (geada).
+// chance de chuva, mínima prevista <= 3°C (geada), ou 1,5% de variação do
+// dólar entre os 2 últimos dias úteis (menor que o de preço de cultura de
+// propósito — câmbio costuma mover menos no dia a dia, então o mesmo 3%
+// quase nunca disparava).
 const LIMIAR_VARIACAO_PRECO = 0.03;
 const LIMIAR_CHUVA_FORTE_PCT = 70;
 const LIMIAR_GEADA_TEMP_MIN = 3;
+const LIMIAR_VARIACAO_CAMBIO = 1.5;
 
 /**
  * Resumo da mensagem proativa diária (pedido do Matheus 2026-10-11): manda,
@@ -121,10 +125,13 @@ const LIMIAR_GEADA_TEMP_MIN = 3;
  * (ver /api/cron/mensagem-proativa), e só quando tem algo que realmente
  * mudaria a decisão do produtor hoje — nunca um "bom dia" vazio. Prioridade:
  * (1) preço moveu de verdade desde a última cotação, (2) clima severo hoje
- * (chuva forte ou geada). Sem nenhum dos dois, retorna null e o cron não
- * manda nada — degradar pro silêncio é o comportamento certo aqui, não um
- * texto de preenchimento (risco de "quality score" do WhatsApp se mandar
- * mensagem sem valor real, ver memória do projeto).
+ * (chuva forte ou geada), (3) dólar moveu de verdade (pedido do Matheus
+ * 2026-10-11, depois de revisar o anúncio v4 — câmbio influencia o preço de
+ * exportação, então é sinal real, mesmo não sendo específico da cultura
+ * dele). Sem nenhum dos três, retorna null e o cron não manda nada —
+ * degradar pro silêncio é o comportamento certo aqui, não um texto de
+ * preenchimento (risco de "quality score" do WhatsApp se mandar mensagem
+ * sem valor real, ver memória do projeto).
  */
 export async function montarResumoProativoDiario(
   supabase: SupabaseClient,
@@ -133,9 +140,10 @@ export async function montarResumoProativoDiario(
   const cultura = normalizarCultura(produtor.cultura_principal);
   const uf = produtor.uf;
 
-  const [serie, previsao] = await Promise.all([
+  const [serie, previsao, cambio] = await Promise.all([
     buscarPrecosDaUf(supabase, cultura, uf).catch(() => null),
     buscarPrevisao(uf).catch(() => null),
+    buscarVariacaoCambio(supabase).catch(() => null),
   ]);
 
   const atual = serie?.serieEstado.at(-1);
@@ -163,6 +171,13 @@ export async function montarResumoProativoDiario(
         `Risco de geada hoje na capital do seu estado (referência): mínima prevista de ${Math.round(minHoje)}°C.`,
       );
     }
+  }
+
+  if (cambio && Math.abs(cambio.variacao) >= LIMIAR_VARIACAO_CAMBIO) {
+    const direcao = cambio.variacao > 0 ? "subiu" : "caiu";
+    return limitarResumo(
+      `O dólar ${direcao} ${pct(Math.abs(cambio.variacao))} desde o último pregão: agora está ${brl(cambio.atual)}, referência de ${dataBr(cambio.dataAtual)}. Câmbio pesa no preço de exportação.`,
+    );
   }
 
   return null;

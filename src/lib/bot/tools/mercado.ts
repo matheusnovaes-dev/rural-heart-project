@@ -19,6 +19,33 @@ export async function buscarCambio(supabase: SupabaseClient) {
   return data ?? { encontrado: false };
 }
 
+/**
+ * Variação do dólar entre os 2 últimos dias úteis com cotação — usado pela
+ * mensagem proativa diária (pedido do Matheus 2026-10-11) pra avisar quando
+ * o câmbio moveu de verdade, mesmo gatilho de preço/clima: não é alerta
+ * configurável pelo produtor ainda, só um dos sinais que decide se vale
+ * mandar a mensagem do dia.
+ */
+export async function buscarVariacaoCambio(supabase: SupabaseClient) {
+  const { data } = await supabase
+    .from("cambio")
+    .select("data, cotacao_venda")
+    .order("data", { ascending: false })
+    .limit(2)
+    .returns<{ data: string; cotacao_venda: number }[]>();
+  if (!data || data.length < 2) return null;
+  const [atual, anterior] = data as [
+    { data: string; cotacao_venda: number },
+    { data: string; cotacao_venda: number },
+  ];
+  if (anterior.cotacao_venda === 0) return null;
+  return {
+    atual: atual.cotacao_venda,
+    dataAtual: atual.data,
+    variacao: ((atual.cotacao_venda - anterior.cotacao_venda) / anterior.cotacao_venda) * 100,
+  };
+}
+
 export async function buscarDiesel(supabase: SupabaseClient, args: { uf: string }) {
   const { data } = await supabase
     .from("diesel_precos")
