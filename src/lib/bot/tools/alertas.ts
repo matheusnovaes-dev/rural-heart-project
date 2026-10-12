@@ -42,7 +42,11 @@ function aindaPrecisaConfirmar(historico: HistoricoLinha[]): boolean {
 // realmente apareceu em algo que o PRODUTOR escreveu (mensagem atual ou
 // histórico) — nunca confia que o valor é genuíno só porque o assistente
 // perguntou usando ele.
-function valorFoiDitoPeloProdutor(valor: number, texto: string, historico: HistoricoLinha[]): boolean {
+function valorFoiDitoPeloProdutor(
+  valor: number,
+  texto: string,
+  historico: HistoricoLinha[],
+): boolean {
   const inteiro = String(Math.trunc(valor));
   if (texto.includes(inteiro)) return true;
   return historico.some((h) => h.role === "user" && h.conteudo.includes(inteiro));
@@ -64,7 +68,12 @@ async function limiteDeAlertasAtingido(supabase: SupabaseClient, produtorId: str
   const limite = limiteAlertas(plano);
   if (limite === Infinity) return false;
 
-  const [{ count: countPreco }, { count: countClima }, { count: countLeilao }] = await Promise.all([
+  const [
+    { count: countPreco },
+    { count: countClima },
+    { count: countLeilao },
+    { count: countCambio },
+  ] = await Promise.all([
     supabase
       .from("alertas_preco")
       .select("id", { count: "exact", head: true })
@@ -80,8 +89,13 @@ async function limiteDeAlertasAtingido(supabase: SupabaseClient, produtorId: str
       .select("id", { count: "exact", head: true })
       .eq("produtor_id", produtorId)
       .eq("ativo", true),
+    supabase
+      .from("alertas_cambio")
+      .select("id", { count: "exact", head: true })
+      .eq("produtor_id", produtorId)
+      .eq("ativo", true),
   ]);
-  return (countPreco ?? 0) + (countClima ?? 0) + (countLeilao ?? 0) >= limite;
+  return (countPreco ?? 0) + (countClima ?? 0) + (countLeilao ?? 0) + (countCambio ?? 0) >= limite;
 }
 
 export async function criarAlertaPreco(
@@ -119,6 +133,42 @@ export async function criarAlertaPreco(
     criado_por: ctx.produtor.user_id,
     cultura: args.cultura,
     uf: args.uf,
+    limite: args.limite,
+    direcao: args.direcao,
+    whatsapp_destino: normalizarWhatsapp(ctx.telefone),
+  });
+  if (error) return { sucesso: false, motivo: "erro_ao_criar" };
+  return { sucesso: true };
+}
+
+/** 4º tipo de alerta (pedido do Matheus 2026-10-12, depois do bug real de
+ * "alerta de dólar" não existir) — mesmo formato de criarAlertaPreco, sem
+ * cultura/uf porque câmbio é um valor nacional só. */
+export async function criarAlertaCambio(
+  supabase: SupabaseClient,
+  args: { limite: number; direcao: "acima" | "abaixo" },
+  ctx: {
+    produtor: ContextoProdutor;
+    telefone: string;
+    historico: HistoricoLinha[];
+    texto: string;
+  },
+) {
+  if (!ctx.produtor.id) {
+    return { sucesso: false, motivo: "sem_cadastro" };
+  }
+  if (aindaPrecisaConfirmar(ctx.historico)) {
+    return { sucesso: false, motivo: "precisa_confirmar_primeiro" };
+  }
+  if (!valorFoiDitoPeloProdutor(args.limite, ctx.texto, ctx.historico)) {
+    return { sucesso: false, motivo: "valor_nao_confirmado" };
+  }
+  if (await limiteDeAlertasAtingido(supabase, ctx.produtor.id)) {
+    return { sucesso: false, motivo: "limite_atingido" };
+  }
+  const { error } = await supabase.from("alertas_cambio").insert({
+    produtor_id: ctx.produtor.id,
+    criado_por: ctx.produtor.user_id,
     limite: args.limite,
     direcao: args.direcao,
     whatsapp_destino: normalizarWhatsapp(ctx.telefone),

@@ -20,7 +20,12 @@ import {
   buscarProducaoWasde,
   buscarProgressoSafraConab,
 } from "@/lib/bot/tools/mercado";
-import { criarAlertaClima, criarAlertaLeilao, criarAlertaPreco } from "@/lib/bot/tools/alertas";
+import {
+  criarAlertaCambio,
+  criarAlertaClima,
+  criarAlertaLeilao,
+  criarAlertaPreco,
+} from "@/lib/bot/tools/alertas";
 import { criarContaTeste } from "@/lib/bot/tools/conta";
 import { consultarAssinatura } from "@/lib/bot/tools/assinatura";
 import { consultarJanelaPlantio } from "@/lib/bot/tools/plantio";
@@ -291,6 +296,23 @@ export const TOOLS = [
           direcao: { type: "string", enum: ["acima", "abaixo"] },
         },
         required: ["cultura", "uf", "limite", "direcao"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "criar_alerta_cambio",
+      description:
+        "Cria um alerta de câmbio: avisa por WhatsApp automaticamente quando a cotação do dólar cruzar um valor. SÓ chame depois do produtor confirmar claramente o valor e a direção — nunca crie um alerta que ele não pediu de forma inequívoca.",
+      parameters: {
+        type: "object",
+        properties: {
+          limite: { type: "number", description: "Cotação do dólar em R$." },
+          direcao: { type: "string", enum: ["acima", "abaixo"] },
+        },
+        required: ["limite", "direcao"],
         additionalProperties: false,
       },
     },
@@ -624,6 +646,8 @@ export async function executarTool(
       return buscarBoletimImea(ctx.supabase, args as Parameters<typeof buscarBoletimImea>[1]);
     case "criar_alerta_preco":
       return criarAlertaPreco(ctx.supabase, args as Parameters<typeof criarAlertaPreco>[1], ctx);
+    case "criar_alerta_cambio":
+      return criarAlertaCambio(ctx.supabase, args as Parameters<typeof criarAlertaCambio>[1], ctx);
     case "criar_alerta_clima":
       return criarAlertaClima(ctx.supabase, args as Parameters<typeof criarAlertaClima>[1], ctx);
     case "criar_alerta_leilao":

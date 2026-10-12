@@ -58,8 +58,13 @@ export const Route = createFileRoute("/dashboard/_layout/alertas")({
   // Link "Criar alerta" nos cards da home (preço/clima) chega aqui já
   // abrindo o diálogo certo, em vez de só cair na página — reduz a
   // fricção de "achar o botão" (pedido do Matheus 2026-10-11).
-  validateSearch: (search: Record<string, unknown>): { abrir?: "preco" | "clima" | undefined } => ({
-    abrir: search["abrir"] === "preco" || search["abrir"] === "clima" ? search["abrir"] : undefined,
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { abrir?: "preco" | "cambio" | "clima" | undefined } => ({
+    abrir:
+      search["abrir"] === "preco" || search["abrir"] === "cambio" || search["abrir"] === "clima"
+        ? search["abrir"]
+        : undefined,
   }),
 });
 
@@ -67,6 +72,16 @@ type Alerta = {
   id: string;
   cultura: string;
   uf: string;
+  limite: number;
+  direcao: "acima" | "abaixo";
+  ativo: boolean;
+  disparado_em: string | null;
+  produtor_id: string;
+  whatsapp_destino: string;
+};
+
+type AlertaCambio = {
+  id: string;
   limite: number;
   direcao: "acima" | "abaixo";
   ativo: boolean;
@@ -120,6 +135,7 @@ function AlertasPage() {
   const { produtor, cooperativa } = useAuth();
   const { plano, assinaturaId, asaasSubscriptionId } = useAssinatura();
   const [alertas, setAlertas] = useState<Alerta[]>([]);
+  const [alertasCambio, setAlertasCambio] = useState<AlertaCambio[]>([]);
   const [alertasClima, setAlertasClima] = useState<AlertaClima[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [produtoresOpcoes, setProdutoresOpcoes] = useState<
@@ -147,6 +163,12 @@ function AlertasPage() {
       )
       .order("created_at", { ascending: false });
     setAlertas(data ?? []);
+
+    const { data: dataCambio } = await supabase
+      .from("alertas_cambio")
+      .select("id, limite, direcao, ativo, disparado_em, produtor_id, whatsapp_destino")
+      .order("created_at", { ascending: false });
+    setAlertasCambio(dataCambio ?? []);
 
     const { data: dataClima } = await supabase
       .from("alertas_clima")
@@ -200,6 +222,36 @@ function AlertasPage() {
     setExcluindoId(id);
     const { error } = await supabase.from("alertas_preco").delete().eq("id", id);
     setExcluindoId(null);
+    if (error) {
+      toast.error("Não foi possível excluir o alerta.");
+      return;
+    }
+    toast.success("Alerta excluído.");
+    load();
+  }
+
+  const [cancelandoCambioId, setCancelandoCambioId] = useState<string | null>(null);
+
+  async function cancelarCambio(id: string) {
+    if (!supabase) return;
+    setCancelandoCambioId(id);
+    const { error } = await supabase.from("alertas_cambio").update({ ativo: false }).eq("id", id);
+    setCancelandoCambioId(null);
+    if (error) {
+      toast.error("Não foi possível cancelar o alerta.");
+      return;
+    }
+    toast.success("Alerta cancelado.");
+    load();
+  }
+
+  const [excluindoCambioId, setExcluindoCambioId] = useState<string | null>(null);
+
+  async function excluirCambio(id: string) {
+    if (!supabase) return;
+    setExcluindoCambioId(id);
+    const { error } = await supabase.from("alertas_cambio").delete().eq("id", id);
+    setExcluindoCambioId(null);
     if (error) {
       toast.error("Não foi possível excluir o alerta.");
       return;
@@ -277,14 +329,18 @@ function AlertasPage() {
       .map((p) => ({ ...p, produtorId: p.id })),
   ];
 
+  const [openCambio, setOpenCambio] = useState(abrir === "cambio");
+  const [editandoCambio, setEditandoCambio] = useState<AlertaCambio | null>(null);
   const [openClima, setOpenClima] = useState(abrir === "clima");
   const [editandoClima, setEditandoClima] = useState<AlertaClima | null>(null);
 
-  // Preço + clima somados contam pro mesmo teto — editar um alerta já
-  // existente continua liberado mesmo no teto (só criar um novo é que fica
-  // bloqueado), por isso o Dialog em si nunca some, só o botão de criar.
+  // Preço + câmbio + clima somados contam pro mesmo teto — editar um alerta
+  // já existente continua liberado mesmo no teto (só criar um novo é que
+  // fica bloqueado), por isso o Dialog em si nunca some, só o botão de criar.
   const alertasAtivos =
-    alertas.filter((a) => a.ativo).length + alertasClima.filter((a) => a.ativo).length;
+    alertas.filter((a) => a.ativo).length +
+    alertasCambio.filter((a) => a.ativo).length +
+    alertasClima.filter((a) => a.ativo).length;
   const limite = limiteAlertas(plano);
   const atingiuLimite = alertasAtivos >= limite;
   const planoAlvo: Plano = "prata";
@@ -317,6 +373,48 @@ function AlertasPage() {
           onDone={() => {
             setOpen(false);
             setEditando(null);
+            load();
+          }}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+
+  const dialogNovoCambio = (
+    <Dialog
+      open={openCambio || !!editandoCambio}
+      onOpenChange={(v) => {
+        if (!v) {
+          setOpenCambio(false);
+          setEditandoCambio(null);
+        }
+      }}
+    >
+      {!atingiuLimite && (
+        <DialogTrigger asChild>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={destinatarios.length === 0}
+            onClick={() => setOpenCambio(true)}
+          >
+            <Plus className="size-4" />
+            Novo alerta de câmbio
+          </Button>
+        </DialogTrigger>
+      )}
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {editandoCambio ? "Editar alerta de câmbio" : "Novo alerta de câmbio"}
+          </DialogTitle>
+        </DialogHeader>
+        <AlertaCambioForm
+          destinatarios={destinatarios}
+          alerta={editandoCambio}
+          onDone={() => {
+            setOpenCambio(false);
+            setEditandoCambio(null);
             load();
           }}
         />
@@ -376,6 +474,7 @@ function AlertasPage() {
         action={
           <div className="flex gap-2">
             {dialogNovoClima}
+            {dialogNovoCambio}
             {dialogNovo}
             {atingiuLimite && (
               <UpgradeButton
@@ -504,6 +603,130 @@ function AlertasPage() {
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
                             <AlertDialogAction onClick={() => excluir(a.id)}>
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <p className="text-sm font-semibold text-foreground">Alertas de câmbio</p>
+      <Card>
+        <CardContent className="flex flex-col gap-3 pt-6">
+          {carregando ? (
+            <div className="flex flex-col gap-2">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          ) : (
+            <>
+              {alertasCambio.length === 0 && (
+                <EmptyState
+                  icon={IconesSafralume.dolar}
+                  iconePersonalizado
+                  title="Nenhum alerta de câmbio ainda"
+                  description="Avisa automaticamente quando o dólar cruzar o valor que te interessa."
+                />
+              )}
+              <AnimatePresence initial={false}>
+                {alertasCambio.map((a, index) => (
+                  <motion.div
+                    key={a.id}
+                    layout
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, height: 0, marginBottom: 0, overflow: "hidden" }}
+                    transition={{ duration: 0.25, delay: index * 0.04 }}
+                    className="flex flex-col gap-1 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="flex items-center gap-2 text-sm">
+                      {a.direcao === "acima" ? (
+                        <ArrowUp className="size-4 text-primary" />
+                      ) : (
+                        <ArrowDown className="size-4 text-destructive" />
+                      )}
+                      <span className="font-medium text-foreground">
+                        Dólar {a.direcao} de{" "}
+                        <span className="font-mono tabular-nums">
+                          R${a.limite.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        </span>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Badge
+                        variant={a.disparado_em ? "default" : "secondary"}
+                        className="mr-1 font-mono text-[11px] tabular-nums"
+                      >
+                        {a.disparado_em
+                          ? `Disparado em ${new Date(a.disparado_em).toLocaleDateString("pt-BR")}`
+                          : a.ativo
+                            ? "Ativo, aguardando"
+                            : "Cancelado"}
+                      </Badge>
+                      {a.ativo && !a.disparado_em && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="size-8 p-0 text-muted-foreground hover:text-foreground"
+                            aria-label="Editar alerta de câmbio"
+                            onClick={() => setEditandoCambio(a)}
+                          >
+                            <Pencil className="size-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="size-8 p-0 text-muted-foreground hover:text-destructive"
+                            disabled={cancelandoCambioId === a.id}
+                            title="Cancelar (mantém no histórico)"
+                            aria-label="Cancelar alerta de câmbio"
+                            onClick={() => cancelarCambio(a.id)}
+                          >
+                            {cancelandoCambioId === a.id ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : (
+                              <X className="size-3.5" />
+                            )}
+                          </Button>
+                        </>
+                      )}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="size-8 p-0 text-muted-foreground hover:text-destructive"
+                            disabled={excluindoCambioId === a.id}
+                            title="Excluir (remove do histórico)"
+                            aria-label="Excluir alerta de câmbio"
+                          >
+                            {excluindoCambioId === a.id ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="size-3.5" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Excluir alerta de câmbio?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Essa ação não pode ser desfeita — diferente de cancelar, remove o
+                              alerta do histórico por completo.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => excluirCambio(a.id)}>
                               Excluir
                             </AlertDialogAction>
                           </AlertDialogFooter>
@@ -763,6 +986,118 @@ function AlertaForm({
           required
           inputMode="decimal"
           placeholder="Ex: 130,00"
+          value={limite}
+          onChange={(e) => setLimite(e.target.value)}
+        />
+      </div>
+      <Button type="submit" disabled={loading} className="mt-2">
+        {loading ? (
+          <Loader2 className="size-4 animate-spin" />
+        ) : alerta ? (
+          "Salvar alterações"
+        ) : (
+          "Criar alerta"
+        )}
+      </Button>
+    </form>
+  );
+}
+
+function AlertaCambioForm({
+  destinatarios,
+  alerta,
+  onDone,
+}: {
+  destinatarios: {
+    id: string;
+    nome: string;
+    whatsapp: string;
+    cultura_principal: string | null;
+    uf: string | null;
+    produtorId: string;
+  }[];
+  alerta: AlertaCambio | null;
+  onDone: () => void;
+}) {
+  const { session } = useAuth();
+  const destinatarioInicial =
+    destinatarios.find((d) => d.whatsapp === alerta?.whatsapp_destino)?.id ??
+    destinatarios[0]?.id ??
+    "";
+  const [destinatarioId, setDestinatarioId] = useState(destinatarioInicial);
+  const [limite, setLimite] = useState(alerta ? String(alerta.limite).replace(".", ",") : "");
+  const [direcao, setDirecao] = useState<"acima" | "abaixo">(alerta?.direcao ?? "acima");
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!supabase || !session || !limite) return;
+    const destinatario = destinatarios.find((d) => d.id === destinatarioId);
+    if (!destinatario) return;
+
+    setLoading(true);
+    const payload = {
+      produtor_id: destinatario.produtorId,
+      limite: parseFloat(limite.replace(",", ".")),
+      direcao,
+      whatsapp_destino: destinatario.whatsapp,
+    };
+    const { error } = alerta
+      ? await supabase.from("alertas_cambio").update(payload).eq("id", alerta.id)
+      : await supabase.from("alertas_cambio").insert({ ...payload, criado_por: session.user.id });
+    setLoading(false);
+    if (error) {
+      toast.error(
+        alerta ? "Não foi possível salvar as alterações." : "Não foi possível criar o alerta.",
+      );
+      return;
+    }
+    toast.success(alerta ? "Alerta atualizado." : "Alerta criado.");
+    onDone();
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      <div className="space-y-1.5">
+        <Label>Para quem</Label>
+        {destinatarios.length > 1 ? (
+          <Select value={destinatarioId} onValueChange={setDestinatarioId}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {destinatarios.map((d) => (
+                <SelectItem key={d.id} value={d.id}>
+                  {d.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <p className="rounded-md border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground">
+            {destinatarios[0]?.nome ?? "—"}
+          </p>
+        )}
+      </div>
+      <div className="space-y-1.5">
+        <Label>Avisar quando o dólar ficar</Label>
+        <Select value={direcao} onValueChange={(v) => setDirecao(v as "acima" | "abaixo")}>
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="acima">Acima de</SelectItem>
+            <SelectItem value="abaixo">Abaixo de</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="ac-limite">Valor (R$)</Label>
+        <Input
+          id="ac-limite"
+          required
+          inputMode="decimal"
+          placeholder="Ex: 5,20"
           value={limite}
           onChange={(e) => setLimite(e.target.value)}
         />

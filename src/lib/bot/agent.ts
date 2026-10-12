@@ -142,7 +142,7 @@ const TURNOS_INICIO_DE_RELACAO = 6;
 // instrução solta não garante variedade de verdade. Igual
 // FORMATOS_ABERTURA_ANUNCIO, o CÓDIGO sorteia o ângulo (não o modelo).
 const ANGULOS_INCENTIVO_ATIVACAO = [
-  "Depois de responder a pergunta dele normalmente, pergunte se ele quer que você crie um alerta automático pra isso (preço ou clima, o que for o assunto da pergunta dele) — avisa sozinho quando mudar.",
+  "Depois de responder a pergunta dele normalmente, pergunte se ele quer que você crie um alerta automático pra isso (preço, câmbio ou clima, o que for o assunto da pergunta dele) — avisa sozinho quando mudar.",
   "Depois de responder a pergunta dele normalmente, pergunte se ele também quer acompanhar outra cultura ou outro estado além do principal dele, já que o Safralume cobre mais de 70 culturas.",
   "Depois de responder a pergunta dele normalmente, pergunte se ele quer saber se é um bom momento pra vender a cultura principal dele (sinal de venda) — cruza o preço dos últimos 90 dias com o mercado futuro da B3.",
 ];
@@ -213,19 +213,18 @@ function incentivoRecenteNoHistorico(historico: HistoricoLinha[]): boolean {
 // não?" — sinônimo coloquial de chover que nenhuma raiz cobria.
 const ASSUNTO_CLIMA = /\b(clima|tempo|previs[ãa]o|geada|seca|chuv\w*|chov\w*|molh\w*|umidade)\b/i;
 
-function assuntoAlertavel(texto: string): boolean {
-  return culturaMencionada(texto) !== null || ASSUNTO_CLIMA.test(texto);
-}
-
-// Achado real 2026-10-12 (print do Matheus, bug reproduzido 2x ao vivo numa
-// conversa real): ele perguntou o dólar e pediu "cria uma alerta disso" —
-// não existe alerta de câmbio, mas o modelo às vezes ainda puxava uma
-// cultura antiga do histórico (ex: "me diz a cultura (milho)...") em vez de
-// dizer que esse tipo de alerta não existe. A regra escrita no prompt
-// reduz isso mas não garante sozinha (passou 3/3 num teste isolado e
-// mesmo assim falhou numa tentativa real) — mesmo padrão já visto aqui:
-// fica também a rede de segurança por código.
+// Achado real 2026-10-12 (print do Matheus): bug de "alerta de dólar" que
+// não existia (ver respostaFugiuDeCambioParaCultura abaixo). Câmbio virou
+// o 4º tipo de alerta de verdade nesse mesmo pedido — entra aqui também
+// como assunto alertável, senão o gancho de "quer que eu crie um alerta
+// pra isso?" nunca aparecia pra quem perguntava o dólar.
 const ASSUNTO_CAMBIO = /\b(d[óo]lar|c[âa]mbio|ptax)\b/i;
+
+function assuntoAlertavel(texto: string): boolean {
+  return (
+    culturaMencionada(texto) !== null || ASSUNTO_CLIMA.test(texto) || ASSUNTO_CAMBIO.test(texto)
+  );
+}
 
 function pedidoDeAlertaSemCultura(texto: string): boolean {
   return /\balert\w*/i.test(texto) && culturaMencionada(texto) === null;
@@ -251,6 +250,34 @@ function respostaFugiuDeCambioParaCultura(
     topicoRecenteEhCambioSemCultura(historico) &&
     culturaMencionada(resposta) !== null
   );
+}
+
+// Achado real testando ao vivo (bateria de 10, 2026-10-12): quando o
+// produtor confirma que quer um alerta de câmbio sem ter dito nenhum valor
+// ("sim quero"), o modelo às vezes propõe a COTAÇÃO ATUAL do dólar como se
+// fosse o limite do alerta ("Confirma: ... quando passar de R$4,99?", sendo
+// 4,99 a cotação de agora) — mesmo erro já documentado no prompt pra
+// qualquer alerta (nunca propor valor que o produtor não disse), só que a
+// regra geral não bastou pro fluxo novo de câmbio. Mesmo padrão de sempre:
+// rede de segurança por código, não só prompt.
+function valorDaConfirmacaoDeCambio(resposta: string): number | null {
+  if (!/confirma/i.test(resposta) || !ASSUNTO_CAMBIO.test(resposta)) return null;
+  const m = /R\$\s*([\d.,]+)/.exec(resposta);
+  if (!m) return null;
+  const n = Number(m[1]!.replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(n) ? n : null;
+}
+
+function respostaInventouValorDeCambio(
+  resposta: string,
+  texto: string,
+  historico: HistoricoLinha[],
+): boolean {
+  const valor = valorDaConfirmacaoDeCambio(resposta);
+  if (valor == null) return false;
+  const inteiro = String(Math.trunc(valor));
+  if (texto.includes(inteiro)) return false;
+  return !historico.some((h) => h.role === "user" && h.conteudo.includes(inteiro));
 }
 
 function notaDeIncentivoAtivacao(
@@ -976,6 +1003,7 @@ export async function runAgent(input: {
   let tentativasForcarIncentivo = 0;
   let tentativasForcarPrimeiraResposta = 0;
   let tentativasCorrigirAlertaCambio = 0;
+  let tentativasCorrigirValorCambio = 0;
 
   // Fecha a resposta: aplica as redes de segurança de texto, troca a resposta
   // do modelo pela confirmação escrita por código quando o cadastro acabou
@@ -1140,7 +1168,23 @@ export async function runAgent(input: {
       messages.push({
         role: "system",
         content:
-          "Erro: o produtor pediu um alerta logo depois de perguntar sobre câmbio/dólar, e sua resposta propôs ou perguntou sobre uma cultura — isso está errado, ele não mencionou cultura nenhuma. Não existe alerta de câmbio. Responda de novo dizendo, numa frase curta, que esse tipo de alerta ainda não existe (hoje só preço de cultura, clima ou leilão), sem perguntar por nenhuma cultura nem propor uma.",
+          "Erro: o produtor pediu um alerta logo depois de perguntar sobre câmbio/dólar, e sua resposta propôs ou perguntou sobre uma cultura — isso está errado, ele não mencionou cultura nenhuma. O alerta que ele quer é de câmbio (criar_alerta_cambio), não de preço de cultura. Responda de novo perguntando/confirmando o alerta de câmbio, sem citar nenhuma cultura.",
+      });
+      return null;
+    }
+
+    const MAX_TENTATIVAS_CORRIGIR_VALOR_CAMBIO = 2;
+    if (
+      podeCorrigir &&
+      tentativasCorrigirValorCambio < MAX_TENTATIVAS_CORRIGIR_VALOR_CAMBIO &&
+      respostaInventouValorDeCambio(resposta, texto, historico)
+    ) {
+      tentativasCorrigirValorCambio++;
+      messages.push({ role: "assistant", content: conteudoBruto ?? parsed.resposta });
+      messages.push({
+        role: "system",
+        content:
+          "Erro: sua pergunta de confirmação do alerta de câmbio propôs um valor (a cotação atual do dólar) que o produtor nunca disse — ele só confirmou que quer o alerta, não deu nenhum número. Responda de novo perguntando direto 'A partir de qual valor?', sem propor nenhum número, nem a cotação de hoje.",
       });
       return null;
     }
