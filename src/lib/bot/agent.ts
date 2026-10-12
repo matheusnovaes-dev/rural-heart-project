@@ -326,6 +326,12 @@ function respostaInventouHoraDeResumo(
 // que esse tipo ainda não existe. O prompt já lista os 4 tipos e dá esse
 // caso como exemplo explícito, e mesmo assim só acerta 1 em 5 — mesmo
 // padrão de sempre, precisa de rede de segurança por código.
+// 2ª rodada (mesmo dia, achado em produção DEPOIS de publicar o 1º fix):
+// pra produtor SEM cadastro, a regra genérica de "aviso/alerta vem junto
+// do cadastro" disparava antes de checar se o tipo existe, e a resposta
+// saiu "o aviso automático de ferrugem vem junto com o cadastro grátis"
+// — nem usa a palavra "alerta" (usa "aviso"), então o regex original não
+// pegava. Alargado pra cobrir as duas palavras.
 const PADRAO_PEDIDO_PRAGA_DOENCA = /\b(ferrugem|lagarta|mofo[- ]branco|praga|doen[cç]a)\b/i;
 const PADRAO_RESPOSTA_DECLINOU =
   /ainda n[ãa]o existe|n[ãa]o tenho esse tipo|n[ãa]o consigo criar esse tipo/i;
@@ -341,7 +347,7 @@ function respostaTratouPragaComoAlertaValido(
       .slice(-4)
       .some((h) => h.role === "user" && PADRAO_PEDIDO_PRAGA_DOENCA.test(h.conteudo));
   if (!assuntoEhPragaOuDoenca) return false;
-  if (!/alerta/i.test(resposta)) return false;
+  if (!/alertas?\b|avisos?\b/i.test(resposta)) return false;
   return !PADRAO_RESPOSTA_DECLINOU.test(resposta);
 }
 
