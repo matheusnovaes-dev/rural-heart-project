@@ -897,6 +897,20 @@ type OpenAIMessage = {
   tool_call_id?: string;
 };
 
+// Achado real em produção (2026-10-12, print do Matheus): produtor novo
+// (cadastro de 2 dias) perguntou sobre chuva, o bot caiu direto no
+// FALLBACK_DURO ("não consegui pensar numa resposta"), e ele nunca mais
+// mandou mensagem nenhuma — perdido, sem nenhuma segunda chance. Reproduzi
+// a mesma pergunta 10/10 vezes com sucesso, então não era bug de lógica —
+// era uma falha passageira (429/5xx da OpenAI, bem comum em qualquer
+// integração) que não tinha NENHUM retry: um único erro transitório já
+// derrubava a resposta inteira pro produtor. "Isso não pode ocorrer" —
+// agora tenta de novo (2x, com um respiro curto) antes de desistir, só
+// pra erro que faz sentido tentar de novo (429/5xx/falha de rede) — erro
+// de requisição malformada (4xx que não é 429) não repete, falharia igual.
+const STATUS_TRANSITORIOS = new Set([408, 409, 425, 429, 500, 502, 503, 504]);
+const MAX_TENTATIVAS_OPENAI = 3;
+
 async function chamarOpenAI(
   apiKey: string,
   messages: OpenAIMessage[],
@@ -914,16 +928,46 @@ async function chamarOpenAI(
     body["parallel_tool_calls"] = true;
   }
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify(body),
-    signal: opts.signal,
-  });
-  if (!res.ok) {
-    throw new Error(`OpenAI respondeu ${res.status}: ${await res.text()}`);
+  // Achado real testando o retry antes de publicar: o throw pro status não
+  // transitório (ex: 400) caía DENTRO do mesmo try/catch que trata falha de
+  // rede — o catch pegava esse throw também e tentava de novo do mesmo
+  // jeito, tornando a trava "só repete erro transitório" inútil na prática
+  // (um 400 real repetiria 3x à toa). Por isso o fetch fica isolado no seu
+  // próprio try/catch (só falha de rede entra ali); a decisão por status
+  // HTTP acontece DEPOIS, fora de qualquer catch, pra um throw por status
+  // não transitório sair direto do loop, sem ser recapturado.
+  let ultimoErro: unknown;
+  for (let tentativa = 0; tentativa < MAX_TENTATIVAS_OPENAI; tentativa++) {
+    if (tentativa > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 600 * tentativa));
+    }
+    let res: Response;
+    try {
+      res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify(body),
+        signal: opts.signal,
+      });
+    } catch (err) {
+      // AbortError (timeout do próprio agente) não deve tentar de novo —
+      // já estourou o orçamento de tempo da resposta inteira.
+      if (err instanceof Error && err.name === "AbortError") throw err;
+      if (tentativa < MAX_TENTATIVAS_OPENAI - 1) {
+        ultimoErro = err;
+        continue;
+      }
+      throw err;
+    }
+    if (res.ok) return res.json();
+    const texto = await res.text();
+    if (STATUS_TRANSITORIOS.has(res.status) && tentativa < MAX_TENTATIVAS_OPENAI - 1) {
+      ultimoErro = new Error(`OpenAI respondeu ${res.status}: ${texto}`);
+      continue;
+    }
+    throw new Error(`OpenAI respondeu ${res.status}: ${texto}`);
   }
-  return res.json();
+  throw ultimoErro;
 }
 
 async function responderPedidoDeAcesso(
