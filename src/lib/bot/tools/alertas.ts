@@ -194,6 +194,18 @@ export async function criarAlertaClima(
   if (!ctx.produtor.id) {
     return { sucesso: false, motivo: "sem_cadastro" };
   }
+  // Achado real testando ao vivo (bateria adversarial 2026-10-12): o
+  // produtor pediu alerta de "ferrugem" (não é um dos 4 tipos reais de
+  // alerta), e o modelo tratou isso como se fosse clima, chamando essa
+  // ferramenta com condicao="ferrugem" — valor que o tipo TypeScript nunca
+  // permitiria em teoria, mas TypeScript não existe em runtime, e o cast
+  // em executarTool não valida nada de verdade. Sem essa trava, isso
+  // criaria um alerta "fantasma" que nunca dispara (nenhum código
+  // reconhece essa condição), dando falsa confiança ao produtor.
+  const CONDICOES_VALIDAS = ["chuva_forte", "geada", "seca_prolongada", "vento_forte"];
+  if (!CONDICOES_VALIDAS.includes(args.condicao)) {
+    return { sucesso: false, motivo: "condicao_invalida" };
+  }
   if (aindaPrecisaConfirmar(ctx.historico)) {
     return { sucesso: false, motivo: "precisa_confirmar_primeiro" };
   }

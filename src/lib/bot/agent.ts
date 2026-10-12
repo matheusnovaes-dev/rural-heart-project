@@ -318,6 +318,33 @@ function respostaInventouHoraDeResumo(
   return !historico.some((h) => h.role === "user" && h.conteudo.includes(str));
 }
 
+// Achado real testando ao vivo (bateria adversarial 2026-10-12): pedido de
+// alerta de praga/doença (ferrugem, lagarta, mofo-branco) — que não é um
+// dos 4 tipos reais de alerta — faz o modelo tratar como se fosse pendente
+// de criar (propõe "Confirma: alerta pra te avisar de ferrugem?" ou pede
+// UF/município como se fosse seguir construindo), em vez de dizer de cara
+// que esse tipo ainda não existe. O prompt já lista os 4 tipos e dá esse
+// caso como exemplo explícito, e mesmo assim só acerta 1 em 5 — mesmo
+// padrão de sempre, precisa de rede de segurança por código.
+const PADRAO_PEDIDO_PRAGA_DOENCA = /\b(ferrugem|lagarta|mofo[- ]branco|praga|doen[cç]a)\b/i;
+const PADRAO_RESPOSTA_DECLINOU =
+  /ainda n[ãa]o existe|n[ãa]o tenho esse tipo|n[ãa]o consigo criar esse tipo/i;
+
+function respostaTratouPragaComoAlertaValido(
+  resposta: string,
+  texto: string,
+  historico: HistoricoLinha[],
+): boolean {
+  const assuntoEhPragaOuDoenca =
+    PADRAO_PEDIDO_PRAGA_DOENCA.test(texto) ||
+    historico
+      .slice(-4)
+      .some((h) => h.role === "user" && PADRAO_PEDIDO_PRAGA_DOENCA.test(h.conteudo));
+  if (!assuntoEhPragaOuDoenca) return false;
+  if (!/alerta/i.test(resposta)) return false;
+  return !PADRAO_RESPOSTA_DECLINOU.test(resposta);
+}
+
 function notaDeIncentivoAtivacao(
   produtor: ProdutorContexto,
   historico: HistoricoLinha[],
@@ -1043,6 +1070,7 @@ export async function runAgent(input: {
   let tentativasCorrigirAlertaCambio = 0;
   let tentativasCorrigirValorCambio = 0;
   let tentativasCorrigirHoraResumo = 0;
+  let tentativasCorrigirAlertaPraga = 0;
 
   // Fecha a resposta: aplica as redes de segurança de texto, troca a resposta
   // do modelo pela confirmação escrita por código quando o cadastro acabou
@@ -1240,6 +1268,22 @@ export async function runAgent(input: {
         role: "system",
         content:
           "Erro: sua pergunta de confirmação do resumo diário propôs um horário que o produtor nunca disse (ou que nem é válido). Responda de novo perguntando direto 'Que horário você prefere?', sem propor nenhum horário.",
+      });
+      return null;
+    }
+
+    const MAX_TENTATIVAS_CORRIGIR_ALERTA_PRAGA = 2;
+    if (
+      podeCorrigir &&
+      tentativasCorrigirAlertaPraga < MAX_TENTATIVAS_CORRIGIR_ALERTA_PRAGA &&
+      respostaTratouPragaComoAlertaValido(resposta, texto, historico)
+    ) {
+      tentativasCorrigirAlertaPraga++;
+      messages.push({ role: "assistant", content: conteudoBruto ?? parsed.resposta });
+      messages.push({
+        role: "system",
+        content:
+          "Erro: o produtor pediu alerta de praga/doença (ferrugem, lagarta, mofo-branco etc), e isso NÃO é um dos 4 tipos reais de alerta (preço, câmbio, clima, leilão) — clima é só chuva forte/geada/seca prolongada/vento forte, nunca praga ou doença. Não peça UF nem mais detalhes como se fosse seguir criando. Responda de novo dizendo com uma frase curta que esse tipo de alerta ainda não existe hoje, sem propor nenhum dos 4 tipos reais no lugar a menos que ele peça.",
       });
       return null;
     }
