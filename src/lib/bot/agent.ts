@@ -172,9 +172,16 @@ const JANELA_SEM_REPETIR_INCENTIVO = 10; // linhas de histórico, ~5 trocas
 // mesmo gap voltou numa forma nova — o modelo respondeu "outraS culturaS e
 // estadoS" (plural) e o singular aqui não casou, quase causando retry à
 // toa de novo. "s?" em cada palavra cobre singular e plural.
+// Achado real 2026-10-12 (print do Matheus): perguntou a cotação do dólar
+// e o bot não ofereceu o gancho de alerta — a troca anterior (comparação de
+// produção de soja entre estados, pergunta genuína, não convite nenhum)
+// tinha a frase "outros estados" na resposta, e isso sozinho já contava
+// como "gancho recém-oferecido", suprimindo o convite de verdade. Os dois
+// primeiros padrões agora exigem a combinação real do convite (não uma
+// palavra solta que também aparece em resposta normal, sem ser convite).
 const PADROES_INCENTIVO_JA_OFERECIDO = [
-  /\balertas?\b/i,
-  /outras? culturas?|outros? estados?/i,
+  /alertas? autom[aá]tico|(criar?|crie|quer|quero|gostaria|posso)[^.?!]{0,25}\balertas?\b/i,
+  /\boutr[ao]s?\s+culturas?\b[^.?!]{0,40}\boutr[ao]s?\s+estados?\b|\boutr[ao]s?\s+estados?\b[^.?!]{0,40}\boutr[ao]s?\s+culturas?\b/i,
   /bom momento (pra|para) vender/i,
   /sinal de venda/i,
 ];

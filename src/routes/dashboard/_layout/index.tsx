@@ -678,6 +678,15 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
             </Card>
           </motion.div>
 
+          {/* Achado real 2026-10-12 (print do Matheus): no mobile a coluna
+              lateral inteira (onde o DolarCard morava) só aparece depois de
+              TODOS os cards da coluna principal — "ficou lá embaixo" de
+              verdade. Movido pra cá, logo após o hero de preço, pra aparecer
+              perto do topo em qualquer tela. */}
+          <motion.div variants={itemVariants}>
+            <DolarCard />
+          </motion.div>
+
           {/leite/i.test(produtor.cultura_principal ?? "") && (
             <motion.div variants={itemVariants}>
               <LeiteCard produtor={produtor} />
@@ -795,10 +804,6 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
-            <DolarCard />
           </motion.div>
 
           <motion.div variants={itemVariants}>
