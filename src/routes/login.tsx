@@ -195,8 +195,9 @@ function LoginPage() {
         <Ticker />
       </div>
 
-      {/* Faixa compacta (mobile) */}
-      <div className="relative min-w-0 overflow-hidden p-5 text-white lg:hidden">
+      {/* Faixa compacta (mobile) — pedido do Matheus 2026-10-12: fixa no
+          topo ao rolar, em vez de rolar junto e cortar o título no meio. */}
+      <div className="sticky top-0 z-20 min-w-0 overflow-hidden p-5 text-white lg:hidden">
         <BrandBackdrop animado={false} />
         <div className="relative z-10 flex items-center justify-between">
           <div className="flex items-center gap-2">

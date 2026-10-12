@@ -85,9 +85,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // Achado real 2026-10-12 (print do Matheus): sem essa tag, o Safari no
       // iOS pinta a faixa entre a barra de endereço e o topo da página com
       // uma cor própria (preta), que não bate com o verde escuro do header
-      // — fica um "contorno preto estranho" bem visível. Mesma cor do fundo
-      // do BrandBackdrop (header da landing/login).
-      { name: "theme-color", content: "oklch(0.17 0.028 156.5)" },
+      // — fica um "contorno preto estranho" bem visível. Primeira tentativa
+      // usou oklch() (mesma cor do BrandBackdrop) e não resolveu no device
+      // real — o parser de theme-color do Safari é mais conservador que o
+      // motor de CSS da página e não entende oklch() nesse contexto
+      // específico. #05130a é o hex equivalente exato (convertido), suporte
+      // universal.
+      { name: "theme-color", content: "#05130a" },
       { title: "Safralume: o preço da sua saca e o do porto, direto no WhatsApp" },
       {
         name: "description",
