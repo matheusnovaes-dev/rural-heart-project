@@ -82,6 +82,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      // Achado real 2026-10-12 (print do Matheus): sem essa tag, o Safari no
+      // iOS pinta a faixa entre a barra de endereço e o topo da página com
+      // uma cor própria (preta), que não bate com o verde escuro do header
+      // — fica um "contorno preto estranho" bem visível. Mesma cor do fundo
+      // do BrandBackdrop (header da landing/login).
+      { name: "theme-color", content: "oklch(0.17 0.028 156.5)" },
       { title: "Safralume: o preço da sua saca e o do porto, direto no WhatsApp" },
       {
         name: "description",

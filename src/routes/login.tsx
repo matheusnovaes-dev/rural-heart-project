@@ -196,7 +196,7 @@ function LoginPage() {
       </div>
 
       {/* Faixa compacta (mobile) */}
-      <div className="relative overflow-hidden p-5 text-white lg:hidden">
+      <div className="relative min-w-0 overflow-hidden p-5 text-white lg:hidden">
         <BrandBackdrop animado={false} />
         <div className="relative z-10 flex items-center justify-between">
           <div className="flex items-center gap-2">

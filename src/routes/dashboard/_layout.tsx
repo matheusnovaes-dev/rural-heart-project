@@ -48,7 +48,15 @@ import { useSair } from "@/components/dashboard/useSair";
 import { LoadingScreen } from "@/components/LoadingScreen";
 
 export const Route = createFileRoute("/dashboard/_layout")({
-  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({
+    meta: [
+      { name: "robots", content: "noindex, nofollow" },
+      // O painel é claro (fundo .dashboard-shell), diferente do header
+      // escuro da landing/login — sobrescreve o theme-color do root pra
+      // não destoar da própria cor que o painel renderiza no topo.
+      { name: "theme-color", content: "oklch(0.963 0.01 110)" },
+    ],
+  }),
   component: DashboardGuard,
 });
 

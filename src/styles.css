@@ -218,12 +218,19 @@
 
   html {
     scroll-behavior: smooth;
+    /* Achado real 2026-10-12 (print do Matheus): sem isso, qualquer elemento
+       um pouco mais largo que a tela (ex: o marquee do Ticker no /login, que
+       tem largura própria bem maior que a viewport de propósito) faz a
+       página inteira ganhar scroll horizontal — "scroll ativo" que corta
+       conteúdo. Trava aqui pra ser impossível em qualquer página. */
+    overflow-x: hidden;
   }
 
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    overflow-x: hidden;
   }
 
   @media (prefers-reduced-motion: reduce) {
