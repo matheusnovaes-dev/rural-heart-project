@@ -217,6 +217,42 @@ function assuntoAlertavel(texto: string): boolean {
   return culturaMencionada(texto) !== null || ASSUNTO_CLIMA.test(texto);
 }
 
+// Achado real 2026-10-12 (print do Matheus, bug reproduzido 2x ao vivo numa
+// conversa real): ele perguntou o dólar e pediu "cria uma alerta disso" —
+// não existe alerta de câmbio, mas o modelo às vezes ainda puxava uma
+// cultura antiga do histórico (ex: "me diz a cultura (milho)...") em vez de
+// dizer que esse tipo de alerta não existe. A regra escrita no prompt
+// reduz isso mas não garante sozinha (passou 3/3 num teste isolado e
+// mesmo assim falhou numa tentativa real) — mesmo padrão já visto aqui:
+// fica também a rede de segurança por código.
+const ASSUNTO_CAMBIO = /\b(d[óo]lar|c[âa]mbio|ptax)\b/i;
+
+function pedidoDeAlertaSemCultura(texto: string): boolean {
+  return /\balert\w*/i.test(texto) && culturaMencionada(texto) === null;
+}
+
+function topicoRecenteEhCambioSemCultura(historico: HistoricoLinha[]): boolean {
+  const ordenado = [...historico].sort((a, b) => a.ordem - b.ordem);
+  const ultimaDoAssistente = [...ordenado].reverse().find((h) => h.role === "assistant");
+  if (!ultimaDoAssistente) return false;
+  return (
+    ASSUNTO_CAMBIO.test(ultimaDoAssistente.conteudo) &&
+    culturaMencionada(ultimaDoAssistente.conteudo) === null
+  );
+}
+
+function respostaFugiuDeCambioParaCultura(
+  resposta: string,
+  texto: string,
+  historico: HistoricoLinha[],
+): boolean {
+  return (
+    pedidoDeAlertaSemCultura(texto) &&
+    topicoRecenteEhCambioSemCultura(historico) &&
+    culturaMencionada(resposta) !== null
+  );
+}
+
 function notaDeIncentivoAtivacao(
   produtor: ProdutorContexto,
   historico: HistoricoLinha[],
@@ -939,6 +975,7 @@ export async function runAgent(input: {
   let jaTentouCorrigirValor = false;
   let tentativasForcarIncentivo = 0;
   let tentativasForcarPrimeiraResposta = 0;
+  let tentativasCorrigirAlertaCambio = 0;
 
   // Fecha a resposta: aplica as redes de segurança de texto, troca a resposta
   // do modelo pela confirmação escrita por código quando o cadastro acabou
@@ -1088,6 +1125,22 @@ export async function runAgent(input: {
         role: "system",
         content:
           "Sua resposta anterior não mostrou as duas funcionalidades extras que a nota pediu (além da pergunta que ele fez). Reescreva a MESMA resposta, mantendo o dado real que você já deu, mas acrescente de 1 a 2 frases curtas citando especificamente as duas funcionalidades da nota — dessa vez não pode faltar.",
+      });
+      return null;
+    }
+
+    const MAX_TENTATIVAS_CORRIGIR_ALERTA_CAMBIO = 2;
+    if (
+      podeCorrigir &&
+      tentativasCorrigirAlertaCambio < MAX_TENTATIVAS_CORRIGIR_ALERTA_CAMBIO &&
+      respostaFugiuDeCambioParaCultura(resposta, texto, historico)
+    ) {
+      tentativasCorrigirAlertaCambio++;
+      messages.push({ role: "assistant", content: conteudoBruto ?? parsed.resposta });
+      messages.push({
+        role: "system",
+        content:
+          "Erro: o produtor pediu um alerta logo depois de perguntar sobre câmbio/dólar, e sua resposta propôs ou perguntou sobre uma cultura — isso está errado, ele não mencionou cultura nenhuma. Não existe alerta de câmbio. Responda de novo dizendo, numa frase curta, que esse tipo de alerta ainda não existe (hoje só preço de cultura, clima ou leilão), sem perguntar por nenhuma cultura nem propor uma.",
       });
       return null;
     }
