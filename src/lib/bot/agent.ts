@@ -320,12 +320,16 @@ function respostaInventouHoraDeResumo(
 
 // Achado real testando ao vivo (ativação da mensagem proativa, 2026-10-13):
 // depois de perguntar "Confirma que quer parar de receber..." e o produtor
-// responder "sim, confirmo", o modelo às vezes NÃO chama
-// configurar_mensagem_proativa — só repete a mesma pergunta de confirmação
-// de novo, como se a conversa tivesse voltado ao início. Detecta o loop
-// (a MESMA pergunta de confirmação apareceu como a última msg do
-// assistente E é a resposta de novo) e força o modelo a agir em vez de
-// perguntar de novo.
+// responder "sim, confirmo", o modelo não chama configurar_mensagem_proativa
+// — só repete a mesma pergunta de confirmação de novo, em palavras
+// diferentes a cada vez. Pior que os outros casos de "argumento errado":
+// aqui o modelo nunca chega a emitir a function call nenhuma, e nem 2
+// rodadas de correção por system message bastaram pra destravar (testado
+// ao vivo: continuou repetindo na 3ª tentativa). Em vez de insistir
+// esperando o modelo se corrigir sozinho, detecta o loop (a MESMA pergunta
+// de confirmação apareceu como última msg do assistente E a resposta nova
+// também é uma pergunta de confirmação) e executa a ferramenta direto por
+// código assim que detecta — sem dar mais chance pro modelo tentar de novo.
 function ehConfirmacaoDeMensagemProativa(s: string): boolean {
   return /confirma/i.test(s) && /(mensagens? autom[aá]ticas?|avisos? autom[aá]ticos?|proativ)/i.test(s);
 }
@@ -339,6 +343,20 @@ function respostaRepetiuConfirmacaoProativaSemExecutar(
   const ultimaDoAssistente = [...ordenado].reverse().find((h) => h.role === "assistant")?.conteudo;
   if (!ultimaDoAssistente) return false;
   return ehConfirmacaoDeMensagemProativa(ultimaDoAssistente);
+}
+
+// Qual direção a pergunta de confirmação já feita estava propondo —
+// "parar"/"desligar" (ativa=false) ou "voltar"/"reativar" (ativa=true).
+// null quando não dá pra saber com segurança (nesse caso o código não
+// executa nada sozinho, melhor deixar o modelo tentar de novo do que
+// adivinhar errado).
+function direcaoDaConfirmacaoProativa(historico: HistoricoLinha[]): boolean | null {
+  const ordenado = [...historico].sort((a, b) => a.ordem - b.ordem);
+  const ultimaDoAssistente = [...ordenado].reverse().find((h) => h.role === "assistant")?.conteudo;
+  if (!ultimaDoAssistente || !ehConfirmacaoDeMensagemProativa(ultimaDoAssistente)) return null;
+  if (/parar de receber|deslig|desativ/i.test(ultimaDoAssistente)) return false;
+  if (/voltar a receber|relig|reativ/i.test(ultimaDoAssistente)) return true;
+  return null;
 }
 
 // Achado real testando ao vivo (bateria adversarial 2026-10-12): pedido de
@@ -1188,7 +1206,6 @@ export async function runAgent(input: {
   let tentativasCorrigirValorCambio = 0;
   let tentativasCorrigirHoraResumo = 0;
   let tentativasCorrigirAlertaPraga = 0;
-  let tentativasCorrigirLoopProativa = 0;
 
   // Fecha a resposta: aplica as redes de segurança de texto, troca a resposta
   // do modelo pela confirmação escrita por código quando o cadastro acabou
@@ -1406,22 +1423,6 @@ export async function runAgent(input: {
       return null;
     }
 
-    const MAX_TENTATIVAS_CORRIGIR_LOOP_PROATIVA = 2;
-    if (
-      podeCorrigir &&
-      tentativasCorrigirLoopProativa < MAX_TENTATIVAS_CORRIGIR_LOOP_PROATIVA &&
-      respostaRepetiuConfirmacaoProativaSemExecutar(resposta, historico)
-    ) {
-      tentativasCorrigirLoopProativa++;
-      messages.push({ role: "assistant", content: conteudoBruto ?? parsed.resposta });
-      messages.push({
-        role: "system",
-        content:
-          "Erro: você já pediu essa confirmação antes nesta conversa e repetiu a mesma pergunta de novo, em vez de agir. Se a última mensagem do produtor foi uma confirmação clara (sim, pode, confirmo, quero, etc), chame configurar_mensagem_proativa agora com o valor combinado — não pergunte de novo. Se não foi uma confirmação clara, responda ao que ele disse de verdade, sem repetir a mesma pergunta.",
-      });
-      return null;
-    }
-
     // Cliente cadastrado só pelo WhatsApp (sem login no site): nenhum link
     // de /dashboard serve pra ele — ver guardas.ts.
     const semLogin = produtor.id && !produtor.user_id;
@@ -1504,6 +1505,22 @@ export async function runAgent(input: {
           resposta: string;
           precisa_humano: boolean;
         };
+
+        if (respostaRepetiuConfirmacaoProativaSemExecutar(parsed.resposta, historico)) {
+          const ativa = direcaoDaConfirmacaoProativa(historico);
+          if (ativa != null) {
+            await executarTool("configurar_mensagem_proativa", { ativa }, ctx);
+            return {
+              resposta: ativa
+                ? "Prontinho, voltei a te mandar os avisos automáticos de preço, clima e câmbio."
+                : "Prontinho, não vou mais te mandar os avisos automáticos de preço, clima e câmbio. Se quiser voltar a receber, é só me pedir.",
+              precisa_humano: false,
+              cadastro_criado: cadastroCriado,
+              convite_dispensado: true,
+            };
+          }
+        }
+
         const fechada = fechar(parsed, mensagem.content, true);
         if (fechada) return fechada;
         continue;
