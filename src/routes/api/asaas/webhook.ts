@@ -124,6 +124,19 @@ export const Route = createFileRoute("/api/asaas/webhook")({
             await notificarCobranca(supabase, assinatura, payment, "vencendo");
           }
         } else if (EVENTOS_CANCELAMENTO.has(body.event)) {
+          // Apagar UMA cobrança (ex.: corrigir um valor errado) não encerra a
+          // assinatura. Só cancela se a assinatura em si já não estiver ativa
+          // na Asaas; sem conseguir confirmar, não cancela (cortar acesso de
+          // quem paga é pior que manter uns dias a mais).
+          if (body.event === "PAYMENT_DELETED" && payment.subscription) {
+            const status = await statusDaAssinaturaNaAsaas(
+              process.env["ASAAS_API_KEY"],
+              payment.subscription,
+            );
+            if (status !== "INACTIVE" && status !== "EXPIRED") {
+              return new Response(null, { status: 200 });
+            }
+          }
           const query = supabase.from("assinaturas").update({
             status: "cancelada",
             updated_at: new Date().toISOString(),
@@ -140,6 +153,24 @@ export const Route = createFileRoute("/api/asaas/webhook")({
     },
   },
 });
+
+async function statusDaAssinaturaNaAsaas(
+  apiKey: string | undefined,
+  subscriptionId: string,
+): Promise<string | null> {
+  if (!apiKey) return null;
+  try {
+    const res = await fetch(`https://api.asaas.com/v3/subscriptions/${subscriptionId}`, {
+      headers: { access_token: apiKey, "User-Agent": "Safralume/1.0" },
+    });
+    if (res.status === 404) return "INACTIVE";
+    if (!res.ok) return null;
+    const sub = (await res.json()) as { status?: string; deleted?: boolean };
+    return sub.deleted ? "INACTIVE" : (sub.status ?? null);
+  } catch {
+    return null;
+  }
+}
 
 async function enviarEmailBoasVindasAsaas({
   apiKey,
