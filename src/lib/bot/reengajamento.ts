@@ -174,9 +174,14 @@ export async function montarResumoProativoDiario(
   }
 
   if (cambio && Math.abs(cambio.variacao) >= LIMIAR_VARIACAO_CAMBIO) {
+    // cambio.variacao já vem em escala percentual (buscarVariacaoCambio
+    // multiplica por 100), diferente da `fracao` do preço acima — pct()
+    // espera fração e multiplicaria por 100 de novo, inflando 100x (achado
+    // real testando esse cenário: variação real de 2% virava "200%" na
+    // mensagem). Por isso aqui divide por 100 antes de passar pra pct().
     const direcao = cambio.variacao > 0 ? "subiu" : "caiu";
     return limitarResumo(
-      `O dólar ${direcao} ${pct(Math.abs(cambio.variacao))} desde o último pregão: agora está ${brl(cambio.atual)}, referência de ${dataBr(cambio.dataAtual)}. Câmbio pesa no preço de exportação.`,
+      `O dólar ${direcao} ${pct(Math.abs(cambio.variacao) / 100)} desde o último pregão: agora está ${brl(cambio.atual)}, referência de ${dataBr(cambio.dataAtual)}. Câmbio pesa no preço de exportação.`,
     );
   }
 
