@@ -20,6 +20,20 @@ export function normalizarWhatsapp(valor: string): string {
 }
 
 /**
+ * Telefone como o bot grava em `bot_conversas.telefone`: com o DDI 55, com e
+ * sem o 9º dígito (o WhatsApp devolve o número de alguns DDDs sem o 9).
+ * `normalizarWhatsapp` NÃO inclui o 55, então comparar o resultado dela
+ * direto com `bot_conversas` nunca casava (achado 2026-10-13).
+ */
+export function telefonesDoBot(valor: string): string[] {
+  const completo = `55${normalizarWhatsapp(valor)}`;
+  const ddd = completo.slice(2, 4);
+  const resto = completo.slice(4);
+  const sem9 = resto.length === 9 && resto[0] === "9" ? `55${ddd}${resto.slice(1)}` : completo;
+  return [...new Set([completo, sem9])];
+}
+
+/**
  * Máscara de digitação "(11) 91234-5678". Só formata o que o usuário já
  * digitou (nunca inventa dígito) e descarta o DDI 55 colado de contato.
  */

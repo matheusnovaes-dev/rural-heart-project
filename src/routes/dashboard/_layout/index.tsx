@@ -43,6 +43,7 @@ import { BenchmarkRegionalCard } from "@/components/dashboard/BenchmarkRegionalC
 import { DolarCard } from "@/components/dashboard/DolarCard";
 import { DIAS_DADO_DESATUALIZADO } from "@/lib/referenciaMercado";
 import { diasEntre } from "@/lib/precoFonte";
+import { trackLanding } from "@/lib/metaPixel";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Previsao } from "@/lib/clima";
 import { buscarPrevisaoPorCoordenadasServidor, buscarPrevisaoServidor } from "@/lib/clima.server";
@@ -366,7 +367,9 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
   // forma permanente quando existe uma conversa de verdade registrada; um
   // dispensar manual só vale pra sessão atual, sem persistir.
   const [bannerWhatsappVisivel, setBannerWhatsappVisivel] = useState(true);
-  const [jaConversouNoWhatsapp, setJaConversouNoWhatsapp] = useState(false);
+  // null = ainda não sabemos (checagem em andamento): o convite só aparece quando
+  // o servidor confirma que NÃO conversou, senão ele piscava pra quem já conversou.
+  const [jaConversouNoWhatsapp, setJaConversouNoWhatsapp] = useState<boolean | null>(null);
   const [serie, setSerie] = useState<PrecoHistorico[] | null>(null);
   const [precosRegionais, setPrecosRegionais] = useState<PrecoRegional[]>([]);
   const [regionaisHistorico, setRegionaisHistorico] = useState<PrecoRegionalHistorico[]>([]);
@@ -380,12 +383,33 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
   const [frete, setFrete] = useState<ResultadoFrete | null | undefined>(undefined);
 
   const { session } = useAuth();
+  const token = session?.access_token;
   useEffect(() => {
-    if (!session) return;
-    verificarConversaWhatsapp({ data: { accessToken: session.access_token } }).then(
-      ({ jaConversou }) => setJaConversouNoWhatsapp(jaConversou),
-    );
-  }, [session]);
+    if (!token) return;
+    let vivo = true;
+    const checar = () => {
+      verificarConversaWhatsapp({ data: { accessToken: token } })
+        .then(({ jaConversou }) => vivo && setJaConversouNoWhatsapp(jaConversou))
+        // Falha na checagem: convida por segurança (melhor convidar que esconder).
+        .catch(() => vivo && setJaConversouNoWhatsapp((atual) => atual ?? false));
+    };
+    checar();
+    // Quem toca no botão vai pro WhatsApp e volta pra esta aba: rechecar ao
+    // voltar faz o convite sumir assim que a primeira mensagem chega.
+    const aoVoltar = () => {
+      if (document.visibilityState === "visible") checar();
+    };
+    document.addEventListener("visibilitychange", aoVoltar);
+    return () => {
+      vivo = false;
+      document.removeEventListener("visibilitychange", aoVoltar);
+    };
+  }, [token]);
+
+  const convitePrimeiraMensagem = bannerWhatsappVisivel && jaConversouNoWhatsapp === false;
+  useEffect(() => {
+    if (convitePrimeiraMensagem) trackLanding("AtivacaoCardVisto");
+  }, [convitePrimeiraMensagem]);
 
   function dispensarBannerWhatsapp() {
     setBannerWhatsappVisivel(false);
@@ -491,38 +515,49 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
         <CompletarAcessoCard />
       </motion.div>
 
-      {bannerWhatsappVisivel && !jaConversouNoWhatsapp && (
+      {convitePrimeiraMensagem && (
         <motion.div
           variants={itemVariants}
-          className="flex items-start gap-3 rounded-lg border border-primary/25 bg-card p-4 shadow-sm"
+          className="rounded-xl border border-primary/30 bg-primary/5 p-4 shadow-sm sm:flex sm:items-center sm:justify-between sm:gap-6 sm:p-5"
         >
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <MessageCircle className="size-4" />
-          </span>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-foreground">Fica de olho no seu WhatsApp</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              A gente te chama por lá em instantes, se apresentando e explicando seu plano. Se não
-              chegar, você também pode chamar primeiro.
-            </p>
+          <div className="flex items-start gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+              <MessageCircle className="size-4" />
+            </span>
+            <div>
+              <p className="text-base font-semibold text-foreground">
+                Falta 1 passo: peça seu primeiro preço
+              </p>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                O Safralume funciona no WhatsApp. Toque no botão, mande a pergunta que já vai
+                escrita e receba o preço da sua região em segundos.
+              </p>
+            </div>
+          </div>
+          <div className="mt-3 flex items-center gap-2 sm:mt-0 sm:shrink-0">
             <a
-              href={buildWhatsAppLink(`Olá! Sou ${produtor.nome} e já me cadastrei no Safralume.`)}
+              href={buildWhatsAppLink(
+                produtor.cultura_principal
+                  ? `Oi! Quanto tá o preço da ${produtor.cultura_principal.trim().toLowerCase()} hoje?`
+                  : "Oi! Quero ver o preço de hoje.",
+              )}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+              onClick={() => trackLanding("AtivacaoWhatsappClique", { origem: "painel" })}
+              className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-cta px-3 text-[15px] font-bold whitespace-nowrap text-cta-foreground shadow-sm transition hover:bg-cta/90 sm:flex-none sm:px-5 sm:text-base"
             >
-              Chamar agora
-              <ArrowRight className="size-3" />
+              <MessageCircle className="size-5" aria-hidden="true" />
+              Ver meu preço no WhatsApp
             </a>
+            <button
+              type="button"
+              onClick={dispensarBannerWhatsapp}
+              aria-label="Dispensar"
+              className="rounded-md p-2 text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              <X className="size-4" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={dispensarBannerWhatsapp}
-            aria-label="Dispensar"
-            className="-mt-1 -mr-1 rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
-          >
-            <X className="size-3.5" />
-          </button>
         </motion.div>
       )}
 

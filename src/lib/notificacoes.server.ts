@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { pricingPlans } from "@/config/site";
 import { supabaseServiceRole } from "@/lib/supabase.server";
-import { normalizarWhatsapp } from "@/lib/telefone";
+import { telefonesDoBot } from "@/lib/telefone";
 import { montarResumoReengajamento } from "@/lib/bot/reengajamento";
 
 const enviarBoasVindasSchema = z.object({
@@ -129,7 +129,8 @@ export const verificarConversaWhatsapp = createServerFn({ method: "POST" })
       const { count } = await supabase
         .from("bot_conversas")
         .select("telefone", { count: "exact", head: true })
-        .eq("telefone", normalizarWhatsapp(produtor.whatsapp));
+        .eq("role", "user")
+        .in("telefone", telefonesDoBot(produtor.whatsapp));
       return { jaConversou: !!count && count > 0 };
     } catch (err) {
       console.error("Falha ao verificar conversa no WhatsApp:", err);
