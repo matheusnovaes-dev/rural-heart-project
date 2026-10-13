@@ -90,10 +90,20 @@ export async function montarResumoReengajamento(
       preco.origem_preco === "regional" && typeof preco.preco_medio_regioes === "number"
         ? preco.preco_medio_regioes
         : null;
+    // Mostra a faixa junto da média: sem saber a região do produtor, um número
+    // único passa precisão que não existe (praças de MG: R$139 e R$146,50).
+    const valores = preco.precos.map((x) => x.preco).filter((v) => Number.isFinite(v));
+    const unidade = linha.unidade ? `/${linha.unidade}` : "";
+    const faixa =
+      media != null && valores.length > 1 && Math.min(...valores) !== Math.max(...valores)
+        ? ` (de ${brl(Math.min(...valores))} a ${brl(Math.max(...valores))})`
+        : "";
+    const valorTexto =
+      media != null
+        ? `média das praças ${brl(media)}${unidade}${faixa}`
+        : `${brl(linha.preco)}${unidade}`;
     partes.push(
-      `${cultura[0]!.toUpperCase()}${cultura.slice(1)} hoje em ${nomeDaUf(uf)}: ${
-        media != null ? `média das praças ${brl(media)}` : brl(linha.preco)
-      }${linha.unidade ? `/${linha.unidade}` : ""} (${linha.fonte}, ${dataBr(linha.data_referencia)}).`,
+      `${cultura[0]!.toUpperCase()}${cultura.slice(1)} hoje em ${nomeDaUf(uf)}: ${valorTexto} (${linha.fonte}, ${dataBr(linha.data_referencia)}).`,
     );
   } else if (preco?.referencia_mercado) {
     partes.push(preco.referencia_mercado.frase);
