@@ -26,15 +26,20 @@ const pct = (fracao: number) =>
 // boas-vindas/reengajamento/reativação (346) + nome + plano. Corta na última
 // frase completa que couber, nunca no meio de uma frase.
 const LIMITE_RESUMO = 600;
-function limitarResumo(texto: string): string {
+// O ponto de "jan.", "aprox." etc. não encerra frase: cortar ali deixava o
+// resumo terminando em "...com vencimento em jan." (achado no teste do resumo
+// diário, 2026-10-13).
+const ABREVIACOES =
+  /(?:^|[\s(])(?:jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez|ex|etc|aprox|obs|vs|sr|sra|dr|dra|r\$|nº)$/i;
+export function limitarResumo(texto: string): string {
   if (texto.length <= LIMITE_RESUMO) return texto;
   const cortado = texto.slice(0, LIMITE_RESUMO);
-  const ultimoFinalDeFrase = Math.max(
-    cortado.lastIndexOf(". "),
-    cortado.lastIndexOf("! "),
-    cortado.lastIndexOf("— "),
-  );
-  if (ultimoFinalDeFrase > 0) return cortado.slice(0, ultimoFinalDeFrase + 1);
+  let corte = -1;
+  for (const m of cortado.matchAll(/[.!?] /g)) {
+    if (m[0].startsWith(".") && ABREVIACOES.test(cortado.slice(0, m.index))) continue;
+    corte = m.index!;
+  }
+  if (corte > 0) return cortado.slice(0, corte + 1);
   return `${cortado.trimEnd()}...`;
 }
 
