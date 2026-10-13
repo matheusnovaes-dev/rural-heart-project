@@ -462,7 +462,7 @@ function AlertaLeilaoForm({
       </div>
       {tipoPreferido !== "virtual" && (
         <div className="space-y-1.5">
-          <Label htmlFor="al-uf">UF</Label>
+          <Label htmlFor="al-uf">Estado</Label>
           <Input
             id="al-uf"
             required

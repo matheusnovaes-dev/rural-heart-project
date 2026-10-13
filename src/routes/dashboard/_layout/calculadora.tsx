@@ -156,7 +156,7 @@ function CalculadoraConteudo() {
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>Estado (UF)</Label>
+            <Label>Estado</Label>
             <Select value={uf} onValueChange={setUf}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Selecione seu estado" />

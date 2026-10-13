@@ -300,7 +300,7 @@ function FormNovoItem({ produtorId, onDone }: { produtorId: string; onDone: () =
         </Select>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="w-uf">Estado (UF)</Label>
+        <Label htmlFor="w-uf">Estado</Label>
         <Input
           id="w-uf"
           required

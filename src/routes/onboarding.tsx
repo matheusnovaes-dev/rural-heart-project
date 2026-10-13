@@ -53,6 +53,7 @@ function OnboardingPage() {
   const [whatsapp, setWhatsapp] = useState("");
   const [cultura, setCultura] = useState("");
   const [uf, setUf] = useState("");
+  const [ufFaltando, setUfFaltando] = useState(false);
   const [municipio, setMunicipio] = useState("");
   const [nomeCooperativa, setNomeCooperativa] = useState("");
   const [cpfCnpj, setCpfCnpj] = useState("");
@@ -111,6 +112,11 @@ function OnboardingPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!supabase || !session) return;
+    if (tipo === "produtor" && !ufs.some((u) => u.value === uf)) {
+      setUfFaltando(true);
+      document.getElementById("uf")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     setStatus("loading");
 
     let novaAssinaturaId: string | null = null;
@@ -443,14 +449,38 @@ function OnboardingPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="uf">Estado (UF)</Label>
-                <Input
-                  id="uf"
-                  placeholder="Ex: GO"
-                  maxLength={2}
+                {/* Lista com o nome do estado (não digitar sigla): quem não sabe o
+                    que é "UF" só escolhe "Goiás". Obrigatório, o bot e os preços
+                    dependem dele. */}
+                <Label htmlFor="uf">Estado onde você produz</Label>
+                <Select
                   value={uf}
-                  onChange={(e) => setUf(e.target.value.toUpperCase())}
-                />
+                  onValueChange={(valor) => {
+                    setUf(valor);
+                    setUfFaltando(false);
+                  }}
+                >
+                  <SelectTrigger
+                    id="uf"
+                    className="w-full"
+                    aria-invalid={ufFaltando || undefined}
+                    aria-describedby={ufFaltando ? "uf-erro" : undefined}
+                  >
+                    <SelectValue placeholder="Selecione seu estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ufs.map((u) => (
+                      <SelectItem key={u.value} value={u.value}>
+                        {u.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {ufFaltando && (
+                  <p id="uf-erro" role="alert" className="text-sm text-destructive">
+                    Escolha o estado onde você produz.
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="municipio">Cidade (opcional)</Label>
@@ -462,7 +492,7 @@ function OnboardingPage() {
                 />
                 <p className="text-xs text-muted-foreground">
                   Deixa o clima e o frete de referência mais precisos, usando sua cidade em vez da
-                  capital do estado. Sem isso, continua funcionando pela UF.
+                  capital do estado. Sem isso, continua funcionando pelo estado.
                 </p>
               </div>
             </>

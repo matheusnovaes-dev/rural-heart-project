@@ -957,7 +957,7 @@ function AlertaForm({
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="a-uf">UF</Label>
+          <Label htmlFor="a-uf">Estado</Label>
           <Input
             id="a-uf"
             required
@@ -1219,7 +1219,7 @@ function AlertaClimaForm({
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label htmlFor="ac-uf">UF</Label>
+          <Label htmlFor="ac-uf">Estado</Label>
           <Input
             id="ac-uf"
             required

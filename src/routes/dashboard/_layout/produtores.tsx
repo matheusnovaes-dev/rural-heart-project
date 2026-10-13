@@ -185,7 +185,7 @@ function ProdutoresPage() {
                     <TableHead>Nome</TableHead>
                     <TableHead>WhatsApp</TableHead>
                     <TableHead>Cultura</TableHead>
-                    <TableHead>UF</TableHead>
+                    <TableHead>Estado</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -322,7 +322,7 @@ function ProdutorForm({
           <Input id="p-cultura" value={cultura} onChange={(e) => setCultura(e.target.value)} />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="p-uf">UF</Label>
+          <Label htmlFor="p-uf">Estado</Label>
           <Input
             id="p-uf"
             maxLength={2}

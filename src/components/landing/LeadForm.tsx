@@ -485,7 +485,7 @@ export function LeadForm({
                 name="uf"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Estado (UF)</FormLabel>
+                    <FormLabel>Estado onde você produz</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="w-full">

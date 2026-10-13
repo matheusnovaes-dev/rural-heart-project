@@ -120,7 +120,7 @@ export function TrocarCulturaDialog({
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="trocar-uf">Estado (UF)</Label>
+            <Label htmlFor="trocar-uf">Estado</Label>
             <Input
               id="trocar-uf"
               maxLength={2}
