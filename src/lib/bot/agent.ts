@@ -888,6 +888,35 @@ function precisaEscalarPorCobranca(textoProdutor: string): boolean {
   return PADRAO_COBRANCA_SENSIVEL.test(textoProdutor);
 }
 
+// Achado real auditando conversas (2026-10-12): produtor pediu áudio 12
+// vezes seguidas, de formas diferentes ("manda áudio", "só falo pelo
+// áudio", "escrito eu não enxergo não meu irmão" — sinal de possível
+// dificuldade de leitura/visão), e o bot só repetiu "não consigo enviar
+// áudio" em palavras diferentes, nunca escalou pra humano. A pessoa foi
+// embora sem resolver nada. Igual ao padrão de cobrança acima: detecta
+// quando o produtor insiste num pedido que o bot genuinamente não
+// consegue atender (hoje só cobre áudio, que é uma limitação real e
+// permanente, não um bug) depois de já ter sido recusado — na 3ª
+// insistência (2 recusas já no histórico recente), para de repetir a
+// mesma explicação e escala de vez, com uma resposta pronta por código
+// (não deixa o modelo decidir, porque é exatamente isso que já falhou
+// 12 vezes seguidas).
+const PADRAO_PEDIDO_AUDIO =
+  /manda\w*\s+(um\s+)?[áa]udio|s[óo]\s+fal[oe]\s+(por|pelo)\s+[áa]udio|n[ãa]o\s+(sei|consigo)\s+ler|escrito\s+(eu\s+)?n[ãa]o\s+(enxergo|sei)/i;
+const PADRAO_RECUSA_AUDIO =
+  /n[ãa]o\s+consigo\s+(enviar|mandar)\s+[áa]udio|s[óo]\s+posso\s+responder\s+por\s+texto|n[ãa]o\s+tenho\s+como\s+mandar\s+[áa]udio/i;
+
+function produtorInsisteEmPedidoSemSolucao(texto: string, historico: HistoricoLinha[]): boolean {
+  if (!PADRAO_PEDIDO_AUDIO.test(texto)) return false;
+  const recusasRecentes = historico
+    .slice(-10)
+    .filter((h) => h.role === "assistant" && PADRAO_RECUSA_AUDIO.test(h.conteudo)).length;
+  return recusasRecentes >= 2;
+}
+
+const RESPOSTA_ESCALAR_PEDIDO_SEM_SOLUCAO =
+  "Percebi que isso é importante pra você e eu não tenho como resolver por aqui (só converso por texto mesmo, sem jeito de mudar). Vou chamar alguém da nossa equipe pra te ajudar direito, só um instante.";
+
 type ToolCall = { id: string; type: "function"; function: { name: string; arguments: string } };
 
 type OpenAIMessage = {
@@ -1067,6 +1096,21 @@ export async function runAgent(input: {
         convite_dispensado: false,
       };
     }
+  }
+
+  // Produtor insistindo num pedido que o bot genuinamente não resolve (hoje
+  // só áudio) depois de já ter sido recusado: para de repetir a mesma
+  // explicação e escala pra humano de vez, com resposta pronta por código —
+  // ver respostaTratouPragaComoAlertaValido e os outros guards pro mesmo
+  // raciocínio (não dá pra confiar no modelo pra variar/escalar sozinho
+  // depois de já ter "tentado" 12 vezes, achado real auditando conversas).
+  if (produtorInsisteEmPedidoSemSolucao(texto, historico)) {
+    return {
+      resposta: RESPOSTA_ESCALAR_PEDIDO_SEM_SOLUCAO,
+      precisa_humano: true,
+      cadastro_criado: false,
+      convite_dispensado: true,
+    };
   }
 
   const notaNegativaDupla = notaDeNegativaDupla(texto);
