@@ -12,6 +12,7 @@ type Produtor = {
   uf: string | null;
   cultura_principal: string | null;
   proativa_enviada_em: string | null;
+  mensagem_proativa_ativa: boolean;
 };
 
 // Mesma lógica de variantes de telefone usada em /api/cron/reativacao e
@@ -89,7 +90,9 @@ export const Route = createFileRoute("/api/cron/mensagem-proativa")({
 
         const { data: produtores } = await supabase
           .from("produtores")
-          .select("id, nome, whatsapp, uf, cultura_principal, proativa_enviada_em")
+          .select(
+            "id, nome, whatsapp, uf, cultura_principal, proativa_enviada_em, mensagem_proativa_ativa",
+          )
           .in("id", idsProdutores)
           .returns<Produtor[]>();
 
@@ -100,6 +103,11 @@ export const Route = createFileRoute("/api/cron/mensagem-proativa")({
         for (const produtor of produtores ?? []) {
           try {
             if (!produtor.whatsapp || !produtor.uf || !produtor.cultura_principal) {
+              pulados++;
+              continue;
+            }
+
+            if (produtor.mensagem_proativa_ativa === false) {
               pulados++;
               continue;
             }

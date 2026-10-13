@@ -34,6 +34,7 @@ import { calcularMargemSafra } from "@/lib/bot/tools/calculadora";
 import { compararProposta } from "@/lib/bot/tools/compararProposta";
 import { esquecerMemoriaProdutor, salvarMemoriaProdutor } from "@/lib/bot/tools/memoria";
 import { configurarResumoDiario } from "@/lib/bot/tools/resumoDiario";
+import { configurarMensagemProativa } from "@/lib/bot/tools/mensagemProativa";
 
 export type ToolContext = {
   supabase: SupabaseClient;
@@ -514,6 +515,22 @@ export const TOOLS = [
   {
     type: "function",
     function: {
+      name: "configurar_mensagem_proativa",
+      description:
+        "Liga ou desliga a mensagem proativa diária (aquela que o Safralume manda sozinho, sem o produtor perguntar, só quando o preço da cultura dele moveu de verdade, vai ter clima severo, ou o câmbio moveu — no máximo 1x por dia, na maioria dos dias não manda nada). Chame com ativa=false quando o produtor pedir claramente pra parar de receber esse tipo de mensagem automática (ex: 'não quero mais receber isso', 'para de mandar essas notificações'). Chame com ativa=true se ele pedir pra voltar a receber depois de ter desativado. Só chame depois dele confirmar claramente — mesma regra de 2 mensagens dos alertas: primeiro confirme o que entendeu, só chama na mensagem seguinte.",
+      parameters: {
+        type: "object",
+        properties: {
+          ativa: { type: "boolean" },
+        },
+        required: ["ativa"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "consultar_assinatura",
       description:
         "Consulta o plano, status (trial/ativa/inadimplente/cancelada) e data de vencimento do trial da assinatura REAL do produtor. SEMPRE chame isto quando ele perguntar qual é o plano dele, se está ativo, quando o trial vence, ou quantos alertas/funcionários ele pode ter — nunca responda essas perguntas de cabeça ou supondo, mesmo que pareça óbvio pelo contexto da conversa.",
@@ -722,6 +739,12 @@ export async function executarTool(
       return configurarResumoDiario(
         ctx.supabase,
         args as Parameters<typeof configurarResumoDiario>[1],
+        ctx,
+      );
+    case "configurar_mensagem_proativa":
+      return configurarMensagemProativa(
+        ctx.supabase,
+        args as Parameters<typeof configurarMensagemProativa>[1],
         ctx,
       );
     case "salvar_memoria_produtor":
