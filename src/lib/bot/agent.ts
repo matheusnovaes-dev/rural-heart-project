@@ -1509,15 +1509,24 @@ export async function runAgent(input: {
         if (respostaRepetiuConfirmacaoProativaSemExecutar(parsed.resposta, historico)) {
           const ativa = direcaoDaConfirmacaoProativa(historico);
           if (ativa != null) {
-            await executarTool("configurar_mensagem_proativa", { ativa }, ctx);
-            return {
-              resposta: ativa
-                ? "Prontinho, voltei a te mandar os avisos automáticos de preço, clima e câmbio."
-                : "Prontinho, não vou mais te mandar os avisos automáticos de preço, clima e câmbio. Se quiser voltar a receber, é só me pedir.",
-              precisa_humano: false,
-              cadastro_criado: cadastroCriado,
-              convite_dispensado: true,
-            };
+            const resultado = (await executarTool(
+              "configurar_mensagem_proativa",
+              { ativa },
+              ctx,
+            )) as { sucesso?: boolean };
+            // Só afirma sucesso se a ferramenta realmente confirmou — senão
+            // (sem_cadastro/erro_ao_salvar) cai pro fluxo normal, não inventa
+            // confirmação que não aconteceu de verdade.
+            if (resultado?.sucesso === true) {
+              return {
+                resposta: ativa
+                  ? "Prontinho, voltei a te mandar os avisos automáticos de preço, clima e câmbio."
+                  : "Prontinho, não vou mais te mandar os avisos automáticos de preço, clima e câmbio. Se quiser voltar a receber, é só me pedir.",
+                precisa_humano: false,
+                cadastro_criado: cadastroCriado,
+                convite_dispensado: true,
+              };
+            }
           }
         }
 

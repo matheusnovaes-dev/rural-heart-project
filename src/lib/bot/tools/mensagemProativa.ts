@@ -4,11 +4,21 @@ import type { HistoricoLinha } from "@/lib/bot/prompt";
 // Mesma rede de segurança determinística usada em resumoDiario.ts/alertas.ts:
 // exige que a ÚLTIMA mensagem do assistente já seja a pergunta de
 // confirmação, antes de aceitar a desativação/reativação de verdade.
+// Achado real testando ao vivo 2026-10-13: a pergunta de confirmação de
+// verdade nunca usa a palavra "proativa" pro produtor (é jargão interno)
+// — o texto real é algo como "parar de receber as mensagens automáticas
+// de preço e clima". O regex exigia só "proativ" e nunca batia, fazendo
+// essa ferramenta rejeitar com "precisa_confirmar_primeiro" mesmo depois
+// do produtor já ter confirmado — mesmo padrão aceito em
+// ehConfirmacaoDeMensagemProativa (agent.ts), agora replicado aqui.
 function aindaPrecisaConfirmar(historico: HistoricoLinha[]): boolean {
   const ordenado = [...historico].sort((a, b) => a.ordem - b.ordem);
   const ultima = [...ordenado].reverse().find((h) => h.role === "assistant")?.conteudo;
   if (!ultima) return true;
-  return !(/confirma/i.test(ultima) && /proativ/i.test(ultima));
+  const ehConfirmacao =
+    /confirma/i.test(ultima) &&
+    /(mensagens? autom[aá]ticas?|avisos? autom[aá]ticos?|proativ)/i.test(ultima);
+  return !ehConfirmacao;
 }
 
 /**
