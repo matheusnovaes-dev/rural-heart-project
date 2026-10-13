@@ -83,10 +83,17 @@ export async function montarResumoReengajamento(
 
   if (preco?.encontrado && preco.precos && preco.precos.length > 0) {
     const linha = preco.precos[0]!;
+    // Estado sem preço único (só praças): cita a média das praças, a mesma
+    // regra do bot e do sinal de venda. Antes pegava a primeira praça e o
+    // resumo trazia um preço aqui e outro (da série) logo abaixo.
+    const media =
+      preco.origem_preco === "regional" && typeof preco.preco_medio_regioes === "number"
+        ? preco.preco_medio_regioes
+        : null;
     partes.push(
-      `${cultura[0]!.toUpperCase()}${cultura.slice(1)} hoje em ${nomeDaUf(uf)}: ${brl(linha.preco)}${
-        linha.unidade ? `/${linha.unidade}` : ""
-      } (${linha.fonte}, ${dataBr(linha.data_referencia)}).`,
+      `${cultura[0]!.toUpperCase()}${cultura.slice(1)} hoje em ${nomeDaUf(uf)}: ${
+        media != null ? `média das praças ${brl(media)}` : brl(linha.preco)
+      }${linha.unidade ? `/${linha.unidade}` : ""} (${linha.fonte}, ${dataBr(linha.data_referencia)}).`,
     );
   } else if (preco?.referencia_mercado) {
     partes.push(preco.referencia_mercado.frase);

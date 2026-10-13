@@ -39,9 +39,46 @@ export function serieUnica<T extends PontoPreco>(rows: T[]): T[] {
         principal = produto;
       }
     }
-    resultado.push(...linhasDoGrupo.filter((r) => r.produto === principal));
+    // A média por data é feita DENTRO de cada UF, nunca entre UFs.
+    const doProduto = linhasDoGrupo
+      .filter((r) => r.produto === principal)
+      .sort((x, y) => x.data_referencia.localeCompare(y.data_referencia));
+    resultado.push(...mediaPorData(doProduto));
   }
-  return resultado.sort((a, b) => a.data_referencia.localeCompare(b.data_referencia));
+  return resultado.sort((x, y) => x.data_referencia.localeCompare(y.data_referencia));
+}
+
+/**
+ * Uma linha por data, com a MÉDIA quando a fonte publica várias praças no
+ * mesmo dia (ex: BBM em MG: "Paracatú / Unaí" e "Uberlândia / Uberaba"). Sem
+ * isso a série intercalava as praças (139, 146,5, 139, 147,5...) e o "preço de
+ * hoje" virava a praça que por acaso caía por último, enquanto o resumo citava
+ * outra (achado 2026-10-13: dois preços de soja diferentes no mesmo texto).
+ * Segue a regra de fonte já adotada em 2026-09-19: sem preço único do estado,
+ * vale a média das praças do dia. Entrada já ordenada por data.
+ */
+export function mediaPorData<T extends PontoPreco>(serie: T[]): T[] {
+  const resultado: T[] = [];
+  let i = 0;
+  while (i < serie.length) {
+    let j = i;
+    const validos: number[] = [];
+    while (j < serie.length && serie[j]!.data_referencia === serie[i]!.data_referencia) {
+      // Preço inválido (NaN/Infinity) não entra na média do dia.
+      if (Number.isFinite(serie[j]!.preco)) validos.push(serie[j]!.preco);
+      j++;
+    }
+    if (validos.length > 1) {
+      const media = validos.reduce((acc, v) => acc + v, 0) / validos.length;
+      resultado.push({ ...serie[i]!, preco: Math.round(media * 100) / 100 });
+    } else if (validos.length === 1) {
+      resultado.push({ ...serie[i]!, preco: validos[0]! });
+    } else {
+      resultado.push(serie[i]!);
+    }
+    i = j;
+  }
+  return resultado;
 }
 
 /** Onde o preço mais recente da série está dentro da faixa mín-máx do período, em 0-100. */
