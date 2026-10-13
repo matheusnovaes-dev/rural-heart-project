@@ -199,7 +199,7 @@ export const funcionalidades: Funcionalidade[] = [
     id: "painel",
     titulo: "Painel no site",
     descricao:
-      "Os mesmos dados em gráficos, mais lembretes, relatórios em PDF, boletim semanal e suporte por chamado. Peça o link de acesso aqui no WhatsApp.",
+      "Os mesmos dados em gráficos, mais lembretes, boletim semanal e suporte por chamado. Peça o link de acesso aqui no WhatsApp.",
     comoPedir: "Quero o link do painel",
     onde: "painel",
   },

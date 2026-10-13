@@ -8,12 +8,12 @@ export type StatusCobranca =
   { bloqueado: false; aviso: string | null } | { bloqueado: true; mensagem: string };
 
 const AVISO_GRACA =
-  "⚠️ Seu pagamento do Safralume venceu e ainda não foi identificado. Você tem até amanhã pra regularizar (safralume.com.br/dashboard/assinatura); depois disso esse WhatsApp para de responder até o pagamento ser confirmado.";
+  '⚠️ Seu pagamento do Safralume venceu e ainda não foi identificado. Você tem até amanhã pra regularizar: responda "quero pagar" que eu te mando o link; depois disso esse WhatsApp para de responder até o pagamento ser confirmado.';
 
 /** Também usada por tools/acesso.ts (mensagemBloqueioAcesso) — mesma trava,
  * mesma mensagem, pra não divergir. */
 export const MENSAGEM_CORTE_COBRANCA =
-  "Seu acesso ao Safralume foi pausado porque o pagamento não foi regularizado a tempo. Assim que você pagar aqui (safralume.com.br/dashboard/assinatura), eu volto a responder normalmente em poucos minutos.";
+  'Seu acesso ao Safralume foi pausado porque o pagamento não foi regularizado a tempo. Responda "quero pagar" que eu te mando agora o link pra regularizar, e assim que o pagamento for confirmado eu volto a responder normalmente, em poucos minutos.';
 
 /**
  * Trava do bot por inadimplência — deliberadamente separada da trava do

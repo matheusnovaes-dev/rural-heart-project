@@ -46,7 +46,11 @@ export async function tipoDeAcesso(
  * verificação do Supabase: quem usa o token é o navegador, então pré-visualização
  * de link e robôs de mensagem não gastam o link de uso único.
  */
-export async function gerarLinkDeAcesso(supabase: SupabaseClient, produtorId: string) {
+export async function gerarLinkDeAcesso(
+  supabase: SupabaseClient,
+  produtorId: string,
+  destino?: "assinar",
+) {
   const { data: p } = await supabase
     .from("produtores")
     .select("id, whatsapp, user_id")
@@ -103,5 +107,9 @@ export async function gerarLinkDeAcesso(supabase: SupabaseClient, produtorId: st
   const token = link?.properties?.hashed_token;
   if (erroLink || !token) return { sucesso: false as const, motivo: "erro" as const };
 
-  return { sucesso: true as const, link: `${SITE_URL}/acesso?t=${encodeURIComponent(token)}` };
+  const sufixo = destino ? `&destino=${destino}` : "";
+  return {
+    sucesso: true as const,
+    link: `${SITE_URL}/acesso?t=${encodeURIComponent(token)}${sufixo}`,
+  };
 }

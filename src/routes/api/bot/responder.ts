@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { runAgent, type RespostaAgente } from "@/lib/bot/agent";
+import { responderPedidoDeAssinatura, runAgent, type RespostaAgente } from "@/lib/bot/agent";
 import {
+  classificarPedidoDeAssinatura,
   confirmacaoComEstadoPorExtenso,
   manterSoAConfirmacao,
   tirarTravessoes,
@@ -67,6 +68,12 @@ export const Route = createFileRoute("/api/bot/responder")({
         // depois disso bloqueia de vez — ver lib/bot/cobranca.ts.
         const cobranca = await verificarCobranca(supabaseServiceRole(), body.produtor.id);
         if (cobranca.bloqueado) {
+          // Bloqueado por cobrança: "quero pagar" tem que chegar ao link, senão a pessoa
+          // fica presa numa mensagem que manda pagar sem dizer como.
+          if (body.produtor.id && classificarPedidoDeAssinatura(body.texto ?? "")) {
+            const r = await responderPedidoDeAssinatura(supabaseServiceRole(), body.produtor.id);
+            if (r) return Response.json(r);
+          }
           return Response.json({
             resposta: cobranca.mensagem,
             precisa_humano: false,

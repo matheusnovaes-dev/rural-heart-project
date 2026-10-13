@@ -8,9 +8,9 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { buildWhatsAppLink, siteConfig } from "@/config/site";
 
-import { paramTexto } from "@/lib/searchParams";
+import { paramLiteral, paramTexto } from "@/lib/searchParams";
 
-const searchSchema = z.object({ t: paramTexto });
+const searchSchema = z.object({ t: paramTexto, destino: paramLiteral("assinar") });
 
 export const Route = createFileRoute("/acesso")({
   validateSearch: searchSchema,
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/acesso")({
  * de mensagem não executam JavaScript, então não consomem o link.
  */
 function AcessoPage() {
-  const { t } = Route.useSearch();
+  const { t, destino } = Route.useSearch();
   const navigate = useNavigate();
   const { refresh } = useAuth();
   const [status, setStatus] = useState<"entrando" | "erro">(t ? "entrando" : "erro");
@@ -43,7 +43,9 @@ function AcessoPage() {
           return;
         }
         await refresh();
-        navigate({ to: "/dashboard", replace: true });
+        // "quero assinar" no WhatsApp: já cai na tela de escolher o plano e pagar,
+        // sem passar pelo painel nem por login.
+        navigate({ to: destino === "assinar" ? "/assinar" : "/dashboard", replace: true });
       })
       .catch(() => setStatus("erro"));
     // eslint-disable-next-line react-hooks/exhaustive-deps

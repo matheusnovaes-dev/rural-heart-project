@@ -28,6 +28,9 @@ import {
   coletarNumerosPermitidos,
   conversaFalaDeCadastro,
   classificarPedidoDeAcesso,
+  classificarPedidoDeAssinatura,
+  respostaAssinarComLoginProprio,
+  respostaLinkDeAssinatura,
   corrigirLinkDePainelParaClienteSemLogin,
   garantirDataDoPreco,
   garantirMediaDasPracas,
@@ -1075,6 +1078,31 @@ async function responderPedidoDeAcesso(
   }
 }
 
+export async function responderPedidoDeAssinatura(
+  supabase: SupabaseClient,
+  produtorId: string,
+): Promise<RespostaAgente | null> {
+  const base = { cadastro_criado: false, convite_dispensado: true };
+  try {
+    const tipo = await tipoDeAcesso(supabase, produtorId);
+    if (tipo === "sem_cadastro") return null;
+    if (tipo === "propria") {
+      return { ...base, resposta: respostaAssinarComLoginProprio(), precisa_humano: false };
+    }
+    const r = await gerarLinkDeAcesso(supabase, produtorId, "assinar");
+    if (r.sucesso) {
+      return { ...base, resposta: respostaLinkDeAssinatura(r.link), precisa_humano: false };
+    }
+    if (r.motivo === "tem_login_proprio") {
+      return { ...base, resposta: respostaAssinarComLoginProprio(), precisa_humano: false };
+    }
+    return { ...base, resposta: RESPOSTA_FALHA_AO_GERAR_LINK, precisa_humano: true };
+  } catch (err) {
+    console.error("Erro ao gerar link de assinatura:", err);
+    return { ...base, resposta: RESPOSTA_FALHA_AO_GERAR_LINK, precisa_humano: true };
+  }
+}
+
 export async function runAgent(input: {
   telefone: string;
   texto: string;
@@ -1148,6 +1176,13 @@ export async function runAgent(input: {
   // paywall: quem está com o teste vencido e não lembra como entrar precisa
   // justamente do painel pra assinar. Tudo aqui é decidido por código, sem o
   // modelo — é acesso à conta de alguém, não pode depender de improviso.
+  // "Quero assinar/pagar" vem antes do pedido de acesso e do paywall: quem está
+  // com o teste vencido precisa do link de pagamento num passo só.
+  if (produtor.id && classificarPedidoDeAssinatura(texto)) {
+    const respostaAssinatura = await responderPedidoDeAssinatura(supabase, produtor.id);
+    if (respostaAssinatura) return respostaAssinatura;
+  }
+
   if (produtor.id) {
     const pedido = classificarPedidoDeAcesso(texto, historico);
     if (pedido) {

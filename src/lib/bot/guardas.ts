@@ -677,3 +677,43 @@ export function manterSoAConfirmacao(resposta: string): string {
 export function tirarTravessoes(resposta: string): string {
   return resposta.replace(/\s+[\u2014\u2013]\s+/g, ", ");
 }
+
+// ---------------------------------------------------------------------------
+// Assinar / pagar pelo WhatsApp (sem labirinto de login)
+// ---------------------------------------------------------------------------
+
+const PADROES_PEDIDO_DE_ASSINATURA = [
+  /\b(quero|vou|gostaria de|preciso|posso|como|onde|queria)\b.{0,30}\b(assinar|pagar|contratar|renovar|reativar)\b/,
+  /\b(assinar|contratar)\b.{0,15}\b(plano|bronze|prata|ouro|agora|ja)\b/,
+  /\blink\b.{0,15}\b(pagamento|pagar|assinatura|assinar|fatura|boleto|pix)\b/,
+  /\b(pagar|pagamento)\b.{0,20}\b(fatura|plano|assinatura|mensalidade)\b/,
+  /\bquero\s+(o\s+)?plano\s+(bronze|prata|ouro)\b/,
+  /\b(como|onde|aonde)\b.{0,12}\b(pago|paga|pagar|assino|assina|assinar|contrato)\b/,
+  /^\s*(assinar|quero assinar|quero pagar|pagar)[\s!.?]*$/,
+];
+
+/**
+ * O produtor quer assinar/pagar. Achado 2026-10-13: hoje não há nenhum cliente
+ * pagante real, e o caminho era um labirinto (mensagem manda abrir /assinar, que
+ * exige login que quase ninguém tem; só então "peça o link"). Aqui vira um passo:
+ * "quero assinar" -> link de uso único que já abre a tela de escolher o plano e pagar.
+ * Cancelamento nunca entra.
+ */
+export function classificarPedidoDeAssinatura(textoProdutor: string): boolean {
+  const t = semAcento(textoProdutor);
+  if (/cancel/.test(t)) return false;
+  // "como pago menos imposto na venda?" é outro assunto: pergunta de dinheiro da
+  // lavoura não pode virar link de pagamento do Safralume.
+  if (/\b(imposto|taxa|juros|funrural|frete|desconto|lucro|financiamento|emprestimo)\b/.test(t))
+    return false;
+  return PADROES_PEDIDO_DE_ASSINATURA.some((p) => p.test(t));
+}
+
+export function respostaLinkDeAssinatura(link: string): string {
+  const planos = pricingPlans.map((p) => `${p.name} R$ ${p.price}`).join(", ");
+  return `Aqui está seu link pra escolher o plano e pagar (Pix, cartão ou boleto): ${link}\n\nEle vale por pouco tempo e só funciona uma vez. Planos por mês: ${planos}.`;
+}
+
+export function respostaAssinarComLoginProprio(): string {
+  return `Pra escolher o plano e pagar (Pix, cartão ou boleto), entre em ${SITE_URL}/assinar com o e-mail e a senha que você cadastrou. Se esqueceu a senha, use o "Esqueci minha senha" na mesma tela.`;
+}

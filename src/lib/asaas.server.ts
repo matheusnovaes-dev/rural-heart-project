@@ -186,6 +186,21 @@ export const criarAssinaturaAsaas = createServerFn({ method: "POST" })
     };
   });
 
+/**
+ * O que mandar à Asaas ao trocar de plano. Antes só ia `value`, e isso deixava
+ * a descrição velha ("Plano Bronze" pra sempre) e as cobranças JÁ geradas com o
+ * valor do plano anterior (achado 2026-10-13: um cliente Ouro com cobrança
+ * pendente de R$129 e outra de R$399, com o site mostrando R$299).
+ * `updatePendingPayments` faz as cobranças pendentes acompanharem o plano novo.
+ */
+export function corpoDeAtualizacaoDePlano(plano: { name: string; price: number }) {
+  return {
+    value: plano.price,
+    description: `Safralume - Plano ${plano.name}`,
+    updatePendingPayments: true,
+  };
+}
+
 const atualizarPlanoSchema = z.object({
   accessToken: z.string().min(1),
   asaasSubscriptionId: z.string().min(1),
@@ -216,7 +231,7 @@ export const atualizarPlanoAsaas = createServerFn({ method: "POST" })
 
     await asaasFetch(apiKey, `/subscriptions/${data.asaasSubscriptionId}`, {
       method: "PUT",
-      body: JSON.stringify({ value: plano.price }),
+      body: JSON.stringify(corpoDeAtualizacaoDePlano(plano)),
     });
 
     // Atualiza o plano local na hora — não dá pra esperar o próximo evento
@@ -303,7 +318,9 @@ export const reconciliarCadastroWhatsapp = createServerFn({ method: "POST" })
       .eq("whatsapp", data.whatsapp)
       .maybeSingle();
     if (!existente || existente.user_id) {
-      throw new Error("Esse número de WhatsApp já tem uma conta. Faça login em vez de criar uma nova.");
+      throw new Error(
+        "Esse número de WhatsApp já tem uma conta. Faça login em vez de criar uma nova.",
+      );
     }
 
     const { error: updateProdutorError } = await supabase

@@ -86,5 +86,5 @@ export function mensagemBloqueioAcesso(
   if (motivo === "inadimplente_vencido") {
     return MENSAGEM_CORTE_COBRANCA;
   }
-  return 'Seu teste grátis de 7 dias no Safralume acabou. Pra continuar recebendo preço, clima e alertas por aqui, assine um plano em https://safralume.com.br/assinar. Se não lembra como entrar no painel, me diga "quero acessar meu painel" que eu te mando um link de acesso.';
+  return 'Seu teste grátis de 7 dias no Safralume acabou. Pra continuar recebendo preço, clima e alertas por aqui, é só responder "quero assinar" que eu te mando agora o link pra escolher o plano e pagar (Pix, cartão ou boleto).';
 }

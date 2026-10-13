@@ -40,7 +40,6 @@ export const pricingPlans: PricingPlan[] = [
       "Cotações (Conab e órgãos estaduais, semanal ou mais rápido conforme a fonte)",
       "Boletim Semanal (Imea)",
       "Lembretes automáticos, recorrentes ou avulsos",
-      "Relatórios em PDF",
       "Contexto de mercado: câmbio, diesel, safra (USDA), futuros da B3 e produção do IBGE",
       "Suporte por chamado, direto no painel",
     ],
