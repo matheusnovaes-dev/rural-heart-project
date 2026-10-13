@@ -19,6 +19,7 @@ import { useAuth } from "@/lib/auth";
 import { criarAssinaturaAsaas, reconciliarCadastroWhatsapp } from "@/lib/asaas.server";
 import { enviarBoasVindasWhatsApp } from "@/lib/notificacoes.server";
 import { culturas } from "@/config/culturas";
+import { CadastroConcluido } from "@/components/onboarding/CadastroConcluido";
 import { normalizarWhatsapp } from "@/lib/telefone";
 import { ufs } from "@/config/ufs";
 import { buscarMunicipioServidor } from "@/lib/clima.server";
@@ -65,6 +66,9 @@ function OnboardingPage() {
   // tentar de novo sem duplicar o cadastro.
   const [assinaturaPendenteId, setAssinaturaPendenteId] = useState<string | null>(null);
   const [erroCheckout, setErroCheckout] = useState("");
+  // Produtor com teste grátis acabou de se cadastrar: mostra o passo "peça seu
+  // primeiro preço no WhatsApp" antes de soltar a pessoa no painel.
+  const [cadastroConcluido, setCadastroConcluido] = useState(false);
 
   const planoEscolhido = plano ?? "bronze";
 
@@ -325,6 +329,14 @@ function OnboardingPage() {
       return;
     }
 
+    // Cadastro novo de produtor (não cooperativa, e não quem já conversava com o
+    // bot, que veio da conversa): leva a pessoa a começar a conversa no WhatsApp.
+    if (tipo === "produtor" && !cadastroJaExistia) {
+      setStatus("idle");
+      setCadastroConcluido(true);
+      return;
+    }
+
     navigate({ to: "/dashboard" });
   }
 
@@ -354,6 +366,16 @@ function OnboardingPage() {
       setErroCheckout(err instanceof Error ? err.message : "Erro desconhecido.");
       setStatus("error");
     }
+  }
+
+  if (cadastroConcluido) {
+    return (
+      <CadastroConcluido
+        nome={nome}
+        cultura={culturas.find((c) => c.value === cultura)?.label ?? cultura}
+        aoIrParaOPainel={() => navigate({ to: "/dashboard" })}
+      />
+    );
   }
 
   if (assinaturaPendenteId) {
