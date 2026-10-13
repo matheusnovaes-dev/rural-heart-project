@@ -299,3 +299,12 @@
     animation: none;
   }
 }
+
+/* Link de texto com área de toque de 44px só em tela de toque (não muda o desktop). */
+@media (pointer: coarse) {
+  .alvo-toque {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+  }
+}

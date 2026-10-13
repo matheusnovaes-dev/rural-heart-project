@@ -261,7 +261,7 @@ function LembretesPage() {
                     <div className="flex items-center gap-1">
                       <Badge
                         variant={statusLabel[l.status].variant}
-                        className="mr-1 text-[11px] font-semibold"
+                        className="mr-1 text-xs font-semibold"
                       >
                         {statusLabel[l.status].label}
                       </Badge>

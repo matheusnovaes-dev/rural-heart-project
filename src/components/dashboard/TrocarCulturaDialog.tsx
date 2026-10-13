@@ -28,7 +28,7 @@ import { buscarMunicipioServidor } from "@/lib/clima.server";
 const gatilhoPadrao = (
   <button
     type="button"
-    className="-m-2 shrink-0 p-2 opacity-70 transition-opacity hover:opacity-100"
+    className="-m-3.5 flex size-11 shrink-0 items-center justify-center opacity-70 transition-opacity hover:opacity-100"
     aria-label="Trocar cultura ou estado"
   >
     <Pencil className="size-3" />
@@ -101,7 +101,7 @@ export function TrocarCulturaDialog({
       <DialogTrigger asChild>{trigger ?? gatilhoPadrao}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Trocar cultura / UF</DialogTitle>
+          <DialogTitle>Trocar cultura ou estado</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div className="space-y-1.5">
@@ -138,7 +138,7 @@ export function TrocarCulturaDialog({
             />
             <p className="text-xs text-muted-foreground">
               Deixa a previsão de clima mais precisa (usa a sua cidade em vez da capital do estado).
-              Sem isso, continua funcionando pela UF.
+              Sem isso, continua funcionando pelo estado.
             </p>
           </div>
           <Button type="submit" disabled={loading} className="mt-2">

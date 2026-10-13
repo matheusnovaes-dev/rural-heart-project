@@ -108,14 +108,14 @@ export function montarResultadoFrete(params: {
     const diferenca_abs = Math.abs(diferenca);
     const comparacao =
       diferenca_abs < LIMITE_EM_LINHA
-        ? "a média das praças do interior está em linha com o porto"
+        ? "A média do interior está em linha com esse valor."
         : diferenca > 0
-          ? `a média das praças do interior está ${brl(diferenca_abs)} acima da paridade`
-          : `a média das praças do interior está ${brl(diferenca_abs)} abaixo da paridade`;
+          ? `A média do interior está ${brl(diferenca_abs)} acima desse valor.`
+          : `A média do interior está ${brl(diferenca_abs)} abaixo desse valor.`;
     const frase =
-      `Porto de ${porto}: ${brl(precoPorto.preco)} (BBM, ${dataBr(precoPorto.data_referencia)}). ` +
-      `Frete de referência de ${rota.municipio_origem} até ${rota.municipio_destino}: ${brl(frete_por_saca)} por saca. ` +
-      `Paridade de porto: ${brl(paridade)}; ${comparacao}.`;
+      `No porto de ${porto} a saca vale ${brl(precoPorto.preco)} (BBM, ${dataBr(precoPorto.data_referencia)}). ` +
+      `Descontando o frete de ${rota.municipio_origem} até ${rota.municipio_destino} (${brl(frete_por_saca)} por saca), sobram ${brl(paridade)} (a paridade de porto). ` +
+      comparacao;
     return {
       tipo: "paridade",
       porto,

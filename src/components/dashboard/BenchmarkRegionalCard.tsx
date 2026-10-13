@@ -50,8 +50,8 @@ export function BenchmarkRegionalCard({
 
   return (
     <Card className="border-border/80 shadow-sm transition-shadow hover:shadow-md">
-      <CardHeader className="border-b border-border/70 px-4 pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
+      <CardHeader className="px-4 pt-4 pb-3">
+        <CardTitle className="flex items-center gap-2.5 font-display text-base font-semibold text-foreground">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <Icone className="size-4" />
           </span>

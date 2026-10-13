@@ -40,8 +40,8 @@ export function DolarCard() {
 
   return (
     <Card className="gap-3 border-border/80 shadow-sm transition-shadow hover:shadow-md">
-      <CardHeader className="border-b border-border/70 px-4 pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+      <CardHeader className="px-4 pt-4 pb-3">
+        <CardTitle className="flex items-center gap-2.5 font-display text-base font-semibold text-foreground">
           <IconesSafralume.dolar className="size-8" />
           Dólar hoje
         </CardTitle>
@@ -67,7 +67,7 @@ export function DolarCard() {
             <Link
               to="/dashboard/alertas"
               search={{ abrir: "cambio" }}
-              className="shrink-0 text-xs font-medium text-primary hover:underline"
+              className="alvo-toque shrink-0 text-sm font-medium text-primary hover:underline"
             >
               Criar alerta
             </Link>

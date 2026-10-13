@@ -111,8 +111,8 @@ export function ProgressoSafraCard({ produtor }: { produtor: Produtor }) {
 
   return (
     <Card className="gap-3 border-border/80 shadow-sm transition-shadow hover:shadow-md">
-      <CardHeader className="border-b border-border/70 px-4 pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+      <CardHeader className="px-4 pt-4 pb-3">
+        <CardTitle className="flex items-center gap-2.5 font-display text-base font-semibold text-foreground">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <Sprout className="size-4" />
           </span>
@@ -151,7 +151,7 @@ export function ProgressoSafraCard({ produtor }: { produtor: Produtor }) {
                     )}
                   </div>
                   {grupo.opcoes.length > 1 && (
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-2">
                       {grupo.opcoes.slice(0, 8).map((opcao) => (
                         <button
                           key={opcao.uf}
@@ -159,7 +159,7 @@ export function ProgressoSafraCard({ produtor }: { produtor: Produtor }) {
                           onClick={() =>
                             setSelecionado((prev) => ({ ...prev, [grupo.chave]: opcao.uf }))
                           }
-                          className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors hover:border-primary hover:bg-primary/5 ${
+                          className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors pointer-coarse:min-h-11 hover:border-primary hover:bg-primary/5 ${
                             opcao.uf === ufAtual
                               ? "border-primary bg-primary/5 text-primary"
                               : "border-border text-muted-foreground"

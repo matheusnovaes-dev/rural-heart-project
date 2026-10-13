@@ -77,8 +77,8 @@ export function FerrugemAsiaticaCard({ produtor }: { produtor: Produtor }) {
         temFoco ? "border-destructive/40" : temEsporo ? "border-cta/40" : "border-border/80"
       }`}
     >
-      <CardHeader className="border-b border-border/70 px-4 pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+      <CardHeader className="px-4 pt-4 pb-3">
+        <CardTitle className="flex items-center gap-2.5 font-display text-base font-semibold text-foreground">
           <SafralumeIcon nome="ferrugem-asiatica" className="size-8" />
           Ferrugem asiática
         </CardTitle>

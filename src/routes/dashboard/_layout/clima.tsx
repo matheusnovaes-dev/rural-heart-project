@@ -317,7 +317,7 @@ function ClimaConteudo() {
                                   i === 0 ? "ring-1 ring-primary/40" : ""
                                 } ${toneClasses[tone]}`}
                               >
-                                <span className="text-[10px] font-semibold tracking-wide uppercase">
+                                <span className="text-xs font-semibold uppercase">
                                   {i === 0
                                     ? "hoje"
                                     : new Date(`${dia}T00:00:00`).toLocaleDateString("pt-BR", {
@@ -328,7 +328,7 @@ function ClimaConteudo() {
                                   <CloudRain className="size-3" />
                                   {Math.round(pct)}%
                                 </span>
-                                <span className="flex flex-col items-center font-mono text-[11px] leading-tight tabular-nums">
+                                <span className="flex flex-col items-center font-mono text-xs leading-tight tabular-nums">
                                   <span className="font-semibold">
                                     {Math.round(previsao.tempMax[i] ?? 0)}°
                                   </span>

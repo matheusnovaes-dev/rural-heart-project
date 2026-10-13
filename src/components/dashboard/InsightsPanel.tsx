@@ -326,6 +326,17 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
+      {sinalVenda && (
+        <InsightCard icon={Target} tone={sinalVenda.tone} title="Sinal de venda">
+          {posicao != null && <SinalVendaGauge posicao={posicao} />}
+          {sinalVenda.texto}
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            Cruza a posição do preço nos últimos 90 dias, a curva de futuros da B3 e o risco de
+            clima na sua região. Não é recomendação de investimento.
+          </p>
+        </InsightCard>
+      )}
+
       {semHistorico && temDadoRegional && tendenciaRegional && (
         <InsightCard
           icon={tendenciaRegional.variacao >= 0 ? TrendingUp : TrendingDown}
@@ -351,7 +362,7 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
           )}
           <p className="mt-1.5 text-xs text-muted-foreground">
             <strong>{cultura}</strong> em <strong>{uf}</strong> não tem preço único de estado. Essa
-            tendência é a média das praças por região, não um número oficial único.
+            tendência é a média das regiões, não um número oficial único.
           </p>
         </InsightCard>
       )}
@@ -359,24 +370,13 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
         <InsightCard icon={Gauge} tone="neutral" title="Sem histórico ainda">
           <strong>{cultura}</strong> em <strong>{uf}</strong> só tem preço por região (não um número
           único do estado), dá pra ver isso no card "Seu preço hoje" acima. Ainda não tem histórico
-          suficiente das praças pra calcular tendência.
+          suficiente das regiões pra calcular tendência.
         </InsightCard>
       )}
       {semHistorico && !temDadoRegional && (
         <InsightCard icon={Gauge} tone="neutral" title="Sem histórico ainda">
           Ainda não temos preço registrado pra <strong>{cultura}</strong> em <strong>{uf}</strong>.
           Assim que a Conab publicar, a tendência aparece aqui automaticamente.
-        </InsightCard>
-      )}
-
-      {sinalVenda && (
-        <InsightCard icon={Target} tone={sinalVenda.tone} title="Sinal de venda">
-          {posicao != null && <SinalVendaGauge posicao={posicao} />}
-          {sinalVenda.texto}
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            Cruza a posição do preço nos últimos 90 dias, a curva de futuros da B3 e o risco de
-            clima na sua região. Não é recomendação de investimento.
-          </p>
         </InsightCard>
       )}
 

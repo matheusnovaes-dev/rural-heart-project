@@ -504,7 +504,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
         className="flex flex-col gap-1 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between"
       >
         <div>
-          <p className="text-xs font-semibold uppercase text-muted-foreground">Visão geral</p>
+          <p className="text-sm font-medium text-muted-foreground">Visão geral</p>
           <h1 className="mt-1 font-display text-2xl font-semibold text-foreground text-balance sm:text-3xl">
             {greeting()}, {produtor.nome.split(" ")[0]}
           </h1>
@@ -550,7 +550,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
               type="button"
               onClick={dispensarBannerWhatsapp}
               aria-label="Dispensar"
-              className="rounded-md p-2 text-muted-foreground hover:bg-secondary hover:text-foreground"
+              className="flex size-10 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground pointer-coarse:size-11"
             >
               <X className="size-4" />
             </button>
@@ -702,7 +702,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                 <Link
                   to="/dashboard/alertas"
                   search={{ abrir: "preco" }}
-                  className="inline-block text-sm font-medium text-primary-foreground underline underline-offset-2 opacity-90 hover:opacity-100"
+                  className="alvo-toque text-sm font-medium text-primary-foreground underline underline-offset-2 opacity-90 hover:opacity-100"
                 >
                   Avisar quando o preço mudar
                 </Link>
@@ -715,6 +715,10 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
               TODOS os cards da coluna principal — "ficou lá embaixo" de
               verdade. Movido pra cá, logo após o hero de preço, pra aparecer
               perto do topo em qualquer tela. */}
+          <motion.div variants={itemVariants}>
+            <InsightsPanel produtor={produtor} />
+          </motion.div>
+
           <motion.div variants={itemVariants}>
             <DolarCard />
           </motion.div>
@@ -731,10 +735,6 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
 
           <motion.div variants={itemVariants}>
             <BenchmarkRegionalCard produtor={produtor} precoUf={precoExibido ?? mediaRegional} />
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
-            <InsightsPanel produtor={produtor} />
           </motion.div>
 
           <motion.div variants={itemVariants}>
@@ -770,7 +770,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
           className="flex flex-col gap-5 lg:sticky lg:top-24"
         >
           <motion.div variants={itemVariants}>
-            <Card className="gap-3 border-border/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+            <Card className="gap-3 border-border/80 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
               <CardHeader className="border-b border-border/70 px-4 pb-3">
                 <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                   <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -801,7 +801,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                               : "border-transparent bg-secondary text-muted-foreground"
                           }`}
                         >
-                          <span className="text-[10px] font-semibold uppercase">
+                          <span className="text-xs font-semibold uppercase">
                             {i === 0
                               ? "hoje"
                               : new Date(`${dia}T00:00:00`).toLocaleDateString("pt-BR", {
@@ -811,7 +811,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                           <span className="font-mono text-xs font-semibold tabular-nums">
                             {pct}%
                           </span>
-                          <span className="font-mono text-[10px] tabular-nums">
+                          <span className="font-mono text-xs tabular-nums">
                             {Math.round(previsao.tempMax[i] ?? 0)}°
                           </span>
                         </div>
@@ -822,14 +822,14 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                 <div className="mt-3 flex items-center gap-3">
                   <Link
                     to="/dashboard/clima"
-                    className="text-sm font-medium text-primary hover:underline"
+                    className="alvo-toque text-sm font-medium text-primary hover:underline"
                   >
                     Ver previsão completa
                   </Link>
                   <Link
                     to="/dashboard/alertas"
                     search={{ abrir: "clima" }}
-                    className="text-sm font-medium text-primary hover:underline"
+                    className="alvo-toque text-sm font-medium text-primary hover:underline"
                   >
                     Criar alerta de clima
                   </Link>
@@ -839,7 +839,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
           </motion.div>
 
           <motion.div variants={itemVariants}>
-            <Card className="gap-3 border-border/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+            <Card className="gap-3 border-border/80 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
               <CardHeader className="border-b border-border/70 px-4 pb-3">
                 <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                   <span className="flex size-8 items-center justify-center rounded-lg bg-cta/10 text-cta-foreground">
@@ -872,7 +872,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                 ))}
                 <Link
                   to="/dashboard/lembretes"
-                  className="mt-1 text-sm font-medium text-primary hover:underline"
+                  className="alvo-toque mt-1 text-sm font-medium text-primary hover:underline"
                 >
                   Ver todos / criar novo
                 </Link>
@@ -891,7 +891,7 @@ function PriceTicker({ entries }: { entries: TickerEntry[] }) {
   if (entries.length === 0) return null;
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card px-3 py-2 shadow-sm">
-      <span className="flex items-center gap-1.5 pl-1 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+      <span className="flex items-center gap-1.5 pl-1 text-xs font-semibold text-muted-foreground">
         <span className="size-1.5 animate-pulse rounded-full bg-primary" />
         Soja agora
       </span>

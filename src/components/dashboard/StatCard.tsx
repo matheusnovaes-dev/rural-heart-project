@@ -28,7 +28,7 @@ export function StatCard({
   to?: string;
 }) {
   const conteudo = (
-    <Card className="group h-full gap-3 border-border/80 py-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+    <Card className="group h-full gap-3 border-border/80 py-4 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
       <CardHeader className="gap-0 px-4 pb-0">
         <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
           <Icon className="size-4 shrink-0" />

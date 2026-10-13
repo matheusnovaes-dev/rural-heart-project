@@ -51,7 +51,32 @@ const MESES_ABREV = [
   "dez",
 ];
 
-const PRODUTOS_VISIVEIS_SEM_EXPANDIR = 6;
+const PRODUTOS_VISIVEIS_SEM_EXPANDIR = 3;
+
+/**
+ * A Conab publica o nome técnico em maiúsculas, com termos repetidos
+ * ("ATRAZINA, 500 G/L, ATRAZINA, NORTOX S.A., ..."). Aqui só deixa legível:
+ * tira termo repetido e põe em minúsculas com a inicial maiúscula, mantendo
+ * siglas curtas e unidades (500 g/L, SC, EC) como a Conab escreve.
+ */
+function nomeLegivel(bruto: string): string {
+  const vistos = new Set<string>();
+  const partes = bruto
+    .split(",")
+    .map((t) => t.trim())
+    .filter((t) => {
+      const k = t.toLowerCase();
+      if (!k || vistos.has(k)) return false;
+      vistos.add(k);
+      return true;
+    })
+    .map((t) => {
+      if (/^[A-Z]{1,3}$/.test(t) || /\d/.test(t)) return t.replace(/\bG\/L\b/, "g/L");
+      const baixo = t.toLowerCase();
+      return baixo.charAt(0).toUpperCase() + baixo.slice(1);
+    });
+  return partes.join(", ");
+}
 
 const formatarPreco = (v: number) => v.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
 
@@ -186,8 +211,8 @@ export function PrecoInsumosCard({ produtor }: { produtor: Produtor }) {
 
   return (
     <Card className="gap-3 border-border/80 shadow-sm transition-shadow hover:shadow-md">
-      <CardHeader className="border-b border-border/70 px-4 pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+      <CardHeader className="px-4 pt-4 pb-3">
+        <CardTitle className="flex items-center gap-2.5 font-display text-base font-semibold text-foreground">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <FlaskConical className="size-4" />
           </span>
@@ -212,7 +237,7 @@ export function PrecoInsumosCard({ produtor }: { produtor: Produtor }) {
                     {g.rotulo}
                     <span className="ml-1.5 text-xs font-normal text-muted-foreground">
                       {MESES_ABREV[g.mes - 1]}/{g.ano}
-                      {g.usouOutraUf && ` · sem dado em ${produtor.uf}, outras UFs`}
+                      {g.usouOutraUf && ` · sem dado em ${produtor.uf}, mostrando outros estados`}
                     </span>
                   </p>
                   <div className="flex flex-col divide-y divide-border/70 rounded-lg border border-border/70">
@@ -221,7 +246,12 @@ export function PrecoInsumosCard({ produtor }: { produtor: Produtor }) {
                         key={p.produto}
                         className="flex items-center justify-between gap-3 px-3 py-1.5 text-sm"
                       >
-                        <span className="text-foreground">{p.produto}</span>
+                        <span
+                          className="line-clamp-2 min-w-0 text-foreground"
+                          title={nomeLegivel(p.produto)}
+                        >
+                          {nomeLegivel(p.produto)}
+                        </span>
                         <span className="whitespace-nowrap font-mono text-xs font-semibold tabular-nums text-primary">
                           R$ {formatarPreco(p.preco)}
                           <span className="ml-0.5 font-sans font-normal text-muted-foreground">
@@ -235,7 +265,7 @@ export function PrecoInsumosCard({ produtor }: { produtor: Produtor }) {
                     <button
                       type="button"
                       onClick={() => alternarExpandido(g.subgrupo)}
-                      className="flex items-center gap-1 self-start text-xs font-medium text-primary hover:underline"
+                      className="alvo-toque flex items-center gap-1 self-start text-sm font-medium text-primary hover:underline"
                     >
                       {expandido ? (
                         <>

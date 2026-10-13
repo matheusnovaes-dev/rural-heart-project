@@ -137,9 +137,9 @@ export function Watchlist({ produtor }: { produtor: Produtor }) {
 
   return (
     <Card className="gap-3 border-border/80 shadow-sm transition-shadow hover:shadow-md">
-      <CardHeader className="flex flex-row items-center justify-between gap-2 border-b border-border/70 px-4 pb-3">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 px-4 pt-4 pb-3">
         <div>
-          <CardTitle className="flex items-center gap-2 font-display text-base font-semibold">
+          <CardTitle className="flex items-center gap-2.5 font-display text-base font-semibold text-foreground">
             <span className="flex size-8 items-center justify-center rounded-lg bg-gold-soft text-gold-foreground">
               <Star className="size-4" />
             </span>

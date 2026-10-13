@@ -103,8 +103,8 @@ export function BoletimSemanal({ produtor }: { produtor: Produtor }) {
 
   return (
     <Card className="gap-3 border-border/80 shadow-sm transition-shadow hover:shadow-md">
-      <CardHeader className="border-b border-border/70 px-4 pb-3">
-        <CardTitle className="flex items-center gap-2 font-display text-base font-semibold">
+      <CardHeader className="px-4 pt-4 pb-3">
+        <CardTitle className="flex items-center gap-2.5 font-display text-base font-semibold text-foreground">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <Newspaper className="size-4" />
           </span>

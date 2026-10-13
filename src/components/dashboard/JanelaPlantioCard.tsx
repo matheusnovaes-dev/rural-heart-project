@@ -22,6 +22,45 @@ function faixaDeRisco(pct: number | null): { texto: string; classe: string } {
   return { texto: `${pct}% de risco`, classe: "bg-destructive/10 text-red-800" };
 }
 
+/** Resposta direta pra "posso plantar agora?", antes dos números. */
+function veredito(resultado: Extract<ResultadoJanelaPlantio, { disponivel: true }>): {
+  titulo: string;
+  detalhe: string | null;
+  classe: string;
+} {
+  const hoje = resultado.risco_climatico_hoje_pct;
+  const proximas = resultado.proximas_janelas.slice(1);
+  const melhor = proximas
+    .filter((j) => j.risco_climatico_pct != null)
+    .sort((a, b) => (a.risco_climatico_pct as number) - (b.risco_climatico_pct as number))[0];
+  const esperar =
+    melhor && (hoje == null || (melhor.risco_climatico_pct as number) < hoje)
+      ? `Se puder esperar, ${melhor.periodo} tem risco de ${melhor.risco_climatico_pct}%.`
+      : null;
+  if (hoje == null) {
+    return {
+      titulo: "Agora não é recomendado plantar",
+      detalhe: esperar,
+      classe: "text-red-800",
+    };
+  }
+  if (hoje <= 20) {
+    return { titulo: "Boa época para plantar agora", detalhe: null, classe: "text-primary" };
+  }
+  if (hoje <= 40) {
+    return {
+      titulo: "Dá para plantar agora, com risco médio",
+      detalhe: esperar,
+      classe: "text-cta-foreground",
+    };
+  }
+  return {
+    titulo: "Risco alto agora, o melhor é esperar",
+    detalhe: esperar,
+    classe: "text-red-800",
+  };
+}
+
 /**
  * Janela de plantio oficial (ZARC/MAPA) direto no painel — a mesma consulta
  * que já roda testada no bot do WhatsApp (src/lib/plantio.ts), só que sem
@@ -54,12 +93,14 @@ export function JanelaPlantioCard({ produtor }: { produtor: Produtor }) {
 
   return (
     <Card className="gap-3 border-border/80 shadow-sm transition-shadow hover:shadow-md">
-      <CardHeader className="border-b border-border/70 px-4 pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+      <CardHeader className="px-4 pt-4 pb-3">
+        <CardTitle className="flex items-center gap-2.5 font-display text-base font-semibold text-foreground">
           <SafralumeIcon nome="janela-plantio" className="size-8" />
           Janela de plantio
         </CardTitle>
-        <CardDescription>Risco climático oficial do ZARC/MAPA pra plantar agora.</CardDescription>
+        <CardDescription>
+          Risco de clima pra plantar, pelo zoneamento oficial do Ministério da Agricultura (ZARC).
+        </CardDescription>
       </CardHeader>
       <CardContent className="px-4">
         {!produtor.municipio ? (
@@ -80,12 +121,20 @@ export function JanelaPlantioCard({ produtor }: { produtor: Produtor }) {
           <Skeleton className="h-24 w-full" />
         ) : resultado === null || !resultado.disponivel ? (
           <p className="text-sm text-muted-foreground">
-            Ainda não temos a Tábua de Risco do ZARC pra {produtor.municipio}/{produtor.uf}.
+            Ainda não temos o zoneamento de risco (ZARC) pra {produtor.municipio}/{produtor.uf}.
           </p>
         ) : (
           <div className="flex flex-col gap-3">
             <div>
-              <p className="text-xs text-muted-foreground">Agora ({resultado.periodo_atual})</p>
+              <p className={`text-base font-semibold text-balance ${veredito(resultado).classe}`}>
+                {veredito(resultado).titulo}
+              </p>
+              {veredito(resultado).detalhe && (
+                <p className="mt-0.5 text-sm text-foreground">{veredito(resultado).detalhe}</p>
+              )}
+              <p className="mt-2 text-xs text-muted-foreground">
+                Agora ({resultado.periodo_atual})
+              </p>
               <span
                 className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-sm font-semibold ${faixaDeRisco(resultado.risco_climatico_hoje_pct).classe}`}
               >
@@ -110,8 +159,8 @@ export function JanelaPlantioCard({ produtor }: { produtor: Produtor }) {
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Fonte: ZARC/MAPA, Tábua de Risco da safra vigente. Não é estimativa de produtividade
-              ou colheita, só risco climático da época de plantio.
+              Fonte: ZARC, do Ministério da Agricultura, para a safra vigente. Não é estimativa de
+              produtividade ou colheita, só o risco de clima da época de plantio.
             </p>
           </div>
         )}

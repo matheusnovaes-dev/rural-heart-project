@@ -168,6 +168,12 @@ function DashboardGuard() {
   return (
     <TooltipProvider delayDuration={200}>
       <SidebarProvider className="dashboard-shell">
+        <a
+          href="#conteudo"
+          className="sr-only z-50 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+        >
+          Pular para o conteúdo
+        </a>
         <AppSidebar headerTitle={headerTitle} headerSubtitle={headerSubtitle} items={items} />
         <SidebarInset>
           <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-border/80 bg-background/95 px-4 backdrop-blur-sm sm:px-6">
@@ -184,7 +190,7 @@ function DashboardGuard() {
             </span>
             <AtalhoBusca />
           </header>
-          <div className="flex-1 p-4 sm:p-6 lg:p-8">
+          <div id="conteudo" tabIndex={-1} className="flex-1 p-4 outline-none sm:p-6 lg:p-8">
             <AnimatedOutlet />
           </div>
         </SidebarInset>
@@ -222,7 +228,7 @@ function AtalhoBusca() {
     <span className="ml-auto hidden items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs text-muted-foreground shadow-sm sm:flex">
       <Search className="size-3" />
       Buscar
-      <kbd className="ml-1 font-mono text-[10px]">⌘K</kbd>
+      <kbd className="ml-1 font-mono text-xs">⌘K</kbd>
     </span>
   );
 }
@@ -255,7 +261,7 @@ function AppSidebar({
             <span className="block truncate font-display text-sm font-semibold text-sidebar-foreground">
               {headerTitle}
             </span>
-            <span className="block text-[10px] font-medium uppercase text-sidebar-foreground/55">
+            <span className="block text-xs font-medium text-sidebar-foreground/65">
               {headerSubtitle}
             </span>
           </div>
