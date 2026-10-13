@@ -173,9 +173,7 @@ function LoginPage() {
           {/* Chips flutuantes de dado de exemplo */}
           <div className="relative mt-8 hidden h-0 xl:block">
             <div className="absolute -top-44 right-2 animate-float-chip rounded-xl bg-white/95 px-3.5 py-2 text-foreground shadow-lg shadow-black/30">
-              <p className="text-[10px] font-semibold tracking-wide text-muted-foreground">
-                SOJA · MT
-              </p>
+              <p className="text-xs font-semibold tracking-wide text-muted-foreground">SOJA · MT</p>
               <p className="flex items-baseline gap-1.5">
                 <span className="font-display text-lg font-bold">R$142,50</span>
                 <span className="text-xs font-bold text-primary">+2,1%</span>
@@ -205,7 +203,7 @@ function LoginPage() {
             <img src="/logo-icon.png" alt="" className="size-7 rounded-[0.55rem]" />
             <span className="text-sm font-bold tracking-tight">{siteConfig.name}</span>
           </div>
-          <Link to="/" className="text-xs text-white/60">
+          <Link to="/" className="alvo-toque text-sm text-white/70">
             Voltar
           </Link>
         </div>
@@ -304,7 +302,7 @@ function LoginPage() {
                   onClick={() => setMostrarSenha((v) => !v)}
                   aria-label={mostrarSenha ? "Esconder senha" : "Mostrar senha"}
                   aria-pressed={mostrarSenha}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                  className="absolute right-1 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground pointer-coarse:size-11"
                 >
                   {mostrarSenha ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
@@ -314,7 +312,7 @@ function LoginPage() {
             {entrando && (
               <Link
                 to="/recuperar-senha"
-                className="-mt-2 text-right text-sm text-muted-foreground hover:underline"
+                className="alvo-toque -mt-2 justify-end text-sm text-muted-foreground hover:underline"
               >
                 Esqueci minha senha
               </Link>
@@ -574,7 +572,7 @@ function Ticker({ compact = false }: { compact?: boolean }) {
           {[...ticker, ...ticker].map((item, i) => (
             <span
               key={`${item}-${i}`}
-              className={`whitespace-nowrap ${compact ? "text-[11px]" : "text-xs"} ${
+              className={`whitespace-nowrap ${compact ? "text-xs" : "text-xs"} ${
                 i % 2 === 0 ? "text-white/65" : "text-gold-soft/85"
               }`}
             >
@@ -587,7 +585,7 @@ function Ticker({ compact = false }: { compact?: boolean }) {
       {!compact && (
         <div className="mt-3.5 flex items-center gap-1.5">
           <BadgeCheck className="size-3.5 text-white/50" />
-          <span className="text-[11px] text-white/50">Dados oficiais Conab e órgãos estaduais</span>
+          <span className="text-xs text-white/50">Dados oficiais Conab e órgãos estaduais</span>
         </div>
       )}
     </div>

@@ -37,7 +37,7 @@ export function Solution() {
           </ul>
           <a
             href="#planos"
-            className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+            className="alvo-toque mt-3 gap-1.5 text-sm font-semibold text-primary hover:underline"
           >
             Ver tudo que cada plano inclui
             <ArrowRight className="size-3.5" aria-hidden="true" />

@@ -537,7 +537,7 @@ function AlertasPage() {
                     <div className="flex items-center gap-1">
                       <Badge
                         variant={a.disparado_em ? "default" : "secondary"}
-                        className="mr-1 font-mono text-[11px] tabular-nums"
+                        className="mr-1 font-mono text-xs tabular-nums"
                       >
                         {a.disparado_em
                           ? `Disparado em ${new Date(a.disparado_em).toLocaleDateString("pt-BR")}`
@@ -663,7 +663,7 @@ function AlertasPage() {
                     <div className="flex items-center gap-1">
                       <Badge
                         variant={a.disparado_em ? "default" : "secondary"}
-                        className="mr-1 font-mono text-[11px] tabular-nums"
+                        className="mr-1 font-mono text-xs tabular-nums"
                       >
                         {a.disparado_em
                           ? `Disparado em ${new Date(a.disparado_em).toLocaleDateString("pt-BR")}`
@@ -779,7 +779,7 @@ function AlertasPage() {
                     <div className="flex items-center gap-1">
                       <Badge
                         variant={a.ultimo_disparo_data ? "default" : "secondary"}
-                        className="mr-1 font-mono text-[11px] tabular-nums"
+                        className="mr-1 font-mono text-xs tabular-nums"
                       >
                         {!a.ativo
                           ? "Cancelado"

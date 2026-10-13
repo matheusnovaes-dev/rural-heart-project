@@ -251,7 +251,7 @@ function LeiloesPage() {
                     {tipoLabel[a.tipo_preferido]}
                   </span>
                   <div className="flex items-center gap-1">
-                    <Badge variant={a.ativo ? "secondary" : "outline"} className="mr-1 text-[11px]">
+                    <Badge variant={a.ativo ? "secondary" : "outline"} className="mr-1 text-xs">
                       {a.ativo ? "Ativo" : "Cancelado"}
                     </Badge>
                     {a.ativo && (
@@ -348,7 +348,7 @@ function LeiloesPage() {
                     )}
                   </div>
                 </div>
-                <Badge variant="secondary" className="font-mono text-[11px] tabular-nums">
+                <Badge variant="secondary" className="font-mono text-xs tabular-nums">
                   {formatarDataHora(l.data_hora)}
                 </Badge>
               </motion.a>
@@ -394,7 +394,7 @@ function LeiloesPage() {
                     )}
                   </div>
                 </div>
-                <Badge variant="secondary" className="font-mono text-[11px] tabular-nums">
+                <Badge variant="secondary" className="font-mono text-xs tabular-nums">
                   {formatarDataHora(l.data_hora)}
                 </Badge>
               </motion.a>

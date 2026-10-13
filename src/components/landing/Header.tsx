@@ -18,7 +18,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2 py-2">
           <img src="/logo-icon.png" alt="" className="size-8 rounded-[0.6rem]" />
           <span className="text-lg font-bold tracking-tight text-foreground">
             {siteConfig.name}

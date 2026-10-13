@@ -201,7 +201,7 @@ function AssinaturaPage() {
                       href={c.invoiceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-muted-foreground hover:text-foreground"
+                      className="flex size-10 items-center justify-center text-muted-foreground hover:text-foreground pointer-coarse:size-11"
                       aria-label="Ver fatura"
                     >
                       <ExternalLink className="size-4" />

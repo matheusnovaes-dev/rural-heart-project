@@ -190,9 +190,7 @@ export function CalculadoraSafraLanding() {
               </Select>
             </div>
             <div>
-              <Label className="mb-1.5 block text-xs font-semibold text-foreground">
-                Estado
-              </Label>
+              <Label className="mb-1.5 block text-xs font-semibold text-foreground">Estado</Label>
               <Select
                 value={uf}
                 onValueChange={(v) => {
@@ -282,7 +280,7 @@ export function CalculadoraSafraLanding() {
                     reiniciar();
                     if (uf) void calcular({ sacas: texto });
                   }}
-                  className="touch-manipulation rounded-full border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none active:scale-[0.97]"
+                  className="touch-manipulation rounded-full border border-border bg-background px-3.5 py-2 text-sm font-semibold pointer-coarse:min-h-11 text-foreground transition-colors hover:border-primary hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none active:scale-[0.97]"
                 >
                   {formatarSacas(n)} sacas
                 </button>
@@ -387,7 +385,7 @@ export function CalculadoraSafraLanding() {
                           )}
                         </p>
                       )}
-                      <p className="text-center text-[11px] font-semibold text-muted-foreground">
+                      <p className="text-center text-xs font-semibold text-muted-foreground">
                         VALOR DA SUA PRODUÇÃO
                       </p>
                       <p className="text-center font-display text-4xl font-extrabold text-primary tabular-nums">
@@ -538,7 +536,7 @@ function SimuladorFrete({
 
   return (
     <div className="mt-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4">
-      <p className="text-center text-[11px] font-semibold uppercase tracking-wide text-primary">
+      <p className="text-center text-xs font-semibold uppercase tracking-wide text-primary">
         Arraste e veja o que o frete faz no seu preço
       </p>
 
@@ -560,7 +558,7 @@ function SimuladorFrete({
         Seu preço líquido:{" "}
         <span className="font-display text-lg font-bold text-primary">{brl(precoLiquido)}</span>
       </p>
-      <p className="mt-1 text-center text-[11px] text-muted-foreground">
+      <p className="mt-1 text-center text-xs text-muted-foreground">
         {noValorReal ? (
           <>
             Esse é o frete real de {freteReal.rota.municipio_origem} até{" "}

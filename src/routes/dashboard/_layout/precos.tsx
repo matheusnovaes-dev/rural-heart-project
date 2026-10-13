@@ -301,7 +301,7 @@ function PrecosPage() {
                           <span className="text-xs text-muted-foreground">Sem histórico</span>
                         )}
                         {s.min != null && s.max != null && (
-                          <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
+                          <span className="font-mono text-xs tabular-nums text-muted-foreground">
                             {formatBRL(s.min)} – {formatBRL(s.max)}
                           </span>
                         )}
@@ -339,7 +339,7 @@ function PrecosPage() {
                     key={serie}
                     type="button"
                     onClick={() => toggleSerie(serie)}
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors pointer-coarse:min-h-11 ${
                       ativo
                         ? "border-transparent bg-secondary text-foreground"
                         : "border-border text-muted-foreground hover:text-foreground"

@@ -22,7 +22,11 @@ export function Footer() {
             className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium text-muted-foreground"
           >
             {links.map((link) => (
-              <Link key={link.to} to={link.to} className="hover:text-foreground hover:underline">
+              <Link
+                key={link.to}
+                to={link.to}
+                className="alvo-toque hover:text-foreground hover:underline"
+              >
                 {link.label}
               </Link>
             ))}
