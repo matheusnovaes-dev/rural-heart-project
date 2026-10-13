@@ -3,7 +3,6 @@ import type { MouseEvent } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { motion, useMotionTemplate, useMotionValue, useReducedMotion } from "framer-motion";
 import {
-  Sprout,
   Loader2,
   Mail,
   Lock,
@@ -148,9 +147,7 @@ function LoginPage() {
         )}
 
         <Link to="/" className="relative z-10 flex items-center gap-2">
-          <span className="flex size-9 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur">
-            <Sprout className="size-4.5" />
-          </span>
+          <img src="/logo-icon.png" alt="" className="size-9 rounded-[0.65rem]" />
           <span className="text-lg font-bold tracking-tight">{siteConfig.name}</span>
         </Link>
 
@@ -203,9 +200,7 @@ function LoginPage() {
         <BrandBackdrop animado={false} />
         <div className="relative z-10 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="flex size-7 items-center justify-center rounded-full bg-white/15 backdrop-blur">
-              <Sprout className="size-3.5" />
-            </span>
+            <img src="/logo-icon.png" alt="" className="size-7 rounded-[0.55rem]" />
             <span className="text-sm font-bold tracking-tight">{siteConfig.name}</span>
           </div>
           <Link to="/" className="text-xs text-white/60">

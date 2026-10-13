@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Loader2, MessageCircle, Sprout } from "lucide-react";
+import { Loader2, MessageCircle } from "lucide-react";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -50,9 +50,7 @@ function AcessoPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-secondary/40 px-4 py-12">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
-        <span className="mx-auto flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
-          <Sprout className="size-5" />
-        </span>
+        <img src="/logo-icon.png" alt="" className="mx-auto size-10 rounded-[0.7rem]" />
         <p className="mt-2 text-sm font-semibold text-foreground">{siteConfig.name}</p>
 
         {status === "entrando" ? (

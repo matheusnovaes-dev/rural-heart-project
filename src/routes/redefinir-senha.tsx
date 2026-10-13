@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { Sprout, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,9 +80,7 @@ function RedefinirSenhaPage() {
     <div className="flex min-h-screen items-center justify-center bg-secondary/40 px-4">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-8 shadow-sm">
         <Link to="/" className="mb-6 flex items-center justify-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <Sprout className="size-4" />
-          </span>
+          <img src="/logo-icon.png" alt="" className="size-8 rounded-[0.6rem]" />
           <span className="text-lg font-bold tracking-tight text-foreground">
             {siteConfig.name}
           </span>

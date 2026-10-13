@@ -1,5 +1,4 @@
 import { Link } from "@tanstack/react-router";
-import { Sprout } from "lucide-react";
 
 import { siteConfig, buildWhatsAppLink } from "@/config/site";
 
@@ -14,9 +13,7 @@ export function Footer() {
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 sm:px-6">
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex items-center gap-2">
-            <span className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              <Sprout className="size-3.5" />
-            </span>
+            <img src="/logo-icon.png" alt="" className="size-7 rounded-[0.55rem]" />
             <span className="font-display font-semibold text-foreground">{siteConfig.name}</span>
           </div>
 

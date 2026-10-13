@@ -12,7 +12,6 @@ import {
   Palette,
   FileDown,
   LogOut,
-  Sprout,
   CloudSun,
   Search,
   CreditCard,
@@ -251,9 +250,7 @@ function AppSidebar({
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border px-3 py-4">
         <div className="flex items-center gap-3 px-1">
-          <span className="flex size-9 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-            <Sprout className="size-3.5" />
-          </span>
+          <img src="/logo-icon.png" alt="" className="size-9 rounded-[0.65rem]" />
           <div className="min-w-0">
             <span className="block truncate font-display text-sm font-semibold text-sidebar-foreground">
               {headerTitle}

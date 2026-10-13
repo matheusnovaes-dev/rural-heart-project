@@ -196,9 +196,7 @@ export function DashboardPreview() {
               className="relative flex shrink-0 flex-col gap-1 border-b border-sidebar-border bg-sidebar p-2 sm:w-52 sm:border-r sm:border-b-0 sm:p-3"
             >
               <div className="mb-2 hidden items-center gap-2.5 px-1 pb-3 sm:flex">
-                <span className="flex size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-                  <Sprout className="size-4" />
-                </span>
+                <img src="/logo-icon.png" alt="" className="size-8 rounded-[0.6rem]" />
                 <div className="min-w-0">
                   <span className="block truncate font-display text-sm font-semibold text-sidebar-foreground">
                     Safralume
