@@ -5,6 +5,7 @@ import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { siteConfig, buildWhatsAppLink } from "@/config/site";
+import { trackLanding } from "@/lib/metaPixel";
 
 const navLinks = [
   { href: "#como-funciona", label: "Como funciona" },
@@ -41,7 +42,12 @@ export function Header() {
             Entrar
           </Link>
           <Button asChild size="sm" className="bg-cta text-cta-foreground hover:bg-cta/90">
-            <a href={buildWhatsAppLink()} target="_blank" rel="noopener noreferrer">
+            <a
+              href={buildWhatsAppLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackLanding("WhatsappClique", { origem: "header" })}
+            >
               Falar no WhatsApp
             </a>
           </Button>

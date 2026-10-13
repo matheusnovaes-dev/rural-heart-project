@@ -75,3 +75,20 @@ export function trackCadastroIniciado(eventId: string) {
   window.fbq!("track", "Lead", { content_name: "etapa_1_whatsapp" }, { eventID: eventId });
   window.fbq!("trackCustom", "CadastroIniciado");
 }
+
+/**
+ * Eventos personalizados da landing (profundidade de scroll, qual CTA abriu o
+ * cadastro, uso da calculadora, FAQ, planos, WhatsApp). Antes só existiam
+ * pageview e Lead: com 84% de rejeição não dava pra saber ONDE as pessoas
+ * saem nem qual CTA converte. Vão pro Pixel (Events Manager / relatórios de
+ * anúncios), nunca derrubam a página (try/catch) e respeitam o mesmo guard de
+ * localhost dos demais eventos.
+ */
+export function trackLanding(evento: string, params?: Record<string, string | number | boolean>) {
+  try {
+    if (!pixelAtivo()) return;
+    window.fbq!("trackCustom", evento, params);
+  } catch {
+    // rastreio nunca pode quebrar a experiência.
+  }
+}

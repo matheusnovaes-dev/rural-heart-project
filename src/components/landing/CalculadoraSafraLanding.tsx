@@ -5,6 +5,7 @@ import { ArrowRight, Calculator, ChevronDown, Loader2 } from "lucide-react";
 import { AnimatedNumber } from "@/components/dashboard/AnimatedNumber";
 import { CampoWhatsappCta } from "@/components/landing/CampoWhatsappCta";
 import { useCadastro } from "@/components/landing/CadastroProvider";
+import { trackLanding } from "@/lib/metaPixel";
 import { Reveal } from "@/components/landing/Reveal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,6 +98,7 @@ export function CalculadoraSafraLanding() {
       if (meuId !== idRequisicao.current) return;
       setConsulta({ sacas: n, uf: ufUsada });
       setResultado(r);
+      trackLanding("CalculadoraUsada", { cultura, uf: ufUsada, comPreco: r.disponivel });
     } catch {
       if (meuId !== idRequisicao.current) return;
       setErro("Não consegui calcular agora. Tenta de novo em instantes.");
@@ -332,7 +334,9 @@ export function CalculadoraSafraLanding() {
                       <PainelCaptura
                         titulo="Avise-me quando sair o preço"
                         texto={`Assim que houver cotação de ${culturaLabel.toLowerCase()}, você recebe no WhatsApp.`}
-                        aoEnviar={(whatsapp) => abrirCadastro({ whatsapp, cultura, uf })}
+                        aoEnviar={(whatsapp) =>
+                          abrirCadastro({ whatsapp, cultura, uf, origem: "calculadora" })
+                        }
                       />
                     </>
                   )}
@@ -429,7 +433,12 @@ export function CalculadoraSafraLanding() {
                             : `Preço de ${culturaLabel.toLowerCase()} em ${nomeDaUf(consulta?.uf ?? uf)}, o do porto com frete e um aviso quando for a hora de vender.`
                         }
                         aoEnviar={(whatsapp) =>
-                          abrirCadastro({ whatsapp, cultura, uf: consulta?.uf ?? uf })
+                          abrirCadastro({
+                            whatsapp,
+                            cultura,
+                            uf: consulta?.uf ?? uf,
+                            origem: "calculadora",
+                          })
                         }
                       />
                     </>

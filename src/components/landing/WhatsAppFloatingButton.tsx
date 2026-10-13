@@ -3,6 +3,7 @@ import { MessageCircle } from "lucide-react";
 import { useCadastro } from "@/components/landing/CadastroProvider";
 import { buildWhatsAppLink, siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
+import { trackLanding } from "@/lib/metaPixel";
 
 /**
  * Bolha fixa pra quem só quer tirar uma dúvida rápida com um humano — o
@@ -21,6 +22,7 @@ export function WhatsAppFloatingButton() {
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Tirar dúvidas no WhatsApp"
+        onClick={() => trackLanding("WhatsappClique", { origem: "botao_flutuante" })}
         className={cn(
           "fixed right-4 bottom-[calc(1rem+var(--cookie-h,0px))] z-50 flex size-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform hover:scale-105 sm:right-6 sm:bottom-6",
           (barraFixaVisivel || heroEmTela) && "max-sm:hidden",

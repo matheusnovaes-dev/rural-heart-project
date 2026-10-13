@@ -50,7 +50,18 @@ export function SafralumeIcon({
   className?: string;
   alt?: string;
 }) {
-  return <img src={`/icons/${nome}.png`} alt={alt} className={className} />;
+  // lazy + decoding async: sem isso o React 19 emitia <link rel="preload"> pra
+  // cada um destes PNGs (todos abaixo da dobra) no <head>, competindo com a
+  // foto do hero na conexão lenta de quem chega do celular.
+  return (
+    <img
+      src={`/icons/${nome}.png`}
+      alt={alt}
+      className={className}
+      loading="lazy"
+      decoding="async"
+    />
+  );
 }
 
 /**

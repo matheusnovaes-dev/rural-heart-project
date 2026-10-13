@@ -160,11 +160,11 @@ export function DashboardPreview() {
           Um painel que cresce junto com sua operação
         </h2>
         <p className="mt-4 text-muted-foreground">
-          Preço, sinal de venda, alertas, lembretes, clima (por estado ou cidade), janela de plantio
-          oficial (ZARC) e suporte direto no painel, em qualquer plano, desde o Bronze. Junto com
-          isso, contexto de mercado direto no painel: câmbio, diesel, produção do IBGE, boletim
-          semanal da Imea e o boletim da USDA (WASDE). Acompanhar outras culturas e estados é do
-          plano Ouro. Role o mouse pra pausar e explorar no seu ritmo.
+          Preço, sinal de venda, alertas, lembretes, clima, janela de plantio e suporte, tudo num
+          lugar só, desde o plano Bronze. Câmbio, diesel e boletins de mercado vêm junto.{" "}
+          <span className="hidden [@media(pointer:fine)]:inline">
+            Passe o mouse pra pausar e explorar no seu ritmo.
+          </span>
         </p>
       </Reveal>
 

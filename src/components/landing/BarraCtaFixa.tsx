@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { MessageCircle } from "lucide-react";
 
 import { useCadastro } from "@/components/landing/CadastroProvider";
+import { trackLanding } from "@/lib/metaPixel";
 import { buildWhatsAppLink, siteConfig } from "@/config/site";
 
 /**
@@ -74,7 +75,7 @@ export function BarraCtaFixa() {
         >
           <button
             type="button"
-            onClick={() => abrirCadastro()}
+            onClick={() => abrirCadastro({ origem: "barra_fixa" })}
             className="h-12 min-w-0 flex-1 touch-manipulation rounded-xl bg-cta px-4 text-base font-bold whitespace-nowrap text-cta-foreground shadow-md shadow-cta/25 transition-[transform,background-color] hover:bg-cta/90 focus-visible:ring-4 focus-visible:ring-cta/40 focus-visible:outline-none active:scale-[0.98]"
           >
             Testar grátis por 7 dias
@@ -84,6 +85,7 @@ export function BarraCtaFixa() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Tirar dúvidas no WhatsApp"
+            onClick={() => trackLanding("WhatsappClique", { origem: "barra_fixa" })}
             className="flex size-12 shrink-0 touch-manipulation items-center justify-center rounded-xl bg-[#128C7E] text-white transition-[transform,background-color] hover:bg-[#0f7a6e] focus-visible:ring-4 focus-visible:ring-[#128C7E]/40 focus-visible:outline-none active:scale-[0.98]"
           >
             <MessageCircle className="size-6" aria-hidden="true" />

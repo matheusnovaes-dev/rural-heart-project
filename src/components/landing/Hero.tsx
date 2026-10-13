@@ -160,8 +160,8 @@ export function Hero() {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="mt-4 max-w-2xl text-balance text-base text-white/85 sm:mt-5 sm:text-lg"
         >
-          Preço de hoje, futuro da B3 e 90 dias de histórico, avisados no seu WhatsApp na hora certa
-          de vender.
+          Preço de hoje, pra onde o mercado aponta e 90 dias de histórico, avisados no seu WhatsApp
+          na hora certa de vender.
         </motion.p>
 
         <motion.div
@@ -177,7 +177,7 @@ export function Hero() {
               cadastro começa aqui, no momento da decisão. */}
           <CampoWhatsappCta
             variante="escuro"
-            aoEnviar={(whatsapp) => abrirCadastro({ whatsapp })}
+            aoEnviar={(whatsapp) => abrirCadastro({ whatsapp, origem: "hero" })}
           />
           <p className="mt-3 text-center text-[13px] font-medium text-balance text-white/85 sm:text-sm">
             <ShieldCheck className="mr-1.5 -mt-0.5 inline size-4 align-middle" aria-hidden="true" />

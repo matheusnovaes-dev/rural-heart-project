@@ -17,6 +17,17 @@ import { Toaster } from "../components/ui/sonner";
 import { CookieConsent } from "../components/CookieConsent";
 import { pricingPlans } from "../config/site";
 
+// Fontes em duas levas (auditoria de performance 2026-10-13: FCP de 3,9s em 4G
+// lento e CSS do Google Fonts bloqueando a renderização com 5 famílias). Só o
+// que aparece na primeira tela (títulos e texto corrido) bloqueia; DM Sans e
+// Space Grotesk (escopo do painel), e IBM Plex Mono (números), entram logo
+// depois da hidratação, sem travar o primeiro desenho. font-display: swap em
+// ambas, então nada some enquanto carrega.
+const FONTES_CRITICAS_URL =
+  "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap";
+const FONTES_SECUNDARIAS_URL =
+  "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap";
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -136,7 +147,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=DM+Sans:opsz,wght@9..40,400..700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap",
+        href: FONTES_CRITICAS_URL,
       },
       {
         rel: "stylesheet",
@@ -238,6 +249,22 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    if (document.querySelector(`link[href="${FONTES_SECUNDARIAS_URL}"]`)) return;
+    const carregar = () => {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = FONTES_SECUNDARIAS_URL;
+      document.head.appendChild(link);
+    };
+    if ("requestIdleCallback" in window) {
+      const id = window.requestIdleCallback(carregar, { timeout: 2000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const t = setTimeout(carregar, 300);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
     // reducedMotion="user": toda animação de transform/layout (x, y, scale,

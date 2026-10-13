@@ -1,45 +1,47 @@
 import { motion } from "framer-motion";
-import { Check, Sprout } from "lucide-react";
+import { ArrowRight, Check, Sprout } from "lucide-react";
 
 import { Reveal } from "@/components/landing/Reveal";
 import { useExemplosDoDia } from "@/hooks/useExemplosDoDia";
-import { brl2, diaMes, fraseDeFuturo, fraseDePlantio } from "@/lib/exemplosLanding";
+import { brl2, diaMes, fraseDeFuturo, fraseDePlantio, fraseDeSinal } from "@/lib/exemplosLanding";
 
 export function Solution() {
   return (
     <section className="bg-secondary/50 py-20">
       <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2">
         <Reveal>
-          <span className="text-sm font-semibold uppercase tracking-wide text-primary">
-            Como funciona na prática
-          </span>
-          <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            Você pergunta. O Safralume responde com o preço da sua região e o do porto.
+          {/* A antiga seção "O problema não é falta de dado" (3 cards) repetia
+              o que o H1 do hero já diz: virou o título desta, que mostra a
+              solução logo em seguida. Menos uma tela inteira no celular. */}
+          <h2 className="font-display text-3xl font-bold tracking-tight text-balance text-foreground sm:text-4xl">
+            O problema não é falta de dado. É não saber a hora certa.
           </h2>
           <p className="mt-4 max-w-md text-muted-foreground">
-            Cruzamos dados oficiais (Conab e órgãos estaduais) com o preço do porto e o frete na
-            hora, sem você abrir planilha nenhuma.
+            Pergunte no WhatsApp e receba o preço da sua região, o do porto com frete e um sinal de
+            que é hora de vender ou esperar, sempre com fonte e data.
           </p>
           <ul className="mt-6 space-y-3">
             {[
-              "Fonte e data sempre visíveis em cada resposta",
-              "Preço do porto e frete até lá, pra você negociar com números",
-              "Mais de 70 culturas: soja, milho, boi, café, suíno, frango, caprino, ovino e muito mais",
-              "Compare seu estado com outros: saiba se tá vendendo acima ou abaixo da média da região",
-              "Alertas automáticos de preço e clima, direto no seu WhatsApp, sem precisar perguntar",
-              "Calculadora de Safra: sua margem real, com o preço de hoje",
-              "% de plantio e colheita da semana da Conab, comparado com a média dos últimos 5 anos",
-              "Alerta de ferrugem asiática na soja: foco confirmado e esporo no ar na sua região",
-              "Agenda de leilão de gado no Brasil inteiro: presencial na sua região e virtual em destaque",
-              "Boletim da Imea e da USDA (WASDE), câmbio e diesel, tudo cruzado no mesmo lugar",
-              "Funciona mesmo com internet fraca no campo",
+              "Fonte e data em toda resposta",
+              "Preço da sua região comparado com o porto e o frete",
+              "Sinal de venda: preço, futuros da B3 e clima juntos",
+              "Alertas automáticos de preço e clima, sem precisar perguntar",
+              "Mais de 70 culturas, de soja e milho a boi e café",
+              "Funciona até com internet fraca no campo",
             ].map((item) => (
               <li key={item} className="flex items-start gap-2 text-sm text-foreground">
-                <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
                 {item}
               </li>
             ))}
           </ul>
+          <a
+            href="#planos"
+            className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+          >
+            Ver tudo que cada plano inclui
+            <ArrowRight className="size-3.5" aria-hidden="true" />
+          </a>
         </Reveal>
 
         <Reveal delay={0.15} className="flex flex-col items-center gap-3">
@@ -156,6 +158,7 @@ function PhoneMockup() {
               📈 Mercado futuro (B3), soja:{" "}
               {futuro ? fraseDeFuturo(futuro) : "próximos vencimentos com preço de ajuste"}
             </p>
+            <p className="mt-1">🎯 {fraseDeSinal(futuro ?? null)}</p>
             <p className="mt-1 text-xs text-[#667781]">
               Fonte: BCB + B3 · {dolar ? `PTAX de ${diaMes(dolar.data)}` : "atualizado hoje"}
             </p>

@@ -105,6 +105,24 @@ export function fraseDePlantio(p: NonNullable<ExemplosDoDia["plantio"]>): string
     : "Ainda não é a época recomendada de plantio nessa região (ZARC/MAPA).";
 }
 
+/**
+ * Veredito do "sinal de venda" do exemplo, derivado dos MESMOS futuros que o
+ * chat mostra logo antes: curva subindo → "pode valer esperar"; senão → "bom
+ * momento pra vender". Sem dado, só descreve o que o sinal cruza (nunca
+ * inventa um veredito).
+ */
+export function fraseDeSinal(f: ExemplosDoDia["futuroSoja"]): string {
+  if (!f || f.contratos.length < 2) {
+    return "Sinal de venda: cruza o preço de hoje, os últimos 90 dias, o mercado futuro e o clima pra dizer se é hora de vender ou esperar.";
+  }
+  const primeiro = f.contratos[0]!.valor;
+  const ultimo = f.contratos[f.contratos.length - 1]!.valor;
+  const sobe = ultimo > primeiro * 1.005;
+  return sobe
+    ? "Sinal de venda: o mercado futuro aponta alta nos próximos meses. Pode valer esperar um pouco."
+    : "Sinal de venda: o mercado futuro não aponta mais alta. Pode ser um bom momento pra vender.";
+}
+
 /** Linha de mercado futuro da B3 a partir do dado real (ou null se não houver). */
 export function fraseDeFuturo(f: NonNullable<ExemplosDoDia["futuroSoja"]>): string {
   const moeda = f.unidade.toLowerCase().includes("us$") ? "US$ " : "R$ ";

@@ -45,7 +45,14 @@ export function FinalCta() {
         </Reveal>
 
         <Reveal delay={0.15}>
-          <LeadForm className="rounded-2xl border border-border bg-card p-6 sm:p-8" />
+          {/* autoFocar={false}: este formulário fica no fim da página. Com foco
+              automático, o navegador rolava a página até aqui assim que ela
+              carregava (scrollY de 0 até ~10 mil px e de volta), o que
+              causava o "pulo" visível e boa parte do CLS. */}
+          <LeadForm
+            autoFocar={false}
+            className="rounded-2xl border border-border bg-card p-6 sm:p-8"
+          />
         </Reveal>
       </div>
     </section>

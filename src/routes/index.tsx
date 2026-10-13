@@ -4,12 +4,14 @@ import { z } from "zod";
 import { Header } from "@/components/landing/Header";
 import { Hero } from "@/components/landing/Hero";
 import { CalculadoraSafraLanding } from "@/components/landing/CalculadoraSafraLanding";
-import { PainPoints } from "@/components/landing/PainPoints";
 import { Solution } from "@/components/landing/Solution";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { DashboardPreview } from "@/components/landing/DashboardPreview";
 import { TrustProof } from "@/components/landing/TrustProof";
 import { Pricing } from "@/components/landing/Pricing";
+import { Faq } from "@/components/landing/Faq";
+import { RastreioScroll } from "@/components/landing/RastreioScroll";
+import { perguntasFrequentes } from "@/config/faq";
 import { FinalCta } from "@/components/landing/FinalCta";
 import { Footer } from "@/components/landing/Footer";
 import { WhatsAppFloatingButton } from "@/components/landing/WhatsAppFloatingButton";
@@ -24,6 +26,23 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/")({
   validateSearch: searchSchema,
+  head: () => ({
+    scripts: [
+      {
+        // FAQPage: as mesmas perguntas da seção "Perguntas frequentes".
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: perguntasFrequentes.map((p) => ({
+            "@type": "Question",
+            name: p.pergunta,
+            acceptedAnswer: { "@type": "Answer", text: p.resposta },
+          })),
+        }),
+      },
+    ],
+  }),
   component: Index,
 });
 
@@ -36,16 +55,17 @@ function Index() {
         <Header />
         <main>
           <Hero />
-          <CalculadoraSafraLanding />
-          <PainPoints />
           <Solution />
+          <CalculadoraSafraLanding />
           <HowItWorks />
           <DashboardPreview />
           <TrustProof />
           <Pricing semTrial={semTrial === "1"} />
+          <Faq />
           <FinalCta />
         </main>
         <Footer />
+        <RastreioScroll />
         <BarraCtaFixa />
         <WhatsAppFloatingButton />
       </div>

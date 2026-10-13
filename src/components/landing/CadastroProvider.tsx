@@ -16,8 +16,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { LeadForm, registrarInicioDeCadastro } from "@/components/landing/LeadForm";
+import { trackLanding } from "@/lib/metaPixel";
 
 export type AbrirCadastroOpcoes = {
+  /** Qual CTA abriu o cadastro (só pra medir qual converte). */
+  origem?: "hero" | "barra_fixa" | "calculadora";
   /** WhatsApp já digitado em algum CTA: o cadastro abre direto na etapa 2. */
   whatsapp?: string;
   /** Cultura/UF já escolhidas na calculadora, pra não pedir de novo. */
@@ -77,6 +80,10 @@ export function CadastroProvider({ children }: { children: ReactNode }) {
     // Número já digitado = início do cadastro registrado aqui, uma vez, e o
     // formulário abre na etapa 2 sem registrar de novo.
     if (opcoes.whatsapp) registrarInicioDeCadastro(opcoes.whatsapp);
+    trackLanding("CadastroAberto", {
+      origem: opcoes.origem ?? "outro",
+      comWhatsapp: !!opcoes.whatsapp,
+    });
     setSessao({ id: Date.now(), opcoes });
   }, []);
 

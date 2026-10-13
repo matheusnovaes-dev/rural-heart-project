@@ -58,7 +58,7 @@ function VideoComoFunciona() {
   return (
     <div
       ref={containerRef}
-      className="mx-auto aspect-video w-full max-w-3xl overflow-hidden rounded-2xl bg-[#101c15] shadow-lg"
+      className="mx-auto aspect-[4/5] w-full max-w-3xl overflow-hidden rounded-2xl bg-[#101c15] shadow-lg sm:aspect-video"
     >
       {visivel && !prefereMenosMovimento ? (
         <video
@@ -76,6 +76,8 @@ function VideoComoFunciona() {
           src="/videos/como-funciona-poster.png"
           alt="Conversa de exemplo no WhatsApp com o Safralume, mostrando preço, câmbio, janela de plantio, comparação regional e sinal de venda"
           className="size-full object-cover"
+          loading="lazy"
+          decoding="async"
         />
       )}
     </div>
