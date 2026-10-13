@@ -7,10 +7,12 @@ import {
   useTransform,
 } from "framer-motion";
 import { useRef, type MouseEvent } from "react";
-import { BadgeCheck, ShieldCheck } from "lucide-react";
+import { BadgeCheck, ShieldCheck, Sprout } from "lucide-react";
 
 import { CampoWhatsappCta } from "@/components/landing/CampoWhatsappCta";
 import { useCadastro } from "@/components/landing/CadastroProvider";
+import { useExemplosDoDia } from "@/hooks/useExemplosDoDia";
+import { fraseDeSinal } from "@/lib/exemplosLanding";
 
 export function Hero() {
   const { abrirCadastro } = useCadastro();
@@ -134,57 +136,114 @@ export function Hero() {
         </motion.svg>
       </div>
 
-      <div className="relative mx-auto flex max-w-4xl flex-col items-center px-4 pt-14 pb-24 text-center sm:px-6 sm:pt-24 sm:pb-32">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-medium text-white/90"
-        >
-          <BadgeCheck className="size-3.5" />
-          Dados oficiais Conab e órgãos estaduais
-        </motion.div>
+      <div className="relative mx-auto flex max-w-4xl flex-col items-center px-4 pt-14 pb-24 text-center sm:px-6 sm:pt-24 sm:pb-32 lg:max-w-6xl lg:flex-row lg:items-center lg:justify-between lg:gap-14 lg:pt-20 lg:pb-36 lg:text-left">
+        <div className="flex w-full flex-col items-center lg:max-w-2xl lg:items-start">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-medium text-white/90"
+          >
+            <BadgeCheck className="size-3.5" />
+            Dados oficiais Conab e órgãos estaduais
+          </motion.div>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-balance font-display text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl"
-        >
-          Preço você já sabe. Mas sabe se é hora de vender?
-        </motion.h1>
+          <motion.h1
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="text-balance font-display text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl lg:text-5xl xl:text-[3.25rem]"
+          >
+            Preço você já sabe. Mas sabe se é hora de vender?
+          </motion.h1>
 
-        <motion.p
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="mt-4 max-w-2xl text-balance text-base text-white/85 sm:mt-5 sm:text-lg"
-        >
-          Preço de hoje, pra onde o mercado aponta e 90 dias de histórico, avisados no seu WhatsApp
-          na hora certa de vender.
-        </motion.p>
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="mt-4 max-w-2xl text-balance text-base text-white/85 sm:mt-5 sm:text-lg"
+          >
+            Preço de hoje, pra onde o mercado aponta e 90 dias de histórico, avisados no seu
+            WhatsApp na hora certa de vender.
+          </motion.p>
 
-        <motion.div
-          id="hero-cadastro"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="mt-7 w-full max-w-xl sm:mt-8"
-        >
-          {/* O CTA virou o próprio campo de WhatsApp: antes era um botão que
+          <motion.div
+            id="hero-cadastro"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="mt-7 w-full max-w-xl sm:mt-8 lg:max-w-lg"
+          >
+            {/* O CTA virou o próprio campo de WhatsApp: antes era um botão que
               rolava ~10 mil px até o formulário do rodapé (achado da
               auditoria de UX 2026-10-13, 94% do tráfego é celular). Agora o
               cadastro começa aqui, no momento da decisão. */}
-          <CampoWhatsappCta
-            variante="escuro"
-            aoEnviar={(whatsapp) => abrirCadastro({ whatsapp, origem: "hero" })}
-          />
-          <p className="mt-3 text-center text-[13px] font-medium text-balance text-white/85 sm:text-sm">
-            <ShieldCheck className="mr-1.5 -mt-0.5 inline size-4 align-middle" aria-hidden="true" />
-            7 dias grátis · Sem cartão · Cancele quando quiser
-          </p>
-        </motion.div>
+            <CampoWhatsappCta
+              variante="escuro"
+              aoEnviar={(whatsapp) => abrirCadastro({ whatsapp, origem: "hero" })}
+            />
+            <p className="mt-3 text-center text-[13px] font-medium text-balance text-white/85 sm:text-sm lg:text-left">
+              <ShieldCheck
+                className="mr-1.5 -mt-0.5 inline size-4 align-middle"
+                aria-hidden="true"
+              />
+              7 dias grátis · Sem cartão · Cancele quando quiser
+            </p>
+          </motion.div>
+        </div>
+        <HeroConversa />
       </div>
     </section>
+  );
+}
+
+/**
+ * O produto à vista já na primeira tela (só no desktop): a pergunta e a resposta
+ * que o produtor recebe no WhatsApp. Os preços do exemplo são ilustrativos e a
+ * legenda diz isso; o sinal de venda usa o futuro real do dia quando há dado.
+ */
+function HeroConversa() {
+  const exemplos = useExemplosDoDia();
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 0.45 }}
+      className="hidden w-full max-w-sm shrink-0 lg:block"
+      aria-hidden="true"
+    >
+      <div className="rounded-[2rem] border-[7px] border-[oklch(0.244_0.026_155.8)] bg-[oklch(0.244_0.026_155.8)] shadow-2xl">
+        <div className="overflow-hidden rounded-[1.5rem] bg-[#e5ded4]">
+          <div className="flex items-center gap-3 bg-[oklch(0.331_0.049_156.2)] px-4 py-3">
+            <span className="flex size-9 items-center justify-center rounded-full bg-white/15 text-white">
+              <Sprout className="size-4" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-white">Safralume</p>
+              <p className="text-xs text-white/70">online</p>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 px-3 py-4 text-sm text-[#111b21]">
+            <p className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-[#d9fdd3] px-3 py-2">
+              Quanto está a soja em Rio Verde? Vale vender agora?
+            </p>
+            <div className="mr-auto max-w-[92%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 shadow-sm">
+              <p>
+                Soja em Cascavel/PR hoje: <strong>R$ 151,00/saca</strong>.
+              </p>
+              <p className="mt-1">
+                No porto de Paranaguá a saca vale R$ 162,50. Tirando o frete (R$ 12,30), sobram R$
+                150,20.
+              </p>
+              <p className="mt-1 text-xs text-[#667781]">Fonte: BBM · atualizado às 08:12</p>
+            </div>
+            <div className="mr-auto max-w-[92%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 shadow-sm">
+              <p>🎯 {fraseDeSinal(exemplos?.futuroSoja ?? null)}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p className="mt-3 text-center text-xs text-white/75">Exemplo ilustrativo de conversa</p>
+    </motion.div>
   );
 }

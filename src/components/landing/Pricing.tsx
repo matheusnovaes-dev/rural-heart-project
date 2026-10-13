@@ -36,14 +36,14 @@ export function Pricing({ semTrial = false }: { semTrial?: boolean }) {
         </p>
       </Reveal>
 
-      <div className="mt-12 grid items-start gap-6 sm:grid-cols-3">
+      <div className="mt-12 grid items-stretch gap-6 sm:grid-cols-3">
         {pricingPlans.map((plan, index) => (
           // No celular o plano em destaque (Prata) sobe pro topo: antes ele só
           // aparecia depois de rolar o card inteiro do Bronze.
           <Reveal
             key={plan.id}
             delay={index * 0.1}
-            className={cn(plan.highlighted && "max-sm:order-first")}
+            className={cn("h-full", plan.highlighted && "max-sm:order-first")}
           >
             <CartaoPlano plan={plan} semTrial={semTrial} />
           </Reveal>
@@ -72,24 +72,26 @@ function CartaoPlano({ plan, semTrial }: { plan: PricingPlan; semTrial: boolean 
             : "border-border bg-card",
       )}
     >
-      <span
-        className={cn(
-          "mb-3 flex size-11 items-center justify-center rounded-lg",
-          isOuro ? "bg-gold text-gold-foreground" : "bg-primary text-primary-foreground",
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <span
+          className={cn(
+            "flex size-11 items-center justify-center rounded-lg",
+            isOuro ? "bg-gold text-gold-foreground" : "bg-primary text-primary-foreground",
+          )}
+        >
+          <PlanIcon className="size-5" aria-hidden="true" />
+        </span>
+        {plan.highlighted && (
+          <span className="rounded-full bg-cta px-3 py-1 text-xs font-semibold text-cta-foreground">
+            Mais popular
+          </span>
         )}
-      >
-        <PlanIcon className="size-5" aria-hidden="true" />
-      </span>
-      {plan.highlighted && (
-        <span className="mb-3 w-fit rounded-full bg-cta px-3 py-1 text-xs font-semibold text-cta-foreground">
-          Mais popular
-        </span>
-      )}
-      {isOuro && (
-        <span className="mb-3 w-fit rounded-full bg-gold px-3 py-1 text-xs font-semibold text-gold-foreground">
-          Nível premium
-        </span>
-      )}
+        {isOuro && (
+          <span className="rounded-full bg-gold px-3 py-1 text-xs font-semibold text-gold-foreground">
+            Nível premium
+          </span>
+        )}
+      </div>
       <h3 className="font-display text-lg font-semibold text-foreground">{plan.name}</h3>
       <p className="text-sm text-muted-foreground">{plan.audience}</p>
       <p className="mt-4 font-mono text-2xl font-bold tabular-nums text-foreground">

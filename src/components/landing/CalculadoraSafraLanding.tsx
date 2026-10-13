@@ -191,7 +191,7 @@ export function CalculadoraSafraLanding() {
             </div>
             <div>
               <Label className="mb-1.5 block text-xs font-semibold text-foreground">
-                Estado (UF)
+                Estado
               </Label>
               <Select
                 value={uf}

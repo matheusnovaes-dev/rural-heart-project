@@ -31,7 +31,7 @@ export const pricingPlans: PricingPlan[] = [
     audience: "Pequenos produtores",
     price: 39,
     features: [
-      "Preço da sua região comparado com o porto (paridade), com frete",
+      "Preço da sua região comparado com o preço no porto, já com o frete",
       "Sinal de venda: cruza preço, futuros da B3 e clima pra apontar a hora certa",
       "Calculadora de Safra: quanto sua produção vale e sua margem, com preço real do dia",
       "Janela de plantio oficial (ZARC) pra soja, milho, algodão, arroz e feijão: sabe se vale plantar agora ou esperar",

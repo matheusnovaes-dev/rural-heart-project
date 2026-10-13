@@ -78,8 +78,8 @@ function PhoneMockup() {
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1, duration: 0.4 }}
+            viewport={{ once: true, amount: 0.6 }}
+            transition={{ delay: 0.05, duration: 0.35 }}
             className="mr-auto max-w-[88%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-sm text-[#111b21] shadow-sm"
           >
             Bom dia! Pergunte o preço de qualquer cultura e cidade. 🌱
@@ -88,8 +88,8 @@ function PhoneMockup() {
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.4, duration: 0.4 }}
+            viewport={{ once: true, amount: 0.6 }}
+            transition={{ delay: 0.05, duration: 0.35 }}
             className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-[#d9fdd3] px-3 py-2 text-sm text-[#111b21]"
           >
             Qual o preço da soja hoje em Rio Verde?
@@ -98,13 +98,13 @@ function PhoneMockup() {
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.7, duration: 0.4 }}
+            viewport={{ once: true, amount: 0.6 }}
+            transition={{ delay: 0.05, duration: 0.35 }}
             className="mr-auto max-w-[88%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-sm text-[#111b21] shadow-sm"
           >
             <p>
-              Soja em Cascavel/PR hoje: <strong>R$ 151,00/saca</strong>. Porto de Paranaguá: R$
-              162,50, frete R$ 12,30: paridade de R$ 150,20.
+              Soja em Cascavel/PR hoje: <strong>R$ 151,00/saca</strong>. No porto de Paranaguá a
+              saca vale R$ 162,50. Tirando o frete (R$ 12,30), sobram R$ 150,20.
             </p>
             <p className="mt-1">
               Paraná está vendendo 3,8% acima da média de 5 outros estados que acompanhamos.
@@ -115,8 +115,8 @@ function PhoneMockup() {
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 1, duration: 0.4 }}
+            viewport={{ once: true, amount: 0.6 }}
+            transition={{ delay: 0.05, duration: 0.35 }}
             className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-[#d9fdd3] px-3 py-2 text-sm text-[#111b21]"
           >
             E o boi gordo em MT?
@@ -125,8 +125,8 @@ function PhoneMockup() {
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 1.3, duration: 0.4 }}
+            viewport={{ once: true, amount: 0.6 }}
+            transition={{ delay: 0.05, duration: 0.35 }}
             className="mr-auto max-w-[88%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-sm text-[#111b21] shadow-sm"
           >
             <p>
@@ -139,8 +139,8 @@ function PhoneMockup() {
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 1.6, duration: 0.4 }}
+            viewport={{ once: true, amount: 0.6 }}
+            transition={{ delay: 0.05, duration: 0.35 }}
             className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-[#d9fdd3] px-3 py-2 text-sm text-[#111b21]"
           >
             Vale mais vender a soja agora ou esperar um pouco?
@@ -149,8 +149,8 @@ function PhoneMockup() {
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 1.9, duration: 0.4 }}
+            viewport={{ once: true, amount: 0.6 }}
+            transition={{ delay: 0.05, duration: 0.35 }}
             className="mr-auto max-w-[88%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-sm text-[#111b21] shadow-sm"
           >
             <p>💵 Dólar hoje (PTAX): {dolar ? `R$ ${brl2(dolar.valor)}` : "cotação do dia"}</p>
@@ -167,19 +167,8 @@ function PhoneMockup() {
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 2.2, duration: 0.4 }}
-            className="mr-auto max-w-[88%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-sm text-[#111b21] shadow-sm"
-          >
-            ☁️ Alerta de clima: chuva forte prevista em MT nos próximos dias. Fique de olho antes de
-            planejar a atividade de campo.
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 2.5, duration: 0.4 }}
+            viewport={{ once: true, amount: 0.6 }}
+            transition={{ delay: 0.05, duration: 0.35 }}
             className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-[#d9fdd3] px-3 py-2 text-sm text-[#111b21]"
           >
             Posso plantar soja hoje em Sorriso/MT?
@@ -188,8 +177,8 @@ function PhoneMockup() {
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 2.8, duration: 0.4 }}
+            viewport={{ once: true, amount: 0.6 }}
+            transition={{ delay: 0.05, duration: 0.35 }}
             className="mr-auto max-w-[88%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-sm text-[#111b21] shadow-sm"
           >
             <p>
