@@ -110,7 +110,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:locale", content: "pt_BR" },
       { property: "og:url", content: "https://www.safralume.com.br" },
       { property: "og:site_name", content: "Safralume" },
-      { property: "og:image", content: "/images/og-image.jpg" },
+      { property: "og:image", content: "https://www.safralume.com.br/images/og-image.jpg" },
       { property: "og:image:width", content: "1200" },
       { property: "og:image:height", content: "630" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -122,7 +122,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         name: "twitter:description",
         content: "O preço da sua saca e o do porto, direto no WhatsApp.",
       },
-      { name: "twitter:image", content: "/images/og-image.jpg" },
+      { name: "twitter:image", content: "https://www.safralume.com.br/images/og-image.jpg" },
     ],
     links: [
       // Pixel da Meta: o PageView só sai quando o fbevents.js executa, e é ele

@@ -5,6 +5,16 @@ import { Footer } from "@/components/landing/Footer";
 import { siteConfig } from "@/config/site";
 
 export const Route = createFileRoute("/privacidade")({
+  head: () => ({
+    meta: [
+      { title: "Política de Privacidade | Safralume" },
+      {
+        name: "description",
+        content:
+          "Como o Safralume coleta, usa e protege seus dados pessoais e de WhatsApp, em conformidade com a LGPD.",
+      },
+    ],
+  }),
   component: PrivacidadePage,
 });
 

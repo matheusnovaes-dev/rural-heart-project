@@ -5,6 +5,16 @@ import { Footer } from "@/components/landing/Footer";
 import { siteConfig } from "@/config/site";
 
 export const Route = createFileRoute("/termos")({
+  head: () => ({
+    meta: [
+      { title: "Termos de Uso | Safralume" },
+      {
+        name: "description",
+        content:
+          "Regras de uso, assinatura, cobrança e cancelamento do Safralume, o assistente de preços agrícolas via WhatsApp.",
+      },
+    ],
+  }),
   component: TermosPage,
 });
 
