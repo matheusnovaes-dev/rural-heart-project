@@ -1,3 +1,6 @@
+-- Já rodado em produção em 2026-10-13 (confirmado: a coluna existe com
+-- default true em todas as linhas).
+--
 -- Opt-out da mensagem proativa diária (preço/clima/câmbio) — pedido do
 -- Matheus 2026-10-13: template é categoria MARKETING na Meta, produtor
 -- precisa ter como pedir pra parar de receber. Default true (quem já é
