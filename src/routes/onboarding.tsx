@@ -21,6 +21,7 @@ import { enviarBoasVindasWhatsApp } from "@/lib/notificacoes.server";
 import { culturas } from "@/config/culturas";
 import { CadastroConcluido } from "@/components/onboarding/CadastroConcluido";
 import { normalizarWhatsapp } from "@/lib/telefone";
+import { anotarOrigemDoProdutor } from "@/lib/origem";
 import { ufs } from "@/config/ufs";
 import { buscarMunicipioServidor } from "@/lib/clima.server";
 import { pricingPlans } from "@/config/site";
@@ -171,6 +172,7 @@ function OnboardingPage() {
         .single();
 
       if (!error) {
+        void anotarOrigemDoProdutor(produtorInserido.id).catch(() => {});
         // Produtor convidado por uma cooperativa já está coberto pelo plano
         // dela — só produtor solo (sem convite) assina o próprio plano.
         if (convite) {

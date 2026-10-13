@@ -565,3 +565,91 @@ export function garantirMencaoLeilao(resposta: string, resultado: ResultadoLeila
   if (partes.length === 0) return resposta;
   return `${resposta} Tem ${partes.join(" e ")}.`;
 }
+
+/**
+ * "UF" é jargão: quem produz não sabe o que é e responde errado ou desiste (o
+ * Matheus pediu pra tirar, 2026-10-13: "a pessoa pode não entender o que é UF").
+ * O prompt já manda falar "estado", mas o modelo escapa às vezes ("Pode me
+ * informar a UF?"). Troca por código, só nas construções com artigo, que são
+ * seguras de reescrever; sigla de estado ("GO", "MT") não é tocada.
+ */
+export function trocarJargaoUf(resposta: string): string {
+  const cap = (original: string, novo: string) =>
+    original[0] === original[0]!.toUpperCase() && original[0] !== original[0]!.toLowerCase()
+      ? novo[0]!.toUpperCase() + novo.slice(1)
+      : novo;
+  const prepArtigo: Record<string, string> = {
+    a: "o",
+    da: "do",
+    na: "no",
+    pela: "pelo",
+    pra: "pro",
+  };
+  const possessivo: Record<string, string> = {
+    sua: "seu",
+    essa: "esse",
+    esta: "este",
+    nossa: "nosso",
+  };
+  const demonstrativo: Record<string, string> = { dessa: "desse", desta: "deste" };
+  return (
+    resposta
+      // "qual (a) UF" -> "qual estado"
+      .replace(/\bqual\s+(?:a\s+)?UF\b/gi, (m) => cap(m, "qual estado"))
+      // "(a|da|na|pela|pra) sua|essa|esta|nossa UF" -> "o|do|no|pelo|pro seu|esse|este|nosso estado"
+      .replace(
+        /\b(?:(a|da|na|pela|pra)\s+)?(sua|essa|esta|nossa)\s+UF\b/gi,
+        (m, prep: string | undefined, pos: string) => {
+          const frente = prep ? `${prepArtigo[prep.toLowerCase()]} ` : "";
+          return cap(m, `${frente}${possessivo[pos.toLowerCase()]} estado`);
+        },
+      )
+      // "dessa|desta UF" -> "desse|deste estado"
+      .replace(/\b(dessa|desta)\s+UF\b/gi, (m, dem: string) =>
+        cap(m, `${demonstrativo[dem.toLowerCase()]} estado`),
+      )
+      // "(a|da|na|pela|pra) UF" -> "o|do|no|pelo|pro estado"
+      .replace(/\b(a|da|na|pela|pra)\s+UF\b/gi, (m, prep: string) =>
+        cap(m, `${prepArtigo[prep.toLowerCase()]} estado`),
+      )
+      // plural com determinante feminino concorda com "estados" (masculino)
+      .replace(
+        /\b(todas\s+as|todas|várias|outras|algumas|poucas|muitas|as|essas|estas|das|nas|pelas)\s+UFs\b/gi,
+        (m, det: string) => {
+          const mapa: Record<string, string> = {
+            "todas as": "todos os",
+            todas: "todos",
+            várias: "vários",
+            outras: "outros",
+            algumas: "alguns",
+            poucas: "poucos",
+            muitas: "muitos",
+            as: "os",
+            essas: "esses",
+            estas: "estes",
+            das: "dos",
+            nas: "nos",
+            pelas: "pelos",
+          };
+          return cap(m, `${mapa[det.toLowerCase().replace(/\s+/g, " ")]} estados`);
+        },
+      )
+      .replace(/\bUFs\b/g, "estados")
+  );
+}
+
+/**
+ * A pergunta de confirmação do cadastro é fixa no prompt ("...produtor de
+ * soja no GO?") e traz a sigla. Quem não sabe o que é UF entende "Goiás" na
+ * hora, então troca a sigla pelo nome por extenso ("... em Goiás?"). Só mexe
+ * nessa frase; qualquer outra sigla no texto fica como está.
+ */
+export function confirmacaoComEstadoPorExtenso(resposta: string): string {
+  return resposta.replace(
+    /(Confirma:[^?]*?produtor de [^?]*?)\s+(?:no|na|em)\s+([A-Z]{2})\s*\?/,
+    (m, antes: string, sigla: string) => {
+      const nome = ufs.find((u) => u.value === sigla)?.label;
+      return nome ? `${antes} em ${nome}?` : m;
+    },
+  );
+}

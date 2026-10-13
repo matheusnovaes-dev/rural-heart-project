@@ -30,6 +30,7 @@ import { normalizarWhatsapp } from "@/lib/telefone";
 import { useAuth } from "@/lib/auth";
 import { buildWhatsAppLink, pricingPlans } from "@/config/site";
 import { ufs } from "@/config/ufs";
+import { inserirComOrigem } from "@/lib/origem";
 import { culturas, DESTAQUES, normalizarCultura } from "@/config/culturas";
 import { enviarBoasVindasWhatsApp } from "@/lib/notificacoes.server";
 import { lerCookiesMeta, trackCadastroConcluido, trackCadastroIniciado } from "@/lib/metaPixel";
@@ -79,10 +80,7 @@ export function registrarInicioDeCadastro(whatsappBruto: string) {
   // que a Meta não consegue deduplicar, e outra linha em cadastro_iniciados.
   if (iniciosJaRegistrados.has(whatsapp)) return;
   iniciosJaRegistrados.add(whatsapp);
-  supabase
-    ?.from("cadastro_iniciados")
-    .insert({ whatsapp })
-    .then(() => {});
+  void inserirComOrigem("cadastro_iniciados", { whatsapp });
   try {
     const eventIdLead = crypto.randomUUID();
     trackCadastroIniciado(eventIdLead);
@@ -292,10 +290,11 @@ export function LeadForm({
     // pode atrasar o redirecionamento pro dashboard — por isso .then() em
     // vez de await (precisa de um dos dois pra sair de verdade, ver
     // comentário em logarFalhaCadastro; erro aqui é ignorado de propósito).
-    supabase
-      .from("leads")
-      .insert({ name: values.name, whatsapp: values.whatsapp, crop: values.crop })
-      .then(() => {});
+    void inserirComOrigem("leads", {
+      name: values.name,
+      whatsapp: values.whatsapp,
+      crop: values.crop,
+    });
 
     // Também best-effort: quem se cadastra precisa saber que existe um
     // WhatsApp pra chamar — em vez de esperar ela descobrir sozinha, o bot

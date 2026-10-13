@@ -16,6 +16,7 @@ import { AuthProvider } from "../lib/auth";
 import { Toaster } from "../components/ui/sonner";
 import { CookieConsent } from "../components/CookieConsent";
 import { pricingPlans } from "../config/site";
+import { capturarOrigem } from "../lib/origem";
 
 // Fontes em duas levas (auditoria de performance 2026-10-13: FCP de 3,9s em 4G
 // lento e CSS do Google Fonts bloqueando a renderização com 5 famílias). Só o
@@ -249,6 +250,10 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    capturarOrigem();
+  }, []);
 
   useEffect(() => {
     if (document.querySelector(`link[href="${FONTES_SECUNDARIAS_URL}"]`)) return;
