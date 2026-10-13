@@ -51,16 +51,16 @@ export const Route = createFileRoute("/api/cron/resumo-diario")({
         if (!config?.ativa && !simular) return Response.json({ ativa: false });
 
         const agora = new Date();
-        const horaBrt = Number(
-          agora.toLocaleString("en-US", {
-            timeZone: "America/Sao_Paulo",
-            hour: "2-digit",
-            hour12: false,
-          }),
-        );
-        // Início do dia em BRT, em UTC — mesmo cálculo de /api/cron/mensagem-proativa.
-        const inicioDoDiaBrt = new Date(`${agora.toISOString().slice(0, 10)}T03:00:00.000Z`);
-        if (agora < inicioDoDiaBrt) inicioDoDiaBrt.setUTCDate(inicioDoDiaBrt.getUTCDate() - 1);
+        // % 24: em alguns ambientes a meia-noite sai como "24" com hour12:false,
+        // e quem escolheu 0h nunca bateria.
+        const horaBrt =
+          Number(
+            agora.toLocaleString("en-US", {
+              timeZone: "America/Sao_Paulo",
+              hour: "2-digit",
+              hour12: false,
+            }),
+          ) % 24;
 
         const { data: produtores } = await supabase
           .from("produtores")
@@ -68,14 +68,23 @@ export const Route = createFileRoute("/api/cron/resumo-diario")({
             "id, nome, whatsapp, uf, cultura_principal, resumo_diario_hora, resumo_diario_enviado_em",
           )
           .eq("resumo_diario_ativo", true)
-          .eq("resumo_diario_hora", horaBrt)
           .returns<Produtor[]>();
+
+        // O GitHub Actions atrasa cron em horas (já medido: 2-4h), então exigir
+        // "hora == hora atual" fazia quem escolheu 7h não receber nada no dia em
+        // que a rodada de 7h caía em 8h. Agora vale a hora escolhida até
+        // JANELA_ATRASO_H horas atrás; a trava de 20h abaixo evita repetir.
+        const candidatos = (produtores ?? []).filter((p) => {
+          if (p.resumo_diario_hora == null) return false;
+          const atraso = (horaBrt - p.resumo_diario_hora + 24) % 24;
+          return atraso <= JANELA_ATRASO_H;
+        });
 
         let enviados = 0;
         let pulados = 0;
         const simulados: { nome: string; uf: string; cultura: string; resumo: string }[] = [];
 
-        for (const produtor of produtores ?? []) {
+        for (const produtor of candidatos) {
           try {
             if (!produtor.whatsapp || !produtor.uf || !produtor.cultura_principal) {
               pulados++;
@@ -83,7 +92,8 @@ export const Route = createFileRoute("/api/cron/resumo-diario")({
             }
             if (
               produtor.resumo_diario_enviado_em &&
-              new Date(produtor.resumo_diario_enviado_em) >= inicioDoDiaBrt
+              agora.getTime() - new Date(produtor.resumo_diario_enviado_em).getTime() <
+                INTERVALO_MINIMO_MS
             ) {
               pulados++;
               continue;
@@ -123,7 +133,7 @@ export const Route = createFileRoute("/api/cron/resumo-diario")({
 
         return Response.json({
           hora_brt: horaBrt,
-          candidatos: produtores?.length ?? 0,
+          candidatos: candidatos.length,
           enviados,
           pulados,
           ...(simular ? { simulados } : {}),
@@ -134,15 +144,21 @@ export const Route = createFileRoute("/api/cron/resumo-diario")({
 });
 
 const TEMPLATE_RESUMO_DIARIO = "resumo_diario_safralume";
+const JANELA_ATRASO_H = 3;
+// Menor que 24h de propósito (quem escolheu 7h e recebeu às 8h por atraso não
+// pode ficar sem o do dia seguinte às 7h), maior que a janela de atraso.
+const INTERVALO_MINIMO_MS = 20 * 60 * 60 * 1000;
 
 async function notificarWhatsAppResumoDiario(whatsapp: string, nome: string, resumo: string) {
   const webhookUrl = process.env["N8N_COBRANCA_WEBHOOK_URL"];
   const token = process.env["N8N_COBRANCA_TOKEN"];
-  if (!webhookUrl || !token) return;
+  // Lança em vez de retornar calado: o chamador só marca "enviado" se isto
+  // não lançar, senão um webhook fora do ar queimava o dia do produtor.
+  if (!webhookUrl || !token) throw new Error("webhook do n8n não configurado");
 
   const primeiroNome = nome.trim().split(" ")[0] || nome;
 
-  await fetch(webhookUrl, {
+  const resposta = await fetch(webhookUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-safralume-token": token },
     body: JSON.stringify({
@@ -152,4 +168,5 @@ async function notificarWhatsAppResumoDiario(whatsapp: string, nome: string, res
       resumo,
     }),
   });
+  if (!resposta.ok) throw new Error(`webhook do n8n respondeu ${resposta.status}`);
 }

@@ -53,6 +53,7 @@ export const pricingPlans: PricingPlan[] = [
     features: [
       "Tudo do Bronze, mais:",
       "Alertas de preço e clima sem limite",
+      "Leilões de gado: agenda do Brasil inteiro (presencial na sua região e virtual em destaque) e alerta de novos leilões",
       "Até 3 funcionários com acesso, pra dividir o trabalho",
       "Compara o preço da Conab com o da Imea (MT)",
       "Preço de defensivos e fertilizantes por marca, direto da Conab",

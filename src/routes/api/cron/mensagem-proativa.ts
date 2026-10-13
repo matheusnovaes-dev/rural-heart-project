@@ -186,11 +186,13 @@ const TEMPLATE_PROATIVA = "mensagem_proativa_safralume_v4";
 async function notificarWhatsAppProativa(whatsapp: string, nome: string, resumo: string) {
   const webhookUrl = process.env["N8N_COBRANCA_WEBHOOK_URL"];
   const token = process.env["N8N_COBRANCA_TOKEN"];
-  if (!webhookUrl || !token) return;
+  // Lança em vez de retornar calado: o chamador só grava proativa_enviada_em
+  // se o envio não lançar, senão um webhook fora do ar queimava o dia.
+  if (!webhookUrl || !token) throw new Error("webhook do n8n não configurado");
 
   const primeiroNome = nome.trim().split(" ")[0] || nome;
 
-  await fetch(webhookUrl, {
+  const resposta = await fetch(webhookUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-safralume-token": token },
     body: JSON.stringify({
@@ -200,4 +202,5 @@ async function notificarWhatsAppProativa(whatsapp: string, nome: string, resumo:
       resumo,
     }),
   });
+  if (!resposta.ok) throw new Error(`webhook do n8n respondeu ${resposta.status}`);
 }
