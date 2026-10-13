@@ -154,7 +154,7 @@ function AssinaturaBanner({
 
   if (assinatura.status === "inadimplente") {
     return (
-      <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-2.5 text-sm text-destructive">
+      <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-2.5 text-sm text-red-800">
         Pagamento do plano {planoLabel[assinatura.plano]} não foi confirmado. Confira a fatura em{" "}
         <Link to="/dashboard/assinatura" className="underline">
           Assinatura
@@ -185,7 +185,7 @@ function AssinaturaBanner({
     <div
       className={`rounded-lg border px-4 py-2.5 text-sm ${
         urgente
-          ? "border-destructive/40 bg-destructive/10 text-destructive"
+          ? "border-destructive/40 bg-destructive/10 text-red-800"
           : "border-primary/30 bg-primary/5 text-foreground"
       }`}
     >
@@ -797,7 +797,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                           key={dia}
                           className={`flex min-w-0 flex-col items-center gap-0.5 rounded-md border p-1.5 text-center ${
                             pct >= 60
-                              ? "border-destructive/20 bg-destructive/10 text-destructive"
+                              ? "border-destructive/20 bg-destructive/10 text-red-800"
                               : "border-transparent bg-secondary text-muted-foreground"
                           }`}
                         >

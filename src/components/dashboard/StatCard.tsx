@@ -38,11 +38,7 @@ export function StatCard({
       <CardContent className="flex flex-col gap-2 px-4 pb-0">
         <div className="flex items-end justify-between gap-2">
           <p className="font-mono text-3xl font-semibold tabular-nums text-foreground">
-            {typeof value === "number" ? (
-              <AnimatedNumber value={value} decimals={0} />
-            ) : (
-              value
-            )}
+            {typeof value === "number" ? <AnimatedNumber value={value} decimals={0} /> : value}
           </p>
           {variacao != null && (
             <span
@@ -50,7 +46,7 @@ export function StatCard({
                 variacao > 0
                   ? "bg-primary/10 text-primary"
                   : variacao < 0
-                    ? "bg-destructive/10 text-destructive"
+                    ? "bg-destructive/10 text-red-800"
                     : "bg-muted text-muted-foreground"
               }`}
             >

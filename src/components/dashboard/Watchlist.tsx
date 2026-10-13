@@ -221,7 +221,7 @@ export function Watchlist({ produtor }: { produtor: Produtor }) {
                         c.variacao > 0
                           ? "bg-primary/10 text-primary"
                           : c.variacao < 0
-                            ? "bg-destructive/10 text-destructive"
+                            ? "bg-destructive/10 text-red-800"
                             : "bg-muted text-muted-foreground"
                       }`}
                     >

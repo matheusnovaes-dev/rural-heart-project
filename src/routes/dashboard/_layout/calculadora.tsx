@@ -141,9 +141,9 @@ function CalculadoraConteudo() {
         </CardHeader>
         <CardContent className="grid gap-4 px-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label>Cultura</Label>
+            <Label htmlFor="calc-cultura">Cultura</Label>
             <Select value={cultura} onValueChange={setCultura}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger id="calc-cultura" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -156,9 +156,9 @@ function CalculadoraConteudo() {
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>Estado</Label>
+            <Label htmlFor="calc-uf">Estado</Label>
             <Select value={uf} onValueChange={setUf}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger id="calc-uf" className="w-full">
                 <SelectValue placeholder="Selecione seu estado" />
               </SelectTrigger>
               <SelectContent>

@@ -28,8 +28,8 @@ import { buscarMunicipioServidor } from "@/lib/clima.server";
 const gatilhoPadrao = (
   <button
     type="button"
-    className="shrink-0 opacity-70 transition-opacity hover:opacity-100"
-    aria-label="Trocar cultura ou UF"
+    className="-m-2 shrink-0 p-2 opacity-70 transition-opacity hover:opacity-100"
+    aria-label="Trocar cultura ou estado"
   >
     <Pencil className="size-3" />
   </button>

@@ -166,7 +166,7 @@ export function CalculadoraSafraLanding() {
                   reiniciar();
                 }}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full" aria-label="Cultura">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -204,6 +204,7 @@ export function CalculadoraSafraLanding() {
                 }}
               >
                 <SelectTrigger
+                  aria-label="Estado onde você produz"
                   className={`w-full ${faltaUf ? "border-destructive" : ""}`}
                   aria-invalid={faltaUf || undefined}
                   aria-describedby={faltaUf ? "calc-landing-uf-erro" : undefined}

@@ -393,7 +393,7 @@ function OnboardingPage() {
             Seu cadastro foi salvo, mas não conseguimos configurar a cobrança da assinatura.
           </p>
           {erroCheckout && (
-            <p className="mt-3 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+            <p className="mt-3 rounded-lg bg-destructive/10 p-3 text-sm text-red-800">
               {erroCheckout}
             </p>
           )}

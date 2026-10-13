@@ -6,7 +6,7 @@ export type InsightTone = "up" | "down" | "neutral" | "warn";
 
 const toneClasses: Record<InsightTone, string> = {
   up: "bg-primary/10 text-primary",
-  down: "bg-destructive/10 text-destructive",
+  down: "bg-destructive/10 text-red-800",
   neutral: "bg-secondary text-muted-foreground",
   warn: "bg-cta/10 text-cta-foreground",
 };

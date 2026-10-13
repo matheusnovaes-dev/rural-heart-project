@@ -218,6 +218,8 @@ export function DashboardPreview() {
                       botaoRefs.current[item.id] = el;
                     }}
                     type="button"
+                    aria-label={item.label}
+                    aria-pressed={aba === item.id}
                     onClick={() => selecionarManual(item.id)}
                     className={cn(
                       "flex flex-1 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors sm:flex-none",
@@ -393,7 +395,7 @@ function PreviewPrecos({
                   "mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
                   item.variacao > 0
                     ? "bg-primary/10 text-primary"
-                    : "bg-destructive/10 text-destructive",
+                    : "bg-destructive/10 text-red-800",
                 )}
               >
                 {item.variacao > 0 ? (
@@ -683,7 +685,7 @@ function PreviewAcompanhamento() {
                     "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
                     item.variacao > 0
                       ? "bg-primary/10 text-primary"
-                      : "bg-destructive/10 text-destructive",
+                      : "bg-destructive/10 text-red-800",
                   )}
                 >
                   {item.variacao > 0 ? (
@@ -718,7 +720,7 @@ function PreviewFerrugem() {
         {municipios.map((m) => (
           <span
             key={m}
-            className="rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive"
+            className="rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-red-800"
           >
             {m}
           </span>

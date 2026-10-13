@@ -16,11 +16,10 @@ import type { Produtor } from "@/lib/auth";
  * "chuva alta/média/baixa" já usada no card de clima. null = nenhuma
  * variante de cultivar/solo recomenda plantio nesse período. */
 function faixaDeRisco(pct: number | null): { texto: string; classe: string } {
-  if (pct == null)
-    return { texto: "Não recomendado", classe: "bg-destructive/10 text-destructive" };
+  if (pct == null) return { texto: "Não recomendado", classe: "bg-destructive/10 text-red-800" };
   if (pct <= 20) return { texto: `${pct}% de risco`, classe: "bg-primary/10 text-primary" };
   if (pct <= 40) return { texto: `${pct}% de risco`, classe: "bg-cta/10 text-cta-foreground" };
-  return { texto: `${pct}% de risco`, classe: "bg-destructive/10 text-destructive" };
+  return { texto: `${pct}% de risco`, classe: "bg-destructive/10 text-red-800" };
 }
 
 /**

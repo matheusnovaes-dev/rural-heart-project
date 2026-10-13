@@ -4,6 +4,7 @@ import { runAgent, type RespostaAgente } from "@/lib/bot/agent";
 import {
   confirmacaoComEstadoPorExtenso,
   manterSoAConfirmacao,
+  tirarTravessoes,
   trocarJargaoUf,
 } from "@/lib/bot/guardas";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
@@ -113,7 +114,7 @@ export const Route = createFileRoute("/api/bot/responder")({
           // Único ponto por onde toda resposta do agente passa: tira o jargão
           // "UF" (o produtor não sabe o que é) em qualquer caminho do agente.
           resposta.resposta = confirmacaoComEstadoPorExtenso(
-            trocarJargaoUf(manterSoAConfirmacao(resposta.resposta)),
+            trocarJargaoUf(manterSoAConfirmacao(tirarTravessoes(resposta.resposta))),
           );
           return Response.json(resposta);
         } catch (err) {

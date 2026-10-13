@@ -85,7 +85,8 @@
   --secondary: oklch(0.928 0.015 112);
   --secondary-foreground: oklch(0.32 0.065 158);
   --muted: oklch(0.936 0.01 105);
-  --muted-foreground: oklch(0.53 0.03 145);
+  /* #5a6a5a: 4,8:1 ou mais sobre todos os fundos do site (o anterior dava 4,3:1 sobre bg-muted). */
+  --muted-foreground: #5a6a5a;
   --accent: oklch(0.91 0.024 138);
   --accent-foreground: oklch(0.29 0.06 158);
   --border: oklch(0.865 0.018 110);

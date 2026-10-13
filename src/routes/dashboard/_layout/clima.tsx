@@ -70,7 +70,7 @@ function faixaChuva(pct: number): { tone: "chuva-alta" | "chuva-media" | "chuva-
 }
 
 const toneClasses = {
-  "chuva-alta": "bg-destructive/10 text-destructive border-destructive/20",
+  "chuva-alta": "bg-destructive/10 text-red-800 border-destructive/20",
   "chuva-media": "bg-cta/10 text-cta-foreground border-cta/20",
   "chuva-baixa": "bg-secondary text-muted-foreground border-transparent",
 };
@@ -328,10 +328,13 @@ function ClimaConteudo() {
                                   <CloudRain className="size-3" />
                                   {Math.round(pct)}%
                                 </span>
-                                <span className="flex items-center gap-1 font-mono text-[11px] tabular-nums">
-                                  <Thermometer className="size-3" />
-                                  {Math.round(previsao.tempMax[i] ?? 0)}°/
-                                  {Math.round(previsao.tempMin[i] ?? 0)}°
+                                <span className="flex flex-col items-center font-mono text-[11px] leading-tight tabular-nums">
+                                  <span className="font-semibold">
+                                    {Math.round(previsao.tempMax[i] ?? 0)}°
+                                  </span>
+                                  <span className="opacity-80">
+                                    {Math.round(previsao.tempMin[i] ?? 0)}°
+                                  </span>
                                 </span>
                               </div>
                             );

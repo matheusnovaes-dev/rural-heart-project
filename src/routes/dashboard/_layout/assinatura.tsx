@@ -125,7 +125,7 @@ function AssinaturaPage() {
               )}
             </p>
             {status === "inadimplente" && (
-              <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+              <p className="rounded-lg bg-destructive/10 p-3 text-sm text-red-800">
                 A última cobrança não foi paga. Verifique a fatura mais recente abaixo pra
                 regularizar e não perder o acesso.
               </p>

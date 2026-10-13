@@ -106,7 +106,7 @@ export function FerrugemAsiaticaCard({ produtor }: { produtor: Produtor }) {
                   {resultado!.confirmadas.map((c) => (
                     <span
                       key={c.municipio}
-                      className="rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive"
+                      className="rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-red-800"
                     >
                       {c.municipio} ({c.quantidade})
                     </span>

@@ -667,3 +667,13 @@ export function manterSoAConfirmacao(resposta: string): string {
   if (fim === -1 || fim >= resposta.trimEnd().length - 1) return resposta;
   return resposta.slice(0, fim + 1).trim();
 }
+
+/**
+ * Sem travessão ("—"/"–") nas respostas: o Matheus pediu pra tirar da copy porque
+ * denuncia texto de IA (2026-10-12), e em 14% das respostas reais ainda aparecia
+ * (200 respostas dos últimos 14 dias). Troca por vírgula só quando há espaço dos
+ * dois lados, que é o uso de pontuação; "R$ 139 – 146" sem espaço não é tocado.
+ */
+export function tirarTravessoes(resposta: string): string {
+  return resposta.replace(/\s+[\u2014\u2013]\s+/g, ", ");
+}

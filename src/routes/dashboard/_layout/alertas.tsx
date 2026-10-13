@@ -128,7 +128,7 @@ function descreverCondicaoClima(a: AlertaClima) {
   if (a.condicao === "vento_forte") {
     return `${a.uf} · rajada prevista acima de ${a.limite} km/h`;
   }
-  return `${a.uf} · probabilidade de chuva acima de ${a.limite}% (${info.unidade})`;
+  return `${a.uf} · probabilidade de chuva acima de ${a.limite}%`;
 }
 
 function AlertasPage() {
@@ -472,7 +472,7 @@ function AlertasPage() {
         title="Alertas"
         description="Preço, câmbio e clima: só avisa quando tiver algo relevante pra você decidir."
         action={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {dialogNovoClima}
             {dialogNovoCambio}
             {dialogNovo}
