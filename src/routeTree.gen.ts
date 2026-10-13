@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AcessoRouteImport } from './routes/acesso'
 import { Route as AssinarRouteImport } from './routes/assinar'
+import { Route as BoasVindasRouteImport } from './routes/boas-vindas'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
@@ -58,6 +59,11 @@ const AcessoRoute = AcessoRouteImport.update({
 const AssinarRoute = AssinarRouteImport.update({
   id: '/assinar',
   path: '/assinar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BoasVindasRoute = BoasVindasRouteImport.update({
+  id: '/boas-vindas',
+  path: '/boas-vindas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -233,6 +239,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/acesso': typeof AcessoRoute
   '/assinar': typeof AssinarRoute
+  '/boas-vindas': typeof BoasVindasRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/privacidade': typeof PrivacidadeRoute
@@ -270,6 +277,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/acesso': typeof AcessoRoute
   '/assinar': typeof AssinarRoute
+  '/boas-vindas': typeof BoasVindasRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/privacidade': typeof PrivacidadeRoute
@@ -307,6 +315,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/acesso': typeof AcessoRoute
   '/assinar': typeof AssinarRoute
+  '/boas-vindas': typeof BoasVindasRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/privacidade': typeof PrivacidadeRoute
@@ -346,6 +355,7 @@ export interface FileRouteTypes {
     | '/'
     | '/acesso'
     | '/assinar'
+    | '/boas-vindas'
     | '/login'
     | '/onboarding'
     | '/privacidade'
@@ -383,6 +393,7 @@ export interface FileRouteTypes {
     | '/'
     | '/acesso'
     | '/assinar'
+    | '/boas-vindas'
     | '/login'
     | '/onboarding'
     | '/privacidade'
@@ -419,6 +430,7 @@ export interface FileRouteTypes {
     | '/'
     | '/acesso'
     | '/assinar'
+    | '/boas-vindas'
     | '/login'
     | '/onboarding'
     | '/privacidade'
@@ -457,6 +469,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AcessoRoute: typeof AcessoRoute
   AssinarRoute: typeof AssinarRoute
+  BoasVindasRoute: typeof BoasVindasRoute
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
@@ -497,6 +510,13 @@ declare module '@tanstack/react-router' {
       path: '/assinar'
       fullPath: '/assinar'
       preLoaderRoute: typeof AssinarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/boas-vindas': {
+      id: '/boas-vindas'
+      path: '/boas-vindas'
+      fullPath: '/boas-vindas'
+      preLoaderRoute: typeof BoasVindasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -770,6 +790,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AcessoRoute: AcessoRoute,
   AssinarRoute: AssinarRoute,
+  BoasVindasRoute: BoasVindasRoute,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   PrivacidadeRoute: PrivacidadeRoute,

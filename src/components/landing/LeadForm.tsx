@@ -30,7 +30,7 @@ import { normalizarWhatsapp } from "@/lib/telefone";
 import { useAuth } from "@/lib/auth";
 import { buildWhatsAppLink, pricingPlans } from "@/config/site";
 import { ufs } from "@/config/ufs";
-import { inserirComOrigem } from "@/lib/origem";
+import { anotarOrigemDoProdutor, inserirComOrigem } from "@/lib/origem";
 import { culturas, DESTAQUES, normalizarCultura } from "@/config/culturas";
 import { enviarBoasVindasWhatsApp } from "@/lib/notificacoes.server";
 import { lerCookiesMeta, trackCadastroConcluido, trackCadastroIniciado } from "@/lib/metaPixel";
@@ -276,6 +276,10 @@ export function LeadForm({
       return;
     }
 
+    // Origem (UTM/Instagram/anúncio) no próprio produtor, best-effort: nunca
+    // atrapalha o cadastro (ignora erro, inclusive coluna ainda inexistente).
+    void anotarOrigemDoProdutor(produtor.id).catch(() => {});
+
     const { error: assinaturaError } = await supabase
       .from("assinaturas")
       .insert({ produtor_id: produtor.id, plano: values.plano });
@@ -307,7 +311,7 @@ export function LeadForm({
         uf: values.uf || undefined,
         culturaPrincipal: values.crop || undefined,
       },
-    });
+    }).catch(() => {});
 
     // Conversão de verdade pro Meta Ads: este formulário é o CTA principal
     // da Hero (âncora #comece) — o caminho que a maioria do tráfego de
@@ -329,14 +333,21 @@ export function LeadForm({
         doNavegador: true,
         ...lerCookiesMeta(),
       },
-    });
+    }).catch(() => {});
 
     // O AuthProvider já buscou o perfil (produtor) reagindo ao signUp() —
     // ANTES de este código ter criado a linha em `produtores`. Sem recarregar
     // agora, o guard do /dashboard ainda vê "sem produtor" e manda pro
     // /onboarding, mesmo com o cadastro já criado com sucesso.
     await refresh();
-    navigate({ to: "/dashboard" });
+    // Em vez de cair direto no painel, leva ao passo "Conta criada, peça seu
+    // primeiro preço no WhatsApp" (85% dos trials nunca falavam com o bot).
+    try {
+      window.sessionStorage.setItem("safralume_boas_vindas", "1");
+    } catch {
+      // storage bloqueado: a tela aparece mesmo assim
+    }
+    navigate({ to: "/boas-vindas" });
   }
 
   return (

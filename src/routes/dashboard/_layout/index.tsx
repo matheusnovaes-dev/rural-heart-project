@@ -43,6 +43,7 @@ import { BenchmarkRegionalCard } from "@/components/dashboard/BenchmarkRegionalC
 import { DolarCard } from "@/components/dashboard/DolarCard";
 import { DIAS_DADO_DESATUALIZADO } from "@/lib/referenciaMercado";
 import { diasEntre } from "@/lib/precoFonte";
+import { perguntaDePreco } from "@/lib/ativacaoTexto";
 import { trackLanding } from "@/lib/metaPixel";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Previsao } from "@/lib/clima";
@@ -536,11 +537,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
           </div>
           <div className="mt-3 flex items-center gap-2 sm:mt-0 sm:shrink-0">
             <a
-              href={buildWhatsAppLink(
-                produtor.cultura_principal
-                  ? `Oi! Quanto tá o preço da ${produtor.cultura_principal.trim().toLowerCase()} hoje?`
-                  : "Oi! Quero ver o preço de hoje.",
-              )}
+              href={buildWhatsAppLink(perguntaDePreco(produtor.cultura_principal))}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => trackLanding("AtivacaoWhatsappClique", { origem: "painel" })}

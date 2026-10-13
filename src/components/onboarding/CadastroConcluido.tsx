@@ -3,6 +3,7 @@ import { MessageCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { buildWhatsAppLink } from "@/config/site";
+import { perguntaDePreco } from "@/lib/ativacaoTexto";
 import { trackLanding } from "@/lib/metaPixel";
 
 let visualizacaoRegistrada = false;
@@ -33,10 +34,7 @@ export function CadastroConcluido({
   }, []);
 
   const primeiroNome = nome.trim().split(" ")[0] || "tudo certo";
-  const produto = cultura?.trim().toLowerCase();
-  const pergunta = produto
-    ? `Oi! Quanto tá o preço da ${produto} hoje?`
-    : "Oi! Quero ver o preço de hoje.";
+  const pergunta = perguntaDePreco(cultura);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-secondary/40 px-4 py-12">

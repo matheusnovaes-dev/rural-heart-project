@@ -8,7 +8,9 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { buildWhatsAppLink, siteConfig } from "@/config/site";
 
-const searchSchema = z.object({ t: z.string().optional() });
+import { paramTexto } from "@/lib/searchParams";
+
+const searchSchema = z.object({ t: paramTexto });
 
 export const Route = createFileRoute("/acesso")({
   validateSearch: searchSchema,

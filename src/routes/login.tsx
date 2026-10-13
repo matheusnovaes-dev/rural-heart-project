@@ -36,9 +36,11 @@ const ticker = [
   "CAFÉ ARÁBICA em alta na semana",
 ];
 
+import { paramEnum, paramLiteral } from "@/lib/searchParams";
+
 const searchSchema = z.object({
-  plano: z.enum(["bronze", "prata", "ouro"]).optional(),
-  semTrial: z.literal("1").optional(),
+  plano: paramEnum(["bronze", "prata", "ouro"]),
+  semTrial: paramLiteral("1"),
 });
 
 export const Route = createFileRoute("/login")({

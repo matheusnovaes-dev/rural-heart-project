@@ -28,14 +28,16 @@ import { pricingPlans } from "@/config/site";
 import { lerCookiesMeta, trackCadastroConcluido } from "@/lib/metaPixel";
 import { trackConversaoServidor } from "@/lib/metaCapi.server";
 
+import { paramEnum, paramLiteral, paramUuid } from "@/lib/searchParams";
+
 const searchSchema = z.object({
-  convite: z.string().uuid().optional(),
-  equipe: z.string().uuid().optional(),
-  plano: z.enum(["bronze", "prata", "ouro"]).optional(),
+  convite: paramUuid,
+  equipe: paramUuid,
+  plano: paramEnum(["bronze", "prata", "ouro"]),
   // "1" = veio do fluxo "prefere assinar direto" (pulou o teste grátis de
   // propósito) — string em vez de boolean pra não depender de coerção de
   // query param.
-  semTrial: z.literal("1").optional(),
+  semTrial: paramLiteral("1"),
 });
 
 export const Route = createFileRoute("/onboarding")({
@@ -178,7 +180,9 @@ function OnboardingPage() {
         if (convite) {
           // Best-effort — mesmo sem assinatura própria, quem entra convidado
           // também precisa saber que existe um WhatsApp pra chamar.
-          void enviarBoasVindasWhatsApp({ data: { nome, whatsapp, cooperativaId: convite } });
+          void enviarBoasVindasWhatsApp({ data: { nome, whatsapp, cooperativaId: convite } }).catch(
+            () => {},
+          );
         } else {
           const { data: assinatura, error: assinaturaError } = await supabase
             .from("assinaturas")
@@ -208,7 +212,7 @@ function OnboardingPage() {
               uf: uf || undefined,
               culturaPrincipal: cultura || undefined,
             },
-          });
+          }).catch(() => {});
         }
       } else if (error.code !== "23505") {
         setErroMsg("Algo deu errado. Confira os dados e tente de novo.");
@@ -317,7 +321,7 @@ function OnboardingPage() {
           ...lerCookiesMeta(),
           whatsapp: tipo === "produtor" ? whatsapp : undefined,
         },
-      });
+      }).catch(() => {});
     }
 
     // Fluxo normal (com teste grátis): cai direto no painel, sem cartão —

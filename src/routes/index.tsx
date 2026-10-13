@@ -18,10 +18,12 @@ import { WhatsAppFloatingButton } from "@/components/landing/WhatsAppFloatingBut
 import { BarraCtaFixa } from "@/components/landing/BarraCtaFixa";
 import { CadastroProvider } from "@/components/landing/CadastroProvider";
 
+import { paramLiteral } from "@/lib/searchParams";
+
 const searchSchema = z.object({
   // "1" = veio do link "prefere assinar direto" — os botões de plano abaixo
   // devem pular o teste grátis e cobrar imediatamente.
-  semTrial: z.literal("1").optional(),
+  semTrial: paramLiteral("1"),
 });
 
 export const Route = createFileRoute("/")({
