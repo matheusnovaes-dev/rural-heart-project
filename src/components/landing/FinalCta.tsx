@@ -12,7 +12,7 @@ const garantias = [
 
 export function FinalCta() {
   return (
-    <section id="comece" className="bg-secondary/50 py-20">
+    <section id="comece" className="bg-secondary/50 py-12 sm:py-20">
       <div className="mx-auto grid max-w-5xl items-start gap-10 px-4 sm:px-6 lg:grid-cols-2">
         <Reveal>
           <h2 className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">

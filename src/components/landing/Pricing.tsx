@@ -24,7 +24,7 @@ const porDia = (preco: number) =>
 
 export function Pricing({ semTrial = false }: { semTrial?: boolean }) {
   return (
-    <section id="planos" className="mx-auto max-w-6xl scroll-mt-16 px-4 py-20 sm:px-6">
+    <section id="planos" className="mx-auto max-w-6xl scroll-mt-16 px-4 py-12 sm:py-20 sm:px-6">
       <Reveal className="mx-auto max-w-2xl text-center">
         <h2 className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           Planos para cada tamanho de operação

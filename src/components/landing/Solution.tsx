@@ -7,7 +7,7 @@ import { brl2, diaMes, fraseDeFuturo, fraseDePlantio, fraseDeSinal } from "@/lib
 
 export function Solution() {
   return (
-    <section className="bg-secondary/50 py-20">
+    <section className="bg-secondary/50 py-12 sm:py-20">
       <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2">
         <Reveal>
           {/* A antiga seção "O problema não é falta de dado" (3 cards) repetia
@@ -37,7 +37,7 @@ export function Solution() {
           </ul>
           <a
             href="#planos"
-            className="alvo-toque mt-3 gap-1.5 text-sm font-semibold text-primary hover:underline"
+            className="alvo-toque mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
           >
             Ver tudo que cada plano inclui
             <ArrowRight className="size-3.5" aria-hidden="true" />

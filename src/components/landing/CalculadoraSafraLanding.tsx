@@ -133,7 +133,7 @@ export function CalculadoraSafraLanding() {
   const faltaSacas = tentou && !sacasValidas;
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+    <section className="mx-auto max-w-6xl px-4 py-12 sm:py-20 sm:px-6">
       <Reveal className="mx-auto max-w-2xl text-center">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3.5 py-1.5 text-xs font-semibold text-primary">
           <Calculator className="size-3.5" aria-hidden="true" />

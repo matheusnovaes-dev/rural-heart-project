@@ -18,7 +18,7 @@ import { trackLanding } from "@/lib/metaPixel";
  */
 export function Faq() {
   return (
-    <section id="duvidas" className="mx-auto max-w-3xl scroll-mt-16 px-4 py-20 sm:px-6">
+    <section id="duvidas" className="mx-auto max-w-3xl scroll-mt-16 px-4 py-12 sm:py-20 sm:px-6">
       <Reveal className="text-center">
         <h2 className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           Perguntas frequentes

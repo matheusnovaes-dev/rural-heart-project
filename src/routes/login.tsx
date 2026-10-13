@@ -312,7 +312,7 @@ function LoginPage() {
             {entrando && (
               <Link
                 to="/recuperar-senha"
-                className="alvo-toque -mt-2 justify-end text-sm text-muted-foreground hover:underline"
+                className="alvo-toque -mt-2 justify-end text-right text-sm text-muted-foreground hover:underline"
               >
                 Esqueci minha senha
               </Link>
