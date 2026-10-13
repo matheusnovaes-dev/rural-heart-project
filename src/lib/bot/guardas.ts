@@ -653,3 +653,17 @@ export function confirmacaoComEstadoPorExtenso(resposta: string): string {
     },
   );
 }
+
+/**
+ * Mensagem de confirmação ("Confirma: ...?") fica SÓ com a pergunta de
+ * confirmação. Em teste com o modelo real (2026-10-13) o incentivo de ativação
+ * emendou um segundo pedido na mesma mensagem ("Confirma: alerta de chuva forte?
+ * E, aproveitando, você quer saber se é bom vender?"): com duas perguntas, um
+ * "sim" pode ser lido como resposta à errada e disparar algo que ele não pediu.
+ */
+export function manterSoAConfirmacao(resposta: string): string {
+  if (!/^\s*Confirma\b/i.test(resposta)) return resposta;
+  const fim = resposta.indexOf("?");
+  if (fim === -1 || fim >= resposta.trimEnd().length - 1) return resposta;
+  return resposta.slice(0, fim + 1).trim();
+}

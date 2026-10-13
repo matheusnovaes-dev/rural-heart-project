@@ -1,3 +1,10 @@
+import {
+  dataCurta,
+  ehNovidade,
+  funcionalidades,
+  naoFazHoje,
+  novidadesRecentes,
+} from "@/config/funcionalidades";
 import { pricingPlans } from "@/config/site";
 
 export const SYSTEM_PROMPT = `Você é o assistente do Safralume, respondendo produtores rurais brasileiros pelo WhatsApp. Fale como um produtor de confiança conversando com outro produtor: direto, natural, sem linguagem corporativa, sem soar como atendimento automático, sem exagerar em emoji. Varie a forma de abrir e estruturar a resposta de uma mensagem pra outra — não comece sempre com a mesma construção de frase. NUNCA feche a resposta oferecendo ajuda genérica — qualquer variação de "se precisar de [algo/mais informações/qualquer coisa], é só avisar/falar/perguntar", "qualquer dúvida estou à disposição", "fico à disposição" etc. Isso vale pra QUALQUER jeito de dizer a mesma ideia, não só pros exemplos citados aqui — o teste não é "essa frase exata já foi banida antes", é "essa frase é uma oferta de ajuda genérica de fechamento, independente das palavras". Isso vale mesmo quando a resposta já ficou boa e parece "faltar" uma frase de fechamento; nesse caso a resposta simplesmente termina no dado que você acabou de dar, sem fechamento nenhum. Confirmação de ação concluída (tipo "Alerta criado!") não é a mesma coisa que oferta de ajuda genérica — mesmo confirmando algo, não emende uma oferta de ajuda solta no final. Prefira respostas curtas quando a pergunta for direta.
@@ -252,4 +259,57 @@ export function buildHistoryMessages(
     role: h.role,
     content: h.conteudo,
   }));
+}
+
+/**
+ * Catálogo do que o Safralume faz hoje (config/funcionalidades.ts, fonte única).
+ * Sempre presente, mas com regra explícita pra não despejar a lista em resposta
+ * de preço/clima: só entra em jogo quando perguntam o que o produto faz, o que
+ * tem de novo, "tem como/dá pra X" ou "como faço Y".
+ */
+export function buildContextoFuncionalidades(hoje: Date = new Date()): string {
+  const linhas = funcionalidades.map((f) => {
+    const tags = [
+      f.onde,
+      f.plano ? `plano ${f.plano} ou superior` : null,
+      ehNovidade(f, hoje) && f.novidadeDesde ? `NOVIDADE de ${dataCurta(f.novidadeDesde)}` : null,
+    ]
+      .filter(Boolean)
+      .join(", ");
+    return `- ${f.titulo} (${tags}): ${f.descricao} Como pedir: "${f.comoPedir}".`;
+  });
+  return [
+    "CATÁLOGO REAL DO SAFRALUME (use SÓ quando o produtor perguntar o que o Safralume faz, o que tem de novo, se 'tem como'/'dá pra' fazer algo, ou como fazer algo. NUNCA liste este catálogo em resposta de preço, clima ou outro dado que ele já pediu):",
+    ...linhas,
+    `O que o Safralume NÃO faz hoje: ${naoFazHoje.join("; ")}.`,
+    "Regras: (1) responda curto, no máximo uns 6 itens ou linhas, no tom de conversa de WhatsApp; (2) destaque as NOVIDADES com a data; (3) sempre diga COMO PEDIR e ofereça fazer na hora (ex: 'quer que eu ligue o resumo diário? Me diz o horário'); (4) se a função for de plano superior ao dele, diga qual plano e não prometa que ele já tem; (5) se pedirem algo que NÃO está no catálogo, diga com honestidade que não existe hoje e ofereça registrar a sugestão abrindo um chamado, nunca invente função, prazo ou preço; (6) pra explicar uma função em detalhe, use a ferramenta correspondente quando houver dado real (preço, clima, alerta) em vez de só descrever.",
+  ].join("\n");
+}
+
+/** Resposta pronta ao botão "Ver as novidades" do comunicado: por código, não depende do modelo. */
+export function respostaNovidades(hoje: Date = new Date()): string {
+  const itens = novidadesRecentes(hoje).slice(0, 5);
+  if (itens.length === 0) {
+    return "Por enquanto não temos novidade nova além do que você já usa. Se quiser conhecer tudo o que dá pra pedir por aqui, me pergunta 'o que o Safralume faz?' que eu te mostro.";
+  }
+  const primeiraFrase = (t: string) => {
+    const i = t.search(/\.\s|\.$/);
+    return i === -1 ? t : t.slice(0, i + 1);
+  };
+  const linhas = itens.map(
+    (f) =>
+      `• *${f.titulo}* (${dataCurta(f.novidadeDesde!)}): ${primeiraFrase(f.descricao)} ${f.fraseDeUso ?? `Pra usar, mande: "${f.comoPedir}".`}`,
+  );
+  return [
+    "Olha o que o Safralume ganhou nas últimas semanas 🌾",
+    "",
+    ...linhas,
+    "",
+    "Quer que eu ligue alguma dessas pra você agora? É só me dizer qual.",
+  ].join("\n");
+}
+
+/** O produtor tocou no botão "Ver as novidades" (ou escreveu o equivalente exato). */
+export function ehPedidoDeNovidades(texto: string): boolean {
+  return /^\s*(?:quero\s+)?ver\s+as\s+novidades[\s!.?]*$|^\s*novidades[\s!.?]*$/i.test(texto);
 }

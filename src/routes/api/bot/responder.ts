@@ -1,7 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { runAgent, type RespostaAgente } from "@/lib/bot/agent";
-import { confirmacaoComEstadoPorExtenso, trocarJargaoUf } from "@/lib/bot/guardas";
+import {
+  confirmacaoComEstadoPorExtenso,
+  manterSoAConfirmacao,
+  trocarJargaoUf,
+} from "@/lib/bot/guardas";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
 import type { ProdutorContexto } from "@/lib/bot/types";
 import { verificarCobranca } from "@/lib/bot/cobranca";
@@ -108,7 +112,9 @@ export const Route = createFileRoute("/api/bot/responder")({
           }
           // Único ponto por onde toda resposta do agente passa: tira o jargão
           // "UF" (o produtor não sabe o que é) em qualquer caminho do agente.
-          resposta.resposta = confirmacaoComEstadoPorExtenso(trocarJargaoUf(resposta.resposta));
+          resposta.resposta = confirmacaoComEstadoPorExtenso(
+            trocarJargaoUf(manterSoAConfirmacao(resposta.resposta)),
+          );
           return Response.json(resposta);
         } catch (err) {
           console.error("Erro no agente do bot:", err);

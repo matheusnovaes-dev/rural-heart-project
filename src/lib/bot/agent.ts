@@ -3,6 +3,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { culturaMencionada } from "@/config/culturas";
 import {
   buildContextoInstitucional,
+  buildContextoFuncionalidades,
+  ehPedidoDeNovidades,
+  respostaNovidades,
   buildContextoMemoria,
   buildContextoPlanos,
   buildContextoProdutor,
@@ -46,6 +49,7 @@ import {
   valoresNaoAutorizados,
   type FreteCitado,
 } from "@/lib/bot/guardas";
+import { respostaDeProduto } from "@/lib/bot/respostasDeProduto";
 
 const MODEL = "gpt-4o-mini";
 const MAX_TOOL_ROUNDS = 6;
@@ -331,7 +335,9 @@ function respostaInventouHoraDeResumo(
 // também é uma pergunta de confirmação) e executa a ferramenta direto por
 // código assim que detecta — sem dar mais chance pro modelo tentar de novo.
 function ehConfirmacaoDeMensagemProativa(s: string): boolean {
-  return /confirma/i.test(s) && /(mensagens? autom[aá]ticas?|avisos? autom[aá]ticos?|proativ)/i.test(s);
+  return (
+    /confirma/i.test(s) && /(mensagens? autom[aá]ticas?|avisos? autom[aá]ticos?|proativ)/i.test(s)
+  );
 }
 
 function respostaRepetiuConfirmacaoProativaSemExecutar(
@@ -1080,6 +1086,29 @@ export async function runAgent(input: {
 }): Promise<RespostaAgente> {
   const { telefone, texto, historico, produtor, supabase, apiKey, signal } = input;
 
+  // Botão "Ver as novidades" do comunicado: resposta pronta por código, igual pra
+  // todo mundo e sem gastar chamada ao modelo.
+  if (ehPedidoDeNovidades(texto)) {
+    return {
+      resposta: respostaNovidades(),
+      precisa_humano: false,
+      cadastro_criado: false,
+      convite_dispensado: true,
+    };
+  }
+
+  // Perguntas sobre o próprio produto (novidades, o que faz, áudio, foto, nota
+  // fiscal) por código: o modelo errava justamente estas (ver respostasDeProduto.ts).
+  const deProduto = respostaDeProduto(texto);
+  if (deProduto) {
+    return {
+      resposta: deProduto.resposta,
+      precisa_humano: deProduto.precisa_humano,
+      cadastro_criado: false,
+      convite_dispensado: false,
+    };
+  }
+
   // Quem ainda não é cliente e responde SAIR à mensagem de recuperação sai da
   // lista de mensagens proativas. Decidido por código (é compromisso legal com
   // o usuário, não pode depender do modelo). Cliente cadastrado não entra: pra
@@ -1181,6 +1210,7 @@ export async function runAgent(input: {
       : []),
     { role: "system", content: buildContextoPlanos() },
     { role: "system", content: buildContextoInstitucional() },
+    { role: "system", content: buildContextoFuncionalidades() },
     ...buildHistoryMessages(historico),
     ...(notaNegativaDupla ? [notaNegativaDupla] : []),
     ...(notaRecusaCadastro ? [notaRecusaCadastro] : []),

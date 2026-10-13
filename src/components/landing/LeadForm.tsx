@@ -30,6 +30,7 @@ import { normalizarWhatsapp } from "@/lib/telefone";
 import { useAuth } from "@/lib/auth";
 import { buildWhatsAppLink, pricingPlans } from "@/config/site";
 import { ufs } from "@/config/ufs";
+import { buscarMunicipioServidor } from "@/lib/clima.server";
 import { anotarOrigemDoProdutor, inserirComOrigem } from "@/lib/origem";
 import { culturas, DESTAQUES, normalizarCultura } from "@/config/culturas";
 import { enviarBoasVindasWhatsApp } from "@/lib/notificacoes.server";
@@ -44,6 +45,8 @@ const leadSchema = z.object({
     .regex(/^[\d\s()+-]+$/, "Use apenas números, espaços e símbolos de telefone"),
   crop: z.string().min(1, "Selecione sua cultura principal"),
   uf: z.string().min(2, "Selecione seu estado"),
+  // Opcional: com a cidade o clima e o frete ficam precisos pra ela (sem, usa a capital).
+  cidade: z.string().max(80).optional(),
   plano: z.enum(["bronze", "prata", "ouro"]),
 });
 
@@ -136,6 +139,7 @@ export function LeadForm({
       whatsapp: valoresIniciais?.whatsapp ?? "",
       crop: valoresIniciais?.crop ?? "",
       uf: valoresIniciais?.uf ?? "",
+      cidade: "",
       plano: "bronze",
     },
   });
@@ -241,6 +245,29 @@ export function LeadForm({
       });
     }
 
+    // Cidade é opcional e NUNCA atrasa nem derruba o cadastro: a busca tem teto de
+    // 4s e qualquer falha só significa "sem cidade" (clima cai na capital do estado).
+    let municipio: string | null = null;
+    let lat: number | null = null;
+    let lon: number | null = null;
+    const cidade = values.cidade?.trim();
+    const nomeDoEstado = ufs.find((u) => u.value === values.uf)?.label;
+    if (cidade && nomeDoEstado) {
+      try {
+        const achado = await Promise.race([
+          buscarMunicipioServidor({ data: { nome: cidade, nomeCompletoUf: nomeDoEstado } }),
+          new Promise<null>((resolver) => setTimeout(() => resolver(null), 4000)),
+        ]);
+        if (achado) {
+          municipio = achado.nome;
+          lat = achado.lat;
+          lon = achado.lon;
+        }
+      } catch {
+        // sem cidade: segue o cadastro normalmente
+      }
+    }
+
     const { data: produtor, error: produtorError } = await supabase
       .from("produtores")
       .insert({
@@ -249,6 +276,9 @@ export function LeadForm({
         whatsapp,
         cultura_principal: values.crop || null,
         uf: values.uf || null,
+        municipio,
+        lat,
+        lon,
       })
       .select("id")
       .single();
@@ -524,6 +554,29 @@ export function LeadForm({
                   existe de mais recente em outros estados, e a gente segue ampliando a cobertura.
                 </p>
               )}
+
+              <FormField
+                control={form.control}
+                name="cidade"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cidade (opcional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Ex: Rio Verde"
+                        autoComplete="address-level2"
+                        maxLength={80}
+                        {...field}
+                        value={field.value ?? ""}
+                      />
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground">
+                      Deixa o clima e o frete mais precisos para a sua cidade.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}
