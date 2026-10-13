@@ -318,6 +318,29 @@ function respostaInventouHoraDeResumo(
   return !historico.some((h) => h.role === "user" && h.conteudo.includes(str));
 }
 
+// Achado real testando ao vivo (ativação da mensagem proativa, 2026-10-13):
+// depois de perguntar "Confirma que quer parar de receber..." e o produtor
+// responder "sim, confirmo", o modelo às vezes NÃO chama
+// configurar_mensagem_proativa — só repete a mesma pergunta de confirmação
+// de novo, como se a conversa tivesse voltado ao início. Detecta o loop
+// (a MESMA pergunta de confirmação apareceu como a última msg do
+// assistente E é a resposta de novo) e força o modelo a agir em vez de
+// perguntar de novo.
+function ehConfirmacaoDeMensagemProativa(s: string): boolean {
+  return /confirma/i.test(s) && /(mensagens? autom[aá]ticas?|avisos? autom[aá]ticos?|proativ)/i.test(s);
+}
+
+function respostaRepetiuConfirmacaoProativaSemExecutar(
+  resposta: string,
+  historico: HistoricoLinha[],
+): boolean {
+  if (!ehConfirmacaoDeMensagemProativa(resposta)) return false;
+  const ordenado = [...historico].sort((a, b) => a.ordem - b.ordem);
+  const ultimaDoAssistente = [...ordenado].reverse().find((h) => h.role === "assistant")?.conteudo;
+  if (!ultimaDoAssistente) return false;
+  return ehConfirmacaoDeMensagemProativa(ultimaDoAssistente);
+}
+
 // Achado real testando ao vivo (bateria adversarial 2026-10-12): pedido de
 // alerta de praga/doença (ferrugem, lagarta, mofo-branco) — que não é um
 // dos 4 tipos reais de alerta — faz o modelo tratar como se fosse pendente
@@ -1165,6 +1188,7 @@ export async function runAgent(input: {
   let tentativasCorrigirValorCambio = 0;
   let tentativasCorrigirHoraResumo = 0;
   let tentativasCorrigirAlertaPraga = 0;
+  let tentativasCorrigirLoopProativa = 0;
 
   // Fecha a resposta: aplica as redes de segurança de texto, troca a resposta
   // do modelo pela confirmação escrita por código quando o cadastro acabou
@@ -1378,6 +1402,22 @@ export async function runAgent(input: {
         role: "system",
         content:
           "Erro: o produtor pediu alerta de praga/doença (ferrugem, lagarta, mofo-branco etc), e isso NÃO é um dos 4 tipos reais de alerta (preço, câmbio, clima, leilão) — clima é só chuva forte/geada/seca prolongada/vento forte, nunca praga ou doença. Não peça UF nem mais detalhes como se fosse seguir criando. Responda de novo dizendo com uma frase curta que esse tipo de alerta ainda não existe hoje, sem propor nenhum dos 4 tipos reais no lugar a menos que ele peça.",
+      });
+      return null;
+    }
+
+    const MAX_TENTATIVAS_CORRIGIR_LOOP_PROATIVA = 2;
+    if (
+      podeCorrigir &&
+      tentativasCorrigirLoopProativa < MAX_TENTATIVAS_CORRIGIR_LOOP_PROATIVA &&
+      respostaRepetiuConfirmacaoProativaSemExecutar(resposta, historico)
+    ) {
+      tentativasCorrigirLoopProativa++;
+      messages.push({ role: "assistant", content: conteudoBruto ?? parsed.resposta });
+      messages.push({
+        role: "system",
+        content:
+          "Erro: você já pediu essa confirmação antes nesta conversa e repetiu a mesma pergunta de novo, em vez de agir. Se a última mensagem do produtor foi uma confirmação clara (sim, pode, confirmo, quero, etc), chame configurar_mensagem_proativa agora com o valor combinado — não pergunte de novo. Se não foi uma confirmação clara, responda ao que ele disse de verdade, sem repetir a mesma pergunta.",
       });
       return null;
     }
