@@ -1,7 +1,10 @@
-import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Calculator, ChevronDown, Loader2 } from "lucide-react";
 
+import { AnimatedNumber } from "@/components/dashboard/AnimatedNumber";
+import { CampoWhatsappCta } from "@/components/landing/CampoWhatsappCta";
+import { useCadastro } from "@/components/landing/CadastroProvider";
 import { Reveal } from "@/components/landing/Reveal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,50 +42,99 @@ const brl = (n: number) =>
  * cadastrou é demais pra esse ponto da jornada; a landing só mostra o valor
  * bruto real, a margem fica pro painel depois do cadastro.
  */
+const ATALHOS_SACAS = [500, 1000, 5000, 10000];
+const formatarSacas = (n: number) => n.toLocaleString("pt-BR");
+
 export function CalculadoraSafraLanding() {
+  const { abrirCadastro } = useCadastro();
+  const reduzMovimento = useReducedMotion();
   const [cultura, setCultura] = useState("soja");
   const [uf, setUf] = useState("");
   const [sacas, setSacas] = useState("");
   const [calculando, setCalculando] = useState(false);
   const [resultado, setResultado] = useState<ResultadoCalculadora | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  // Só mostra "faltou X" depois da primeira tentativa de calcular: antes
+  // disso o botão ficava esmaecido (parecia desabilitado) e a pessoa não
+  // sabia o que faltava. Agora ele é sempre clicável e diz o que falta.
+  const [tentou, setTentou] = useState(false);
   // Separado do resultado calculado de propósito: o cálculo já escolhe a UF
   // de referência mais recente sozinho, então "trocar" só reabre a lista
   // (sem isso, "trocar" recalcularia e cairia de volta na mesma escolha).
   const [escolhendoUf, setEscolhendoUf] = useState(false);
+  const resultadoRef = useRef<HTMLDivElement>(null);
+  // Cada cálculo recebe um número; só o mais recente pode aparecer. Sem isso,
+  // tocar "500" e "10.000" rápido deixava a resposta mais lenta (a antiga)
+  // sobrescrever a nova. `consulta` guarda o que o servidor de fato usou, pra
+  // a linha "N sacas × preço" nunca divergir do total mostrado.
+  const idRequisicao = useRef(0);
+  const [consulta, setConsulta] = useState<{ sacas: number; uf: string } | null>(null);
 
   const sacasNum = Number(sacas.replace(/\./g, "").replace(",", "."));
   const sacasValidas = sacas.trim() !== "" && Number.isFinite(sacasNum) && sacasNum > 0;
+  const culturaLabel = culturas.find((c) => c.value === cultura)?.label ?? cultura;
 
-  async function calcular(ufEscolhida?: string) {
-    if (!uf || !sacasValidas) return;
+  async function calcular(sobrescrever?: { uf?: string; sacas?: string; ufReferencia?: string }) {
+    const ufUsada = sobrescrever?.uf ?? uf;
+    const sacasTexto = sobrescrever?.sacas ?? sacas;
+    const n = Number(sacasTexto.replace(/\./g, "").replace(",", "."));
+    const valido = sacasTexto.trim() !== "" && Number.isFinite(n) && n > 0;
+    setTentou(true);
+    if (!ufUsada || !valido) return;
+    const meuId = ++idRequisicao.current;
     setCalculando(true);
     setErro(null);
     setEscolhendoUf(false);
     try {
       const r = await calcularValorProducaoPublico({
-        data: { cultura, uf, sacas: sacasNum, ufReferencia: ufEscolhida ?? null },
+        data: {
+          cultura,
+          uf: ufUsada,
+          sacas: n,
+          ufReferencia: sobrescrever?.ufReferencia ?? null,
+        },
       });
+      if (meuId !== idRequisicao.current) return;
+      setConsulta({ sacas: n, uf: ufUsada });
       setResultado(r);
     } catch {
+      if (meuId !== idRequisicao.current) return;
       setErro("Não consegui calcular agora. Tenta de novo em instantes.");
       setResultado(null);
     } finally {
-      setCalculando(false);
+      if (meuId === idRequisicao.current) setCalculando(false);
     }
   }
 
   function reiniciar() {
+    // Mudou algo no formulário: qualquer resposta ainda em voo fica obsoleta.
+    idRequisicao.current++;
+    setCalculando(false);
     setResultado(null);
     setErro(null);
     setEscolhendoUf(false);
   }
 
+  // No celular o resultado nasce abaixo do botão, às vezes fora da tela: leva
+  // o olhar até ele em vez de a pessoa achar que nada aconteceu.
+  useEffect(() => {
+    if (!resultado) return;
+    const el = resultadoRef.current;
+    if (!el) return;
+    const topo = el.getBoundingClientRect().top;
+    if (topo > window.innerHeight * 0.6) {
+      window.scrollBy({ top: topo - 96, behavior: reduzMovimento ? "auto" : "smooth" });
+    }
+  }, [resultado, reduzMovimento]);
+
+  const faltaUf = tentou && !uf;
+  const faltaSacas = tentou && !sacasValidas;
+
   return (
     <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
       <Reveal className="mx-auto max-w-2xl text-center">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3.5 py-1.5 text-xs font-semibold text-primary">
-          <Calculator className="size-3.5" />
+          <Calculator className="size-3.5" aria-hidden="true" />
           Uma das ferramentas do Safralume
         </span>
         <h2 className="mt-4 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -144,9 +196,16 @@ export function CalculadoraSafraLanding() {
                 onValueChange={(v) => {
                   setUf(v);
                   reiniciar();
+                  // Cultura, estado e sacas completos: calcula na hora, sem
+                  // exigir mais um toque no botão.
+                  if (sacasValidas) void calcular({ uf: v });
                 }}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger
+                  className={`w-full ${faltaUf ? "border-destructive" : ""}`}
+                  aria-invalid={faltaUf || undefined}
+                  aria-describedby={faltaUf ? "calc-landing-uf-erro" : undefined}
+                >
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
@@ -157,6 +216,15 @@ export function CalculadoraSafraLanding() {
                   ))}
                 </SelectContent>
               </Select>
+              {faltaUf && (
+                <p
+                  id="calc-landing-uf-erro"
+                  role="alert"
+                  className="mt-1.5 text-xs font-medium text-destructive"
+                >
+                  Selecione o seu estado.
+                </p>
+              )}
             </div>
           </div>
 
@@ -169,40 +237,85 @@ export function CalculadoraSafraLanding() {
             </Label>
             <Input
               id="calc-landing-sacas"
-              inputMode="decimal"
+              name="sacas"
+              inputMode="numeric"
+              autoComplete="off"
               placeholder="Ex: 5.000"
               value={sacas}
+              aria-invalid={faltaSacas || undefined}
+              aria-describedby={faltaSacas ? "calc-landing-sacas-erro" : undefined}
+              className={faltaSacas ? "border-destructive" : undefined}
               onChange={(e) => {
                 setSacas(e.target.value);
                 reiniciar();
               }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void calcular();
+                }
+              }}
             />
+            {faltaSacas && (
+              <p
+                id="calc-landing-sacas-erro"
+                role="alert"
+                className="mt-1.5 text-xs font-medium text-destructive"
+              >
+                Digite quantas sacas você tem (ou toque em uma sugestão).
+              </p>
+            )}
+            <div
+              className="mt-2.5 flex flex-wrap items-center gap-1.5"
+              aria-label="Sugestões de quantidade"
+            >
+              {ATALHOS_SACAS.map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => {
+                    const texto = formatarSacas(n);
+                    setSacas(texto);
+                    reiniciar();
+                    if (uf) void calcular({ sacas: texto });
+                  }}
+                  className="touch-manipulation rounded-full border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none active:scale-[0.97]"
+                >
+                  {formatarSacas(n)} sacas
+                </button>
+              ))}
+            </div>
           </div>
 
           <button
             type="button"
-            onClick={() => calcular()}
-            disabled={calculando || !uf || !sacasValidas}
-            className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-cta text-sm font-bold text-cta-foreground transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-cta/30 disabled:opacity-60"
+            onClick={() => void calcular()}
+            disabled={calculando}
+            className="mt-6 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-xl bg-cta text-sm font-bold text-cta-foreground shadow-md shadow-cta/20 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-lg hover:shadow-cta/30 focus-visible:ring-4 focus-visible:ring-cta/40 focus-visible:outline-none active:translate-y-0 active:scale-[0.98] disabled:cursor-wait disabled:opacity-80 motion-reduce:transition-none"
           >
             {calculando ? (
               <>
-                <Loader2 className="size-4 animate-spin" />
-                Calculando...
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                Calculando…
               </>
             ) : (
               <>
                 Calcular valor da safra
-                <ArrowRight className="size-4" />
+                <ArrowRight className="size-4" aria-hidden="true" />
               </>
             )}
           </button>
 
-          {erro && <p className="mt-3 text-center text-sm text-destructive">{erro}</p>}
+          {erro && (
+            <p role="alert" className="mt-3 text-center text-sm text-destructive">
+              {erro}
+            </p>
+          )}
 
           <AnimatePresence>
             {resultado && (
               <motion.div
+                ref={resultadoRef}
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
@@ -211,10 +324,17 @@ export function CalculadoraSafraLanding() {
               >
                 <div className="mt-6 border-t border-dashed border-border pt-6">
                   {!resultado.disponivel && resultado.outrasUfsDisponiveis.length === 0 && (
-                    <p className="text-center text-sm text-muted-foreground">
-                      Ainda não temos preço recente dessa cultura em nenhum estado. Tenta outra
-                      cultura, ou se cadastre: assim que sair um preço, você é avisado.
-                    </p>
+                    <>
+                      <p className="text-center text-sm text-muted-foreground">
+                        Ainda não temos preço recente dessa cultura em nenhum estado. Tenta outra
+                        cultura, ou deixe seu WhatsApp: assim que sair um preço, você é avisado.
+                      </p>
+                      <PainelCaptura
+                        titulo="Avise-me quando sair o preço"
+                        texto={`Assim que houver cotação de ${culturaLabel.toLowerCase()}, você recebe no WhatsApp.`}
+                        aoEnviar={(whatsapp) => abrirCadastro({ whatsapp, cultura, uf })}
+                      />
+                    </>
                   )}
 
                   {(!resultado.disponivel || escolhendoUf) &&
@@ -230,8 +350,8 @@ export function CalculadoraSafraLanding() {
                             <button
                               key={o.uf}
                               type="button"
-                              onClick={() => calcular(o.uf)}
-                              className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors hover:border-primary hover:bg-primary/5 ${
+                              onClick={() => void calcular({ ufReferencia: o.uf })}
+                              className={`touch-manipulation rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors hover:border-primary hover:bg-primary/5 ${
                                 o.uf === resultado.ufUsada
                                   ? "border-primary bg-primary/5 text-primary"
                                   : "border-border text-foreground"
@@ -265,11 +385,24 @@ export function CalculadoraSafraLanding() {
                       <p className="text-center text-[11px] font-semibold text-muted-foreground">
                         VALOR DA SUA PRODUÇÃO
                       </p>
-                      <p className="text-center font-display text-3xl font-extrabold text-primary">
-                        {brl(resultado.valorBruto)}
+                      <p className="text-center font-display text-4xl font-extrabold text-primary tabular-nums">
+                        {reduzMovimento ? (
+                          brl(resultado.valorBruto)
+                        ) : (
+                          <span aria-hidden="true">
+                            R$ <AnimatedNumber value={resultado.valorBruto} />
+                          </span>
+                        )}
+                      </p>
+                      {/* O número sobe animado (muda ~50x em 0,9s): lido direto,
+                          o leitor de tela soletraria valores parciais. Aqui vai
+                          só o valor final, uma vez. */}
+                      <p role="status" className="sr-only">
+                        Valor da sua produção: {brl(resultado.valorBruto)}
                       </p>
                       <p className="text-center text-xs text-muted-foreground">
-                        {sacasNum.toLocaleString("pt-BR")} sacas × {brl(resultado.precoAtual!)}
+                        {(consulta?.sacas ?? sacasNum).toLocaleString("pt-BR")} sacas ×{" "}
+                        {brl(resultado.precoAtual!)}
                       </p>
 
                       {resultado.frete?.tipo === "paridade" && (
@@ -281,23 +414,24 @@ export function CalculadoraSafraLanding() {
                         </p>
                       )}
 
-                      <p className="mt-3 text-center text-[11px] font-semibold uppercase tracking-wide text-gold-foreground">
-                        Isso é só uma amostra, oferecemos muito mais
-                      </p>
-
-                      <a
-                        href="#comece"
-                        className="mt-5 flex items-center justify-center gap-1.5 text-sm font-bold text-primary hover:underline"
-                      >
-                        Quero acompanhar isso todos os dias
-                        <ArrowRight className="size-3.5" />
-                      </a>
-                      <p className="mt-3 text-center text-xs text-muted-foreground">
-                        Essa é só a ponta do que a Safralume faz. Crie sua conta grátis por 7 dias e
-                        veja também sua margem por saca, comparação com o porto e o frete, alertas
-                        automáticos de preço, previsão do tempo e a janela certa pra plantar, tudo
-                        com dado real, no painel ou direto pelo WhatsApp. Sem cartão de crédito.
-                      </p>
+                      {/* Momento de maior intenção da página: a pessoa acabou de
+                          ver o valor da própria safra. O CTA fica aqui, com o
+                          número já digitável, e leva cultura e estado já
+                          escolhidos pro cadastro (antes era um link que
+                          rolava ~10 mil px até o rodapé). */}
+                      <PainelCaptura
+                        titulo="Acompanhe esse preço direto no seu WhatsApp"
+                        texto={
+                          // Sem preço próprio no estado escolhido (resultado veio de um
+                          // estado de referência): não prometer "preço em <estado>".
+                          resultado.usandoOutraUf
+                            ? `Preço de ${culturaLabel.toLowerCase()}, o do porto com frete e um aviso quando for a hora de vender.`
+                            : `Preço de ${culturaLabel.toLowerCase()} em ${nomeDaUf(consulta?.uf ?? uf)}, o do porto com frete e um aviso quando for a hora de vender.`
+                        }
+                        aoEnviar={(whatsapp) =>
+                          abrirCadastro({ whatsapp, cultura, uf: consulta?.uf ?? uf })
+                        }
+                      />
                     </>
                   )}
                 </div>
@@ -318,10 +452,50 @@ export function CalculadoraSafraLanding() {
           <span>
             Confira mais do que o Safralume oferece: sua ferramenta de inteligência agrícola
           </span>
-          <ChevronDown className="size-5 animate-bounce" />
+          <ChevronDown
+            className="size-5 animate-bounce motion-reduce:animate-none"
+            aria-hidden="true"
+          />
         </a>
       </Reveal>
     </section>
+  );
+}
+
+/** Painel de captura de WhatsApp dentro do resultado da calculadora. */
+function PainelCaptura({
+  titulo,
+  texto,
+  aoEnviar,
+}: {
+  titulo: string;
+  texto: string;
+  aoEnviar: (whatsapp: string) => void;
+}) {
+  const { setCtaInlineVisivel } = useCadastro();
+  const raizRef = useRef<HTMLDivElement>(null);
+  // Enquanto este painel está na tela, a barra de CTA fixa (celular) se
+  // esconde: seriam dois convites idênticos empilhados.
+  useEffect(() => {
+    const el = raizRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setCtaInlineVisivel(!!e?.isIntersecting));
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      setCtaInlineVisivel(false);
+    };
+  }, [setCtaInlineVisivel]);
+
+  return (
+    <div ref={raizRef} className="mt-6 rounded-2xl bg-primary p-5 text-primary-foreground sm:p-6">
+      <p className="text-balance font-display text-xl leading-snug font-bold">{titulo}</p>
+      <p className="mt-1.5 text-sm text-primary-foreground/80">{texto}</p>
+      <CampoWhatsappCta variante="escuro" aoEnviar={aoEnviar} className="mt-4" />
+      <p className="mt-3 text-center text-xs text-balance text-primary-foreground/75">
+        7 dias grátis · Sem cartão · Cancele quando quiser
+      </p>
+    </div>
   );
 }
 

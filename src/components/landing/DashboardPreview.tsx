@@ -32,6 +32,8 @@ import { AnimatedNumber } from "@/components/dashboard/AnimatedNumber";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { buscarPrecosDaUf } from "@/lib/precos";
+import { useExemplosDoDia, useHoje } from "@/hooks/useExemplosDoDia";
+import { brl2, haDiasAtras, proximosDecendios } from "@/lib/exemplosLanding";
 
 /**
  * Preço real de soja (GO/MT/PR) pra substituir o número ilustrativo no
@@ -410,9 +412,16 @@ function PreviewPrecos({
 }
 
 function PreviewAlertas() {
+  // Data do alerta "disparado" é relativa a hoje (nunca fixa) e o dólar é a
+  // PTAX real do dia, senão o exemplo envelhece e destoa do dado de verdade.
+  const hoje = useHoje();
+  const dolar = useExemplosDoDia()?.dolar;
   const alertas = [
     { texto: "Soja · MT acima de R$ 130,00", status: "Ativo, aguardando" },
-    { texto: "Milho · GO abaixo de R$ 60,00", status: "Disparado em 12/08" },
+    {
+      texto: "Milho · GO abaixo de R$ 60,00",
+      status: hoje ? `Disparado em ${haDiasAtras(hoje, 4)}` : "Disparado há 4 dias",
+    },
   ];
   const lembretes = [
     { titulo: "Aplicar fungicida na soja", quando: "Amanhã, 07:00" },
@@ -458,7 +467,10 @@ function PreviewAlertas() {
       <div className="grid gap-2 sm:grid-cols-2">
         <div className="flex items-center gap-2 rounded-lg border border-border p-3 text-sm text-foreground">
           <DollarSign className="size-4 shrink-0 text-primary" />
-          Dólar (PTAX): <span className="font-mono font-semibold">R$ 5,20</span>
+          Dólar (PTAX):{" "}
+          <span className="font-mono font-semibold">
+            {dolar ? `R$ ${brl2(dolar.valor)}` : "cotação do dia"}
+          </span>
         </div>
         <div className="flex items-center gap-2 rounded-lg border border-border p-3 text-sm text-foreground">
           <Fuel className="size-4 shrink-0 text-primary" />
@@ -540,12 +552,17 @@ function PreviewSinalVenda() {
 }
 
 function PreviewPlantio() {
-  const janelas = [
-    { periodo: "dia 21 ao fim do mês de set.", risco: 40 },
-    { periodo: "dia 1 a 10 de out.", risco: 20 },
-    { periodo: "dia 11 a 20 de out.", risco: 20 },
-    { periodo: "dia 21 ao fim do mês de out.", risco: 20 },
-  ];
+  // Janelas reais do ZARC pra Sorriso/MT quando o dado chega; sem ele, os
+  // decêndios são calculados a partir de hoje (nunca meses fixos) e o risco
+  // fica de fora em vez de inventar um número.
+  const hoje = useHoje();
+  const plantio = useExemplosDoDia()?.plantio;
+  const janelas: { periodo: string; risco: number | null }[] = plantio
+    ? [{ periodo: plantio.periodoAtual, risco: plantio.riscoHoje }, ...plantio.proximas.slice(1, 4)]
+    : proximosDecendios(hoje ?? new Date(), 4).map((periodo) => ({
+        periodo,
+        risco: null,
+      }));
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm font-semibold text-foreground">Janela de plantio · Soja · Sorriso/MT</p>
@@ -555,7 +572,10 @@ function PreviewPlantio() {
           <div>
             <p className="text-sm text-foreground">
               Agora ({janelas[0]!.periodo}):{" "}
-              <span className="font-semibold">{janelas[0]!.risco}% de risco</span>.
+              <span className="font-semibold">
+                {janelas[0]!.risco != null ? `${janelas[0]!.risco}% de risco` : "risco no painel"}
+              </span>
+              .
             </p>
             <p className="mt-2 text-xs text-muted-foreground">
               Risco climático oficial do ZARC/MAPA, direto do zoneamento da safra vigente.
@@ -573,7 +593,7 @@ function PreviewPlantio() {
           >
             {j.periodo}
             <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
-              {j.risco}% de risco
+              {j.risco != null ? `${j.risco}% de risco` : "risco no painel"}
             </span>
           </div>
         ))}

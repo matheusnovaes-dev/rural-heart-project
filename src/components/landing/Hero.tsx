@@ -7,11 +7,13 @@ import {
   useTransform,
 } from "framer-motion";
 import { useRef, type MouseEvent } from "react";
-import { ArrowRight, BadgeCheck } from "lucide-react";
+import { BadgeCheck, ShieldCheck } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { CampoWhatsappCta } from "@/components/landing/CampoWhatsappCta";
+import { useCadastro } from "@/components/landing/CadastroProvider";
 
 export function Hero() {
+  const { abrirCadastro } = useCadastro();
   const sectionRef = useRef<HTMLElement>(null);
   // Parallax de scroll e luz-no-cursor são exatamente os dois efeitos que os
   // guias de acessibilidade mais citam como gatilho de enjoo em
@@ -66,8 +68,8 @@ export function Hero() {
         {/* inset-y-[-14%] dá uma "sobra" de foto pra cima e pra baixo: o
             translateY do parallax (±10%) nunca chega a expor uma borda vazia. */}
         <motion.div
-          className="absolute inset-x-0 inset-y-[-14%]"
-          style={prefereMenosMovimento ? {} : { y: fotoY }}
+          className="absolute inset-x-0 inset-y-[-14%] motion-reduce:transform-none!"
+          style={{ y: fotoY }}
         >
           <picture>
             {/* A foto fica sob um gradiente escuro que cobre quase toda ela: as versões
@@ -94,14 +96,16 @@ export function Hero() {
             escurece com força só a partir de onde o texto começa, e o tom é
             quente (hue 60, like --cta) em vez de frio, pra combinar com a
             própria foto em vez de brigar com ela. */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,oklch(0.22_0.03_60/0.3)_0%,oklch(0.17_0.03_60/0.74)_32%,oklch(0.15_0.03_60/0.82)_68%,oklch(0.988_0.005_95.1)_100%)]" />
-        {!prefereMenosMovimento && (
-          <motion.div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 hidden mix-blend-soft-light sm:block"
-            style={{ background: luz }}
-          />
-        )}
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,oklch(0.22_0.03_60/0.3)_0%,oklch(0.17_0.03_60/0.74)_32%,oklch(0.15_0.03_60/0.84)_78%,oklch(0.988_0.005_95.1)_100%)]" />
+        {/* Sempre renderizada (escondida por CSS em motion-reduce): renderizar
+            condicional por useReducedMotion gera HTML diferente entre servidor
+            (sem preferência) e cliente (com preferência), e o React derruba e
+            refaz a árvore inteira (erro #418 em produção pra quem reduz movimento). */}
+        <motion.div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 hidden mix-blend-soft-light sm:block motion-reduce:hidden"
+          style={{ background: luz }}
+        />
 
         {/* Crista de lavoura em duas camadas: a de trás (mais clara, tom
             verde suave) se move menos que a da frente (cor exata do fundo da
@@ -111,8 +115,8 @@ export function Hero() {
           aria-hidden="true"
           viewBox="0 0 1440 120"
           preserveAspectRatio="none"
-          className="absolute inset-x-0 bottom-0 h-20 w-full sm:h-28"
-          style={prefereMenosMovimento ? {} : { y: cristaFundoY }}
+          className="absolute inset-x-0 bottom-0 h-20 w-full sm:h-28 motion-reduce:transform-none!"
+          style={{ y: cristaFundoY }}
         >
           <path
             d="M0,60 C240,20 480,100 720,60 C960,20 1200,100 1440,60 L1440,120 L0,120 Z"
@@ -123,14 +127,14 @@ export function Hero() {
           aria-hidden="true"
           viewBox="0 0 1440 120"
           preserveAspectRatio="none"
-          className="absolute inset-x-0 bottom-0 h-16 w-full sm:h-24"
-          style={prefereMenosMovimento ? {} : { y: cristaFrenteY }}
+          className="absolute inset-x-0 bottom-0 h-16 w-full sm:h-24 motion-reduce:transform-none!"
+          style={{ y: cristaFrenteY }}
         >
           <path d="M0,80 C360,40 1080,120 1440,70 L1440,120 L0,120 Z" className="fill-background" />
         </motion.svg>
       </div>
 
-      <div className="relative mx-auto flex max-w-4xl flex-col items-center px-4 py-24 text-center sm:px-6 sm:py-32">
+      <div className="relative mx-auto flex max-w-4xl flex-col items-center px-4 pt-14 pb-24 text-center sm:px-6 sm:pt-24 sm:pb-32">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -154,31 +158,31 @@ export function Hero() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="mt-5 max-w-2xl text-pretty text-lg text-white/85"
+          className="mt-4 max-w-2xl text-balance text-base text-white/85 sm:mt-5 sm:text-lg"
         >
-          O Safralume cruza o preço de hoje, o mercado futuro da B3 e os últimos 90 dias, e te avisa
-          no WhatsApp na hora certa. Não só o número, a decisão.
+          Preço de hoje, futuro da B3 e 90 dias de histórico, avisados no seu WhatsApp na hora certa
+          de vender.
         </motion.p>
 
         <motion.div
+          id="hero-cadastro"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="mt-8"
+          className="mt-7 w-full max-w-xl sm:mt-8"
         >
-          <Button
-            asChild
-            size="lg"
-            className="bg-cta text-cta-foreground hover:bg-cta/90 h-12 px-8 text-base"
-          >
-            <a href="#comece">
-              Testar grátis por 7 dias
-              <ArrowRight className="size-4" />
-            </a>
-          </Button>
-          {/* Mesmo padrão do Stripe/Linear: tira o atrito percebido bem no
-              ponto da decisão, não só lá embaixo no FinalCta. */}
-          <p className="mt-3 text-xs font-medium text-white/60">Sem cartão de crédito</p>
+          {/* O CTA virou o próprio campo de WhatsApp: antes era um botão que
+              rolava ~10 mil px até o formulário do rodapé (achado da
+              auditoria de UX 2026-10-13, 94% do tráfego é celular). Agora o
+              cadastro começa aqui, no momento da decisão. */}
+          <CampoWhatsappCta
+            variante="escuro"
+            aoEnviar={(whatsapp) => abrirCadastro({ whatsapp })}
+          />
+          <p className="mt-3 text-center text-[13px] font-medium text-balance text-white/85 sm:text-sm">
+            <ShieldCheck className="mr-1.5 -mt-0.5 inline size-4 align-middle" aria-hidden="true" />
+            7 dias grátis · Sem cartão · Cancele quando quiser
+          </p>
         </motion.div>
       </div>
     </section>

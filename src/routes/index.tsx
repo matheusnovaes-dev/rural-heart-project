@@ -13,6 +13,8 @@ import { Pricing } from "@/components/landing/Pricing";
 import { FinalCta } from "@/components/landing/FinalCta";
 import { Footer } from "@/components/landing/Footer";
 import { WhatsAppFloatingButton } from "@/components/landing/WhatsAppFloatingButton";
+import { BarraCtaFixa } from "@/components/landing/BarraCtaFixa";
+import { CadastroProvider } from "@/components/landing/CadastroProvider";
 
 const searchSchema = z.object({
   // "1" = veio do link "prefere assinar direto" — os botões de plano abaixo
@@ -29,21 +31,24 @@ function Index() {
   const { semTrial } = Route.useSearch();
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main>
-        <Hero />
-        <CalculadoraSafraLanding />
-        <PainPoints />
-        <Solution />
-        <HowItWorks />
-        <DashboardPreview />
-        <TrustProof />
-        <Pricing semTrial={semTrial === "1"} />
-        <FinalCta />
-      </main>
-      <Footer />
-      <WhatsAppFloatingButton />
-    </div>
+    <CadastroProvider>
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main>
+          <Hero />
+          <CalculadoraSafraLanding />
+          <PainPoints />
+          <Solution />
+          <HowItWorks />
+          <DashboardPreview />
+          <TrustProof />
+          <Pricing semTrial={semTrial === "1"} />
+          <FinalCta />
+        </main>
+        <Footer />
+        <BarraCtaFixa />
+        <WhatsAppFloatingButton />
+      </div>
+    </CadastroProvider>
   );
 }

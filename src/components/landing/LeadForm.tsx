@@ -55,18 +55,91 @@ type LeadFormValues = z.infer<typeof leadSchema>;
 const culturasMaisUsadas = culturas.filter((c) => DESTAQUES.includes(c.value));
 const culturasOutras = culturas.filter((c) => !DESTAQUES.includes(c.value));
 
-export function LeadForm({ className }: { className?: string }) {
+/**
+ * Registro do início do cadastro (etapa 1, WhatsApp já digitado): grava em
+ * cadastro_iniciados e dispara o Lead (pixel no navegador + API de Conversões,
+ * mesmo eventId pra a Meta deduplicar). Fica fora do componente pra qualquer
+ * CTA da landing (hero, barra fixa, calculadora) registrar o início do mesmo
+ * jeito, sem duplicar nem divergir da lógica do formulário.
+ *
+ * O query builder do supabase-js só dispara o fetch quando algo consome a
+ * Promise (await ou .then) — um "void" sozinho nunca chega a mandar a
+ * requisição (achado real: isso já tinha quebrado em silêncio o log de falha
+ * e o insert em "leads"). .then() em vez de await de propósito: log é
+ * best-effort e não pode atrasar a transição pra etapa 2. Rastreamento NUNCA
+ * pode impedir a pessoa de avançar (ex: navegador antigo sem
+ * crypto.randomUUID), por isso o try/catch.
+ */
+const iniciosJaRegistrados = new Set<string>();
+
+export function registrarInicioDeCadastro(whatsappBruto: string) {
+  const whatsapp = normalizarWhatsapp(whatsappBruto);
+  // Vários CTAs (hero, calculadora, rodapé) podem receber o MESMO número na
+  // mesma visita: sem isso cada envio disparava outro Lead com eventId novo,
+  // que a Meta não consegue deduplicar, e outra linha em cadastro_iniciados.
+  if (iniciosJaRegistrados.has(whatsapp)) return;
+  iniciosJaRegistrados.add(whatsapp);
+  supabase
+    ?.from("cadastro_iniciados")
+    .insert({ whatsapp })
+    .then(() => {});
+  try {
+    const eventIdLead = crypto.randomUUID();
+    trackCadastroIniciado(eventIdLead);
+    trackConversaoServidor({
+      data: {
+        eventId: eventIdLead,
+        evento: "Lead",
+        whatsapp,
+        doNavegador: true,
+        ...lerCookiesMeta(),
+      },
+    }).catch(() => {});
+  } catch {
+    // sem rastreio de Lead nesse navegador; o fluxo segue.
+  }
+}
+
+type LeadFormProps = {
+  className?: string;
+  /** Valores já conhecidos (digitados no hero ou na calculadora). */
+  valoresIniciais?: {
+    whatsapp?: string | undefined;
+    crop?: string | undefined;
+    uf?: string | undefined;
+  };
+  /**
+   * Quem abre o formulário já pediu o WhatsApp e já chamou
+   * registrarInicioDeCadastro: começa direto na etapa 2 e não registra de novo.
+   */
+  iniciarNaEtapa2?: boolean;
+  /** Foca o primeiro campo ao montar. Desligue no celular (o teclado cobre a tela). */
+  autoFocar?: boolean;
+};
+
+export function LeadForm({
+  className,
+  valoresIniciais,
+  iniciarNaEtapa2 = false,
+  autoFocar = true,
+}: LeadFormProps) {
   const [status, setStatus] = useState<"idle" | "submitting" | "error">("idle");
   const [erroMsg, setErroMsg] = useState("");
   const [cadastroJaExiste, setCadastroJaExiste] = useState(false);
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2>(iniciarNaEtapa2 ? 2 : 1);
   const navigate = useNavigate();
   const { refresh } = useAuth();
-  const jaTrackouInicioRef = useRef(false);
+  const jaTrackouInicioRef = useRef(iniciarNaEtapa2);
 
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(leadSchema),
-    defaultValues: { name: "", whatsapp: "", crop: "", uf: "", plano: "bronze" },
+    defaultValues: {
+      name: "",
+      whatsapp: valoresIniciais?.whatsapp ?? "",
+      crop: valoresIniciais?.crop ?? "",
+      uf: valoresIniciais?.uf ?? "",
+      plano: "bronze",
+    },
   });
 
   // Cultura + estado sem nenhum preço recente: avisa antes de cadastrar em vez
@@ -101,41 +174,7 @@ export function LeadForm({ className }: { className?: string }) {
     if (!valido) return;
     if (!jaTrackouInicioRef.current) {
       jaTrackouInicioRef.current = true;
-      const whatsapp = normalizarWhatsapp(form.getValues("whatsapp"));
-      // O query builder do supabase-js só dispara o fetch quando algo
-      // consome a Promise (await ou .then) — um "void" sozinho nunca chega
-      // a mandar a requisição (achado real: isso já tinha quebrado em
-      // silêncio o log de falha e o insert em "leads", ver correções nos
-      // dois). .then() em vez de await de propósito: log é best-effort e
-      // não pode atrasar a transição pra etapa 2. Limite conhecido: se a
-      // pessoa recarregar a página na mesma fração de segundo do clique, o
-      // navegador cancela essa requisição em voo (testado sendBeacon como
-      // alternativa, mas o CORS do Supabase bloqueia por causa do
-      // Access-Control-Allow-Origin "*" combinado com credentials). Caso
-      // raro e sem impacto no cadastro em si, que é sempre aguardado.
-      supabase
-        ?.from("cadastro_iniciados")
-        .insert({ whatsapp })
-        .then(() => {});
-      // Lead da etapa 1 (WhatsApp já digitado): pixel no navegador + API de
-      // Conversões, com o mesmo eventId pra a Meta deduplicar. Rastreamento
-      // NUNCA pode impedir a pessoa de avançar (ex: navegador antigo sem
-      // crypto.randomUUID), por isso o try/catch.
-      try {
-        const eventIdLead = crypto.randomUUID();
-        trackCadastroIniciado(eventIdLead);
-        trackConversaoServidor({
-          data: {
-            eventId: eventIdLead,
-            evento: "Lead",
-            whatsapp,
-            doNavegador: true,
-            ...lerCookiesMeta(),
-          },
-        }).catch(() => {});
-      } catch {
-        // sem rastreio de Lead nesse navegador; o fluxo segue.
-      }
+      registrarInicioDeCadastro(form.getValues("whatsapp"));
     }
     setStep(2);
   }
@@ -333,7 +372,7 @@ export function LeadForm({ className }: { className?: string }) {
                         placeholder="(00) 00000-0000"
                         type="tel"
                         autoComplete="tel"
-                        autoFocus
+                        autoFocus={autoFocar}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             e.preventDefault();
@@ -393,7 +432,12 @@ export function LeadForm({ className }: { className?: string }) {
                   <FormItem>
                     <FormLabel>Nome completo</FormLabel>
                     <FormControl>
-                      <Input placeholder="Seu nome" autoComplete="name" autoFocus {...field} />
+                      <Input
+                        placeholder="Seu nome"
+                        autoComplete="name"
+                        autoFocus={autoFocar}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

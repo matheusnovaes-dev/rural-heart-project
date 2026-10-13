@@ -2,6 +2,8 @@ import { motion } from "framer-motion";
 import { Check, Sprout } from "lucide-react";
 
 import { Reveal } from "@/components/landing/Reveal";
+import { useExemplosDoDia } from "@/hooks/useExemplosDoDia";
+import { brl2, diaMes, fraseDeFuturo, fraseDePlantio } from "@/lib/exemplosLanding";
 
 export function Solution() {
   return (
@@ -50,6 +52,13 @@ export function Solution() {
 }
 
 function PhoneMockup() {
+  // Dólar, futuros e janela de plantio vêm do dado real do dia; os preços de
+  // soja/boi no começo da conversa seguem ilustrativos (a legenda abaixo do
+  // celular já diz isso). Sem dado, cai num texto sem número nem data fixa.
+  const exemplos = useExemplosDoDia();
+  const dolar = exemplos?.dolar;
+  const futuro = exemplos?.futuroSoja;
+  const plantio = exemplos?.plantio;
   return (
     <div className="w-full max-w-sm rounded-[2.25rem] border-8 border-[oklch(0.244_0.026_155.8)] bg-[oklch(0.244_0.026_155.8)] shadow-2xl">
       <div className="overflow-hidden rounded-[1.75rem] bg-[#e5ded4]">
@@ -142,11 +151,14 @@ function PhoneMockup() {
             transition={{ delay: 1.9, duration: 0.4 }}
             className="mr-auto max-w-[88%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-sm text-[#111b21] shadow-sm"
           >
-            <p>💵 Dólar hoje (PTAX): R$ 5,20</p>
+            <p>💵 Dólar hoje (PTAX): {dolar ? `R$ ${brl2(dolar.valor)}` : "cotação do dia"}</p>
             <p className="mt-1">
-              📈 Mercado futuro (B3), Soja FOB Santos: nov. R$525 · mar. R$471 · mai. R$473
+              📈 Mercado futuro (B3), soja:{" "}
+              {futuro ? fraseDeFuturo(futuro) : "próximos vencimentos com preço de ajuste"}
             </p>
-            <p className="mt-1 text-xs text-[#667781]">Fonte: BCB + B3 · atualizado agora</p>
+            <p className="mt-1 text-xs text-[#667781]">
+              Fonte: BCB + B3 · {dolar ? `PTAX de ${diaMes(dolar.data)}` : "atualizado hoje"}
+            </p>
           </motion.div>
 
           <motion.div
@@ -156,7 +168,7 @@ function PhoneMockup() {
             transition={{ delay: 2.2, duration: 0.4 }}
             className="mr-auto max-w-[88%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-sm text-[#111b21] shadow-sm"
           >
-            ☁️ Alerta de clima: geada prevista em MT nos próximos dias. Fique de olho antes de
+            ☁️ Alerta de clima: chuva forte prevista em MT nos próximos dias. Fique de olho antes de
             planejar a atividade de campo.
           </motion.div>
 
@@ -178,8 +190,10 @@ function PhoneMockup() {
             className="mr-auto max-w-[88%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-sm text-[#111b21] shadow-sm"
           >
             <p>
-              🌱 Ainda não. A janela recomendada abre em 21/09, com risco climático de 40%
-              (ZARC/MAPA).
+              🌱{" "}
+              {plantio
+                ? fraseDePlantio(plantio)
+                : "A janela recomendada de plantio e o risco climático saem direto do ZARC/MAPA."}
             </p>
             <p className="mt-1 text-xs text-[#667781]">Fonte: ZARC/MAPA · atualizado agora</p>
           </motion.div>
