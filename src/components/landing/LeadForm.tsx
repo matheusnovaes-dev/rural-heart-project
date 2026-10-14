@@ -431,7 +431,7 @@ export function LeadForm({
                 type="button"
                 size="lg"
                 onClick={() => void avancarParaEtapa2()}
-                className="bg-cta text-cta-foreground hover:bg-cta/90 mt-2"
+                className="bg-cta text-cta-foreground hover:bg-cta/90 mt-2 pointer-coarse:min-h-11"
               >
                 Continuar
               </Button>

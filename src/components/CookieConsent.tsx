@@ -86,7 +86,11 @@ export function CookieConsent() {
           Política de privacidade
         </Link>
       </p>
-      <Button size="sm" onClick={aceitar} className="shrink-0 touch-manipulation">
+      <Button
+        size="sm"
+        onClick={aceitar}
+        className="shrink-0 touch-manipulation pointer-coarse:min-h-11 pointer-coarse:min-w-11"
+      >
         OK
       </Button>
     </div>

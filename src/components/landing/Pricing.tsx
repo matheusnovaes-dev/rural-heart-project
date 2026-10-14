@@ -126,7 +126,7 @@ function CartaoPlano({ plan, semTrial }: { plan: PricingPlan; semTrial: boolean 
             setExpandido((v) => !v);
             if (!expandido) trackLanding("PlanoVerTodos", { plano: plan.id });
           }}
-          className="mt-4 inline-flex w-fit touch-manipulation items-center gap-1 text-sm font-semibold text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+          className="mt-4 inline-flex w-fit touch-manipulation items-center gap-1 pointer-coarse:min-h-11 text-sm font-semibold text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
         >
           {expandido ? "Mostrar menos" : `Ver todos os ${plan.features.length} recursos`}
           <ChevronDown

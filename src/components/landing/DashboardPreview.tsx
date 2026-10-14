@@ -210,7 +210,7 @@ export function DashboardPreview() {
               </div>
 
               <CursorFantasma pos={cursorPos} />
-              <div className="flex gap-1 sm:flex-col">
+              <div className="grid grid-cols-5 gap-1 sm:flex sm:flex-col">
                 {abas.map((item) => (
                   <button
                     key={item.id}
@@ -222,7 +222,7 @@ export function DashboardPreview() {
                     aria-pressed={aba === item.id}
                     onClick={() => selecionarManual(item.id)}
                     className={cn(
-                      "flex flex-1 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors sm:flex-none",
+                      "flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors pointer-coarse:min-h-11 pointer-coarse:min-w-11 sm:flex-none sm:justify-start",
                       aba === item.id
                         ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
                         : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",

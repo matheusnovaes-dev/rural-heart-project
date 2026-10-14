@@ -25,7 +25,7 @@ export function Footer() {
               <Link
                 key={link.to}
                 to={link.to}
-                className="alvo-toque hover:text-foreground hover:underline"
+                className="alvo-toque min-w-11 hover:text-foreground hover:underline"
               >
                 {link.label}
               </Link>
@@ -34,7 +34,7 @@ export function Footer() {
               href={buildWhatsAppLink()}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-foreground hover:underline"
+              className="alvo-toque hover:text-foreground hover:underline"
             >
               Contato
             </a>

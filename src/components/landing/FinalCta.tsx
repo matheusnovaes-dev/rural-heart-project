@@ -37,7 +37,7 @@ export function FinalCta() {
             to="/"
             search={{ semTrial: "1" }}
             hash="planos"
-            className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+            className="mt-6 inline-flex items-center gap-2 pointer-coarse:min-h-11 text-sm font-medium text-primary hover:underline"
           >
             <ArrowRight className="size-4" />
             Prefere assinar direto? Veja os planos

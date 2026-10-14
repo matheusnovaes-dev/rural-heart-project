@@ -226,7 +226,7 @@ function LoginPage() {
             <img src="/logo-icon.png" alt="" className="size-7 rounded-[0.55rem]" />
             <span className="text-sm font-bold tracking-tight">{siteConfig.name}</span>
           </div>
-          <Link to="/" className="alvo-toque text-sm text-white/70">
+          <Link to="/" className="alvo-toque min-w-11 justify-end text-sm text-white/70">
             Voltar
           </Link>
         </div>
@@ -292,7 +292,7 @@ function LoginPage() {
                   setMode("entrar");
                   setStatus("idle");
                 }}
-                className={`relative z-10 flex-1 rounded-full py-2 text-sm font-semibold transition-colors ${
+                className={`relative z-10 flex-1 rounded-full py-2 text-sm font-semibold transition-colors pointer-coarse:min-h-11 ${
                   entrando ? "text-primary-foreground" : "text-muted-foreground"
                 }`}
               >
@@ -304,7 +304,7 @@ function LoginPage() {
                   setMode("criar");
                   setStatus("idle");
                 }}
-                className={`relative z-10 flex-1 rounded-full py-2 text-sm font-semibold transition-colors ${
+                className={`relative z-10 flex-1 rounded-full py-2 text-sm font-semibold transition-colors pointer-coarse:min-h-11 ${
                   !entrando ? "text-primary-foreground" : "text-muted-foreground"
                 }`}
               >
@@ -412,7 +412,7 @@ function LoginPage() {
                 setMode(entrando ? "criar" : "entrar");
                 setStatus("idle");
               }}
-              className="mt-2.5 w-full text-center text-sm text-muted-foreground hover:underline lg:mt-4"
+              className="mt-2.5 w-full text-center text-sm text-muted-foreground hover:underline pointer-coarse:min-h-11 lg:mt-4"
             >
               {entrando ? "Não tem conta? Criar uma agora" : "Já tem conta? Entrar"}
             </button>
@@ -426,7 +426,7 @@ function LoginPage() {
                   href={buildWhatsAppLink("Quero acessar meu painel")}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary lg:py-2"
+                  className="inline-flex items-center justify-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary pointer-coarse:min-h-11 lg:py-2"
                 >
                   <MessageCircle className="size-4 text-[#25D366]" />
                   Pedir meu acesso pelo WhatsApp
