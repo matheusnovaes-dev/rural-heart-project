@@ -5,8 +5,12 @@ import { ufs } from "@/config/ufs";
 import { avaliarPropostas, TAXA_MENSAL_PADRAO } from "@/lib/bot/propostas/avaliar";
 import { lerMidia } from "@/lib/bot/propostas/lerMidia";
 import { obterReferencia } from "@/lib/bot/propostas/referencia";
+import { mensagemDeLimite, verificarLimiteDeEstudos } from "@/lib/bot/propostas/limite";
+import { referenciaDoEstudo } from "@/lib/bot/propostas/acompanhamento";
+import { salvarEstudo } from "@/lib/bot/propostas/salvo";
 import { montarEstudo } from "@/lib/bot/propostas/texto";
 import type {
+  EstudoSalvo,
   LeituraDeMidia,
   MidiaRecebida,
   PropostaLida,
@@ -30,8 +34,12 @@ const pronta = (resposta: string, extra: Partial<Resposta> = {}): Resposta => ({
   ...extra,
 });
 
-/** Estudos de foto/PDF por produtor a cada 24h: a leitura custa uma chamada de visão. */
-export const LIMITE_DIARIO_DE_ESTUDOS = 15;
+/**
+ * Trava de custo, igual para todos os planos: leituras de foto/PDF (cada uma é uma chamada
+ * de visão) por número a cada 24h, contando as que não deram estudo. O limite por plano,
+ * que é o que muda o que o produtor recebe, fica em propostas/limite.ts.
+ */
+export const LIMITE_DE_LEITURAS_POR_DIA = 30;
 const TAMANHO_MAXIMO_BYTES = 10 * 1024 * 1024;
 
 const brl = (n: number) =>
@@ -98,12 +106,15 @@ function linhaCompacta(
   return `• *${rotuloDoProduto(produto)}*: ${brl(melhor.preco ?? melhor.precoEfetivo!)} contra ${brl(ref.preco)} no mercado (${ref.rotulo}), ${brl(Math.abs(melhor.diferenca))} ${dir} (${pct(melhor.diferencaPct)}).${aviso}`;
 }
 
+export type ResultadoDaConstrucao =
+  { ok: true; estudo: EstudoSalvo } | { ok: false; mensagem: string };
+
 /**
- * Monta o estudo completo a partir de propostas já lidas (de foto/PDF) ou
- * contadas em texto. Tudo que vira número ou frase é feito por código: o
- * modelo só lê o documento, nunca escreve a conta.
+ * Monta o estudo a partir de propostas já lidas (de foto/PDF) ou contadas em
+ * texto: escolhe o produto e o estado, busca a referência de mercado e guarda
+ * tudo num EstudoSalvo. O modelo só lê o documento, nunca escreve a conta.
  */
-export async function montarRespostaDeEstudo(args: {
+export async function construirEstudo(args: {
   supabase: SupabaseClient;
   produtor: ProdutorContexto;
   propostas: PropostaLida[];
@@ -111,13 +122,17 @@ export async function montarRespostaDeEstudo(args: {
   leitura?: LeituraDeMidia | undefined;
   quantidadeInformada?: number | null | undefined;
   hoje?: Date | undefined;
-}): Promise<string> {
+}): Promise<ResultadoDaConstrucao> {
   const { supabase, produtor, propostas, origem, leitura } = args;
   // O estado do cadastro, a menos que o próprio documento diga onde é a entrega ("Rondonópolis (MT)").
   const ufDoDocumento = propostas.map((p) => ufDoLocal(p.local_entrega)).find(Boolean) ?? null;
   const uf = ufDoDocumento ?? produtor.uf;
   if (!uf) {
-    return "Pra comparar com o mercado eu preciso saber seu estado. Me diga em qual estado você vende e eu faço o estudo.";
+    return {
+      ok: false,
+      mensagem:
+        "Pra comparar com o mercado eu preciso saber seu estado. Me diga em qual estado você vende e eu faço o estudo.",
+    };
   }
   const avisoUf =
     ufDoDocumento && produtor.uf && ufDoDocumento !== produtor.uf
@@ -125,7 +140,11 @@ export async function montarRespostaDeEstudo(args: {
       : undefined;
   const grupos = agrupar(propostas, produtor.cultura_principal).slice(0, 4);
   if (grupos.length === 0) {
-    return "Li o documento, mas não consegui saber de qual produto são os preços. Me diga o produto (soja, milho, boi...) que eu faço o estudo.";
+    return {
+      ok: false,
+      mensagem:
+        "Li o documento, mas não consegui saber de qual produto são os preços. Me diga o produto (soja, milho, boi...) que eu faço o estudo.",
+    };
   }
 
   const [principal, ...outros] = grupos;
@@ -140,13 +159,12 @@ export async function montarRespostaDeEstudo(args: {
       .filter((p) => p.preco != null)
       .map((p) => `• ${p.comprador ?? "Proposta"}: ${brl(p.preco!)}`)
       .join("\n");
-    return `Ainda não tenho preço de referência de ${rotuloDoProduto(principal!.produto)} em ${uf} pra comparar. Isto é o que li:\n${lista}\n\nSe quiser, me diga outro estado ou produto de referência.`;
+    return {
+      ok: false,
+      mensagem: `Ainda não tenho preço de referência de ${rotuloDoProduto(principal!.produto)} em ${uf} pra comparar. Isto é o que li:\n${lista}\n\nSe quiser, me diga outro estado ou produto de referência.`,
+    };
   }
 
-  const avaliadas = avaliarPropostas(principal!.propostas, refPrincipal.ref, {
-    quantidadePadrao: args.quantidadeInformada ?? null,
-    hoje: args.hoje,
-  });
   let extras: string | undefined;
   if (outros.length > 0) {
     const linhas: string[] = [];
@@ -166,18 +184,71 @@ export async function montarRespostaDeEstudo(args: {
     }
     extras = `*Outros produtos da tabela*\n${linhas.join("\n")}`;
   }
-  return montarEstudo({
-    origem,
-    tipoDocumento: leitura?.tipo_documento,
-    confianca: leitura?.confianca,
-    avaliadas,
-    ref: refPrincipal.ref,
-    produto: rotuloDoProduto(principal!.produto),
-    uf,
-    taxaMensal: TAXA_MENSAL_PADRAO,
-    extras,
-    avisoUf,
+
+  return {
+    ok: true,
+    estudo: {
+      v: 1,
+      criadoEm: (args.hoje ?? new Date()).toISOString(),
+      origem,
+      tipoDocumento: leitura?.tipo_documento,
+      confianca: leitura?.confianca,
+      produto: principal!.produto,
+      uf,
+      avisoUf,
+      ref: refPrincipal.ref,
+      propostas: principal!.propostas,
+      taxaMensal: TAXA_MENSAL_PADRAO,
+      quantidadeInformada: args.quantidadeInformada ?? null,
+      extras,
+    },
+  };
+}
+
+/** Texto do estudo (novo ou refeito) a partir do estudo guardado. */
+export function renderizarEstudo(
+  e: EstudoSalvo,
+  opts: { mudancas?: string[] | undefined; hoje?: Date | undefined } = {},
+): string {
+  const ref = referenciaDoEstudo(e);
+  const avaliadas = avaliarPropostas(e.propostas, ref, {
+    taxaMensal: e.taxaMensal,
+    quantidadePadrao: e.quantidadeInformada,
+    hoje: opts.hoje,
   });
+  return montarEstudo({
+    origem: e.origem,
+    tipoDocumento: e.tipoDocumento,
+    confianca: e.confianca,
+    avaliadas,
+    ref,
+    produto: rotuloDoProduto(e.produto),
+    uf: e.uf,
+    taxaMensal: e.taxaMensal,
+    extras: e.extras,
+    avisoUf: e.avisoUf,
+    refeito: opts.mudancas ? { mudancas: opts.mudancas } : undefined,
+  });
+}
+
+/**
+ * Estudo completo em texto. Com `telefone`, guarda o estudo na conversa para o
+ * produtor poder questionar a conta e pedir para refazer com outro valor.
+ */
+export async function montarRespostaDeEstudo(args: {
+  supabase: SupabaseClient;
+  produtor: ProdutorContexto;
+  propostas: PropostaLida[];
+  origem: "midia" | "texto";
+  leitura?: LeituraDeMidia | undefined;
+  quantidadeInformada?: number | null | undefined;
+  hoje?: Date | undefined;
+  telefone?: string | undefined;
+}): Promise<string> {
+  const r = await construirEstudo(args);
+  if (!r.ok) return r.mensagem;
+  if (args.telefone) await salvarEstudo(args.supabase, args.telefone, r.estudo);
+  return renderizarEstudo(r.estudo, { hoje: args.hoje });
 }
 
 const MENSAGEM_NAO_E_PROPOSTA =
@@ -194,7 +265,7 @@ const MENSAGEM_FORMATO =
   "Esse tipo de arquivo eu ainda não consigo abrir. Pode mandar como foto ou PDF?";
 const MENSAGEM_ANONIMO =
   "Recebi sua foto! Eu faço o estudo de proposta (comparo com o preço de mercado e ranqueio os compradores), mas pra isso preciso do seu cadastro: seu estado e sua cultura. Responda *quero testar* que eu crio seu teste grátis de 7 dias aqui mesmo, sem cartão, e depois é só mandar a foto de novo.";
-const MENSAGEM_LIMITE = `Hoje já analisei ${LIMITE_DIARIO_DE_ESTUDOS} documentos seus, que é o limite por dia. Amanhã eu continuo. Se for urgente, me diga o preço e o comprador por texto que eu comparo na hora.`;
+const MENSAGEM_LIMITE_DE_LEITURAS = `Hoje já abri ${LIMITE_DE_LEITURAS_POR_DIA} arquivos seus, que é o limite por dia. Amanhã eu continuo.`;
 
 /** Foto ou PDF recebido no WhatsApp: lê, compara com o mercado e devolve o estudo pronto. */
 export async function responderMidia(input: {
@@ -220,6 +291,10 @@ export async function responderMidia(input: {
   const bytes = Math.floor((midia.base64.length * 3) / 4);
   if (bytes > TAMANHO_MAXIMO_BYTES) return pronta(MENSAGEM_GRANDE);
 
+  // A trava por plano: Bronze 3 estudos por dia, Prata e Ouro 15. Só estudos entregues contam.
+  const situacao = await verificarLimiteDeEstudos(supabase, { telefone, produtorId: produtor.id });
+  if (!situacao.permitido) return pronta(mensagemDeLimite(situacao));
+
   const desde = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
   const { count } = await supabase
     .from("bot_conversas")
@@ -228,7 +303,7 @@ export async function responderMidia(input: {
     .eq("role", "user")
     .or("conteudo.like.[Imagem enviada]%,conteudo.like.[PDF enviado%")
     .gte("created_at", desde);
-  if ((count ?? 0) > LIMITE_DIARIO_DE_ESTUDOS) return pronta(MENSAGEM_LIMITE);
+  if ((count ?? 0) > LIMITE_DE_LEITURAS_POR_DIA) return pronta(MENSAGEM_LIMITE_DE_LEITURAS);
 
   const leitura = await lerMidia(apiKey, midia, signal);
   if (!leitura.ok) {
@@ -251,6 +326,7 @@ export async function responderMidia(input: {
     origem: "midia",
     leitura: l,
     quantidadeInformada: quantidadeDaLegenda(midia.legenda ?? texto),
+    telefone,
   });
   return pronta(resposta);
 }

@@ -26,8 +26,8 @@ export function Solution() {
               "Preço da sua região comparado com o porto e o frete",
               "Sinal de venda: preço, futuros da B3 e clima juntos",
               "Alertas automáticos de preço e clima, sem precisar perguntar",
+              "Foto ou PDF de proposta: compara com o mercado e ranqueia os compradores",
               "Mais de 70 culturas, de soja e milho a boi e café",
-              "Funciona até com internet fraca no campo",
             ].map((item) => (
               <li key={item} className="flex items-start gap-2 text-sm text-foreground">
                 <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
@@ -119,7 +119,7 @@ function PhoneMockup() {
             transition={{ delay: 0.05, duration: 0.35 }}
             className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-[#d9fdd3] px-3 py-2 text-sm text-[#111b21]"
           >
-            E o boi gordo em MT?
+            📷 Foto da proposta da Cargill
           </motion.div>
 
           <motion.div
@@ -130,10 +130,13 @@ function PhoneMockup() {
             className="mr-auto max-w-[88%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-sm text-[#111b21] shadow-sm"
           >
             <p>
-              Boi gordo em MT hoje: <strong>R$ 328,33/@</strong>, confirmado com o boletim semanal
-              da Imea.
+              📄 Estudo da proposta: Cargill paga <strong>R$ 126,00/saca</strong> em 30 dias (R$
+              124,75 à vista).
             </p>
-            <p className="mt-1 text-xs text-[#667781]">Fonte: Conab + Imea · atualizado às 08:15</p>
+            <p className="mt-1">
+              O mercado hoje está em R$ 137,88: a proposta fica 9% abaixo. Vale negociar.
+            </p>
+            <p className="mt-1 text-xs text-[#667781]">Fonte: BBM · atualizado às 08:15</p>
           </motion.div>
 
           <motion.div

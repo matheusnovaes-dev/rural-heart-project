@@ -32,6 +32,7 @@ export const pricingPlans: PricingPlan[] = [
     price: 39,
     features: [
       "Preço da sua região comparado com o preço no porto, já com o frete",
+      "Estudo de proposta: mande a foto ou o PDF da proposta que recebeu e veja se está acima ou abaixo do mercado (3 por dia)",
       "Sinal de venda: cruza preço, futuros da B3 e clima pra apontar a hora certa",
       "Calculadora de Safra: quanto sua produção vale e sua margem, com preço real do dia",
       "Janela de plantio oficial (ZARC) pra soja, milho, algodão, arroz e feijão: sabe se vale plantar agora ou esperar",
@@ -51,6 +52,7 @@ export const pricingPlans: PricingPlan[] = [
     price: 129,
     features: [
       "Tudo do Bronze, mais:",
+      "Estudo de proposta com ranking dos compradores: 15 por dia, em vez de 3",
       "Alertas de preço e clima sem limite",
       "Leilões de gado: agenda do Brasil inteiro (presencial na sua região e virtual em destaque) e alerta de novos leilões",
       "Até 3 funcionários com acesso, pra dividir o trabalho",

@@ -261,6 +261,8 @@ export type EntradaDoEstudo = {
   taxaMensal: number;
   /** Quantas linhas lidas ficaram de fora (outros produtos além do limite). */
   omitidas?: number | undefined;
+  /** Estudo refeito depois de uma mudança: título próprio (não conta no limite) e o que mudou. */
+  refeito?: { mudancas: string[] } | undefined;
   /** Quando a referência é de outro estado que o do cadastro (o do local descrito no documento). */
   avisoUf?: string | undefined;
   /** Bloco extra (ex: outros produtos de uma tabela), colocado antes do fecho. */
@@ -271,14 +273,18 @@ export type EntradaDoEstudo = {
 export function montarEstudo(e: EntradaDoEstudo): string {
   const { avaliadas, ref } = e;
   const varias = avaliadas.length > 1;
-  const titulo =
-    e.tipoDocumento === "tabela_de_precos" || e.tipoDocumento === "anotacao_de_precos"
+  const titulo = e.refeito
+    ? `🔁 *Estudo refeito de ${e.produto}*`
+    : e.tipoDocumento === "tabela_de_precos" || e.tipoDocumento === "anotacao_de_precos"
       ? `📄 *Estudo das cotações de ${e.produto}*`
       : varias
         ? `📄 *Estudo das propostas de ${e.produto}*`
         : `📄 *Estudo da proposta de ${e.produto}*`;
 
   const blocos: string[] = [titulo];
+  if (e.refeito && e.refeito.mudancas.length > 0) {
+    blocos.push(`*O que mudei*\n${e.refeito.mudancas.map((m) => `• ${m}`).join("\n")}`);
+  }
   if (e.confianca === "baixa") {
     blocos.push("⚠️ A imagem está difícil de ler. Confira os valores abaixo antes de decidir.");
   }

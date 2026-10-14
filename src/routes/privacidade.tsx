@@ -48,7 +48,9 @@ function PrivacidadePage() {
               com o bot no WhatsApp; dados de uso do painel; e dados de pagamento processados
               diretamente pela Asaas (nós não armazenamos número de cartão). Fotos e PDFs de
               propostas ou tabelas de preços que você enviar pelo WhatsApp são lidos na hora para
-              montar o estudo e não ficam guardados por nós: guardamos só o texto da conversa.
+              montar o estudo e não ficam guardados por nós: guardamos só o texto da conversa e um
+              resumo do estudo (comprador, preço e condições) para você poder questionar ou refazer
+              a conta.
             </p>
           </section>
 

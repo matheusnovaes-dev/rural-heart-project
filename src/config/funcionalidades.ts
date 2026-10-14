@@ -52,7 +52,7 @@ export const funcionalidades: Funcionalidade[] = [
     id: "comparar_proposta",
     titulo: "Estudo de proposta (foto, PDF ou texto)",
     descricao:
-      "Mande a foto, o print da conversa ou o PDF de uma proposta ou tabela de preços (ou conte por escrito). O Safralume lê, compara com o preço de mercado, considera o prazo de pagamento, ranqueia os compradores e diz o que perguntar antes de fechar.",
+      "Mande a foto, o print da conversa ou o PDF de uma proposta ou tabela de preços (ou conte por escrito). O Safralume lê, compara com o preço de mercado, considera o prazo de pagamento, ranqueia os compradores e diz o que perguntar antes de fechar. Depois você pode questionar (por que está abaixo, de onde vem o preço) ou mudar um valor (e se a Cargill topar 130, e se for à vista) que ele refaz a conta. Bronze: 3 estudos por dia; Prata e Ouro: 15 por dia.",
     comoPedir:
       "Manda a foto da proposta, ou escreva: A Cargill ofereceu 126 e a Bunge 128 em 30 dias, qual é melhor?",
     onde: "WhatsApp",

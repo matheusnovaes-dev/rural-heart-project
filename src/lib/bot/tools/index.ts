@@ -32,6 +32,11 @@ import { consultarJanelaPlantio } from "@/lib/bot/tools/plantio";
 import { atualizarLocalizacao } from "@/lib/bot/tools/localizacao";
 import { calcularMargemSafra } from "@/lib/bot/tools/calculadora";
 import { compararPropostas } from "@/lib/bot/tools/compararPropostas";
+import {
+  explicarEstudoFerramenta,
+  refazerEstudoFerramenta,
+} from "@/lib/bot/tools/acompanharEstudo";
+import type { EstudoSalvo } from "@/lib/bot/propostas/tipos";
 import { esquecerMemoriaProdutor, salvarMemoriaProdutor } from "@/lib/bot/tools/memoria";
 import { configurarResumoDiario } from "@/lib/bot/tools/resumoDiario";
 import { configurarMensagemProativa } from "@/lib/bot/tools/mensagemProativa";
@@ -42,6 +47,8 @@ export type ToolContext = {
   telefone: string;
   historico: HistoricoLinha[];
   texto: string;
+  /** Estudo de proposta recente desta conversa (ou null), para explicar e refazer a conta. */
+  estudoSalvo?: EstudoSalvo | null;
 };
 
 /** Schema `tools` da OpenAI — descrições e argumentos de cada fonte de dado real disponível pro agente. */
@@ -509,6 +516,72 @@ export const TOOLS = [
   {
     type: "function",
     function: {
+      name: "explicar_estudo",
+      description:
+        "Explica, com os números do estudo de proposta recente, como a conta foi feita: de onde vem a referência de mercado, como entrou o prazo de pagamento, o frete, o ranking, o veredito. Chame quando o produtor questionar ou pedir explicação do estudo (por que está abaixo, como calculou, de onde vem esse preço, tem certeza). O texto sai pronto; nunca explique por conta própria.",
+      parameters: { type: "object", properties: {}, additionalProperties: false },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "refazer_estudo",
+      description:
+        "Refaz o estudo de proposta recente com um valor que o produtor acabou de dizer: preço novo de um comprador, outro prazo (à vista ou em N dias), frete retirado/entregue, quantidade de sacas, custo do dinheiro ao mês, o preço de mercado da região dele, ou uma proposta nova. Preencha SÓ o que ele escreveu agora; o resto é null. O texto sai pronto; nunca refaça a conta por conta própria.",
+      parameters: {
+        type: "object",
+        properties: {
+          comprador: {
+            type: ["string", "null"],
+            description:
+              "Nome do comprador a que a mudança se refere, como ele disse. null se não disse.",
+          },
+          preco: { type: ["number", "null"], description: "Preço novo (R$) desse comprador." },
+          prazo_dias: {
+            type: ["integer", "null"],
+            description: "Novo prazo de pagamento em dias.",
+          },
+          a_vista: { type: ["boolean", "null"], description: "true se ele disse à vista." },
+          frete: {
+            type: ["string", "null"],
+            enum: ["retirado", "entregue", null],
+            description: "retirado na propriedade ou entregue.",
+          },
+          quantidade_sacas: {
+            type: ["number", "null"],
+            description: "Quantidade de sacas, se disse.",
+          },
+          taxa_mensal_pct: {
+            type: ["number", "null"],
+            description: "Quanto o dinheiro dele rende ao mês, em %, se disse.",
+          },
+          referencia_manual: {
+            type: ["number", "null"],
+            description: "Preço de mercado da região dele, em R$, se ele informou.",
+          },
+          nova_proposta: {
+            type: ["boolean", "null"],
+            description: "true se é uma proposta NOVA (de outro comprador) a incluir no estudo.",
+          },
+        },
+        required: [
+          "comprador",
+          "preco",
+          "prazo_dias",
+          "a_vista",
+          "frete",
+          "quantidade_sacas",
+          "taxa_mensal_pct",
+          "referencia_manual",
+          "nova_proposta",
+        ],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "calcular_margem_safra",
       description:
         "Calcula quanto a produção do produtor vale hoje e a margem estimada: sacas × preço real da região, menos o custo de produção que ele informar. SÓ chame depois que ele disser a QUANTIDADE de sacas (nunca estime isso) — custo por saca é opcional, sem ele calcula só o valor bruto, sem margem. Se a cultura não tiver preço na UF pedida, o retorno traz outras_ufs_disponiveis (preço real e recente em outros estados) — nesse caso pergunte qual estado ele quer usar como referência e chame de novo passando uf_referencia com a sigla escolhida.",
@@ -775,6 +848,20 @@ export async function executarTool(
         args as Parameters<typeof atualizarLocalizacao>[1],
         ctx,
       );
+    case "explicar_estudo":
+      return explicarEstudoFerramenta({
+        supabase: ctx.supabase,
+        telefone: ctx.telefone,
+        texto: ctx.texto,
+        estudoSalvo: ctx.estudoSalvo ?? null,
+      });
+    case "refazer_estudo":
+      return refazerEstudoFerramenta(args as Parameters<typeof refazerEstudoFerramenta>[0], {
+        supabase: ctx.supabase,
+        telefone: ctx.telefone,
+        texto: ctx.texto,
+        estudoSalvo: ctx.estudoSalvo ?? null,
+      });
     case "comparar_propostas":
       return compararPropostas(ctx.supabase, args as Parameters<typeof compararPropostas>[1], ctx);
     case "calcular_margem_safra":

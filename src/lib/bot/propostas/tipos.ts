@@ -67,6 +67,8 @@ export type ReferenciaDeMercado = {
   origem: "estado" | "media_das_pracas" | "praca";
   /** Referência montada com outros estados (o do produtor não tem preço recente): serve só como aproximação. */
   aproximada?: boolean;
+  /** Praças (ou estados) que entraram na média, para explicar de onde vem a referência. */
+  pracas?: { regiao: string; preco: number }[];
   /** Faixa dos últimos ~90 dias do mesmo preço; null quando há poucos pontos. */
   faixa90d: { min: number; max: number; pontos: number } | null;
 };
@@ -99,4 +101,24 @@ export type PropostaAvaliada = {
   suspeita: boolean;
   alertas: string[];
   veredito: "acima" | "em_linha" | "um_pouco_abaixo" | "abaixo" | "indefinido";
+};
+
+/** O estudo guardado na conversa: base para explicar a conta e para refazer com outro valor. */
+export type EstudoSalvo = {
+  v: 1;
+  criadoEm: string;
+  origem: "midia" | "texto";
+  tipoDocumento?: TipoDeDocumento | undefined;
+  confianca?: "alta" | "media" | "baixa" | undefined;
+  produto: string;
+  uf: string;
+  avisoUf?: string | undefined;
+  ref: ReferenciaDeMercado;
+  propostas: PropostaLida[];
+  taxaMensal: number;
+  quantidadeInformada: number | null;
+  /** Referência que o próprio produtor informou, no lugar da de mercado. */
+  referenciaManual?: number | undefined;
+  /** Bloco de outros produtos de uma tabela, mantido ao refazer a conta. */
+  extras?: string | undefined;
 };

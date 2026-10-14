@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { montarRespostaDeEstudo } from "@/lib/bot/estudoDeProposta";
+import { mensagemDeLimite, verificarLimiteDeEstudos } from "@/lib/bot/propostas/limite";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
 import type { PropostaLida, UnidadeDoPreco } from "@/lib/bot/propostas/tipos";
 import { trechoDoComprador } from "@/lib/bot/propostas/gatilho";
@@ -37,8 +38,17 @@ function numeroFoiDito(n: number, texto: string, historico: HistoricoLinha[]): b
 export async function compararPropostas(
   supabase: SupabaseClient,
   args: { produto: string; uf: string; propostas: PropostaDoModelo[] },
-  ctx: { historico: HistoricoLinha[]; texto: string; produtor: ProdutorContexto },
+  ctx: { historico: HistoricoLinha[]; texto: string; produtor: ProdutorContexto; telefone: string },
 ) {
+  // A trava por plano vale também para o estudo contado por texto.
+  const situacao = await verificarLimiteDeEstudos(supabase, {
+    telefone: ctx.telefone,
+    produtorId: ctx.produtor.id,
+  });
+  if (!situacao.permitido) {
+    return { encontrado: true as const, resposta_pronta: mensagemDeLimite(situacao) };
+  }
+
   // O modelo às vezes escreve a palavra "null" como texto em vez de null de verdade.
   const limpa = (v: unknown) =>
     typeof v === "string" && ["null", "none", ""].includes(v.trim().toLowerCase()) ? null : v;
@@ -163,6 +173,7 @@ export async function compararPropostas(
     },
     propostas,
     origem: "texto",
+    telefone: ctx.telefone,
   });
   return { encontrado: true as const, resposta_pronta: resposta };
 }

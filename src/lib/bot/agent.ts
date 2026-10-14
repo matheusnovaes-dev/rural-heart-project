@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { culturaMencionada } from "@/config/culturas";
+import { culturaMencionada, normalizarCultura } from "@/config/culturas";
 import {
   buildContextoInstitucional,
   buildContextoFuncionalidades,
@@ -54,6 +54,16 @@ import {
 } from "@/lib/bot/guardas";
 import { respostaDeProduto } from "@/lib/bot/respostasDeProduto";
 import { responderMidia } from "@/lib/bot/estudoDeProposta";
+import {
+  contextoDoEstudo,
+  ehCenarioSemNumero,
+  ehMudancaNoEstudo,
+  ehPedidoDeExplicacao,
+  explicarEstudo,
+  PEDIR_UM_NUMERO,
+} from "@/lib/bot/propostas/acompanhamento";
+import { separarEstudoDoHistorico } from "@/lib/bot/propostas/salvo";
+import { SEM_ESTUDO_RECENTE } from "@/lib/bot/tools/acompanharEstudo";
 import {
   ehPropostaDePreco,
   PERGUNTA_DO_VALOR_DA_PROPOSTA,
@@ -1123,7 +1133,10 @@ export async function runAgent(input: {
   /** Foto ou PDF que o n8n baixou do WhatsApp: vira estudo de proposta, sem passar pelo modelo conversacional. */
   midia?: MidiaRecebida | undefined;
 }): Promise<RespostaAgente> {
-  const { telefone, texto, historico, produtor, supabase, apiKey, signal } = input;
+  const { telefone, texto, produtor, supabase, apiKey, signal } = input;
+  // O estudo de proposta guardado na conversa sai do histórico antes de tudo: o resto do
+  // agente (e o modelo) só enxerga a conversa de verdade; o estudo vira contexto à parte.
+  const { historico, estudo: estudoRecente } = separarEstudoDoHistorico(input.historico);
 
   // Foto/PDF vem ANTES de qualquer regra de texto: a legenda ("segue a foto da
   // proposta") não pode cair nas respostas prontas de "você lê foto?". A leitura
@@ -1244,6 +1257,49 @@ export async function runAgent(input: {
     };
   }
 
+  // Depois de um estudo, o produtor questiona e muda valores: explicar a conta é por código
+  // (sem modelo) e mudar valor passa pela ferramenta que refaz o estudo guardado.
+  if (estudoRecente && ehPedidoDeExplicacao(texto, estudoRecente)) {
+    return {
+      resposta: explicarEstudo(estudoRecente, texto),
+      precisa_humano: false,
+      cadastro_criado: false,
+      convite_dispensado: true,
+    };
+  }
+  // O estudo já saiu da memória (passou de 6 horas ou é de antes do recurso): diz isso com clareza
+  // em vez de deixar o modelo improvisar uma conta em cima de um texto que não vê por inteiro.
+  if (!estudoRecente) {
+    const ultimasDoBot = [...historico]
+      .filter((h) => h.role === "assistant")
+      .sort((a, b) => b.ordem - a.ordem)
+      .slice(0, 3);
+    const estudoVisivel = ultimasDoBot.some((h) =>
+      /^(📄 \*Estudo|🔁 \*Estudo|🔎 \*Como calculei)/.test(h.conteudo),
+    );
+    if (estudoVisivel && (ehPedidoDeExplicacao(texto) || ehMudancaNoEstudo(texto))) {
+      return {
+        resposta: SEM_ESTUDO_RECENTE,
+        precisa_humano: false,
+        cadastro_criado: false,
+        convite_dispensado: true,
+      };
+    }
+  }
+  if (estudoRecente && ehCenarioSemNumero(texto)) {
+    return {
+      resposta: PEDIR_UM_NUMERO,
+      precisa_humano: false,
+      cadastro_criado: false,
+      convite_dispensado: true,
+    };
+  }
+  const outraCultura = culturaMencionada(texto);
+  const forcarRefazerEstudo =
+    !!estudoRecente &&
+    ehMudancaNoEstudo(texto) &&
+    !(outraCultura && outraCultura !== normalizarCultura(estudoRecente.produto));
+
   // Proposta de preço contada em texto: decidida por código (ver propostas/gatilho.ts).
   // Sem valor, pergunta o valor sem passar pelo modelo (ele chegava a elogiar a
   // proposta sem saber o preço); com valor, a ferramenta de estudo é obrigatória.
@@ -1253,7 +1309,7 @@ export async function runAgent(input: {
   const botPerguntouOValor =
     !!ultimaDoBot && ultimaDoBot.conteudo.includes("preciso do valor que o comprador ofereceu");
   const falouDeProposta = ehPropostaDePreco(texto);
-  if (falouDeProposta && !temPrecoDeProposta(texto)) {
+  if (falouDeProposta && !temPrecoDeProposta(texto) && !estudoRecente) {
     return {
       resposta: PERGUNTA_DO_VALOR_DA_PROPOSTA,
       precisa_humano: false,
@@ -1266,6 +1322,7 @@ export async function runAgent(input: {
     (botPerguntouOValor && temPrecoDeProposta(texto));
 
   const notaNegativaDupla = notaDeNegativaDupla(texto);
+  const contextoDoEstudoRecente = estudoRecente ? contextoDoEstudo(estudoRecente) : null;
   const notaRecusaCadastro = notaDeRecusaCadastro(texto);
   const notaAflicaoPessoal = notaDeAflicaoPessoal(texto);
   const notaAberturaDeAnuncio = notaDeAberturaDeAnuncio(texto);
@@ -1293,6 +1350,9 @@ export async function runAgent(input: {
     { role: "system", content: buildContextoPlanos() },
     { role: "system", content: buildContextoInstitucional() },
     { role: "system", content: buildContextoFuncionalidades() },
+    ...(contextoDoEstudoRecente
+      ? [{ role: "system" as const, content: contextoDoEstudoRecente }]
+      : []),
     ...buildHistoryMessages(historico),
     ...(notaNegativaDupla ? [notaNegativaDupla] : []),
     ...(notaRecusaCadastro ? [notaRecusaCadastro] : []),
@@ -1304,7 +1364,7 @@ export async function runAgent(input: {
     { role: "user", content: texto },
   ];
 
-  const ctx = { supabase, produtor, telefone, historico, texto };
+  const ctx = { supabase, produtor, telefone, historico, texto, estudoSalvo: estudoRecente };
   // Sinaliza pro n8n que a conta acabou de ser criada NESTA mensagem, pra ele
   // não emendar o convite de cadastro (que só faz sentido pra quem ainda não
   // tem conta) logo depois de "seu cadastro foi criado com sucesso" — sem
@@ -1559,7 +1619,14 @@ export async function runAgent(input: {
       const json = await chamarOpenAI(apiKey, messages, {
         comTools: true,
         signal,
-        forcarTool: rodada === 0 && forcarEstudoDeProposta ? "comparar_propostas" : undefined,
+        forcarTool:
+          rodada === 0
+            ? forcarRefazerEstudo
+              ? "refazer_estudo"
+              : forcarEstudoDeProposta
+                ? "comparar_propostas"
+                : undefined
+            : undefined,
       });
       const escolha = json.choices?.[0];
       const mensagem = escolha?.message;

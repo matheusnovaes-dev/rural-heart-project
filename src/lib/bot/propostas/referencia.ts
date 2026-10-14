@@ -129,6 +129,7 @@ export async function obterReferencia(
             origem: "media_das_pracas",
             faixa90d: null,
             aproximada: true,
+            pracas: mesmas.map((o) => ({ regiao: o.uf, preco: o.preco })),
           },
         };
       }
@@ -152,6 +153,7 @@ export async function obterReferencia(
   let min: number | null = null;
   let max: number | null = null;
   let praca: string | null = null;
+  let pracasUsadas: { regiao: string; preco: number }[] | undefined;
 
   if (r.origem_preco === "regional" && base.length > 1) {
     praca = pracaDoLocal(
@@ -168,6 +170,7 @@ export async function obterReferencia(
       preco = r.preco_medio_regioes ?? valores.reduce((a, b) => a + b, 0) / valores.length;
       min = Math.min(...valores);
       max = Math.max(...valores);
+      pracasUsadas = base.map((l) => ({ regiao: l.regiao, preco: l.preco }));
       rotulo = `média das praças de ${args.uf}`;
       origem = "media_das_pracas";
     }
@@ -202,6 +205,7 @@ export async function obterReferencia(
       max,
       origem,
       faixa90d,
+      ...(pracasUsadas ? { pracas: pracasUsadas } : {}),
     },
   };
 }
