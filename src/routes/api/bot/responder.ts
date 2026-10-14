@@ -9,6 +9,7 @@ import {
   trocarJargaoUf,
 } from "@/lib/bot/guardas";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
+import type { MidiaRecebida } from "@/lib/bot/propostas/tipos";
 import type { ProdutorContexto } from "@/lib/bot/types";
 import { verificarCobranca } from "@/lib/bot/cobranca";
 import { supabaseServiceRole } from "@/lib/supabase.server";
@@ -18,6 +19,8 @@ type RequestBody = {
   texto: string;
   produtor: ProdutorContexto;
   historico: HistoricoLinha[];
+  /** Foto ou PDF baixado pelo n8n (base64). */
+  midia?: MidiaRecebida;
 };
 
 const TIMEOUT_MS = 25_000;
@@ -108,6 +111,7 @@ export const Route = createFileRoute("/api/bot/responder")({
             texto: body.texto,
             historico: body.historico ?? [],
             produtor: body.produtor,
+            midia: body.midia,
             supabase,
             apiKey: openaiApiKey,
             signal: controller.signal,

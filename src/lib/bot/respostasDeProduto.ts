@@ -82,7 +82,7 @@ export function respostaCatalogo(): string {
     item("sinal_venda", "Saber se é hora de vender"),
     item("alertas", "Aviso quando o preço ou o clima mudar"),
     item("resumo_diario", "Resumo diário no horário que você escolher"),
-    item("comparar_proposta", "Comparar uma proposta de compra"),
+    item("comparar_proposta", "Estudo de proposta: foto, PDF ou texto, com ranking"),
     item("calculadora", "Quanto vale a sua safra"),
     "• Também tem janela de plantio, previsão do tempo, ferrugem da soja, dólar, diesel e futuros.",
     "",
@@ -118,14 +118,14 @@ export function respostaDeProduto(texto: string): RespostaDeProduto | null {
   if (ehPerguntaDeFotoOuPdf(texto)) {
     return {
       resposta:
-        "Por enquanto só entendo texto e áudio: não leio foto nem PDF, e também não faço diagnóstico de praga ou doença por imagem. Se você me contar o que está vendo na lavoura, eu consulto o que dá, como os focos de ferrugem confirmados na sua região (soja).",
+        "Leio foto e PDF de proposta de compra ou de tabela de preços: manda a foto, o print da conversa ou o PDF que eu comparo com o preço de mercado, ranqueio os compradores e te digo o que perguntar antes de fechar. Diagnóstico de praga ou doença por foto eu ainda não faço. Se você me contar o que está vendo na lavoura, eu consulto o que dá, como os focos de ferrugem confirmados na sua região (soja).",
       precisa_humano: false,
     };
   }
   if (ehPerguntaDeAudio(texto)) {
     return {
       resposta:
-        "Pode mandar áudio sim: eu transcrevo e respondo normalmente. Foto e PDF eu ainda não leio, só texto e áudio.",
+        "Pode mandar áudio sim: eu transcrevo e respondo normalmente. Também leio foto e PDF de proposta ou de tabela de preços.",
       precisa_humano: false,
     };
   }

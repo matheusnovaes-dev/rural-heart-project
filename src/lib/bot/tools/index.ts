@@ -31,7 +31,7 @@ import { consultarAssinatura } from "@/lib/bot/tools/assinatura";
 import { consultarJanelaPlantio } from "@/lib/bot/tools/plantio";
 import { atualizarLocalizacao } from "@/lib/bot/tools/localizacao";
 import { calcularMargemSafra } from "@/lib/bot/tools/calculadora";
-import { compararProposta } from "@/lib/bot/tools/compararProposta";
+import { compararPropostas } from "@/lib/bot/tools/compararPropostas";
 import { esquecerMemoriaProdutor, salvarMemoriaProdutor } from "@/lib/bot/tools/memoria";
 import { configurarResumoDiario } from "@/lib/bot/tools/resumoDiario";
 import { configurarMensagemProativa } from "@/lib/bot/tools/mensagemProativa";
@@ -433,23 +433,75 @@ export const TOOLS = [
   {
     type: "function",
     function: {
-      name: "comparar_proposta",
+      name: "comparar_propostas",
       description:
-        "Compara uma proposta/oferta de preço que o produtor RECEBEU de um comprador (trading, cooperativa, armazém) com a referência de mercado, e diz se está sendo bem pago. SÓ chame quando o produtor descrever uma proposta real em palavras (ex: 'a Cargill ofereceu 126 na soja', 'me propuseram 62 no milho') — você não vê foto nem PDF, só o que ele escreveu. Nunca invente o nome do comprador nem o preço se ele não disse.",
+        "Estudo de proposta: compara UMA ou VÁRIAS propostas/ofertas de preço que o produtor RECEBEU de compradores (trading, cooperativa, armazém) com o preço de mercado e, com mais de uma, ranqueia da melhor para a pior (considerando prazo de pagamento). SÓ chame quando o produtor descrever propostas reais em palavras (ex: 'a Cargill ofereceu 126 na soja, a Bunge 128 pagando em 30 dias'). Passe TODAS as propostas de uma vez, numa única chamada. Preencha só o que ele escreveu; o que não disse é null. Foto e PDF de proposta NÃO passam por aqui: o sistema lê sozinho. Nunca invente nome de comprador, preço, prazo nem quantidade.",
       parameters: {
         type: "object",
         properties: {
-          produto: { type: "string" },
-          uf: { type: "string" },
-          preco_oferecido: { type: "number", description: "Preço em R$ que o comprador ofereceu." },
-          comprador: { type: ["string", "null"], description: "Nome do comprador, se ele disse." },
-          sacas: {
-            type: ["number", "null"],
-            description:
-              "Quantidade de sacas, só se o produtor disser — pra calcular o total em R$.",
+          produto: {
+            type: "string",
+            description: "Mesma palavra-chave de buscar_preco (soja, milho, boi...).",
+          },
+          uf: {
+            type: "string",
+            description: "Sigla de 2 letras do estado de referência (o do produtor).",
+          },
+          propostas: {
+            type: "array",
+            minItems: 1,
+            maxItems: 8,
+            items: {
+              type: "object",
+              properties: {
+                comprador: {
+                  type: ["string", "null"],
+                  description: "Nome do comprador, se ele disse.",
+                },
+                preco: {
+                  type: "number",
+                  description: "Preço em R$ que o comprador ofereceu, como o produtor disse.",
+                },
+                unidade: {
+                  type: ["string", "null"],
+                  enum: ["saca", "arroba", "tonelada", "kg", null],
+                  description:
+                    "Unidade do preço, SÓ se ele disse (saca, arroba, tonelada, kg). Se não disse, null.",
+                },
+                prazo_dias: {
+                  type: ["integer", "null"],
+                  description:
+                    "Prazo de pagamento em dias (à vista = 0), SÓ se ele disse. Senão null.",
+                },
+                frete: {
+                  type: ["string", "null"],
+                  enum: ["retirado", "entregue", null],
+                  description:
+                    "'retirado' se o comprador retira na propriedade (FOB); 'entregue' se o produtor entrega no destino (CIF); null se não disse.",
+                },
+                quantidade_sacas: {
+                  type: ["number", "null"],
+                  description: "Quantidade de sacas, SÓ se ele disse.",
+                },
+                validade: {
+                  type: ["string", "null"],
+                  description: "Validade da proposta, SÓ se ele disse.",
+                },
+              },
+              required: [
+                "comprador",
+                "preco",
+                "unidade",
+                "prazo_dias",
+                "frete",
+                "quantidade_sacas",
+                "validade",
+              ],
+              additionalProperties: false,
+            },
           },
         },
-        required: ["produto", "uf", "preco_oferecido", "comprador", "sacas"],
+        required: ["produto", "uf", "propostas"],
         additionalProperties: false,
       },
     },
@@ -723,8 +775,8 @@ export async function executarTool(
         args as Parameters<typeof atualizarLocalizacao>[1],
         ctx,
       );
-    case "comparar_proposta":
-      return compararProposta(ctx.supabase, args as Parameters<typeof compararProposta>[1], ctx);
+    case "comparar_propostas":
+      return compararPropostas(ctx.supabase, args as Parameters<typeof compararPropostas>[1], ctx);
     case "calcular_margem_safra":
       return calcularMargemSafra(ctx.supabase, args as Parameters<typeof calcularMargemSafra>[1], {
         lat: ctx.produtor.lat,

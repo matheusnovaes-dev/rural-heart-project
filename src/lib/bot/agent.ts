@@ -53,6 +53,13 @@ import {
   type FreteCitado,
 } from "@/lib/bot/guardas";
 import { respostaDeProduto } from "@/lib/bot/respostasDeProduto";
+import { responderMidia } from "@/lib/bot/estudoDeProposta";
+import {
+  ehPropostaDePreco,
+  PERGUNTA_DO_VALOR_DA_PROPOSTA,
+  temPrecoDeProposta,
+} from "@/lib/bot/propostas/gatilho";
+import type { MidiaRecebida } from "@/lib/bot/propostas/tipos";
 
 const MODEL = "gpt-4o-mini";
 const MAX_TOOL_ROUNDS = 6;
@@ -993,7 +1000,7 @@ const MAX_TENTATIVAS_OPENAI = 3;
 async function chamarOpenAI(
   apiKey: string,
   messages: OpenAIMessage[],
-  opts: { comTools: boolean; signal: AbortSignal },
+  opts: { comTools: boolean; signal: AbortSignal; forcarTool?: string | undefined },
 ) {
   const body: Record<string, unknown> = {
     model: MODEL,
@@ -1003,8 +1010,10 @@ async function chamarOpenAI(
   };
   if (opts.comTools) {
     body["tools"] = TOOLS;
-    body["tool_choice"] = "auto";
-    body["parallel_tool_calls"] = true;
+    body["tool_choice"] = opts.forcarTool
+      ? { type: "function", function: { name: opts.forcarTool } }
+      : "auto";
+    body["parallel_tool_calls"] = !opts.forcarTool;
   }
 
   // Achado real testando o retry antes de publicar: o throw pro status não
@@ -1111,8 +1120,25 @@ export async function runAgent(input: {
   supabase: SupabaseClient;
   apiKey: string;
   signal: AbortSignal;
+  /** Foto ou PDF que o n8n baixou do WhatsApp: vira estudo de proposta, sem passar pelo modelo conversacional. */
+  midia?: MidiaRecebida | undefined;
 }): Promise<RespostaAgente> {
   const { telefone, texto, historico, produtor, supabase, apiKey, signal } = input;
+
+  // Foto/PDF vem ANTES de qualquer regra de texto: a legenda ("segue a foto da
+  // proposta") não pode cair nas respostas prontas de "você lê foto?". A leitura
+  // e o estudo são feitos por código (ver estudoDeProposta.ts).
+  if (input.midia) {
+    return responderMidia({
+      telefone,
+      texto,
+      produtor,
+      midia: input.midia,
+      supabase,
+      apiKey,
+      signal,
+    });
+  }
 
   // Botão "Ver as novidades" do comunicado: resposta pronta por código, igual pra
   // todo mundo e sem gastar chamada ao modelo.
@@ -1217,6 +1243,27 @@ export async function runAgent(input: {
       convite_dispensado: true,
     };
   }
+
+  // Proposta de preço contada em texto: decidida por código (ver propostas/gatilho.ts).
+  // Sem valor, pergunta o valor sem passar pelo modelo (ele chegava a elogiar a
+  // proposta sem saber o preço); com valor, a ferramenta de estudo é obrigatória.
+  const ultimaDoBot = [...historico]
+    .filter((h) => h.role === "assistant")
+    .sort((a, b) => b.ordem - a.ordem)[0];
+  const botPerguntouOValor =
+    !!ultimaDoBot && ultimaDoBot.conteudo.includes("preciso do valor que o comprador ofereceu");
+  const falouDeProposta = ehPropostaDePreco(texto);
+  if (falouDeProposta && !temPrecoDeProposta(texto)) {
+    return {
+      resposta: PERGUNTA_DO_VALOR_DA_PROPOSTA,
+      precisa_humano: false,
+      cadastro_criado: false,
+      convite_dispensado: true,
+    };
+  }
+  const forcarEstudoDeProposta =
+    (falouDeProposta && temPrecoDeProposta(texto)) ||
+    (botPerguntouOValor && temPrecoDeProposta(texto));
 
   const notaNegativaDupla = notaDeNegativaDupla(texto);
   const notaRecusaCadastro = notaDeRecusaCadastro(texto);
@@ -1509,11 +1556,16 @@ export async function runAgent(input: {
 
   try {
     for (let rodada = 0; rodada < MAX_TOOL_ROUNDS; rodada++) {
-      const json = await chamarOpenAI(apiKey, messages, { comTools: true, signal });
+      const json = await chamarOpenAI(apiKey, messages, {
+        comTools: true,
+        signal,
+        forcarTool: rodada === 0 && forcarEstudoDeProposta ? "comparar_propostas" : undefined,
+      });
       const escolha = json.choices?.[0];
       const mensagem = escolha?.message;
 
-      if (escolha?.finish_reason === "tool_calls" && mensagem?.tool_calls?.length) {
+      // Com tool_choice forçado a API devolve finish_reason "stop" mesmo com a chamada; vale a presença das chamadas.
+      if (mensagem?.tool_calls?.length) {
         messages.push({
           role: "assistant",
           content: mensagem.content ?? null,
@@ -1546,6 +1598,26 @@ export async function runAgent(input: {
 
         for (const r of resultados) {
           messages.push({ role: "tool", tool_call_id: r.tool_call_id, content: r.content });
+        }
+        // Estudo de proposta: o texto sai pronto da ferramenta (conta feita por
+        // código) e é enviado como está, sem o modelo reescrever nenhum número.
+        for (const r of resultados) {
+          let pronta: string | null = null;
+          try {
+            const o = JSON.parse(r.content) as { encontrado?: boolean; resposta_pronta?: unknown };
+            if (o.encontrado === true && typeof o.resposta_pronta === "string")
+              pronta = o.resposta_pronta;
+          } catch {
+            pronta = null;
+          }
+          if (pronta) {
+            return {
+              resposta: pronta,
+              precisa_humano: false,
+              cadastro_criado: cadastroCriado,
+              convite_dispensado: true,
+            };
+          }
         }
         // Achado real testando ao vivo (bateria adversarial 2026-10-12): ao
         // receber "precisa_confirmar_primeiro" (alertas, cadastro, resumo

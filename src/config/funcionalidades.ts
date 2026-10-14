@@ -50,13 +50,14 @@ export const funcionalidades: Funcionalidade[] = [
   },
   {
     id: "comparar_proposta",
-    titulo: "Comparar proposta de compra",
+    titulo: "Estudo de proposta (foto, PDF ou texto)",
     descricao:
-      "Você conta a proposta que recebeu (comprador e preço) e o Safralume compara com a referência de mercado e diz se está bem pago. Funciona com o que você escrever, não lê foto nem PDF.",
-    comoPedir: "A Cargill ofereceu 126 na soja, está bom?",
+      "Mande a foto, o print da conversa ou o PDF de uma proposta ou tabela de preços (ou conte por escrito). O Safralume lê, compara com o preço de mercado, considera o prazo de pagamento, ranqueia os compradores e diz o que perguntar antes de fechar.",
+    comoPedir:
+      "Manda a foto da proposta, ou escreva: A Cargill ofereceu 126 e a Bunge 128 em 30 dias, qual é melhor?",
     onde: "WhatsApp",
-    novidadeDesde: "2026-10-12",
-    destaque: 3,
+    novidadeDesde: "2026-10-14",
+    destaque: 0,
   },
   {
     id: "alerta_cambio",
@@ -207,7 +208,7 @@ export const funcionalidades: Funcionalidade[] = [
 
 /** O que o Safralume NÃO faz hoje (para o bot dizer não com honestidade, sem inventar). */
 export const naoFazHoje: string[] = [
-  "não lê foto nem PDF, só o que você escreve ou fala em áudio",
+  "só lê foto e PDF de proposta de compra ou tabela de preços; não lê outras imagens nem vídeo",
   "não faz diagnóstico de praga ou doença por imagem, nem alerta automático de praga",
   "não intermedeia compra ou venda e não fecha negócio por você",
   "não dá recomendação de investimento: mostra cenários de mercado com dado público",

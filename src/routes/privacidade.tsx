@@ -46,7 +46,9 @@ function PrivacidadePage() {
               Nome, número de WhatsApp, e-mail, CPF ou CNPJ, cultura principal e estado (UF)
               informados no cadastro ou no formulário de contato; histórico de mensagens trocadas
               com o bot no WhatsApp; dados de uso do painel; e dados de pagamento processados
-              diretamente pela Asaas (nós não armazenamos número de cartão).
+              diretamente pela Asaas (nós não armazenamos número de cartão). Fotos e PDFs de
+              propostas ou tabelas de preços que você enviar pelo WhatsApp são lidos na hora para
+              montar o estudo e não ficam guardados por nós: guardamos só o texto da conversa.
             </p>
           </section>
 
@@ -63,8 +65,10 @@ function PrivacidadePage() {
             <h2 className="font-display text-lg font-semibold">4. Com quem compartilhamos</h2>
             <p className="mt-2 text-muted-foreground">
               Usamos a Meta (WhatsApp Business) para entregar mensagens, a Asaas para processar
-              pagamentos e o Supabase para armazenar os dados com segurança. Cada um desses
-              parceiros processa apenas o necessário para prestar seu serviço.
+              pagamentos, o Supabase para armazenar os dados com segurança e a OpenAI (inteligência
+              artificial) para ler o texto, o áudio e os arquivos que você manda ao bot e montar as
+              respostas. Cada um desses parceiros processa apenas o necessário para prestar seu
+              serviço.
             </p>
           </section>
 
