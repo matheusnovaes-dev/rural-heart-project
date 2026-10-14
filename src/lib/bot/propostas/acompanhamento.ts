@@ -1,4 +1,9 @@
-import { avaliarPropostas, ehComparavel, ranquear } from "@/lib/bot/propostas/avaliar";
+import {
+  avaliarPropostas,
+  converterPreco,
+  ehComparavel,
+  ranquear,
+} from "@/lib/bot/propostas/avaliar";
 import { numerosDePreco } from "@/lib/bot/propostas/gatilho";
 import { nomeBonito } from "@/lib/bot/propostas/texto";
 import type {
@@ -630,9 +635,28 @@ export function aplicarAlteracao(
     const p = novo.propostas[alvo]!;
     const nome = rotuloComprador(p, alvo);
     if (preco != null) {
-      mudancas.push(
-        `${nome}: preço de ${p.preco != null ? brl(p.preco) : "(sem preço)"} para ${brl(preco)}.`,
-      );
+      const unRef = ref.unidade === "saca" ? "saca" : ref.unidade;
+      const antes =
+        p.preco != null && p.preco > 0
+          ? converterPreco(p.preco, p.unidade_do_preco, ref).valor
+          : null;
+      if (antes != null && Math.abs(antes - preco) < 0.005) {
+        const original =
+          p.unidade_do_preco !== unRef && p.unidade_do_preco !== "nao_informada"
+            ? `${brl(p.preco!)} por ${p.unidade_do_preco} já equivale a `
+            : "";
+        mudancas.push(
+          `${nome}: esse já era o preço da proposta (${original}${brl(preco)} por ${unRef}), então a conta não muda.`,
+        );
+      } else {
+        const antesTxt =
+          p.preco == null
+            ? "(sem preço)"
+            : p.unidade_do_preco !== unRef && p.unidade_do_preco !== "nao_informada"
+              ? `${brl(p.preco)} por ${p.unidade_do_preco}${antes != null ? ` (${brl(antes)} por ${unRef})` : ""}`
+              : brl(p.preco);
+        mudancas.push(`${nome}: preço de ${antesTxt} para ${brl(preco)} por ${unRef}.`);
+      }
       p.preco = preco;
       p.unidade_do_preco = ref.unidade === "saca" ? "saca" : ref.unidade;
     }
