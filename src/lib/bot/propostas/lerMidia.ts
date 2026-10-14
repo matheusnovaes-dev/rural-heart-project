@@ -14,6 +14,7 @@ const SCHEMA = {
       "confianca",
       "motivo",
       "data_documento",
+      "uf_do_documento",
       "propostas",
       "observacoes_gerais",
     ],
@@ -32,6 +33,7 @@ const SCHEMA = {
       confianca: { type: "string", enum: ["alta", "media", "baixa"] },
       motivo: { type: ["string", "null"] },
       data_documento: { type: ["string", "null"] },
+      uf_do_documento: { type: ["string", "null"] },
       observacoes_gerais: { type: ["string", "null"] },
       propostas: {
         type: "array",
@@ -85,6 +87,9 @@ Regras:
 - "à vista" = prazo_pagamento_dias 0. "30d", "30 dias", "pagto 30" = 30. Sem informação = null.
 - frete: "fob_retirado" SÓ quando o comprador retira na propriedade/fazenda/porteira do produtor (FOB origem); "cif_entregue" quando o produtor entrega no destino do comprador (armazém, cooperativa, indústria, porto, "entregue", "CIF", "posto"); senão "nao_informado". Em tabela de cooperativa, "retirado na coop" ou "recebido no armazém" é preço entregue (cif_entregue); se a tabela não diz nada sobre frete, "nao_informado".
 - Tabela com várias linhas: uma proposta por linha de preço; comprador = quem emite a tabela (ou o nome da linha, se cada linha for um comprador).
+- data_documento: a data impressa no documento (da pesquisa, da proposta, da conversa), do jeito que está escrita ("13/07/2020"). Não confunda com a validade. Sem data escrita, null.
+- uf_do_documento: a sigla do estado (MT, RS...) a que os preços se referem, SÓ se o documento diz: local de entrega/retirada com estado, ou título da tabela ("no Rio Grande do Sul" = RS). Não deduza pelo nome da empresa. Sem estado escrito, null.
+- produto: o nome exato impresso ("Farelo de soja", "Milho", "Suíno vivo"). Derivado é outro produto: farelo, óleo, casca ou torta de soja NÃO são "soja".
 - trecho_lido: copie curto o trecho exato de onde tirou aquela proposta.
 - Se a imagem não tem relação com compra e venda de produto agrícola, tipo_documento "outro" e propostas vazio. Se estiver ilegível, legivel false.
 - confianca: "alta" só se todos os números estão nítidos; "media" se algum está difícil; "baixa" se houver dúvida em algum preço.
@@ -152,6 +157,27 @@ async function chamar(
   }
 }
 
+const VAZIO_RE = /^\s*(null|undefined|nao[_ ]informad[oa]|não[_ ]informad[oa]|n\/?d|n\/a|-+|)\s*$/i;
+const limpo = (v: string | null | undefined): string | null =>
+  v == null || VAZIO_RE.test(v) ? null : v.trim();
+
+/** O modelo às vezes escreve "null" ou "nao_informado" como texto: vira null de verdade. */
+export function limparLeitura(l: LeituraDeMidia): LeituraDeMidia {
+  return {
+    ...l,
+    data_documento: limpo(l.data_documento),
+    uf_do_documento: limpo(l.uf_do_documento),
+    propostas: l.propostas.map((p) => ({
+      ...p,
+      comprador: limpo(p.comprador),
+      produto: limpo(p.produto),
+      local_entrega: limpo(p.local_entrega),
+      pagamento_texto: limpo(p.pagamento_texto),
+      validade: limpo(p.validade),
+    })),
+  };
+}
+
 /**
  * Lê uma foto ou PDF e devolve as propostas/cotações escritas nele. O GPT-4o
  * lê melhor que o mini sem inventar (testado: o mini "adivinhava" unidade e
@@ -168,7 +194,8 @@ export async function lerMidia(
   for (const modelo of ["gpt-4o", "gpt-4o-mini"]) {
     try {
       const leitura = await chamar(apiKey, modelo, midia, signal);
-      if (leitura && Array.isArray(leitura.propostas)) return { ok: true, leitura };
+      if (leitura && Array.isArray(leitura.propostas))
+        return { ok: true, leitura: limparLeitura(leitura) };
     } catch (err) {
       if (signal.aborted) break;
       console.error("Erro lendo mídia", modelo, err);

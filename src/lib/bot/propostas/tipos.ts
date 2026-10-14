@@ -39,6 +39,8 @@ export type LeituraDeMidia = {
   confianca: "alta" | "media" | "baixa";
   motivo: string | null;
   data_documento: string | null;
+  /** Estado a que os preços se referem, só quando está escrito no documento (título, local de entrega). */
+  uf_do_documento?: string | null;
   propostas: PropostaLida[];
   observacoes_gerais: string | null;
 };
@@ -57,7 +59,7 @@ export type ReferenciaDeMercado = {
   preco: number;
   /** Peso da saca em kg (60, 50...); null quando o produto é vendido por arroba ou litro. */
   kgPorSaca: number | null;
-  unidade: "saca" | "arroba" | "litro";
+  unidade: "saca" | "arroba" | "litro" | "kg";
   data: string;
   fonte: string;
   /** Como a referência foi montada, em português ("média das praças de MT"). */

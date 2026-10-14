@@ -2,7 +2,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { culturaMencionada, normalizarCultura } from "@/config/culturas";
 import { ufs } from "@/config/ufs";
-import { avaliarPropostas, TAXA_MENSAL_PADRAO } from "@/lib/bot/propostas/avaliar";
+import {
+  avaliarPropostas,
+  idadeDoDocumentoEmDias,
+  lerDataDoDocumento,
+  TAXA_MENSAL_PADRAO,
+} from "@/lib/bot/propostas/avaliar";
 import { lerMidia } from "@/lib/bot/propostas/lerMidia";
 import { obterReferencia } from "@/lib/bot/propostas/referencia";
 import { mensagemDeLimite, verificarLimiteDeEstudos } from "@/lib/bot/propostas/limite";
@@ -65,6 +70,78 @@ export function quantidadeDaLegenda(texto: string | null | undefined): number | 
   return n > 0 ? Math.round(n) : null;
 }
 
+function ufValida(uf: string | null | undefined): string | null {
+  const u = uf?.trim().toUpperCase();
+  return u && ufs.some((x) => x.value === u) ? u : null;
+}
+
+const semAcento = (s: string) =>
+  s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+/**
+ * Derivado ou insumo não é a cultura: "farelo de soja", "óleo de soja", "casca de soja" têm
+ * outro preço (por tonelada, da indústria) e nunca devem ser comparados com a saca do grão.
+ */
+const DERIVADO_RE =
+  /\b(farelo|oleo|torta|casca|bagaco|silagem|racao|semente|sementes|muda|mudas|adubo|fertilizante|calcario|ureia|herbicida|fungicida|inseticida|defensivo|sal mineral)\b/;
+export const ehProdutoDerivado = (produto: string | null | undefined): boolean =>
+  !!produto && DERIVADO_RE.test(semAcento(produto));
+
+function descreverPreco(p: PropostaLida): string {
+  const un =
+    p.unidade_do_preco === "nao_informada" || p.unidade_do_preco === "outra"
+      ? ""
+      : ` por ${p.unidade_do_preco}`;
+  const prazo =
+    p.prazo_pagamento_dias == null
+      ? ""
+      : p.prazo_pagamento_dias === 0
+        ? " à vista"
+        : ` em ${p.prazo_pagamento_dias} dias`;
+  return `${brl(p.preco ?? 0)}${un}${prazo}`;
+}
+
+function linhasDeDerivados(derivadas: PropostaLida[]): string {
+  const nomes = [...new Set(derivadas.map((p) => (p.produto ?? "produto").trim()))];
+  const lista = derivadas
+    .filter((p) => p.preco != null && p.preco > 0)
+    .map((p) => `  - ${p.produto ?? "item"}: ${descreverPreco(p)}`)
+    .join("\n");
+  return `• *${nomes.join(", ")}*: é outro produto (não é o grão), então não tenho preço de referência pra comparar. Li:\n${lista}`;
+}
+
+function textoDeDerivados(derivadas: PropostaLida[], leitura?: LeituraDeMidia): string {
+  const data = leitura?.data_documento ? ` (documento de ${leitura.data_documento})` : "";
+  return `Li o documento${data}, mas os preços são de ${[...new Set(derivadas.map((p) => (p.produto ?? "produto").trim()))].join(", ")}, que são outro produto (não o grão), e eu não tenho preço de referência pra comparar.\n${derivadas
+    .filter((p) => p.preco != null && p.preco > 0)
+    .map((p) => `• ${p.produto ?? "item"}: ${descreverPreco(p)}`)
+    .join(
+      "\n",
+    )}\n\nSe quiser comparar a cultura (soja, milho, boi...), me diga o produto e o preço.`;
+}
+
+/** Documento antigo demais para comparar com o mercado de hoje: lista o que leu e não dá veredito. */
+export const LIMITE_DE_IDADE_DO_DOCUMENTO_DIAS = 45;
+
+export function textoDeDocumentoAntigo(l: LeituraDeMidia, dias: number): string {
+  const d = lerDataDoDocumento(l.data_documento)!;
+  const quando = d.toLocaleDateString("pt-BR", { timeZone: "UTC" });
+  const tempo =
+    dias >= 365
+      ? `${Math.floor(dias / 365)} ${Math.floor(dias / 365) === 1 ? "ano" : "anos"} atrás`
+      : `${Math.round(dias / 30)} meses atrás`;
+  const o = l.tipo_documento === "proposta_de_compra" ? "Essa proposta" : "Essa tabela";
+  const linhas = l.propostas
+    .filter((p) => p.preco != null && p.preco > 0)
+    .slice(0, 10)
+    .map((p) => `• ${(p.produto ?? p.comprador ?? "Item").trim()}: ${descreverPreco(p)}`)
+    .join("\n");
+  return `🗓️ *Documento de ${quando}*\n\n${o} é de ${quando}, ${tempo}. Não comparo com o preço de hoje, porque não faria sentido: o mercado mudou muito desde então.\n\n*O que está escrito nela*\n${linhas}\n\nSe você tem uma versão atual, manda a foto ou o PDF que eu faço o estudo na hora. Ou me diga o preço de hoje que você está vendo.`;
+}
+
 function produtoDaProposta(p: PropostaLida, padrao: string | null): string | null {
   const achado = p.produto ? culturaMencionada(p.produto) : null;
   if (achado) return achado;
@@ -77,7 +154,12 @@ type Grupo = { produto: string; propostas: PropostaLida[] };
 
 function agrupar(propostas: PropostaLida[], padrao: string | null): Grupo[] {
   const mapa = new Map<string, PropostaLida[]>();
+  // Se o documento nomeia algum produto que reconhecemos, linha com produto escrito e desconhecido
+  // fica de fora: herdar a cultura do cadastro misturaria (ex.: "Integração" de suíno entrando como soja).
+  const algumReconhecido = propostas.some((p) => p.produto && culturaMencionada(p.produto));
   for (const p of propostas) {
+    const reconhecido = p.produto ? culturaMencionada(p.produto) : null;
+    if (!reconhecido && p.produto && algumReconhecido) continue;
     const chave = produtoDaProposta(p, padrao);
     if (!chave) continue;
     mapa.set(chave, [...(mapa.get(chave) ?? []), p]);
@@ -125,7 +207,9 @@ export async function construirEstudo(args: {
 }): Promise<ResultadoDaConstrucao> {
   const { supabase, produtor, propostas, origem, leitura } = args;
   // O estado do cadastro, a menos que o próprio documento diga onde é a entrega ("Rondonópolis (MT)").
-  const ufDoDocumento = propostas.map((p) => ufDoLocal(p.local_entrega)).find(Boolean) ?? null;
+  const ufDoTexto = ufValida(leitura?.uf_do_documento);
+  const ufDoDocumento =
+    propostas.map((p) => ufDoLocal(p.local_entrega)).find(Boolean) ?? ufDoTexto ?? null;
   const uf = ufDoDocumento ?? produtor.uf;
   if (!uf) {
     return {
@@ -136,9 +220,21 @@ export async function construirEstudo(args: {
   }
   const avisoUf =
     ufDoDocumento && produtor.uf && ufDoDocumento !== produtor.uf
-      ? `Usei ${ufDoDocumento} como referência, porque é o estado do local descrito na proposta (seu cadastro é ${produtor.uf}).`
+      ? `Usei ${ufDoDocumento} como referência, porque é o estado que aparece no documento (seu cadastro é ${produtor.uf}).`
       : undefined;
-  const grupos = agrupar(propostas, produtor.cultura_principal).slice(0, 4);
+  const idade = idadeDoDocumentoEmDias(leitura?.data_documento, args.hoje ?? new Date());
+  const avisoIdade =
+    idade != null && idade >= 8
+      ? `O documento é de ${lerDataDoDocumento(leitura!.data_documento)!.toLocaleDateString("pt-BR", { timeZone: "UTC" })} (${idade} dias atrás): o mercado pode ter mudado desde então.`
+      : undefined;
+  const derivadas = propostas.filter((p) => ehProdutoDerivado(p.produto));
+  const grupos = agrupar(
+    propostas.filter((p) => !ehProdutoDerivado(p.produto)),
+    produtor.cultura_principal,
+  ).slice(0, 4);
+  if (grupos.length === 0 && derivadas.length > 0) {
+    return { ok: false, mensagem: textoDeDerivados(derivadas, leitura) };
+  }
   if (grupos.length === 0) {
     return {
       ok: false,
@@ -184,6 +280,9 @@ export async function construirEstudo(args: {
     }
     extras = `*Outros produtos da tabela*\n${linhas.join("\n")}`;
   }
+  if (derivadas.length > 0) {
+    extras = [extras, linhasDeDerivados(derivadas)].filter(Boolean).join("\n");
+  }
 
   return {
     ok: true,
@@ -195,7 +294,7 @@ export async function construirEstudo(args: {
       confianca: leitura?.confianca,
       produto: principal!.produto,
       uf,
-      avisoUf,
+      avisoUf: [avisoUf, avisoIdade].filter(Boolean).join(" ") || undefined,
       ref: refPrincipal.ref,
       propostas: principal!.propostas,
       taxaMensal: TAXA_MENSAL_PADRAO,
@@ -313,6 +412,10 @@ export async function responderMidia(input: {
   }
   const l = leitura.leitura;
   if (!l.legivel) return pronta(MENSAGEM_ILEGIVEL);
+  const idade = idadeDoDocumentoEmDias(l.data_documento, new Date());
+  if (idade != null && idade > LIMITE_DE_IDADE_DO_DOCUMENTO_DIAS && l.propostas.length > 0) {
+    return pronta(textoDeDocumentoAntigo(l, idade));
+  }
   if (l.tipo_documento === "outro" || l.propostas.length === 0)
     return pronta(MENSAGEM_NAO_E_PROPOSTA);
 

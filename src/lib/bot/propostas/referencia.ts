@@ -41,6 +41,8 @@ function lerUnidade(unidade: string | null | undefined): {
   const u = (unidade ?? "").toLowerCase();
   if (u.includes("@") || u.includes("arroba")) return { unidade: "arroba", kg: null };
   if (/\bl\b|litro/.test(u)) return { unidade: "litro", kg: null };
+  // "kg" sozinho (suíno vivo, frutas) é preço por quilo, não por saca de 60 kg.
+  if (/^\s*kg(\s+vivo)?\s*$/.test(u)) return { unidade: "kg", kg: 1 };
   const m = u.match(/(\d+)\s*kg/);
   // 15 kg é a arroba do boi (algumas fontes escrevem "15 kg" em vez de "@").
   if (m && Number(m[1]) === 15) return { unidade: "arroba", kg: null };

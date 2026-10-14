@@ -59,14 +59,12 @@ export async function salvarEstudo(
   estudo: EstudoSalvo,
 ): Promise<void> {
   try {
-    const { error } = await supabase
-      .from("bot_conversas")
-      .insert({
-        telefone,
-        role: "assistant",
-        conteudo: serializarEstudo(estudo),
-        precisa_humano: false,
-      });
+    const { error } = await supabase.from("bot_conversas").insert({
+      telefone,
+      role: "assistant",
+      conteudo: serializarEstudo(estudo),
+      precisa_humano: false,
+    });
     if (error) console.error("Não salvou o estudo da proposta:", error.message);
   } catch (err) {
     console.error("Não salvou o estudo da proposta:", err);

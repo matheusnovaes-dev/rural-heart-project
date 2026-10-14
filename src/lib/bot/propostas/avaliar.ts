@@ -29,6 +29,61 @@ export function lerData(texto: string | null | undefined): Date | null {
   return null;
 }
 
+const MESES = [
+  "janeiro",
+  "fevereiro",
+  "marco",
+  "abril",
+  "maio",
+  "junho",
+  "julho",
+  "agosto",
+  "setembro",
+  "outubro",
+  "novembro",
+  "dezembro",
+];
+
+/**
+ * Data impressa no documento, do jeito que veio: "13/07/2020", "13/07/20", "13/julho de 2020",
+ * "13 de julho de 2020", "2020-07-13". Sem dia e mês claros, devolve null (não chuta).
+ */
+export function lerDataDoDocumento(texto: string | null | undefined): Date | null {
+  if (!texto) return null;
+  const t = texto
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  const ano = (a: string) => (a.length === 2 ? 2000 + +a : +a);
+  const iso = t.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return valida(+iso[1]!, +iso[2]!, +iso[3]!);
+  const dma = t.match(/(\d{1,2})\s*[\/.-]\s*(\d{1,2})\s*[\/.-]\s*(\d{4}|\d{2})\b/);
+  if (dma) return valida(ano(dma[3]!), +dma[2]!, +dma[1]!);
+  const ext = t.match(/(\d{1,2})\s*(?:de\s*|\/)?\s*([a-z]{3,9})\s*(?:de\s*|\/)?\s*(\d{4}|\d{2})\b/);
+  if (ext) {
+    const mes = MESES.findIndex((m) => m.startsWith(ext[2]!.slice(0, 3)) && m.startsWith(ext[2]!));
+    if (mes >= 0) return valida(ano(ext[3]!), mes + 1, +ext[1]!);
+  }
+  return null;
+}
+
+function valida(a: number, m: number, d: number): Date | null {
+  if (a < 1990 || a > 2100 || m < 1 || m > 12 || d < 1 || d > 31) return null;
+  return new Date(Date.UTC(a, m - 1, d));
+}
+
+/** Quantos dias o documento tem; null se a data não foi lida (ou está no futuro). */
+export function idadeDoDocumentoEmDias(
+  texto: string | null | undefined,
+  hoje: Date,
+): number | null {
+  const d = lerDataDoDocumento(texto);
+  if (!d) return null;
+  const h = Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate());
+  const dias = Math.round((h - d.getTime()) / 86400000);
+  return dias >= 0 ? dias : null;
+}
+
 type Conversao = { valor: number | null; conversao: string | null; alerta: string | null };
 
 /** Leva o preço lido para a unidade da referência (saca, arroba ou litro). */
@@ -65,6 +120,9 @@ export function converterPreco(
     }
   } else if (ref.unidade === unidade) {
     return { valor: preco, conversao: null, alerta: null };
+  } else if (ref.unidade === "kg" && unidade === "tonelada") {
+    const v = arredonda2(preco / 1000);
+    return { valor: v, conversao: `${brl(preco)} por tonelada = ${brl(v)} por kg`, alerta: null };
   } else if (unidade !== "outra" && unidade !== "nao_informada") {
     return {
       valor: null,
