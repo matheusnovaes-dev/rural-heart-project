@@ -45,9 +45,11 @@ export async function buscarSinalVenda(
     // porque o uso normal do bot (ferramenta buscar_sinal_venda) não passa
     // por esse outro caminho, então não tem duplicação pra evitar lá.
     citarFuturoB3?: boolean;
+    /** false quando o texto que o acompanha já traz o preço (resumo diário): evita dois preços diferentes. */
+    citarPrecoAtual?: boolean;
   },
 ): Promise<ResultadoSinalVenda> {
-  const { produto, uf, citarFuturoB3 = true } = args;
+  const { produto, uf, citarFuturoB3 = true, citarPrecoAtual = true } = args;
   const desde = new Date();
   desde.setDate(desde.getDate() - 90);
 
@@ -149,7 +151,13 @@ export async function buscarSinalVenda(
   // 2026-10-06, cultura "uva" com uma única cotação no período); nesse caso
   // calcularPosicao já retorna null e combinarSinalVenda não gera frase de
   // tendência, então citar só o preço sem a comparação de faixa é honesto.
-  if (precoAtual != null && minSerie != null && maxSerie != null && minSerie !== maxSerie) {
+  if (
+    citarPrecoAtual &&
+    precoAtual != null &&
+    minSerie != null &&
+    maxSerie != null &&
+    minSerie !== maxSerie
+  ) {
     const unidade = formatarUnidadePreco(precoAtual.unidade);
     texto = `${texto} O preço de hoje é ${brl(precoAtual.preco)}${unidade ? ` por ${unidade}` : ""}, contra mínima de ${brl(minSerie)} e máxima de ${brl(maxSerie)} nos últimos 90 dias.`;
   }

@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { safraEncerrada } from "@/lib/safraSoja";
+
 type LinhaFerrugem = {
   safra: string;
   safra_id: number;
@@ -39,10 +41,24 @@ export async function buscarFerrugemAsiatica(supabase: SupabaseClient, args: { u
     .filter((l) => l.tipo === 4 && l.quantidade > 0)
     .map((l) => ({ municipio: l.municipio_nome }));
 
+  const encerrada = safraEncerrada(daSafra[0]!.safra);
+  const lista = (itens: { municipio: string; ocorrencias?: number }[]) =>
+    itens
+      .slice(0, 5)
+      .map((m) => (m.ocorrencias ? `${m.municipio} (${m.ocorrencias})` : m.municipio))
+      .join(", ");
+  // Safra encerrada: o texto sai pronto, por código. O modelo ignorava a regra do prompt e dizia
+  // "já foram confirmadas" / "até agora" como se o dado fosse da safra atual.
+  const resposta_pronta = encerrada
+    ? `Os registros de ferrugem asiática que tenho em ${args.uf} são da safra ${daSafra[0]!.safra}, que já terminou${confirmadas.length > 0 ? `: houve foco confirmado em ${lista(confirmadas)}` : ": não houve foco confirmado"}. A safra nova ainda não tem registro do Consórcio Antiferrugem, então hoje não dá pra dizer se já existe foco este ano. Quando a soja estiver plantada e o Consórcio publicar, os dados novos passam a aparecer aqui e no painel.`
+    : undefined;
   return {
     encontrado: true,
     safra: daSafra[0]!.safra,
+    // Safra já encerrada: o dado é histórico, não é alerta da safra atual (e a nova ainda não tem registro).
+    safra_encerrada: encerrada,
     municipios_com_ocorrencia_confirmada: confirmadas,
     municipios_com_esporos_no_ar: esporos,
+    resposta_pronta: resposta_pronta ?? null,
   };
 }

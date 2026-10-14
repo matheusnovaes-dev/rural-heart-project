@@ -31,7 +31,13 @@ const LIMITE_RESUMO = 600;
 // diário, 2026-10-13).
 const ABREVIACOES =
   /(?:^|[\s(])(?:jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez|ex|etc|aprox|obs|vs|sr|sra|dr|dra|r\$|nº)$/i;
-export function limitarResumo(texto: string): string {
+/** Sem travessão no texto que vai pro produtor: vira vírgula. */
+export function semTravessao(texto: string): string {
+  return texto.replace(/\s+[—–]\s+/g, ", ");
+}
+
+export function limitarResumo(entrada: string): string {
+  const texto = semTravessao(entrada);
   if (texto.length <= LIMITE_RESUMO) return texto;
   const cortado = texto.slice(0, LIMITE_RESUMO);
   let corte = -1;
@@ -71,7 +77,11 @@ export async function montarResumoReengajamento(
 
   // Ferrugem primeiro, de propósito: é o dado mais urgente quando existe
   // (risco real pra lavoura), tem que vir antes do preço.
-  if (ferrugem?.encontrado && ferrugem.municipios_com_ocorrencia_confirmada.length > 0) {
+  if (
+    ferrugem?.encontrado &&
+    !ferrugem.safra_encerrada &&
+    ferrugem.municipios_com_ocorrencia_confirmada.length > 0
+  ) {
     const municipios = ferrugem.municipios_com_ocorrencia_confirmada
       .slice(0, 3)
       .map((m) => m.municipio)
@@ -125,7 +135,7 @@ export async function montarResumoReengajamento(
   }
 
   if (partes.length === 0) return null;
-  return limitarResumo(partes.join(" "));
+  return limitarResumo(semTravessao(partes.join(" ")));
 }
 
 // Limiares próprios desta mensagem proativa (não reaproveitam os de nenhum
@@ -265,6 +275,9 @@ export async function montarResumoReativacao(
     produto: cultura,
     uf,
     citarFuturoB3: !baseJaCitouFuturoB3,
+    // O resumo base já traz o preço do estado/praças; o "preço de hoje" do sinal vem de outra série
+    // e já saiu com número diferente no mesmo texto (milho PR: R$52,35 e R$59,00).
+    citarPrecoAtual: !base,
   }).catch(() => null);
 
   const partes: string[] = [];

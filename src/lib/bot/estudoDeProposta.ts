@@ -13,6 +13,7 @@ import { obterReferencia } from "@/lib/bot/propostas/referencia";
 import { mensagemDeLimite, verificarLimiteDeEstudos } from "@/lib/bot/propostas/limite";
 import { referenciaDoEstudo } from "@/lib/bot/propostas/acompanhamento";
 import { salvarEstudo } from "@/lib/bot/propostas/salvo";
+import { buscarFrete } from "@/lib/paridade";
 import { montarEstudo } from "@/lib/bot/propostas/texto";
 import type {
   EstudoSalvo,
@@ -261,6 +262,32 @@ export async function construirEstudo(args: {
     };
   }
 
+  // Proposta entregue (CIF): o frete é do produtor e a conta não o desconta. A tabela de frete
+  // (Sifreca) mede da origem até o PORTO, não até o armazém do comprador; por isso só entra como
+  // ordem de grandeza, e só com a localização do produtor (sem ela a rota escolhida seria qualquer uma).
+  let avisoFrete: string | undefined;
+  if (
+    principal!.propostas.some((p) => p.frete === "cif_entregue") &&
+    produtor.lat != null &&
+    produtor.lon != null &&
+    produtor.uf
+  ) {
+    try {
+      const f = await buscarFrete(supabase, {
+        cultura: principal!.produto,
+        uf: produtor.uf,
+        lat: produtor.lat,
+        lon: produtor.lon,
+        ...(args.hoje ? { hoje: args.hoje } : {}),
+      });
+      if (f) {
+        avisoFrete = `Para ter noção do frete: de ${f.rota.municipio_origem} até ${f.rota.municipio_destino} a referência é cerca de ${brl(f.frete_por_saca)} por saca (tabela Sifreca, até o porto). Até o armazém do comprador pode ser menos ou mais; pergunte o valor exato.`;
+      }
+    } catch {
+      avisoFrete = undefined;
+    }
+  }
+
   let extras: string | undefined;
   if (outros.length > 0) {
     const linhas: string[] = [];
@@ -294,7 +321,7 @@ export async function construirEstudo(args: {
       confianca: leitura?.confianca,
       produto: principal!.produto,
       uf,
-      avisoUf: [avisoUf, avisoIdade].filter(Boolean).join(" ") || undefined,
+      avisoUf: [avisoUf, avisoIdade, avisoFrete].filter(Boolean).join(" ") || undefined,
       ref: refPrincipal.ref,
       propostas: principal!.propostas,
       taxaMensal: TAXA_MENSAL_PADRAO,

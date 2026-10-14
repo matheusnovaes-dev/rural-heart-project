@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { safraEncerrada } from "@/lib/safraSoja";
 import { SafralumeIcon } from "@/components/icons/SafralumeIcon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/lib/supabase";
@@ -91,11 +92,19 @@ export function FerrugemAsiaticaCard({ produtor }: { produtor: Produtor }) {
           <div className="flex flex-col gap-3">
             <p className="text-xs text-muted-foreground">
               Safra {resultado.safra} · {produtor.uf}
+              {safraEncerrada(resultado.safra) ? " · encerrada" : ""}
             </p>
+            {safraEncerrada(resultado.safra) && (
+              <p className="text-xs text-muted-foreground">
+                Esta é a safra passada. A safra nova ainda não tem registros do Consórcio.
+              </p>
+            )}
 
             {!temFoco && !temEsporo && (
               <p className="text-sm text-foreground">
-                Nenhum foco confirmado nem esporo detectado no seu estado até agora nessa safra.
+                {safraEncerrada(resultado.safra)
+                  ? "Nenhum foco confirmado nem esporo detectado no seu estado nessa safra."
+                  : "Nenhum foco confirmado nem esporo detectado no seu estado até agora nessa safra."}
               </p>
             )}
 
