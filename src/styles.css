@@ -308,3 +308,157 @@
     align-items: center;
   }
 }
+
+/* ===== Tela de login: cena cinematográfica leve =====
+   Só transform/opacity (compositor), sem blur animado e sem JS por quadro.
+   Roda apenas com movimento permitido; sem isso, tudo aparece já no estado
+   final. Elementos em display:none (painel de marca no celular) não animam. */
+@keyframes login-drift-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(6rem, 4rem, 0) scale(1.12);
+  }
+}
+@keyframes login-drift-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-5rem, -3.5rem, 0) scale(1.1);
+  }
+}
+@keyframes login-drift-c {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(3.5rem, -3rem, 0);
+  }
+}
+@keyframes login-chart {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+@keyframes login-sheen {
+  0% {
+    opacity: 0;
+    transform: translate3d(-120%, 0, 0) skewX(-18deg);
+  }
+  12%,
+  88% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(320%, 0, 0) skewX(-18deg);
+  }
+}
+@keyframes login-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+@keyframes login-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes login-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes login-blink {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.login-sheen,
+.login-btn-sheen {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .login-drift-a {
+    animation: login-drift-a 24s ease-in-out infinite;
+    will-change: transform;
+  }
+  .login-drift-b {
+    animation: login-drift-b 28s ease-in-out 2s infinite;
+    will-change: transform;
+  }
+  .login-drift-c {
+    animation: login-drift-c 31s ease-in-out 4s infinite;
+    will-change: transform;
+  }
+  .login-chart {
+    animation: login-chart 70s linear infinite;
+    will-change: transform;
+  }
+  .login-sheen {
+    animation: login-sheen 11s ease-in-out 3s infinite;
+  }
+  .login-btn-sheen {
+    animation: login-sheen 1.2s ease-out 1.3s 1;
+  }
+  .login-rise {
+    animation: login-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: var(--d, 0ms);
+  }
+  .login-spin {
+    animation: login-spin 10s linear infinite;
+    will-change: transform;
+  }
+  .login-draw {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: login-draw 1.3s ease-out both;
+    animation-delay: var(--d, 0ms);
+  }
+  .login-blink {
+    animation: login-blink 2.2s ease-in-out infinite;
+  }
+}
+
+/* O brilho do botão repete a cada ~6s (varre em ~1s e descansa) só no desktop. */
+@keyframes login-btn-sheen {
+  0% {
+    opacity: 0;
+    transform: translate3d(-120%, 0, 0) skewX(-18deg);
+  }
+  4% {
+    opacity: 1;
+  }
+  16% {
+    opacity: 1;
+  }
+  20%,
+  100% {
+    opacity: 0;
+    transform: translate3d(320%, 0, 0) skewX(-18deg);
+  }
+}
+@media (prefers-reduced-motion: no-preference) and (min-width: 1024px) {
+  .login-btn-sheen {
+    animation: login-btn-sheen 6s ease-in-out 1.5s infinite;
+  }
+}

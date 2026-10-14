@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { MouseEvent } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { motion, useMotionTemplate, useMotionValue, useReducedMotion } from "framer-motion";
@@ -10,6 +10,7 @@ import {
   EyeOff,
   BadgeCheck,
   TrendingUp,
+  TrendingDown,
   ArrowRight,
   MessageCircle,
 } from "lucide-react";
@@ -26,6 +27,36 @@ const destaques = [
   "Clima, tendência de mercado e alertas direto no WhatsApp",
   "7 dias grátis pra testar, sem cartão de crédito",
 ];
+
+// Cartões da cena do painel de marca (valores de exemplo; a tela avisa isso).
+const cartoes = [
+  {
+    rotulo: "SOJA · MT",
+    valor: 142.5,
+    unidade: "/sc",
+    delta: 2.1,
+    linha: "M0 20 C10 18 14 12 24 14 S40 6 50 8 S68 2 80 3",
+    recuo: "ml-0",
+  },
+  {
+    rotulo: "MILHO · PR",
+    valor: 68.2,
+    unidade: "/sc",
+    delta: -0.4,
+    linha: "M0 8 C12 10 18 6 28 11 S44 14 54 12 S70 16 80 15",
+    recuo: "ml-10",
+  },
+  {
+    rotulo: "BOI GORDO",
+    valor: 384.49,
+    unidade: "/@",
+    delta: 1.3,
+    linha: "M0 22 C12 20 18 18 28 15 S46 12 56 8 S70 6 80 4",
+    recuo: "ml-4",
+  },
+];
+
+const tituloDoPainel = "Saiba o preço da sua saca e quanto o porto paga, direto no WhatsApp";
 
 // Ilustrativo — mesma cara do painel/ticker do dashboard (ContextoMercado),
 // não é dado ao vivo aqui, só clima da marca na tela de login.
@@ -140,52 +171,44 @@ function LoginPage() {
         onMouseMove={seguirCursor}
       >
         <BrandBackdrop />
-        {!prefereMenosMovimento && (
-          <motion.div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 z-0 mix-blend-soft-light"
-            style={{ background: luz }}
-          />
-        )}
+        <motion.div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-0 mix-blend-soft-light motion-reduce:hidden"
+          style={{ background: luz }}
+        />
 
         <Link to="/" className="relative z-10 flex items-center gap-2">
           <img src="/logo-icon.png" alt="" className="size-9 rounded-[0.65rem]" />
           <span className="text-lg font-bold tracking-tight">{siteConfig.name}</span>
         </Link>
 
-        <div className="relative z-10">
-          <h2 className="text-balance font-display text-3xl font-bold leading-tight tracking-tight">
-            Saiba o preço da sua saca e quanto o porto paga, direto no WhatsApp
-          </h2>
-          <ul className="mt-6 flex flex-col gap-3">
-            {destaques.map((item, i) => (
-              <li
-                key={item}
-                className="flex animate-in items-start gap-2.5 fade-in slide-in-from-bottom-2 text-sm text-white/85 fill-mode-both"
-                style={{ animationDelay: `${150 + i * 130}ms`, animationDuration: "500ms" }}
-              >
-                <BadgeCheck className="mt-0.5 size-4.5 shrink-0 text-gold-soft" />
-                {item}
-              </li>
-            ))}
-          </ul>
-
-          {/* Chips flutuantes de dado de exemplo */}
-          <div className="relative mt-8 hidden h-0 xl:block">
-            <div className="absolute -top-44 right-2 animate-float-chip rounded-xl bg-white/95 px-3.5 py-2 text-foreground shadow-lg shadow-black/30">
-              <p className="text-xs font-semibold tracking-wide text-muted-foreground">SOJA · MT</p>
-              <p className="flex items-baseline gap-1.5">
-                <span className="font-display text-lg font-bold">R$142,50</span>
-                <span className="text-xs font-bold text-primary">+2,1%</span>
-              </p>
-            </div>
-            <div
-              className="absolute -top-20 right-16 flex animate-float-chip items-center gap-1.5 rounded-lg bg-secondary/95 px-3 py-1.5 shadow-lg shadow-black/25"
-              style={{ animationDelay: "1.4s" }}
-            >
-              <TrendingUp className="size-3.5 text-gold" />
-              <span className="text-xs font-semibold text-foreground">Boi em alta essa semana</span>
-            </div>
+        <div className="relative z-10 flex flex-1 flex-col justify-center gap-9 py-8">
+          <CartoesDeMercado />
+          <div>
+            <h2 className="text-balance font-display text-3xl font-bold leading-tight tracking-tight">
+              {tituloDoPainel.split(" ").map((palavra, i) => (
+                <span key={`${palavra}-${i}`}>
+                  <span
+                    className="login-rise inline-block"
+                    style={{ "--d": `${200 + i * 45}ms` } as React.CSSProperties}
+                  >
+                    {palavra}
+                  </span>{" "}
+                </span>
+              ))}
+            </h2>
+            <ul className="mt-6 flex flex-col gap-3">
+              {destaques.map((item, i) => (
+                <li
+                  key={item}
+                  className="login-rise flex items-start gap-2.5 text-sm text-white/85"
+                  style={{ "--d": `${900 + i * 140}ms` } as React.CSSProperties}
+                >
+                  <BadgeCheck className="mt-0.5 size-4.5 shrink-0 text-gold-soft" />
+                  {item}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
@@ -213,162 +236,204 @@ function LoginPage() {
       </div>
 
       {/* Formulário */}
-      <div className="flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 py-3 lg:items-center lg:justify-center lg:overflow-visible lg:py-10">
-        <div className="relative mx-auto w-full max-w-sm animate-in overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-sm fade-in zoom-in-95 duration-300 lg:p-8">
-          {status === "success" && (
-            <SucessoCheckmark semAnimacao={prefereMenosMovimento ?? false} />
-          )}
-          {/* Seletor de abas com indicador deslizante (spring, não CSS ease
+      <div className="relative flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 py-3 lg:items-center lg:justify-center lg:overflow-hidden lg:py-10">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 hidden overflow-hidden lg:block"
+        >
+          <div
+            className="login-drift-b absolute -top-24 -right-24 size-[34rem] rounded-full"
+            style={{
+              background: "radial-gradient(closest-side, oklch(0.66 0.13 76 / 0.16), transparent)",
+            }}
+          />
+          <div
+            className="login-drift-c absolute -bottom-32 -left-20 size-[36rem] rounded-full"
+            style={{
+              background: "radial-gradient(closest-side, oklch(0.5 0.1 156 / 0.14), transparent)",
+            }}
+          />
+        </div>
+        <div
+          className="login-rise relative mx-auto w-full max-w-sm"
+          style={{ "--d": "80ms" } as React.CSSProperties}
+        >
+          {/* Anel dourado que dá a volta no cartão (só desktop): um único
+              elemento girando, sem filtro nem repintura de layout. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -inset-px hidden overflow-hidden rounded-2xl lg:block"
+          >
+            <div className="absolute inset-0 grid place-items-center">
+              <div
+                className="login-spin aspect-square w-[170%] shrink-0"
+                style={{
+                  background:
+                    "conic-gradient(from 0deg, transparent 0 60%, oklch(0.66 0.13 76 / 0.95) 80%, transparent 95%)",
+                }}
+              />
+            </div>
+          </div>
+          <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-sm lg:border-transparent lg:p-8 lg:shadow-xl lg:shadow-black/5">
+            {status === "success" && (
+              <SucessoCheckmark semAnimacao={prefereMenosMovimento ?? false} />
+            )}
+            {/* Seletor de abas com indicador deslizante (spring, não CSS ease
               — fica mais "vivo", com leve overshoot ao trocar de aba) */}
-          <div className="relative flex rounded-full bg-secondary p-1">
-            <motion.span
-              className="absolute inset-y-1 w-[calc(50%-4px)] rounded-full bg-primary shadow-sm"
-              animate={{ x: entrando ? 0 : "calc(100% + 8px)" }}
-              transition={{ type: "spring", stiffness: 500, damping: 32 }}
-            />
-            <button
-              type="button"
-              onClick={() => {
-                setMode("entrar");
-                setStatus("idle");
-              }}
-              className={`relative z-10 flex-1 rounded-full py-2 text-sm font-semibold transition-colors ${
-                entrando ? "text-primary-foreground" : "text-muted-foreground"
-              }`}
-            >
-              Entrar
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMode("criar");
-                setStatus("idle");
-              }}
-              className={`relative z-10 flex-1 rounded-full py-2 text-sm font-semibold transition-colors ${
-                !entrando ? "text-primary-foreground" : "text-muted-foreground"
-              }`}
-            >
-              Criar conta
-            </button>
-          </div>
-
-          <div className="mt-3 text-center lg:mt-6">
-            <h1 className="font-display text-xl font-semibold text-foreground">
-              {entrando ? "Entrar na sua conta" : "Criar sua conta"}
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {entrando ? "Bom te ver de novo." : "7 dias grátis, sem cartão de crédito."}
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="mt-3 flex flex-col gap-2.5 lg:mt-6 lg:gap-4">
-            <div
-              className="animate-in space-y-2 fade-in slide-in-from-bottom-3 fill-mode-both"
-              style={{ animationDelay: "80ms", animationDuration: "400ms" }}
-            >
-              <Label htmlFor="email">E-mail</Label>
-              <div className="group relative rounded-md transition-shadow focus-within:ring-4 focus-within:ring-ring/20">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
-                <Input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  className="pl-9"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
+            <div className="relative flex rounded-full bg-secondary p-1">
+              <motion.span
+                className="absolute inset-y-1 w-[calc(50%-4px)] rounded-full bg-primary shadow-sm"
+                animate={{ x: entrando ? 0 : "calc(100% + 8px)" }}
+                transition={{ type: "spring", stiffness: 500, damping: 32 }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("entrar");
+                  setStatus("idle");
+                }}
+                className={`relative z-10 flex-1 rounded-full py-2 text-sm font-semibold transition-colors ${
+                  entrando ? "text-primary-foreground" : "text-muted-foreground"
+                }`}
+              >
+                Entrar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("criar");
+                  setStatus("idle");
+                }}
+                className={`relative z-10 flex-1 rounded-full py-2 text-sm font-semibold transition-colors ${
+                  !entrando ? "text-primary-foreground" : "text-muted-foreground"
+                }`}
+              >
+                Criar conta
+              </button>
             </div>
-            <div
-              className="animate-in space-y-2 fade-in slide-in-from-bottom-3 fill-mode-both"
-              style={{ animationDelay: "160ms", animationDuration: "400ms" }}
-            >
-              <Label htmlFor="senha">Senha</Label>
-              <div className="group relative rounded-md transition-shadow focus-within:ring-4 focus-within:ring-ring/20">
-                <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
-                <Input
-                  id="senha"
-                  type={mostrarSenha ? "text" : "password"}
-                  autoComplete={entrando ? "current-password" : "new-password"}
-                  minLength={6}
-                  required
-                  className="px-9"
-                  value={senha}
-                  onChange={(e) => setSenha(e.target.value)}
-                />
-                <button
-                  type="button"
-                  onClick={() => setMostrarSenha((v) => !v)}
-                  aria-label={mostrarSenha ? "Esconder senha" : "Mostrar senha"}
-                  aria-pressed={mostrarSenha}
-                  className="absolute right-1 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground pointer-coarse:size-11"
+
+            <div className="mt-3 text-center lg:mt-6">
+              <h1 className="font-display text-xl font-semibold text-foreground">
+                {entrando ? "Entrar na sua conta" : "Criar sua conta"}
+              </h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {entrando ? "Bom te ver de novo." : "7 dias grátis, sem cartão de crédito."}
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="mt-3 flex flex-col gap-2.5 lg:mt-6 lg:gap-4">
+              <div
+                className="animate-in space-y-2 fade-in slide-in-from-bottom-3 fill-mode-both"
+                style={{ animationDelay: "80ms", animationDuration: "400ms" }}
+              >
+                <Label htmlFor="email">E-mail</Label>
+                <div className="group relative rounded-md transition-shadow focus-within:ring-4 focus-within:ring-ring/20">
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                  <Input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    className="pl-9"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div
+                className="animate-in space-y-2 fade-in slide-in-from-bottom-3 fill-mode-both"
+                style={{ animationDelay: "160ms", animationDuration: "400ms" }}
+              >
+                <Label htmlFor="senha">Senha</Label>
+                <div className="group relative rounded-md transition-shadow focus-within:ring-4 focus-within:ring-ring/20">
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                  <Input
+                    id="senha"
+                    type={mostrarSenha ? "text" : "password"}
+                    autoComplete={entrando ? "current-password" : "new-password"}
+                    minLength={6}
+                    required
+                    className="px-9"
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setMostrarSenha((v) => !v)}
+                    aria-label={mostrarSenha ? "Esconder senha" : "Mostrar senha"}
+                    aria-pressed={mostrarSenha}
+                    className="absolute right-1 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground pointer-coarse:size-11"
+                  >
+                    {mostrarSenha ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {entrando && (
+                <Link
+                  to="/recuperar-senha"
+                  className="alvo-toque -mt-2 justify-end text-right text-sm text-muted-foreground hover:underline"
                 >
-                  {mostrarSenha ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                </button>
+                  Esqueci minha senha
+                </Link>
+              )}
+
+              {status === "error" && <p className="text-sm text-destructive">{errorMsg}</p>}
+
+              <div
+                className="animate-in fade-in slide-in-from-bottom-3 fill-mode-both"
+                style={{ animationDelay: "240ms", animationDuration: "400ms" }}
+              >
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={status === "loading"}
+                  className="group relative mt-1 w-full overflow-hidden bg-cta text-cta-foreground transition-[transform,box-shadow,background-color] hover:-translate-y-0.5 hover:bg-cta/90 hover:shadow-lg hover:shadow-cta/30 active:translate-y-0 active:scale-[0.97]"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="login-btn-sheen pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/45 to-transparent"
+                  />
+                  {status === "loading" ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <>
+                      {entrando ? "Entrar" : "Criar conta"}
+                      <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                    </>
+                  )}
+                </Button>
               </div>
-            </div>
+            </form>
+
+            <button
+              type="button"
+              onClick={() => {
+                setMode(entrando ? "criar" : "entrar");
+                setStatus("idle");
+              }}
+              className="mt-2.5 w-full text-center text-sm text-muted-foreground hover:underline lg:mt-4"
+            >
+              {entrando ? "Não tem conta? Criar uma agora" : "Já tem conta? Entrar"}
+            </button>
 
             {entrando && (
-              <Link
-                to="/recuperar-senha"
-                className="alvo-toque -mt-2 justify-end text-right text-sm text-muted-foreground hover:underline"
-              >
-                Esqueci minha senha
-              </Link>
+              <div className="mt-3 flex flex-col gap-1.5 border-t border-border pt-3 text-center lg:mt-6 lg:gap-2 lg:pt-5">
+                <p className="text-xs text-muted-foreground">
+                  Se cadastrou pelo WhatsApp ou pelo formulário e não criou e-mail e senha?
+                </p>
+                <a
+                  href={buildWhatsAppLink("Quero acessar meu painel")}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary lg:py-2"
+                >
+                  <MessageCircle className="size-4 text-[#25D366]" />
+                  Pedir meu acesso pelo WhatsApp
+                </a>
+              </div>
             )}
-
-            {status === "error" && <p className="text-sm text-destructive">{errorMsg}</p>}
-
-            <div
-              className="animate-in fade-in slide-in-from-bottom-3 fill-mode-both"
-              style={{ animationDelay: "240ms", animationDuration: "400ms" }}
-            >
-              <Button
-                type="submit"
-                size="lg"
-                disabled={status === "loading"}
-                className="group mt-1 w-full bg-cta text-cta-foreground transition-all hover:-translate-y-0.5 hover:bg-cta/90 hover:shadow-lg hover:shadow-cta/30 active:translate-y-0 active:scale-[0.97]"
-              >
-                {status === "loading" ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <>
-                    {entrando ? "Entrar" : "Criar conta"}
-                    <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-                  </>
-                )}
-              </Button>
-            </div>
-          </form>
-
-          <button
-            type="button"
-            onClick={() => {
-              setMode(entrando ? "criar" : "entrar");
-              setStatus("idle");
-            }}
-            className="mt-2.5 w-full text-center text-sm text-muted-foreground hover:underline lg:mt-4"
-          >
-            {entrando ? "Não tem conta? Criar uma agora" : "Já tem conta? Entrar"}
-          </button>
-
-          {entrando && (
-            <div className="mt-3 flex flex-col gap-1.5 border-t border-border pt-3 text-center lg:mt-6 lg:gap-2 lg:pt-5">
-              <p className="text-xs text-muted-foreground">
-                Se cadastrou pelo WhatsApp ou pelo formulário e não criou e-mail e senha?
-              </p>
-              <a
-                href={buildWhatsAppLink("Quero acessar meu painel")}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary lg:py-2"
-              >
-                <MessageCircle className="size-4 text-[#25D366]" />
-                Pedir meu acesso pelo WhatsApp
-              </a>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
@@ -478,84 +543,185 @@ function ParticulasSucesso() {
   );
 }
 
-/** Fundo vivo do painel de marca — versão com blobs animados em loop
- * contínuo (sem precisar de mouse/interação pra perceber movimento, ao
- * contrário do wash estático de antes, que o Matheus achou parado demais
- * olhando ao lado de sites de referência que são bem mais animados). 3
- * blobs desfocados, cada um com rota e velocidade própria, + textura de
- * pontinhos + duas linhas onduladas no canto + vinheta pra manter o texto
- * legível por cima. Puramente decorativo (aria-hidden). */
+/** Fundo do painel de marca. Três luzes à deriva (gradiente radial, sem blur:
+ * o `blur-3xl` animado era caro de GPU), pontinhos, um gráfico de mercado que
+ * rola sem parar e um brilho que cruza o painel de tempos em tempos. Tudo é
+ * transform/opacity via CSS (compositor, zero JS por quadro). `animado=false`
+ * (faixa do celular) deixa as luzes paradas: dão cor sem custo de movimento.
+ * Puramente decorativo (aria-hidden). */
 function BrandBackdrop({ animado = true }: { animado?: boolean }) {
-  // Achado real auditando performance mobile: esse componente renderiza
-  // DUAS vezes na página (painel desktop + faixa compacta do celular), e os
-  // 3 blobs com blur-3xl (filtro caro de GPU) em loop infinito rodavam nas
-  // duas, mesmo a versão mobile sendo uma faixa pequena onde a animação
-  // quase não se percebe. 83% do tráfego é celular — custo real por um
-  // ganho visual que ali é mínimo. Chamado com animado=false na faixa
-  // mobile: os blobs ficam parados (continuam dando profundidade/cor, só
-  // sem o custo de reflow contínuo).
-  const Elemento = animado ? motion.div : "div";
   return (
     <div aria-hidden className="absolute inset-0 -z-0 overflow-hidden bg-[oklch(0.17_0.028_156.5)]">
-      <Elemento
-        className="absolute top-[-15%] left-[-15%] size-112 rounded-full blur-3xl"
-        style={{ background: "oklch(0.5 0.1 156 / 0.6)" }}
-        {...(animado && {
-          animate: { x: [0, 70, -30, 0], y: [0, 50, -40, 0] },
-          transition: { duration: 20, repeat: Infinity, ease: "easeInOut" },
-        })}
+      <div
+        className={`absolute top-[-20%] left-[-25%] size-[40rem] rounded-full ${animado ? "login-drift-a" : ""}`}
+        style={{
+          background: "radial-gradient(closest-side, oklch(0.5 0.1 156 / 0.55), transparent)",
+        }}
       />
-      <Elemento
-        className="absolute right-[-12%] bottom-[-10%] size-96 rounded-full blur-3xl"
-        style={{ background: "oklch(0.66 0.13 76 / 0.45)" }}
-        {...(animado && {
-          animate: { x: [0, -60, 35, 0], y: [0, -45, 25, 0] },
-          transition: { duration: 24, repeat: Infinity, ease: "easeInOut", delay: 1.5 },
-        })}
+      <div
+        className={`absolute right-[-25%] bottom-[-15%] size-[36rem] rounded-full ${animado ? "login-drift-b" : ""}`}
+        style={{
+          background: "radial-gradient(closest-side, oklch(0.66 0.13 76 / 0.42), transparent)",
+        }}
       />
-      <Elemento
-        className="absolute top-[35%] left-[45%] size-80 rounded-full blur-3xl"
-        style={{ background: "oklch(0.45 0.09 190 / 0.35)" }}
-        {...(animado && {
-          animate: { x: [0, 45, -45, 0], y: [0, -35, 35, 0] },
-          transition: { duration: 27, repeat: Infinity, ease: "easeInOut", delay: 3 },
-        })}
+      <div
+        className={`absolute top-[30%] left-[30%] size-[30rem] rounded-full ${animado ? "login-drift-c" : ""}`}
+        style={{
+          background: "radial-gradient(closest-side, oklch(0.45 0.09 190 / 0.32), transparent)",
+        }}
       />
       <div
         className="absolute inset-0"
         style={{
-          backgroundImage: "radial-gradient(oklch(1 0 0 / 0.16) 1.4px, transparent 1.4px)",
+          backgroundImage: "radial-gradient(oklch(1 0 0 / 0.14) 1.4px, transparent 1.4px)",
           backgroundSize: "18px 18px",
         }}
       />
+      {animado && <GraficoAoVivo />}
       <div
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(120% 90% at 20% 15%, oklch(0.20 0.028 156.5 / 0.15), oklch(0.16 0.03 156.5 / 0.92) 78%)",
+            "radial-gradient(120% 90% at 20% 15%, oklch(0.20 0.028 156.5 / 0.1), oklch(0.16 0.03 156.5 / 0.9) 80%)",
         }}
       />
+      {animado && (
+        <div className="login-sheen absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent" />
+      )}
+    </div>
+  );
+}
+
+/** Linha de mercado larga, repetida duas vezes, rolando para a esquerda em
+ * loop perfeito (o fim de uma cópia encaixa no começo da outra). Fica baixa,
+ * bem fraca, atrás do texto: dá a sensação de "mercado ao vivo". */
+function GraficoAoVivo() {
+  return (
+    <div className="absolute inset-x-0 bottom-20 h-44 overflow-hidden opacity-[0.16]">
       <svg
-        className="absolute left-6 top-6 opacity-35"
-        width="120"
-        height="80"
-        viewBox="0 0 130 90"
+        className="login-chart h-full w-[200%]"
+        viewBox="0 0 1200 160"
+        preserveAspectRatio="none"
         fill="none"
       >
-        <path
-          d="M2 70 C 30 70, 30 40, 58 40 S 86 10, 114 10"
-          stroke="oklch(0.93 0.045 80)"
-          strokeWidth="1.4"
-          strokeLinecap="round"
-        />
-        <path
-          d="M2 84 C 26 84, 26 60, 50 60 S 74 36, 98 36"
-          stroke="oklch(0.93 0.045 80)"
-          strokeWidth="1.4"
-          strokeLinecap="round"
-          opacity=".6"
-        />
+        <defs>
+          <path
+            id="login-linha"
+            d="M0 110 C50 110 70 70 130 82 S210 130 270 92 S380 22 440 52 S540 112 600 110"
+          />
+        </defs>
+        {[0, 600].map((x) => (
+          <g key={x} transform={`translate(${x} 0)`}>
+            <use
+              href="#login-linha"
+              stroke="oklch(0.93 0.045 80)"
+              strokeWidth="2"
+              vectorEffect="non-scaling-stroke"
+            />
+            <path
+              d="M0 110 C50 110 70 70 130 82 S210 130 270 92 S380 22 440 52 S540 112 600 110 L600 160 L0 160 Z"
+              fill="oklch(0.93 0.045 80)"
+              fillOpacity="0.35"
+            />
+          </g>
+        ))}
       </svg>
+    </div>
+  );
+}
+
+/** Número que sobe até o valor (uma vez, ~1,2s) só quando há movimento e tela
+ * grande; no celular e com movimento reduzido já nasce no valor final. */
+function Contagem({ valor, atraso = 0 }: { valor: number; atraso?: number }) {
+  const [n, setN] = useState(valor);
+  useEffect(() => {
+    if (
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      !window.matchMedia("(min-width: 1024px)").matches
+    ) {
+      return;
+    }
+    let raf = 0;
+    let inicio = 0;
+    setN(0);
+    const t = setTimeout(() => {
+      const passo = (agora: number) => {
+        inicio ||= agora;
+        const k = Math.min(1, (agora - inicio) / 1200);
+        setN(valor * (1 - Math.pow(1 - k, 3)));
+        if (k < 1) raf = requestAnimationFrame(passo);
+      };
+      raf = requestAnimationFrame(passo);
+    }, atraso);
+    return () => {
+      clearTimeout(t);
+      cancelAnimationFrame(raf);
+    };
+  }, [valor, atraso]);
+  return <>{n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</>;
+}
+
+/** Cartões de preço de exemplo (desktop, telas altas). Ficam no fluxo da
+ * página, acima do título, então nunca cobrem texto. Cada um entra em
+ * sequência, desenha a própria linha e depois flutua devagar. */
+function CartoesDeMercado() {
+  return (
+    <div
+      className="hidden flex-col gap-3 [@media(min-height:780px)]:flex"
+      role="img"
+      aria-label="Exemplo de cartões de preço: soja, milho e boi gordo"
+    >
+      {cartoes.map((c, i) => {
+        const sobe = c.delta >= 0;
+        const Seta = sobe ? TrendingUp : TrendingDown;
+        return (
+          <div
+            key={c.rotulo}
+            className={`login-rise w-fit ${c.recuo}`}
+            style={{ "--d": `${450 + i * 170}ms` } as React.CSSProperties}
+          >
+            <div
+              className="animate-float-chip flex items-center gap-5 rounded-2xl border border-white/15 bg-white/[0.09] px-4 py-3 shadow-xl shadow-black/25"
+              style={{ animationDelay: `${i * 1.3}s` }}
+            >
+              <div>
+                <p className="text-xs font-semibold text-white/65">{c.rotulo}</p>
+                <p className="mt-0.5 flex items-baseline gap-1 font-display text-2xl font-bold tabular-nums">
+                  <span className="text-sm font-semibold text-white/70">R$</span>
+                  <Contagem valor={c.valor} atraso={650 + i * 170} />
+                  <span className="text-xs font-medium text-white/55">{c.unidade}</span>
+                </p>
+              </div>
+              <div className="flex flex-col items-end gap-1.5">
+                <svg width="80" height="26" viewBox="0 0 80 26" fill="none" aria-hidden="true">
+                  <path
+                    d={c.linha}
+                    pathLength={100}
+                    className="login-draw"
+                    style={{ "--d": `${800 + i * 170}ms` } as React.CSSProperties}
+                    stroke={sobe ? "oklch(0.86 0.12 150)" : "oklch(0.78 0.12 25)"}
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <span
+                  className={`inline-flex items-center gap-1 text-xs font-bold ${
+                    sobe ? "text-[oklch(0.86_0.12_150)]" : "text-[oklch(0.8_0.12_25)]"
+                  }`}
+                >
+                  <Seta className="size-3.5" aria-hidden="true" />
+                  {sobe ? "+" : "−"}
+                  {Math.abs(c.delta).toLocaleString("pt-BR", { minimumFractionDigits: 1 })}%
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      <p className="ml-1 flex items-center gap-1.5 text-xs text-white/50">
+        <span className="login-blink size-1.5 rounded-full bg-[oklch(0.86_0.12_150)]" />
+        Valores de exemplo
+      </p>
     </div>
   );
 }
@@ -585,7 +751,9 @@ function Ticker({ compact = false }: { compact?: boolean }) {
       {!compact && (
         <div className="mt-3.5 flex items-center gap-1.5">
           <BadgeCheck className="size-3.5 text-white/50" />
-          <span className="text-xs text-white/50">Dados oficiais Conab e órgãos estaduais</span>
+          <span className="text-xs text-white/60">
+            Valores de exemplo · dados oficiais Conab e órgãos estaduais
+          </span>
         </div>
       )}
     </div>
