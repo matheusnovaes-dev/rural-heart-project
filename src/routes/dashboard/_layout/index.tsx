@@ -251,7 +251,7 @@ function PrecoHeroChart({ serie, cultura }: { serie: PrecoHistorico[]; cultura: 
           tickLine={false}
           axisLine={false}
           minTickGap={48}
-          tick={{ fontSize: 10, fill: "var(--primary-foreground)", fillOpacity: 0.65 }}
+          tick={{ fontSize: 12, fill: "var(--primary-foreground)", fillOpacity: 0.8 }}
         />
         <ChartTooltip
           content={
@@ -329,7 +329,7 @@ function PrecoRegionalHeroChart({ regioes }: { regioes: PrecoRegionalHistorico[]
           tickLine={false}
           axisLine={false}
           minTickGap={48}
-          tick={{ fontSize: 10, fill: "var(--primary-foreground)", fillOpacity: 0.65 }}
+          tick={{ fontSize: 12, fill: "var(--primary-foreground)", fillOpacity: 0.8 }}
         />
         <ChartTooltip
           content={
@@ -801,7 +801,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                               : "border-transparent bg-secondary text-muted-foreground"
                           }`}
                         >
-                          <span className="text-xs font-semibold uppercase">
+                          <span className="text-xs font-semibold capitalize">
                             {i === 0
                               ? "hoje"
                               : new Date(`${dia}T00:00:00`).toLocaleDateString("pt-BR", {
@@ -1030,7 +1030,7 @@ function CooperativaHome({
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase text-muted-foreground">Resumo executivo</p>
+          <p className="text-sm font-medium text-muted-foreground">Resumo executivo</p>
           <h1 className="mt-1 font-display text-2xl font-semibold text-foreground text-balance sm:text-3xl">
             {greeting()}, {cooperativaNome}
           </h1>

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { ArrowDown, ArrowUp, Lock, Minus, Plus, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { ConfirmarAcao } from "@/components/dashboard/ConfirmarAcao";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -238,15 +240,21 @@ export function Watchlist({ produtor }: { produtor: Produtor }) {
                     </span>
                   )}
 
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-7 shrink-0"
-                    onClick={() => remover(item.id)}
-                    aria-label={`Remover ${label} ${item.uf}`}
-                  >
-                    <Trash2 className="size-3.5 text-muted-foreground" />
-                  </Button>
+                  <ConfirmarAcao
+                    titulo={`Parar de acompanhar ${label} · ${item.uf}?`}
+                    descricao="Esse item sai da sua lista de acompanhamento. Você pode adicionar de novo quando quiser."
+                    aoConfirmar={() => remover(item.id)}
+                    gatilho={
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 shrink-0"
+                        aria-label={`Remover ${label} ${item.uf}`}
+                      >
+                        <Trash2 className="size-3.5 text-muted-foreground" />
+                      </Button>
+                    }
+                  />
                 </div>
               );
             })}
@@ -302,10 +310,11 @@ function FormNovoItem({ produtorId, onDone }: { produtorId: string; onDone: () =
       <div className="space-y-1.5">
         <Label htmlFor="w-uf">Estado</Label>
         <Input
+          autoComplete="off"
           id="w-uf"
           required
           maxLength={2}
-          placeholder="Ex: MT"
+          placeholder="Ex: MT…"
           value={uf}
           onChange={(e) => setUf(e.target.value.toUpperCase())}
         />

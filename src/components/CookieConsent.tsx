@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 
@@ -19,6 +19,9 @@ const CHAVE_LOCALSTORAGE = "safralume_cookie_consent";
 export function CookieConsent() {
   const [visivel, setVisivel] = useState(false);
   const cartaoRef = useRef<HTMLDivElement>(null);
+  // No painel (desktop) o aviso fica dentro da coluna do menu lateral, no espaço
+  // vazio acima de "Sair": assim nunca cobre um card.
+  const emPainel = useRouterState({ select: (s) => s.location.pathname.startsWith("/dashboard") });
 
   useEffect(() => {
     let ja = false;
@@ -75,7 +78,7 @@ export function CookieConsent() {
       role="region"
       aria-label="Aviso de cookies"
       style={{ marginBottom: "env(safe-area-inset-bottom, 0px)" }}
-      className="fixed inset-x-3 bottom-3 z-50 flex items-center gap-3 rounded-2xl border border-border bg-card/95 py-2.5 pr-2.5 pl-4 shadow-xl shadow-[oklch(0.25_0.03_156/0.18)] backdrop-blur-md sm:inset-x-auto sm:bottom-4 sm:left-4 sm:max-w-sm"
+      className={`fixed inset-x-3 bottom-3 z-50 flex items-center gap-3 rounded-2xl border border-border bg-card/95 py-2.5 pr-2.5 pl-4 shadow-xl shadow-[oklch(0.25_0.03_156/0.18)] backdrop-blur-md sm:inset-x-auto sm:bottom-4 sm:left-4 sm:max-w-sm ${emPainel ? "md:inset-x-auto md:bottom-20 md:left-4 md:w-56 md:max-w-none md:flex-col md:items-start md:gap-2 md:pr-4" : ""}`}
     >
       <p className="text-xs leading-snug text-foreground/80">
         Usamos cookies para melhorar sua experiência e medir anúncios.{" "}

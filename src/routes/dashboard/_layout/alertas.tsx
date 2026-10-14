@@ -950,6 +950,7 @@ function AlertaForm({
         <div className="space-y-1.5">
           <Label htmlFor="a-cultura">Cultura</Label>
           <Input
+            autoComplete="off"
             id="a-cultura"
             required
             value={cultura}
@@ -959,6 +960,7 @@ function AlertaForm({
         <div className="space-y-1.5">
           <Label htmlFor="a-uf">Estado</Label>
           <Input
+            autoComplete="off"
             id="a-uf"
             required
             maxLength={2}
@@ -982,10 +984,11 @@ function AlertaForm({
       <div className="space-y-1.5">
         <Label htmlFor="a-limite">Valor (R$ por saca)</Label>
         <Input
+          autoComplete="off"
           id="a-limite"
           required
           inputMode="decimal"
-          placeholder="Ex: 130,00"
+          placeholder="Ex: 130,00…"
           value={limite}
           onChange={(e) => setLimite(e.target.value)}
         />
@@ -1094,10 +1097,11 @@ function AlertaCambioForm({
       <div className="space-y-1.5">
         <Label htmlFor="ac-limite">Valor (R$)</Label>
         <Input
+          autoComplete="off"
           id="ac-limite"
           required
           inputMode="decimal"
-          placeholder="Ex: 5,20"
+          placeholder="Ex: 5,20…"
           value={limite}
           onChange={(e) => setLimite(e.target.value)}
         />
@@ -1221,6 +1225,7 @@ function AlertaClimaForm({
         <div className="space-y-1.5">
           <Label htmlFor="ac-uf">Estado</Label>
           <Input
+            autoComplete="off"
             id="ac-uf"
             required
             maxLength={2}
@@ -1231,6 +1236,7 @@ function AlertaClimaForm({
         <div className="space-y-1.5">
           <Label htmlFor="ac-limite">Limite ({condicaoInfo[condicao].unidade})</Label>
           <Input
+            autoComplete="off"
             id="ac-limite"
             required
             inputMode="decimal"

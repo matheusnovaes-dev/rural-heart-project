@@ -171,9 +171,10 @@ export function LeiteCard({ produtor }: { produtor: Produtor }) {
                     Quanto você recebe por litro?
                   </Label>
                   <Input
+                    autoComplete="off"
                     id="leite-meu-preco"
                     inputMode="decimal"
-                    placeholder="Ex: 2,80"
+                    placeholder="Ex: 2,80…"
                     value={meuPreco}
                     onChange={(e) => setMeuPreco(e.target.value)}
                     className="h-8 w-24"

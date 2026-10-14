@@ -245,11 +245,18 @@ function FuncionarioForm({ produtorId, onDone }: { produtorId: string; onDone: (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       <div className="space-y-1.5">
         <Label htmlFor="f-nome">Nome</Label>
-        <Input id="f-nome" required value={nome} onChange={(e) => setNome(e.target.value)} />
+        <Input
+          autoComplete="off"
+          id="f-nome"
+          required
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+        />
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="f-whatsapp">WhatsApp</Label>
         <Input
+          autoComplete="off"
           id="f-whatsapp"
           type="tel"
           placeholder="(00) 00000-0000"

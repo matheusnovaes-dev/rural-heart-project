@@ -35,7 +35,7 @@ export function PageHeader({
           </span>
         )}
         <div>
-          <h1 className="font-display text-xl font-semibold tracking-tight text-foreground">
+          <h1 className="font-display text-xl font-semibold tracking-tight text-balance text-foreground">
             {title}
           </h1>
           {description && <p className="text-sm text-muted-foreground">{description}</p>}

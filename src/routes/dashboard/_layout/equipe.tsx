@@ -99,6 +99,7 @@ function EquipePage() {
         </CardHeader>
         <CardContent className="flex gap-2">
           <Input
+            autoComplete="off"
             readOnly
             aria-label="Link de convite"
             value={inviteLink}

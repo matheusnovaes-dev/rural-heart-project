@@ -422,6 +422,7 @@ function LembreteForm({
       <div className="space-y-1.5">
         <Label htmlFor="l-titulo">Título</Label>
         <Input
+          autoComplete="off"
           id="l-titulo"
           placeholder='Ex: "Limpou o curral?"'
           required
@@ -441,6 +442,7 @@ function LembreteForm({
         <div className="space-y-1.5">
           <Label htmlFor="l-data">Data</Label>
           <Input
+            autoComplete="off"
             id="l-data"
             type="date"
             required
@@ -451,6 +453,7 @@ function LembreteForm({
         <div className="space-y-1.5">
           <Label htmlFor="l-hora">Hora</Label>
           <Input
+            autoComplete="off"
             id="l-hora"
             type="time"
             required

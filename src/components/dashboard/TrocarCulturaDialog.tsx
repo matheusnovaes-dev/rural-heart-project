@@ -122,6 +122,7 @@ export function TrocarCulturaDialog({
           <div className="space-y-1.5">
             <Label htmlFor="trocar-uf">Estado</Label>
             <Input
+              autoComplete="off"
               id="trocar-uf"
               maxLength={2}
               value={uf}
@@ -131,8 +132,9 @@ export function TrocarCulturaDialog({
           <div className="space-y-1.5">
             <Label htmlFor="trocar-municipio">Cidade (opcional)</Label>
             <Input
+              autoComplete="off"
               id="trocar-municipio"
-              placeholder="Ex: Bambuí"
+              placeholder="Ex: Bambuí…"
               value={municipio}
               onChange={(e) => setMunicipio(e.target.value)}
             />

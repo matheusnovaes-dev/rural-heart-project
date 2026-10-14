@@ -97,12 +97,13 @@ function SuportePage() {
             <div className="space-y-1.5">
               <Label htmlFor="s-assunto">Assunto</Label>
               <Input
+                autoComplete="off"
                 id="s-assunto"
                 required
                 maxLength={200}
                 value={assunto}
                 onChange={(e) => setAssunto(e.target.value)}
-                placeholder="Ex: preço não está atualizando"
+                placeholder="Ex: preço não está atualizando…"
               />
             </div>
             <div className="space-y-1.5">
@@ -114,7 +115,7 @@ function SuportePage() {
                 rows={4}
                 value={mensagem}
                 onChange={(e) => setMensagem(e.target.value)}
-                placeholder="Descreve o que está acontecendo, com o máximo de detalhe que puder."
+                placeholder="Descreva o que está acontecendo, com o máximo de detalhe que puder…"
               />
             </div>
             <Button type="submit" disabled={enviando} className="mt-1 w-fit">

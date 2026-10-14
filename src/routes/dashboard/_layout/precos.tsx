@@ -256,7 +256,7 @@ function PrecosPage() {
                 >
                   <Card className="gap-3 py-4">
                     <CardHeader className="gap-1 pb-0">
-                      <CardDescription className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                      <CardDescription className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
                         <span
                           className="size-2 shrink-0 rounded-full"
                           style={{ backgroundColor: s.color }}

@@ -151,7 +151,8 @@ function ProdutoresPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Buscar por nome ou WhatsApp..."
+                autoComplete="off"
+                placeholder="Buscar por nome ou WhatsApp…"
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
                 className="pl-9"
@@ -305,11 +306,18 @@ function ProdutorForm({
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       <div className="space-y-1.5">
         <Label htmlFor="p-nome">Nome</Label>
-        <Input id="p-nome" required value={nome} onChange={(e) => setNome(e.target.value)} />
+        <Input
+          autoComplete="off"
+          id="p-nome"
+          required
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+        />
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="p-whatsapp">WhatsApp</Label>
         <Input
+          autoComplete="off"
           id="p-whatsapp"
           required
           value={whatsapp}
@@ -319,11 +327,17 @@ function ProdutorForm({
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="p-cultura">Cultura</Label>
-          <Input id="p-cultura" value={cultura} onChange={(e) => setCultura(e.target.value)} />
+          <Input
+            autoComplete="off"
+            id="p-cultura"
+            value={cultura}
+            onChange={(e) => setCultura(e.target.value)}
+          />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="p-uf">Estado</Label>
           <Input
+            autoComplete="off"
             id="p-uf"
             maxLength={2}
             value={uf}

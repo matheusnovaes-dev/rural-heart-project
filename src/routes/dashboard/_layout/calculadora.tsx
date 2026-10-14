@@ -159,7 +159,7 @@ function CalculadoraConteudo() {
             <Label htmlFor="calc-uf">Estado</Label>
             <Select value={uf} onValueChange={setUf}>
               <SelectTrigger id="calc-uf" className="w-full">
-                <SelectValue placeholder="Selecione seu estado" />
+                <SelectValue placeholder="Selecione seu estado…" />
               </SelectTrigger>
               <SelectContent>
                 {ufs.map((u) => (
@@ -173,9 +173,10 @@ function CalculadoraConteudo() {
           <div className="space-y-1.5">
             <Label htmlFor="calc-sacas">Quantidade (sacas de 60 kg)</Label>
             <Input
+              autoComplete="off"
               id="calc-sacas"
               inputMode="decimal"
-              placeholder="Ex: 5.000"
+              placeholder="Ex: 5.000…"
               value={sacas}
               onChange={(e) => setSacas(e.target.value)}
               aria-invalid={sacas.trim() !== "" && sacasNum == null}
@@ -184,9 +185,10 @@ function CalculadoraConteudo() {
           <div className="space-y-1.5">
             <Label htmlFor="calc-custo">Custo de produção (R$ por saca, opcional)</Label>
             <Input
+              autoComplete="off"
               id="calc-custo"
               inputMode="decimal"
-              placeholder="Ex: 110,00"
+              placeholder="Ex: 110,00…"
               value={custoSaca}
               onChange={(e) => setCustoSaca(e.target.value)}
               aria-invalid={custoSaca.trim() !== "" && custoNum == null}

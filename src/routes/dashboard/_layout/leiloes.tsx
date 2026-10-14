@@ -464,6 +464,7 @@ function AlertaLeilaoForm({
         <div className="space-y-1.5">
           <Label htmlFor="al-uf">Estado</Label>
           <Input
+            autoComplete="off"
             id="al-uf"
             required
             maxLength={2}

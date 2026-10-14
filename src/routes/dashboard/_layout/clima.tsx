@@ -1,3 +1,4 @@
+import { ConfirmarAcao } from "@/components/dashboard/ConfirmarAcao";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -265,14 +266,20 @@ function ClimaConteudo() {
                     <CardTitle className="flex items-center gap-2 font-display text-lg font-semibold">
                       {labelDoLocal(local)}
                       {extra && (
-                        <button
-                          type="button"
-                          onClick={() => removerExtra(extra.id)}
-                          aria-label={`Parar de acompanhar ${labelDoLocal(local)}`}
-                          className="text-muted-foreground opacity-60 transition-opacity hover:text-destructive hover:opacity-100"
-                        >
-                          <X className="size-3.5" />
-                        </button>
+                        <ConfirmarAcao
+                          titulo={`Parar de acompanhar ${labelDoLocal(local)}?`}
+                          descricao="Esse local sai da sua lista de clima. Você pode adicionar de novo quando quiser."
+                          aoConfirmar={() => removerExtra(extra.id)}
+                          gatilho={
+                            <button
+                              type="button"
+                              aria-label={`Parar de acompanhar ${labelDoLocal(local)}`}
+                              className="flex size-8 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:text-destructive hover:opacity-100 pointer-coarse:size-11"
+                            >
+                              <X className="size-3.5" />
+                            </button>
+                          }
+                        />
                       )}
                     </CardTitle>
                     {insight && (
@@ -317,7 +324,7 @@ function ClimaConteudo() {
                                   i === 0 ? "ring-1 ring-primary/40" : ""
                                 } ${toneClasses[tone]}`}
                               >
-                                <span className="text-xs font-semibold uppercase">
+                                <span className="text-xs font-semibold capitalize">
                                   {i === 0
                                     ? "hoje"
                                     : new Date(`${dia}T00:00:00`).toLocaleDateString("pt-BR", {
@@ -430,8 +437,9 @@ function AdicionarLocalForm({
       <div className="space-y-1.5">
         <Label htmlFor="local-municipio">Cidade (opcional)</Label>
         <Input
+          autoComplete="off"
           id="local-municipio"
-          placeholder="Deixe em branco pra acompanhar o estado inteiro"
+          placeholder="Deixe em branco pra acompanhar o estado inteiro…"
           value={municipio}
           onChange={(e) => setMunicipio(e.target.value)}
         />

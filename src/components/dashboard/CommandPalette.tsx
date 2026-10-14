@@ -121,7 +121,7 @@ export function CommandPalette() {
   return (
     <>
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Buscar página ou ação..." />
+        <CommandInput placeholder="Buscar página ou ação…" />
         <CommandList>
           <CommandEmpty>Nada encontrado.</CommandEmpty>
           <CommandGroup heading="Ir para">

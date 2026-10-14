@@ -198,17 +198,17 @@ export function ImportarProdutoresDialog({
                           <Loader2 className="size-3 animate-spin text-muted-foreground" />
                         )}
                         {r.status === "ok" && (
-                          <Badge variant="default" className="text-[10px]">
+                          <Badge variant="default" className="text-xs">
                             Importado
                           </Badge>
                         )}
                         {r.status === "duplicado" && (
-                          <Badge variant="secondary" className="text-[10px]">
+                          <Badge variant="secondary" className="text-xs">
                             Já existia
                           </Badge>
                         )}
                         {r.status === "falhou" && (
-                          <Badge variant="destructive" className="text-[10px]">
+                          <Badge variant="destructive" className="text-xs">
                             Falhou
                           </Badge>
                         )}

@@ -74,14 +74,14 @@ export function SinalVendaGauge({ posicao }: { posicao: number }) {
         strokeLinecap="round"
       />
       <circle cx={CENTRO} cy={CENTRO} r="5" fill="var(--foreground)" />
-      <text x="14" y="112" className="fill-muted-foreground text-[9px] font-semibold uppercase">
+      <text x="14" y="112" className="fill-muted-foreground text-xs font-semibold">
         Baixo
       </text>
       <text
         x="186"
         y="112"
         textAnchor="end"
-        className="fill-muted-foreground text-[9px] font-semibold uppercase"
+        className="fill-muted-foreground text-xs font-semibold"
       >
         Alto
       </text>
