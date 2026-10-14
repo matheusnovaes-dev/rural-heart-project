@@ -41,6 +41,8 @@ export type LeituraDeMidia = {
   data_documento: string | null;
   /** Estado a que os preços se referem, só quando está escrito no documento (título, local de entrega). */
   uf_do_documento?: string | null;
+  /** PDF sem texto (só imagem escaneada): a leitura depende da nitidez da imagem. */
+  pdf_escaneado?: boolean;
   propostas: PropostaLida[];
   observacoes_gerais: string | null;
 };
@@ -115,6 +117,7 @@ export type EstudoSalvo = {
   produto: string;
   uf: string;
   avisoUf?: string | undefined;
+  pdfEscaneado?: boolean | undefined;
   ref: ReferenciaDeMercado;
   propostas: PropostaLida[];
   taxaMensal: number;

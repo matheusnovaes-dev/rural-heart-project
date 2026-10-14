@@ -265,6 +265,7 @@ export type EntradaDoEstudo = {
   refeito?: { mudancas: string[] } | undefined;
   /** Quando a referência é de outro estado que o do cadastro (o do local descrito no documento). */
   avisoUf?: string | undefined;
+  pdfEscaneado?: boolean | undefined;
   /** Bloco extra (ex: outros produtos de uma tabela), colocado antes do fecho. */
   extras?: string | undefined;
 };
@@ -284,6 +285,11 @@ export function montarEstudo(e: EntradaDoEstudo): string {
   const blocos: string[] = [titulo];
   if (e.refeito && e.refeito.mudancas.length > 0) {
     blocos.push(`*O que mudei*\n${e.refeito.mudancas.map((m) => `• ${m}`).join("\n")}`);
+  }
+  if (e.pdfEscaneado) {
+    blocos.push(
+      "⚠️ Este PDF é uma imagem escaneada. Confira o prazo e os valores abaixo com o papel na mão: a leitura depende da nitidez.",
+    );
   }
   if (e.confianca === "baixa") {
     blocos.push("⚠️ A imagem está difícil de ler. Confira os valores abaixo antes de decidir.");

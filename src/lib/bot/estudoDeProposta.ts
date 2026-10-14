@@ -267,6 +267,7 @@ export async function construirEstudo(args: {
   // ordem de grandeza, e só com a localização do produtor (sem ela a rota escolhida seria qualquer uma).
   let avisoFrete: string | undefined;
   if (
+    !avisoUf && // documento de outro estado: a origem do produtor (cadastro) não tem relação com a entrega
     principal!.propostas.some((p) => p.frete === "cif_entregue") &&
     produtor.lat != null &&
     produtor.lon != null &&
@@ -319,6 +320,7 @@ export async function construirEstudo(args: {
       origem,
       tipoDocumento: leitura?.tipo_documento,
       confianca: leitura?.confianca,
+      pdfEscaneado: leitura?.pdf_escaneado === true ? true : undefined,
       produto: principal!.produto,
       uf,
       avisoUf: [avisoUf, avisoIdade, avisoFrete].filter(Boolean).join(" ") || undefined,
@@ -353,6 +355,7 @@ export function renderizarEstudo(
     taxaMensal: e.taxaMensal,
     extras: e.extras,
     avisoUf: e.avisoUf,
+    pdfEscaneado: e.pdfEscaneado,
     refeito: opts.mudancas ? { mudancas: opts.mudancas } : undefined,
   });
 }

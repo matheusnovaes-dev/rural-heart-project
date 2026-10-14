@@ -90,6 +90,7 @@ Regras:
 - data_documento: a data impressa no documento (da pesquisa, da proposta, da conversa), do jeito que está escrita ("13/07/2020"). Não confunda com a validade. Sem data escrita, null.
 - uf_do_documento: a sigla do estado (MT, RS...) a que os preços se referem, SÓ se o documento diz: local de entrega/retirada com estado, ou título da tabela ("no Rio Grande do Sul" = RS). Não deduza pelo nome da empresa. Sem estado escrito, null.
 - produto: o nome exato impresso ("Farelo de soja", "Milho", "Suíno vivo"). Derivado é outro produto: farelo, óleo, casca ou torta de soja NÃO são "soja".
+- Se o texto estiver pequeno, borrado ou cortado e um campo (prazo, preço, unidade) não estiver NÍTIDO, use null nele e confianca "baixa". NUNCA presuma "à vista" quando o prazo não aparece escrito. Em pagamento_texto copie a linha de pagamento exatamente como está impressa.
 - trecho_lido: copie curto o trecho exato de onde tirou aquela proposta.
 - Se a imagem não tem relação com compra e venda de produto agrícola, tipo_documento "outro" e propostas vazio. Se estiver ilegível, legivel false.
 - confianca: "alta" só se todos os números estão nítidos; "media" se algum está difícil; "baixa" se houver dúvida em algum preço.
@@ -161,20 +162,51 @@ const VAZIO_RE = /^\s*(null|undefined|nao[_ ]informad[oa]|não[_ ]informad[oa]|n
 const limpo = (v: string | null | undefined): string | null =>
   v == null || VAZIO_RE.test(v) ? null : v.trim();
 
+/**
+ * O número de dias vem do TEXTO citado, não do inteiro que o modelo devolveu: já saiu "45 dias" no
+ * texto com prazo 40 no número (leitura de PDF em baixa resolução). Parcelado ("30/60/90") fica
+ * como o modelo leu, porque não dá para escolher um número só.
+ */
+export function prazoDoTexto(texto: string | null | undefined): number | null {
+  if (!texto) return null;
+  const t = texto
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  if (/\d{1,3}\s*[\/,e]\s*\d{1,3}(\s*[\/,e]\s*\d{1,3})?\s*(dias|d\b)/.test(t)) return null;
+  const m = t.match(/(\d{1,3})\s*(?:\([^)]*\)\s*)?(?:dias?|dd|d)\b/);
+  return m ? Number(m[1]) : null;
+}
+
+/** PDF sem fonte embutida = só imagem escaneada (PDF de texto sempre tem fonte). Pode errar para um PDF de texto com objetos comprimidos: nesse caso só gera um aviso a mais. */
+export function pareceDeImagemEscaneada(base64: string): boolean {
+  try {
+    const bruto = atob(base64);
+    return !/\/Font\b/.test(bruto);
+  } catch {
+    return false;
+  }
+}
+
 /** O modelo às vezes escreve "null" ou "nao_informado" como texto: vira null de verdade. */
 export function limparLeitura(l: LeituraDeMidia): LeituraDeMidia {
   return {
     ...l,
     data_documento: limpo(l.data_documento),
     uf_do_documento: limpo(l.uf_do_documento),
-    propostas: l.propostas.map((p) => ({
-      ...p,
-      comprador: limpo(p.comprador),
-      produto: limpo(p.produto),
-      local_entrega: limpo(p.local_entrega),
-      pagamento_texto: limpo(p.pagamento_texto),
-      validade: limpo(p.validade),
-    })),
+    propostas: l.propostas.map((p) => {
+      const dias = prazoDoTexto(p.pagamento_texto);
+      return {
+        ...p,
+        prazo_pagamento_dias:
+          dias != null && dias !== p.prazo_pagamento_dias ? dias : p.prazo_pagamento_dias,
+        comprador: limpo(p.comprador),
+        produto: limpo(p.produto),
+        local_entrega: limpo(p.local_entrega),
+        pagamento_texto: limpo(p.pagamento_texto),
+        validade: limpo(p.validade),
+      };
+    }),
   };
 }
 
@@ -194,8 +226,14 @@ export async function lerMidia(
   for (const modelo of ["gpt-4o", "gpt-4o-mini"]) {
     try {
       const leitura = await chamar(apiKey, modelo, midia, signal);
-      if (leitura && Array.isArray(leitura.propostas))
-        return { ok: true, leitura: limparLeitura(leitura) };
+      if (leitura && Array.isArray(leitura.propostas)) {
+        const limpa = limparLeitura(leitura);
+        if (midia.mime === "application/pdf" && pareceDeImagemEscaneada(midia.base64)) {
+          limpa.pdf_escaneado = true;
+          if (limpa.confianca === "alta") limpa.confianca = "media";
+        }
+        return { ok: true, leitura: limpa };
+      }
     } catch (err) {
       if (signal.aborted) break;
       console.error("Erro lendo mídia", modelo, err);
