@@ -261,6 +261,8 @@ export type EntradaDoEstudo = {
   taxaMensal: number;
   /** Quantas linhas lidas ficaram de fora (outros produtos além do limite). */
   omitidas?: number | undefined;
+  /** Quando a referência é de outro estado que o do cadastro (o do local descrito no documento). */
+  avisoUf?: string | undefined;
   /** Bloco extra (ex: outros produtos de uma tabela), colocado antes do fecho. */
   extras?: string | undefined;
 };
@@ -306,6 +308,7 @@ export function montarEstudo(e: EntradaDoEstudo): string {
   const alertas = [
     ...new Set(avaliadas.flatMap((a) => a.alertas.filter((x) => padraoDeAlerta.test(x)))),
   ];
+  if (e.avisoUf) alertas.unshift(e.avisoUf);
   if (ref.aproximada) {
     alertas.unshift(
       `Não há preço recente de ${e.produto} em ${e.uf}: usei outros estados como referência aproximada.`,

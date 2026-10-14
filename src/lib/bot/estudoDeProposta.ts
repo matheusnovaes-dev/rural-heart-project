@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { culturaMencionada, normalizarCultura } from "@/config/culturas";
+import { ufs } from "@/config/ufs";
 import { avaliarPropostas, TAXA_MENSAL_PADRAO } from "@/lib/bot/propostas/avaliar";
 import { lerMidia } from "@/lib/bot/propostas/lerMidia";
 import { obterReferencia } from "@/lib/bot/propostas/referencia";
@@ -38,6 +39,14 @@ const brl = (n: number) =>
 const pct = (n: number) => `${Math.abs(n).toFixed(1).replace(".", ",")}%`;
 
 /** "tenho 3.000 sacas", "são 5 mil sacas": quantidade que o produtor escreveu na legenda. */
+/** UF escrita no local de entrega do documento: "Rondonópolis (MT)", "Sorriso - MT". */
+export function ufDoLocal(local: string | null | undefined): string | null {
+  if (!local) return null;
+  const m = local.match(/(?:\(|[-,/]\s*)([A-Za-z]{2})(?:\)|\s*$)/);
+  const uf = m?.[1]?.toUpperCase();
+  return uf && ufs.some((u) => u.value === uf) ? uf : null;
+}
+
 export function quantidadeDaLegenda(texto: string | null | undefined): number | null {
   if (!texto) return null;
   const m = texto.match(/(\d{1,3}(?:\.\d{3})+|\d+(?:,\d+)?)\s*(mil)?\s*(?:sacas?|sc\b|arrobas?)/i);
@@ -104,10 +113,16 @@ export async function montarRespostaDeEstudo(args: {
   hoje?: Date | undefined;
 }): Promise<string> {
   const { supabase, produtor, propostas, origem, leitura } = args;
-  const uf = produtor.uf;
+  // O estado do cadastro, a menos que o próprio documento diga onde é a entrega ("Rondonópolis (MT)").
+  const ufDoDocumento = propostas.map((p) => ufDoLocal(p.local_entrega)).find(Boolean) ?? null;
+  const uf = ufDoDocumento ?? produtor.uf;
   if (!uf) {
     return "Pra comparar com o mercado eu preciso saber seu estado. Me diga em qual estado você vende e eu faço o estudo.";
   }
+  const avisoUf =
+    ufDoDocumento && produtor.uf && ufDoDocumento !== produtor.uf
+      ? `Usei ${ufDoDocumento} como referência, porque é o estado do local descrito na proposta (seu cadastro é ${produtor.uf}).`
+      : undefined;
   const grupos = agrupar(propostas, produtor.cultura_principal).slice(0, 4);
   if (grupos.length === 0) {
     return "Li o documento, mas não consegui saber de qual produto são os preços. Me diga o produto (soja, milho, boi...) que eu faço o estudo.";
@@ -161,6 +176,7 @@ export async function montarRespostaDeEstudo(args: {
     uf,
     taxaMensal: TAXA_MENSAL_PADRAO,
     extras,
+    avisoUf,
   });
 }
 
