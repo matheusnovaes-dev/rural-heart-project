@@ -33,8 +33,16 @@ const PERGUNTA_SOBRE_O_RECURSO =
   /\b(consegue|conseguem|sabe ler|sabem|le|leem|entende|analisa|aceita|aceitam|funciona|pode ler|posso mandar|da pra|como funciona|o que e|o que faz|pra que serve|para que serve|me explica|explica)\b/;
 const ARQUIVO = /\b(foto|fotos|pdf|imagem|imagens|print|prints)\b/;
 
+/**
+ * "Quero testar o Safralume" (link do Instagram, anúncio) não é proposta, mesmo que cite o post
+ * ("vi o post da proposta"): sem preço escrito, o convite de cadastro tem que vencer.
+ */
+const PEDIDO_DE_TESTE =
+  /\b(quero|queria|gostaria\s+de|vim\s+(do|pelo|pela)|vi\s+(o|a)\s+(post|anuncio|video|reel))\b.*\b(testar|teste|experimentar|cadastr\w*|usar\s+o\s+safralume)\b|\bteste\s+gratis\b/;
+
 export function ehPropostaDePreco(texto: string): boolean {
   const t = semAcento(texto.toLowerCase());
+  if (PEDIDO_DE_TESTE.test(t) && numerosDePreco(texto).length === 0) return false;
   if (PERGUNTA_SOBRE_O_RECURSO.test(t) && (ARQUIVO.test(t) || /estudo|ranking/.test(t)))
     return false;
   const nums = numerosDePreco(texto);
