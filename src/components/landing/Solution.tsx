@@ -92,7 +92,7 @@ function PhoneMockup() {
             transition={{ delay: 0.05, duration: 0.35 }}
             className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-[#d9fdd3] px-3 py-2 text-sm text-[#111b21]"
           >
-            Qual o preço da soja hoje em Rio Verde?
+            Qual o preço da soja hoje em Cascavel?
           </motion.div>
 
           <motion.div
