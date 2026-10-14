@@ -237,3 +237,14 @@ export function culturaMaisRecenteNoHistorico(
   }
   return null;
 }
+
+/**
+ * Derivados do grão (farelo, óleo de soja, casca, torta): têm preço próprio, por tonelada, da
+ * indústria, e NÃO temos fonte pública diária deles. Nunca podem virar o preço do grão (visto em
+ * produção: "o preço do farelo de soja em MT é R$ 137,88 por 60 kg", que era o da soja).
+ */
+const DERIVADO_DE_GRAO_RE =
+  /\b(farelo|oleo de (soja|milho|girassol|algodao|canola)|casca de soja|torta de|bagaco de)\b/;
+export function mencionaDerivadoDeGrao(texto: string): boolean {
+  return DERIVADO_DE_GRAO_RE.test(removerAcentos(texto).toLowerCase());
+}

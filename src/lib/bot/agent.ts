@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { culturaMencionada, normalizarCultura } from "@/config/culturas";
+import { culturaMencionada, mencionaDerivadoDeGrao, normalizarCultura } from "@/config/culturas";
 import {
   buildContextoInstitucional,
   buildContextoFuncionalidades,
@@ -64,6 +64,9 @@ import {
 } from "@/lib/bot/propostas/acompanhamento";
 import { separarEstudoDoHistorico } from "@/lib/bot/propostas/salvo";
 import { SEM_ESTUDO_RECENTE } from "@/lib/bot/tools/acompanharEstudo";
+
+const RESPOSTA_DERIVADO_DE_GRAO =
+  "Eu não acompanho o preço de farelo, óleo, casca nem torta: são derivados, a indústria vende por tonelada e não tenho uma fonte pública diária deles. Acompanho o preço do grão (soja, milho, trigo...), boi, café, leite e outras culturas. Se você tem uma proposta de farelo na mão, mande a foto e eu leio, mas sem comparar com o mercado. Quer o preço da soja em grão?";
 import {
   ehPropostaDePreco,
   PERGUNTA_DO_VALOR_DA_PROPOSTA,
@@ -1289,6 +1292,16 @@ export async function runAgent(input: {
   if (estudoRecente && ehCenarioSemNumero(texto)) {
     return {
       resposta: PEDIR_UM_NUMERO,
+      precisa_humano: false,
+      cadastro_criado: false,
+      convite_dispensado: true,
+    };
+  }
+  // Derivado (farelo, óleo, casca, torta) sem número de proposta: não temos esse preço, e o
+  // modelo respondia com o da soja em grão rotulado como farelo. Resposta por código.
+  if (mencionaDerivadoDeGrao(texto) && !temPrecoDeProposta(texto)) {
+    return {
+      resposta: RESPOSTA_DERIVADO_DE_GRAO,
       precisa_humano: false,
       cadastro_criado: false,
       convite_dispensado: true,
