@@ -28,8 +28,15 @@ export function numerosDePreco(texto: string): number[] {
     .filter((n) => Number.isFinite(n) && n >= 10 && n <= 20000);
 }
 
+/** Pergunta sobre o recurso ("você lê foto de proposta?", "como funciona o estudo?"), não proposta contada. */
+const PERGUNTA_SOBRE_O_RECURSO =
+  /\b(consegue|conseguem|sabe ler|sabem|le|leem|entende|analisa|aceita|aceitam|funciona|pode ler|posso mandar|da pra|como funciona|o que e|o que faz|pra que serve|para que serve|me explica|explica)\b/;
+const ARQUIVO = /\b(foto|fotos|pdf|imagem|imagens|print|prints)\b/;
+
 export function ehPropostaDePreco(texto: string): boolean {
   const t = semAcento(texto.toLowerCase());
+  if (PERGUNTA_SOBRE_O_RECURSO.test(t) && (ARQUIVO.test(t) || /estudo|ranking/.test(t)))
+    return false;
   const nums = numerosDePreco(texto);
   if (VERBO_DE_PROPOSTA.test(t)) return true;
   return PALAVRA_DE_COMPARACAO.test(t) && nums.length >= 2;

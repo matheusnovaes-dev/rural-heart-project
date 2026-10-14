@@ -45,7 +45,7 @@ export function ehPerguntaDeCatalogo(texto: string): boolean {
 
 const AUDIO = palavra("[aá]udios?");
 const VERBO_DE_CAPACIDADE = palavra(
-  "posso|pode|d[aá]|consigo|aceita|aceitam|entende|entendem|funciona|ouve|ouvem|escuta|escutam|l[eê]|leem|lêem|analisa|analisam|identifica|reconhece|diagn[oó]stic\\w*",
+  "posso|pode|d[aá]|consigo|consegue|conseguem|aceita|aceitam|entende|entendem|funciona|ouve|ouvem|escuta|escutam|l[eê]|leem|lêem|analisa|analisam|identifica|reconhece|diagn[oó]stic\\w*",
 );
 
 export function ehPerguntaDeAudio(texto: string): boolean {

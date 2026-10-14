@@ -56,7 +56,7 @@ export const funcionalidades: Funcionalidade[] = [
     comoPedir:
       "Manda a foto da proposta, ou escreva: A Cargill ofereceu 126 e a Bunge 128 em 30 dias, qual é melhor?",
     onde: "WhatsApp",
-    novidadeDesde: "2026-10-14",
+    novidadeDesde: "2026-10-13",
     destaque: 0,
   },
   {
