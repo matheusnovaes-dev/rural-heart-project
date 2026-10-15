@@ -47,7 +47,18 @@ function perguntaCultura(tentativa: number): string {
   return `Entendi! Só falta saber o que você produz pra eu criar seu cadastro grátis. ${MARC_MENU} (ou escreva o nome, tipo "soja"):\n${MENU}`;
 }
 
-function perguntaCafe(): string {
+// Textos de re-pergunta (depois de uma resposta que não ajudou). Servem de marcador: só eles contam
+// como falha seguida; a pergunta inicial e o reconhecimento de progresso ("Soja, certo!") não.
+const MARCAS_DE_FALHA = [
+  "Só falta saber o que você produz",
+  "Só falta o estado",
+  "Só falta saber o tipo do café",
+];
+
+function perguntaCafe(tentativa = 0): string {
+  if (tentativa > 0) {
+    return `Só falta saber o tipo do café. Seu café é arábica ou conillon? ${MARC_MENU}:\n1 Arábica\n2 Conillon`;
+  }
   return `Seu café é arábica ou conillon? ${MARC_MENU}:\n1 Arábica\n2 Conillon`;
 }
 
@@ -215,11 +226,15 @@ function passoDe(msgBot: string | undefined): Passo {
   return null;
 }
 
-/** Quantas respostas seguidas do bot (da mais recente para trás) estavam neste mesmo passo. */
-function tentativasNoPasso(botDesc: string[], passo: Passo): number {
+/** Quantas respostas seguidas do bot (da mais recente para trás) foram re-perguntas por falha. */
+function falhasSeguidas(botDesc: string[]): number {
   let n = 0;
   for (const m of botDesc) {
-    if (passoDe(m) !== passo) break;
+    const ehFalha =
+      MARCAS_DE_FALHA.some((x) => m.includes(x)) ||
+      m.includes(FIM_DO_ESCALAR) ||
+      m.includes(JA_AVISADO);
+    if (!ehFalha) break;
     n++;
   }
   return n;
@@ -337,8 +352,11 @@ export function decidirCadastro(params: {
   }
 
   // Ainda falta algo: pergunta uma coisa só, sem repetir a frase anterior.
-  const tentativas = tentativasNoPasso(botDesc, alvo);
-  if (tentativas >= 2) {
+  // Se a pessoa trouxe uma informação nova (ex: corrigiu a cultura), é progresso: não conta como falha.
+  const falhas = trouxeAlgo ? 0 : falhasSeguidas(botDesc);
+  // Repetir a pergunta que o bot acabou de fazer usa o texto de re-pergunta (outra frase).
+  const tentativas = !trouxeAlgo && (passoDe(ultimaBot) === alvo || falhas > 0) ? 1 : 0;
+  if (falhas >= 1) {
     const jaChamouEquipe = botDesc.slice(0, 12).some((m) => m.includes(MARCADOR_DE_CONTATO));
     if (!jaChamouEquipe) return { tipo: "responder", resposta: ESCALAR, precisa_humano: true };
     // A equipe já foi avisada e a pessoa segue sem dizer o que produz: uma confirmação curta e
@@ -351,7 +369,7 @@ export function decidirCadastro(params: {
     };
   }
   if (alvo === "cafe")
-    return { tipo: "responder", resposta: perguntaCafe(), precisa_humano: false };
+    return { tipo: "responder", resposta: perguntaCafe(tentativas), precisa_humano: false };
   if (alvo === "uf") {
     return { tipo: "responder", resposta: perguntaUf(cultura, tentativas), precisa_humano: false };
   }

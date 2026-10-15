@@ -24,6 +24,11 @@ import { ehPedidoDeSair, RESPOSTA_SAIDA_DE_MENSAGENS } from "@/lib/recuperacaoCa
 import { resolverNome } from "@/lib/nomes";
 import { decidirCadastro, PERGUNTA_CULTURA } from "@/lib/bot/cadastroConversa";
 import {
+  ehInteresseDeCooperativa,
+  respostaDeCooperativa,
+  ultimaFoiDeCooperativa,
+} from "@/lib/bot/cooperativa";
+import {
   ehPedidoDeTesteDrive,
   montarCadastroComTesteDrive,
   montarTesteDriveDoBotao,
@@ -1252,6 +1257,18 @@ async function runAgentBase(input: {
       h.conteudo.includes(MARCADOR_DE_CONTATO),
     ).length;
     const r = respostaDePedidoDeContato(produtor.nome, avisosAnteriores);
+    return {
+      resposta: r.resposta,
+      precisa_humano: r.precisa_humano,
+      cadastro_criado: false,
+      convite_dispensado: true,
+    };
+  }
+
+  // Quem representa uma cooperativa ou corretora: o cadastro dela é pelo site (painel da equipe),
+  // nunca vira "produtor" por aqui. Vale em qualquer ponto da conversa, antes do cadastro por código.
+  if (ehInteresseDeCooperativa(texto)) {
+    const r = respostaDeCooperativa(ultimaFoiDeCooperativa(historico));
     return {
       resposta: r.resposta,
       precisa_humano: r.precisa_humano,

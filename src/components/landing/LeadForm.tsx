@@ -459,6 +459,15 @@ export function LeadForm({
               <p className="text-center text-xs text-muted-foreground">
                 Sem cartão de crédito. Cancele quando quiser.
               </p>
+              <p className="text-center text-xs text-muted-foreground">
+                Representa uma cooperativa ou corretora?{" "}
+                <a
+                  href="/login?plano=prata"
+                  className="text-foreground inline-block font-medium underline underline-offset-2 pointer-coarse:py-3"
+                >
+                  Cadastre aqui
+                </a>
+              </p>
               {/* Consentimento pra mensagem no WhatsApp (a Meta exige aceite pra
                   mensagem que a empresa inicia, e a recuperação de cadastro
                   depende disso). Fica na etapa 1 porque é aqui que o número é dado. */}
