@@ -775,6 +775,14 @@ export function tirarNegativaDeInsumoParaBronze(
   resposta: string,
   insumoForaDoPlano: boolean,
 ): string {
+  // Também em qualquer resposta: o bot não tem como "registrar sugestão" (visto ao vivo em 2026-10-15,
+  // "se quiser, posso registrar essa sugestão" para glifosato no Bronze). Promessa que não dá pra cumprir.
+  resposta = resposta
+    .replace(
+      /(^|\s)(?:Se quiser, )?posso (?:registrar|anotar|guardar)\b[^.!?\n]*\bsugest[ãa]o\b[^.!?\n]*[.!?]\s*/gi,
+      "$1",
+    )
+    .trim();
   if (!insumoForaDoPlano) return resposta;
   const limpa = resposta
     .replace(
