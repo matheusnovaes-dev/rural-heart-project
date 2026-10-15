@@ -11,6 +11,7 @@ import {
 import { buscarClima } from "@/lib/bot/tools/clima";
 import { buscarLeite } from "@/lib/bot/tools/leite";
 import { buscarFerrugemAsiatica } from "@/lib/bot/tools/ferrugem";
+import { buscarIndicadoresImea } from "@/lib/bot/tools/imea";
 import { buscarLeiloesProximos } from "@/lib/bot/tools/leiloes";
 import { buscarSinalVenda } from "@/lib/bot/tools/sinalVenda";
 import {
@@ -69,7 +70,7 @@ export const TOOLS = [
           produto: {
             type: ["string", "null"],
             description:
-              "Palavra-chave maiúscula do produto: SOJA, MILHO, BOI, CAFÉ ARÁBICA, CAFÉ CONILLON (atenção: conillon com dois L; se a pessoa disse só café, passe CAFÉ que a ferramenta escolhe o tipo e informa), ALGODÃO, TRIGO, ARROZ, FEIJÃO, CANA DE AÇÚCAR. null se genuinamente não souber qual.",
+              "Palavra-chave maiúscula do produto: SOJA, MILHO, BOI, BEZERRO, BEZERRA, GARROTE, NOVILHA, VACA GORDA, VACA MAGRA (reposição e vaca NÃO são BOI: passe o próprio nome), OVOS, CAFÉ ARÁBICA, CAFÉ CONILLON (atenção: conillon com dois L; se a pessoa disse só café, passe CAFÉ que a ferramenta escolhe o tipo e informa), ALGODÃO, TRIGO, ARROZ, FEIJÃO, CANA DE AÇÚCAR. null se genuinamente não souber qual.",
           },
           uf: {
             type: ["string", "null"],
@@ -207,6 +208,22 @@ export const TOOLS = [
         type: "object",
         properties: { produto: { type: "string" }, uf: { type: "string" } },
         required: ["produto", "uf"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "buscar_indicadores_imea",
+      description:
+        "Indicadores do Imea (boletim semanal de MATO GROSSO) de boi, soja, milho e algodão: escala de abate, vaca gorda a prazo, boi gordo a prazo, diferença do boi de MT para SP, prêmio no porto de Santos, diferencial de base contra Chicago, indicador Cepea e caroço de algodão. Chame quando o produtor perguntar por qualquer um desses (ex: 'como está a escala de abate?', 'quanto está a vaca gorda?', 'qual o prêmio no porto?', 'e a base da soja?'). São dados de MT: diga isso e cite a data de cada valor. Nunca invente um indicador que não veio.",
+      parameters: {
+        type: "object",
+        properties: {
+          cultura: { type: ["string", "null"], description: "BOI, SOJA, MILHO ou ALGODÃO" },
+        },
+        required: ["cultura"],
         additionalProperties: false,
       },
     },
@@ -727,6 +744,13 @@ function resolverCultura(ctx: ToolContext, produtoDoModelo: string): string {
     if (normalizarCultura(produtoDoModelo) === "café" && mencionada.startsWith("café ")) {
       return mencionada;
     }
+    // O modelo trocava "vaca gorda" e "bezerro" por BOI (preço de outro bicho): vale o que a pessoa disse.
+    if (
+      normalizarCultura(produtoDoModelo) === "boi" &&
+      /^(bezerr[oa]|garrote|novilha|vaca gorda|vaca magra)$/.test(mencionada)
+    ) {
+      return mencionada;
+    }
     return produtoDoModelo;
   }
   // Cultura que o catálogo não conhece (ex: "abacate") mas que a pessoa escreveu na mensagem: o
@@ -822,6 +846,11 @@ async function executarToolSemLog(
         produto: resolverCultura(ctx, a.produto),
       });
     }
+    case "buscar_indicadores_imea":
+      return buscarIndicadoresImea(
+        ctx.supabase,
+        args as Parameters<typeof buscarIndicadoresImea>[1],
+      );
     case "buscar_ferrugem_asiatica":
       return buscarFerrugemAsiatica(
         ctx.supabase,

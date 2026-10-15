@@ -20,6 +20,14 @@ const CATALOGO: Cultura[] = [
   { value: "azeite de babaçu", label: "Azeite de babaçu" },
   { value: "azeite de macaúba", label: "Azeite de macaúba" },
   { value: "banana", label: "Banana" },
+  // Reposição bovina (IEA-SP, Epagri-SC): tinha preço no banco e ninguém conseguia pedir (2026-10-15).
+  // Bezerro, bezerra, garrote e vaca magra são preço por cabeça ("unidade").
+  { value: "bezerra", label: "Bezerra" },
+  { value: "bezerro", label: "Bezerro" },
+  { value: "garrote", label: "Garrote" },
+  { value: "novilha", label: "Novilha" },
+  { value: "vaca gorda", label: "Vaca gorda" },
+  { value: "vaca magra", label: "Vaca magra" },
   { value: "baru", label: "Baru" },
   { value: "batata", label: "Batata" },
   { value: "batata-doce", label: "Batata-doce" },
@@ -159,6 +167,8 @@ const ALIAS_CULTURA: Record<string, string> = {
   // "Algodão" sozinho é a pluma (o preço que o produtor acompanha); caroço tem unidade e preço
   // outros e misturava na lista de referências (R$/t ao lado de R$/@).
   algodão: "algodão em pluma",
+  ovo: "ovos de galinha",
+  ovos: "ovos de galinha",
   conillon: "café conillon",
   conilon: "café conillon",
   robusta: "café conillon",
@@ -212,6 +222,8 @@ export function padraoIlikePorPalavra(termo: string): string {
 // (outro preço) e fica de fora para não misturar na média das praças.
 const NOMES_NA_BASE: Record<string, string[]> = {
   "café arábica": ["café*arábica*", "café*beneficiado*"],
+  // O IEA-SP grava "OVO TIPO EXTRA BRANCO" (sem "galinha") e a Conab "OVOS DE GALINHA GRANDE BRANCO".
+  "ovos de galinha": ["ovos*galinha*", "ovo*tipo*"],
 };
 
 type FiltravelPorProduto<Q> = {
