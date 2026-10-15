@@ -55,6 +55,9 @@ function extrairNumerosSoltos(texto: string): number[] {
 function coletarNumerosDeJson(valor: unknown, saida: number[], chave?: string): void {
   if (typeof valor === "number" && Number.isFinite(valor)) {
     saida.push(valor);
+    // Valor negativo (ex: diferencial de base -3,49) é escrito como "-R$3,49" ou "R$3,49 abaixo":
+    // o extrator lê o módulo, então o módulo também é fonte legítima.
+    if (valor < 0) saida.push(-valor);
     if (chave && /_mil_(ha|t)$/.test(chave)) saida.push(valor * 1000);
   } else if (typeof valor === "string") {
     saida.push(...extrairNumerosSoltos(valor));
@@ -244,6 +247,31 @@ export function corrigirLinkDePainelParaClienteSemLogin(
 ): { resposta: string; precisa_humano: boolean } | null {
   const querCancelar = /cancel/i.test(textoProdutor);
   if (!forcar && !/safralume\.com\.br\/dashboard/i.test(resposta)) return null;
+  // Link só de upgrade/teaser do plano Prata (ex: "dá pra conhecer em .../dashboard/assinatura"):
+  // não é pedido de suporte nem de cancelamento, então não escala pra humano. Troca o link por
+  // uma saída que existe pra esse cliente (pedir o acesso ao painel aqui no WhatsApp).
+  // Visto ao vivo em 2026-10-15: "tem leilão de gado essa semana?" de um Bronze virava "passei
+  // seu caso pra nossa equipe" porque o teaser de leilão citava esse link.
+  const soUpgrade =
+    !forcar &&
+    !querCancelar &&
+    !/cancel|reembols|cobran|chamado|suporte/i.test(resposta) &&
+    !/safralume\.com\.br\/dashboard\/(?!assinatura)/i.test(resposta);
+  if (soUpgrade) {
+    const saida = "pelo painel (é só me pedir aqui que eu mando seu acesso)";
+    return {
+      resposta: resposta
+        .replace(
+          /\b(em|no site|pelo site)\s+(https?:\/\/)?safralume\.com\.br\/dashboard\/assinatura/gi,
+          saida,
+        )
+        .replace(
+          /(https?:\/\/)?safralume\.com\.br\/dashboard\/assinatura/gi,
+          "o painel (é só me pedir aqui que eu mando seu acesso)",
+        ),
+      precisa_humano: false,
+    };
+  }
   return {
     resposta: querCancelar
       ? "Seu teste grátis não tem cobrança nem cartão cadastrado, então não tem nada pra cancelar. Já avisei a equipe do seu pedido e a resposta vem por aqui mesmo no WhatsApp."

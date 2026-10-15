@@ -52,5 +52,16 @@ export function mascararTelefone(valor: string): string {
 export function telefoneValido(valor: string): boolean {
   const d = valor.replace(/\D/g, "");
   const semDdi = d.startsWith("55") && d.length > 11 ? d.slice(2) : d;
-  return semDdi.length === 10 || semDdi.length === 11;
+  if (semDdi.length !== 10 && semDdi.length !== 11) return false;
+  // DDD que existe no Brasil (11 a 99, sem 20, 23, 25, 26, 29, 30, 36, 39, 40, 50, 52, 56 a 60, 70, 72, 76, 78, 80, 90)
+  // e, com 11 dígitos, celular começa com 9. "00000000000" passava e virava lead sem WhatsApp.
+  if (!DDDS_VALIDOS.has(semDdi.slice(0, 2))) return false;
+  if (semDdi.length === 11 && semDdi[2] !== "9") return false;
+  return true;
 }
+
+const DDDS_VALIDOS = new Set(
+  "11 12 13 14 15 16 17 18 19 21 22 24 27 28 31 32 33 34 35 37 38 41 42 43 44 45 46 47 48 49 51 53 54 55 61 62 63 64 65 66 67 68 69 71 73 74 75 77 79 81 82 83 84 85 86 87 88 89 91 92 93 94 95 96 97 98 99".split(
+    " ",
+  ),
+);
