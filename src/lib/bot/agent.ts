@@ -1726,7 +1726,7 @@ async function runAgentBase(input: {
 
     // Cliente cadastrado só pelo WhatsApp (sem login no site): nenhum link
     // de /dashboard serve pra ele — ver guardas.ts.
-    const semLogin = produtor.id && !produtor.user_id;
+    const semLogin = !produtor.user_id;
     const correcaoPainel = semLogin
       ? corrigirLinkDePainelParaClienteSemLogin(resposta, texto, precisaEscalarPorCobranca(texto))
       : null;
