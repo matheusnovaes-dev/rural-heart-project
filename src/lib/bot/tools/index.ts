@@ -3,7 +3,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ProdutorContexto } from "@/lib/bot/types";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
 import { buscarPreco } from "@/lib/bot/tools/preco";
-import { culturaMencionada, culturaMaisRecenteNoHistorico } from "@/config/culturas";
+import {
+  culturaMencionada,
+  culturaMaisRecenteNoHistorico,
+  normalizarCultura,
+} from "@/config/culturas";
 import { buscarClima } from "@/lib/bot/tools/clima";
 import { buscarLeite } from "@/lib/bot/tools/leite";
 import { buscarFerrugemAsiatica } from "@/lib/bot/tools/ferrugem";
@@ -65,7 +69,7 @@ export const TOOLS = [
           produto: {
             type: ["string", "null"],
             description:
-              "Palavra-chave maiúscula do produto: SOJA, MILHO, BOI, CAFÉ ARÁBICA, CAFÉ CONILLON (atenção: conillon com dois L), ALGODÃO, TRIGO, ARROZ, FEIJÃO, CANA DE AÇÚCAR. null se genuinamente não souber qual.",
+              "Palavra-chave maiúscula do produto: SOJA, MILHO, BOI, CAFÉ ARÁBICA, CAFÉ CONILLON (atenção: conillon com dois L; se a pessoa disse só café, passe CAFÉ que a ferramenta escolhe o tipo e informa), ALGODÃO, TRIGO, ARROZ, FEIJÃO, CANA DE AÇÚCAR. null se genuinamente não souber qual.",
           },
           uf: {
             type: ["string", "null"],
@@ -717,7 +721,22 @@ export const TOOLS = [
 // não precisa confiar no modelo lembrar de usá-lo: agora é o código que
 // aplica esse 3º critério, não só o texto do prompt.
 function resolverCultura(ctx: ToolContext, produtoDoModelo: string): string {
-  if (culturaMencionada(ctx.texto)) return produtoDoModelo;
+  const mencionada = culturaMencionada(ctx.texto);
+  if (mencionada) {
+    // A pessoa disse o tipo do café ("conillon") e o modelo mandou só CAFÉ: vale o que ela disse.
+    if (normalizarCultura(produtoDoModelo) === "café" && mencionada.startsWith("café ")) {
+      return mencionada;
+    }
+    return produtoDoModelo;
+  }
+  // Cultura que o catálogo não conhece (ex: "abacate") mas que a pessoa escreveu na mensagem: o
+  // produto que o modelo mandou está no texto atual, então não é pergunta de acompanhamento.
+  const dobra = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const textoDobrado = dobra(ctx.texto);
+  const palavrasDoProduto = dobra(produtoDoModelo)
+    .split(/\s+/)
+    .filter((p) => p.length >= 4 && !["de", "do", "da", "em"].includes(p));
+  if (palavrasDoProduto.some((p) => textoDobrado.includes(p))) return produtoDoModelo;
   return (
     culturaMaisRecenteNoHistorico(ctx.historico) ??
     ctx.produtor.cultura_principal ??
@@ -726,6 +745,19 @@ function resolverCultura(ctx: ToolContext, produtoDoModelo: string): string {
 }
 
 export async function executarTool(
+  nome: string,
+  args: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<unknown> {
+  if (process.env["BOT_DEBUG_TOOLS"]) {
+    const r = await executarToolSemLog(nome, args, ctx);
+    console.error("[tool]", nome, JSON.stringify(args), "=>", JSON.stringify(r).slice(0, 700));
+    return r;
+  }
+  return executarToolSemLog(nome, args, ctx);
+}
+
+async function executarToolSemLog(
   nome: string,
   args: Record<string, unknown>,
   ctx: ToolContext,
@@ -741,7 +773,12 @@ export async function executarTool(
       return buscarPreco(
         ctx.supabase,
         { ...a, produto: produtoFinal, incluir_frete: a.incluir_frete || falaDeFrete },
-        { lat: ctx.produtor.lat, lon: ctx.produtor.lon, pediuFrete: falaDeFrete },
+        {
+          lat: ctx.produtor.lat,
+          lon: ctx.produtor.lon,
+          pediuFrete: falaDeFrete,
+          culturaCadastrada: ctx.produtor.cultura_principal,
+        },
       );
     }
     case "buscar_leite":

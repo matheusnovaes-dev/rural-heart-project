@@ -67,7 +67,6 @@ export async function buscarPrecosDaUf(
     let q = filtrarPorProduto(
       supabase.from("precos").select("preco, data_referencia, updated_at"),
       cultura,
-      "substring",
     )
       .eq("uf", uf)
       .eq("regiao", "")
@@ -80,7 +79,6 @@ export async function buscarPrecosDaUf(
     let q = filtrarPorProduto(
       supabase.from("precos").select("regiao, preco, data_referencia, fonte"),
       cultura,
-      "substring",
     )
       .eq("uf", uf)
       .neq("regiao", "")
@@ -142,11 +140,7 @@ export async function ultimaDataRegional(
   const cultura = normalizarCultura(culturaCadastrada);
   const principal = produtoPrincipal(cultura);
   const consulta = (soPrincipal: boolean) => {
-    let q = filtrarPorProduto(
-      supabase.from("precos").select("data_referencia"),
-      cultura,
-      "substring",
-    )
+    let q = filtrarPorProduto(supabase.from("precos").select("data_referencia"), cultura)
       .eq("uf", uf)
       .neq("regiao", "")
       .not("regiao", "ilike", "%cif%")

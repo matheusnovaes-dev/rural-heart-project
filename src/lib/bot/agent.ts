@@ -95,7 +95,7 @@ const MAX_TOOL_ROUNDS = 6;
 // resolveu de forma confiável; isso detecta o padrão na mensagem ATUAL e
 // injeta uma nota de sistema só nesse turno, clareando a pergunta antes
 // do modelo processar — mais confiável que confiar só em prompt.
-const NEGATIVA_DUPLA = /tem\s+em\s+nenhum/i;
+const NEGATIVA_DUPLA = /tem\s+em\s+nenhum|\bem\s+(lugar|estado|canto|regi[aã]o)\s+nenhum/i;
 
 function notaDeNegativaDupla(texto: string): OpenAIMessage | null {
   if (!NEGATIVA_DUPLA.test(texto)) return null;

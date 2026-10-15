@@ -174,7 +174,7 @@ export async function buscarPrecosOutrasUfs(
     .neq("uf", uf)
     .order("data_referencia", { ascending: false })
     .limit(600);
-  q = principal ? q.eq("produto", principal) : filtrarPorProduto(q, cultura, "substring");
+  q = principal ? q.eq("produto", principal) : filtrarPorProduto(q, cultura);
   const { data } = await q.returns<LinhaOutraUf[]>();
   return escolherPrecosOutrasUfs(data ?? [], uf, hoje.toISOString().slice(0, 10));
 }

@@ -7,7 +7,7 @@ import {
   type ReferenciaMercado,
   type BenchmarkRegional,
 } from "@/lib/referenciaMercado";
-import { filtrarPorProduto, normalizarCultura } from "@/config/culturas";
+import { filtrarPorProduto, normalizarCultura, tipoDeCafePadrao } from "@/config/culturas";
 import { escolherFontePreco, mediaDePracas } from "@/lib/precoFonte";
 import { produtoPrincipal } from "@/lib/precos";
 
@@ -55,12 +55,19 @@ export type ResultadoBuscarPreco = {
    */
   comparativo_regional?: BenchmarkRegional;
   erro?: "produto_ausente" | "uf_ausente";
+  /** "Café" sem tipo: qual tipo a ferramenta considerou (o bot precisa dizer isso ao produtor). */
+  tipo_cafe_assumido?: { considerado: string; outro_tipo: string; motivo: string };
 };
 
 export async function buscarPreco(
   supabase: SupabaseClient,
   args: { produto: string | null; uf: string | null; incluir_frete: boolean },
-  ctx?: { lat: number | null; lon: number | null; pediuFrete?: boolean },
+  ctx?: {
+    lat: number | null;
+    lon: number | null;
+    pediuFrete?: boolean;
+    culturaCadastrada?: string | null;
+  },
 ): Promise<ResultadoBuscarPreco> {
   let { produto } = args;
   const { uf, incluir_frete } = args;
@@ -74,6 +81,30 @@ export async function buscarPreco(
   if (!uf) return { encontrado: false, erro: "uf_ausente" };
   // "carne bovina", "gado" etc. são o boi gordo na base (ver config/culturas.ts).
   produto = normalizarCultura(produto);
+
+  // "Café" sem tipo (arábica ou conillon): a base guarda cada um separado. Escolhe o tipo mais
+  // provável, cai no outro se só ele tiver preço na UF, e devolve o que considerou.
+  if (produto === "café") {
+    const preferido = tipoDeCafePadrao(uf, ctx?.culturaCadastrada);
+    const outro = preferido === "café arábica" ? "café conillon" : "café arábica";
+    let considerado: string = preferido;
+    let resultado = await buscarPreco(supabase, { ...args, produto: preferido }, ctx);
+    if (!resultado.encontrado) {
+      const alternativa = await buscarPreco(supabase, { ...args, produto: outro }, ctx);
+      if (alternativa.encontrado) {
+        resultado = alternativa;
+        considerado = outro;
+      }
+    }
+    return {
+      ...resultado,
+      tipo_cafe_assumido: {
+        considerado,
+        outro_tipo: considerado === "café arábica" ? "café conillon" : "café arábica",
+        motivo: "o produtor não disse se é arábica ou conillon",
+      },
+    };
+  }
 
   // Dois tipos de dado convivem: o número único do estado (regiao='', ex:
   // Conab) e o preço por praça/região (ex: BBM, diário). O do estado vence, a

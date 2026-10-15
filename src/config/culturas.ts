@@ -149,7 +149,36 @@ const ALIAS_CULTURA: Record<string, string> = {
   // "sorgo" (forma comum), a base só tem o nome técnico completo "sorgo
   // granífero" — sem o apelido, "sorgo" sozinho nunca batia.
   sorgo: "sorgo granífero",
+  // Achado real 2026-10-15 (print do Matheus): "quanto ta o cafe em mg?" não contava como cultura
+  // citada, o código trocava a busca pela cultura do cadastro (soja) e o bot respondia preço de
+  // soja no lugar do café. "café" sem tipo é uma cultura citada; o tipo é decidido por
+  // `tipoDeCafePadrao`.
+  café: "café",
+  // Quem já está falando de café diz só o tipo ("e o conillon no ES?"): sem isso a pergunta de
+  // acompanhamento era lida como "sem cultura" e voltava para o café arábica do histórico.
+  conillon: "café conillon",
+  conilon: "café conillon",
+  robusta: "café conillon",
+  arábica: "café arábica",
+  arabica: "café arábica",
 };
+
+const UFS_DE_CONILLON = new Set(["ES", "RO", "AC", "AM", "PA", "MT"]);
+
+/**
+ * "Café" sem tipo: usa o tipo do cadastro do produtor quando ele já é café; senão o mais comum na
+ * UF (conillon no ES e na Amazônia, arábica no resto). O bot sempre diz qual tipo considerou.
+ */
+export function tipoDeCafePadrao(
+  uf: string,
+  culturaCadastrada?: string | null,
+): "café arábica" | "café conillon" {
+  const c = (culturaCadastrada ?? "").toLowerCase();
+  if (c.includes("conillon") || c.includes("conilon") || c.includes("robusta"))
+    return "café conillon";
+  if (c.includes("arábica") || c.includes("arabica")) return "café arábica";
+  return UFS_DE_CONILLON.has(uf.toUpperCase()) ? "café conillon" : "café arábica";
+}
 
 /** Cultura como a base de preços a conhece: minúscula, sem espaço nas pontas e sem apelido. */
 export function normalizarCultura(cultura: string): string {

@@ -125,7 +125,6 @@ function RelatoriosPage() {
     filtrarPorProduto(
       supabase.from("precos").select("produto, uf, regiao, preco, data_referencia"),
       cultura,
-      "substring",
     )
       .order("data_referencia", { ascending: false })
       .limit(50)

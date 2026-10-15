@@ -88,7 +88,6 @@ function PrecosPage() {
     filtrarPorProduto(
       supabase.from("precos").select("uf, regiao, preco, data_referencia, produto"),
       cultura,
-      "substring",
     )
       .gte("data_referencia", desde.toISOString().slice(0, 10))
       .order("data_referencia", { ascending: true })
