@@ -827,7 +827,9 @@ function insumoForaDoPlano(messages: OpenAIMessage[]): boolean {
     if (m.role !== "tool" || !m.tool_call_id) continue;
     if (nomePorToolCallId.get(m.tool_call_id) !== "buscar_preco_insumo") continue;
     try {
-      if ((JSON.parse(m.content ?? "{}") as Record<string, unknown>).disponivel_no_plano === false)
+      if (
+        (JSON.parse(m.content ?? "{}") as Record<string, unknown>)["disponivel_no_plano"] === false
+      )
         return true;
     } catch {
       // resultado malformado não derruba a resposta.
