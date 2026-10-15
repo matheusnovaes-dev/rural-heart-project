@@ -593,7 +593,7 @@ export function garantirMencaoLeilao(resposta: string, resultado: ResultadoLeila
     // a frase sai por código.
     const limpa = resposta
       .replace(
-        /(^|\s)Não (?:achei|encontrei|consegui encontrar|há|tem|tenho|existe)[^.!?\n]*leil[ãa]o[^.!?\n]*[.!?]\s*/gi,
+        /(^|\s)Não (?:achei|encontrei|consegui encontrar|há|tem|tenho|existe)[^.!?\n]*leil(?:[ãa]o|[õo]es)[^.!?\n]*[.!?]\s*/gi,
         "$1",
       )
       .trim();

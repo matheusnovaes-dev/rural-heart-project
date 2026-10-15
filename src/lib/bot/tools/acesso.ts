@@ -88,6 +88,29 @@ export async function verificarAcessoWhatsapp(
   }
 }
 
+/**
+ * Quem já recebeu a mensagem de bloqueio e continua mandando mensagem (visto em 2026-10-15: um produtor
+ * com o teste vencido mandou 4 links de notícia seguidos e recebeu o mesmo bloco 4 vezes) ganha uma
+ * versão curta em vez de repetir o texto inteiro.
+ */
+export const MENSAGEM_BLOQUEIO_CURTA =
+  'Continuo por aqui quando você quiser voltar: é só responder "quero assinar" que eu te mando o link. 🌾';
+
+export function jaAvisouDoBloqueio(
+  historico: { role: string; conteudo: string; ordem: number }[],
+  mensagemCompleta: string,
+): boolean {
+  const ultima = [...historico]
+    .sort((a, b) => a.ordem - b.ordem)
+    .reverse()
+    .find((h) => h.role === "assistant");
+  if (!ultima) return false;
+  return (
+    ultima.conteudo.startsWith(mensagemCompleta.slice(0, 40)) ||
+    ultima.conteudo === MENSAGEM_BLOQUEIO_CURTA
+  );
+}
+
 export function mensagemBloqueioAcesso(
   _comLogin: boolean,
   motivo: "sem_plano" | "inadimplente_vencido" | "cancelada" = "sem_plano",

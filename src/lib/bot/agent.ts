@@ -16,7 +16,12 @@ import {
   type HistoricoLinha,
 } from "@/lib/bot/prompt";
 import { executarTool, TOOLS } from "@/lib/bot/tools/index";
-import { mensagemBloqueioAcesso, verificarAcessoWhatsapp } from "@/lib/bot/tools/acesso";
+import {
+  jaAvisouDoBloqueio,
+  MENSAGEM_BLOQUEIO_CURTA,
+  mensagemBloqueioAcesso,
+  verificarAcessoWhatsapp,
+} from "@/lib/bot/tools/acesso";
 import { gerarLinkDeAcesso, tipoDeAcesso } from "@/lib/bot/tools/linkAcesso";
 import type { ResultadoBuscarLeite } from "@/lib/bot/tools/leite";
 import { buscarMemoriasProdutor } from "@/lib/bot/tools/memoria";
@@ -1357,8 +1362,9 @@ async function runAgentBase(input: {
   if (produtor.id) {
     const acesso = await verificarAcessoWhatsapp(supabase, produtor.id);
     if (!acesso.liberado) {
+      const bloqueio = mensagemBloqueioAcesso(acesso.comLogin, acesso.motivo);
       return {
-        resposta: mensagemBloqueioAcesso(acesso.comLogin, acesso.motivo),
+        resposta: jaAvisouDoBloqueio(historico, bloqueio) ? MENSAGEM_BLOQUEIO_CURTA : bloqueio,
         precisa_humano: false,
         cadastro_criado: false,
         convite_dispensado: false,

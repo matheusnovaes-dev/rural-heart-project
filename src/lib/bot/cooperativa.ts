@@ -23,6 +23,8 @@ const PADROES = [
   new RegExp(`\\b(?:plano|painel|conta|cadastro)\\s+(?:pra|para|de)\\s+${ORGANIZACAO}`),
   /\bsou\s+(?:gerente|diretor|diretora|presidente|coordenador|coordenadora)\s+d[aeo]\b.{0,30}\b(?:cooperativa|corretora)/,
   /\bsou\s+(?:corretor|corretora)\s+de\s+(?:graos|cafe|gado|soja|milho)/,
+  // "mudar meu cadastro para corretor" (achado 2026-10-15). "trocar de corretor" é do produtor e fica de fora.
+  /\b(?:mudar|trocar|alterar|passar|converter)\b.{0,30}\b(?:cadastro|conta|perfil|plano)\b.{0,20}\b(?:para|pra)\s+(?:corretor|corretora|cooperativa)/,
 ];
 
 export function ehInteresseDeCooperativa(texto: string): boolean {

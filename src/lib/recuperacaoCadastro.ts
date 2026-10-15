@@ -1,3 +1,4 @@
+import { DDDS_VALIDOS } from "@/lib/telefone";
 /**
  * Recuperação de cadastro: quem deixou o WhatsApp na etapa 1 do formulário e não
  * terminou recebe UMA mensagem no WhatsApp convidando a concluir (o cadastro
@@ -28,7 +29,14 @@ export function dentroDoHorarioDeEnvio(agora: Date): boolean {
  * de teste ("00...") e telefone fixo, que não recebe WhatsApp.
  */
 export function celularValidoParaEnvio(numero: string): boolean {
-  return /^[1-9]\d9\d{8}$/.test(numero) && !numero.startsWith("0");
+  if (!/^[1-9]\d9\d{8}$/.test(numero) || numero.startsWith("0")) return false;
+  if (!DDDS_VALIDOS.has(numero.slice(0, 2))) return false;
+  // Número de enfeite (placeholder do formulário 91234-5678, 9 0000 0000, 9 9999 9999, 98765-4321):
+  // o cron mandava template de verdade pra ele (visto em 2026-10-15, vindo de teste automatizado).
+  const assinante = numero.slice(2);
+  if (/^9(\d)\1{7}$/.test(assinante) || /^90{6,}\d*$/.test(assinante)) return false;
+  if (/^91234567\d$/.test(assinante) || /^98765432\d$/.test(assinante)) return false;
+  return true;
 }
 
 /**
