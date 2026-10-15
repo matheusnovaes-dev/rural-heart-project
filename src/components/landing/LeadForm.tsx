@@ -31,6 +31,7 @@ import { useAuth } from "@/lib/auth";
 import { buildWhatsAppLink, pricingPlans } from "@/config/site";
 import { ufs } from "@/config/ufs";
 import { buscarMunicipioServidor } from "@/lib/clima.server";
+import { buscarPreviaDePreco, type PreviaDePreco } from "@/lib/precoCadastro.server";
 import { anotarOrigemDoProdutor, inserirComOrigem } from "@/lib/origem";
 import { culturas, DESTAQUES, normalizarCultura } from "@/config/culturas";
 import { enviarBoasVindasWhatsApp } from "@/lib/notificacoes.server";
@@ -162,6 +163,23 @@ export function LeadForm({
       .then(({ data, error }) => {
         if (ativo && !error && data === false) setSemDadoNoEstado(true);
       });
+    return () => {
+      ativo = false;
+    };
+  }, [cultura, ufEscolhida]);
+
+  // Prévia do preço de hoje assim que cultura e estado estão escolhidos: valor antes de pedir
+  // mais um dado. Nunca bloqueia nem atrasa o envio; qualquer falha só esconde o cartão.
+  const [previa, setPrevia] = useState<PreviaDePreco | null>(null);
+  useEffect(() => {
+    setPrevia(null);
+    if (!cultura || !ufEscolhida) return;
+    let ativo = true;
+    buscarPreviaDePreco({ data: { cultura, uf: ufEscolhida } })
+      .then((r) => {
+        if (ativo && r.ok) setPrevia(r);
+      })
+      .catch(() => {});
     return () => {
       ativo = false;
     };
@@ -536,6 +554,22 @@ export function LeadForm({
                   Ainda não temos preço recente dessa cultura nesse estado. Você vai ver o que
                   existe de mais recente em outros estados, e a gente segue ampliando a cobertura.
                 </p>
+              )}
+
+              {previa?.ok && (
+                <div
+                  role="status"
+                  className="flex flex-col gap-0.5 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3"
+                >
+                  <p className="text-xs font-medium text-muted-foreground">{previa.titulo}</p>
+                  <p className="font-display text-2xl leading-tight font-bold text-primary">
+                    {previa.valor}{" "}
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {previa.unidade}
+                    </span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">{previa.detalhe}</p>
+                </div>
               )}
 
               <FormField
