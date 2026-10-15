@@ -31,6 +31,7 @@ declare
   v_ass record;
   v_acesso boolean;
   v_total int;
+  v_limite int;
 begin
   -- Só vale ao criar, ou ao reativar um alerta.
   if tg_op = 'UPDATE' then
@@ -86,7 +87,8 @@ begin
 
   if v_tabela = 'funcionarios' then
     select count(*) into v_total from public.funcionarios where produtor_id = new.produtor_id and id <> new.id;
-    if v_total >= case v_ass.plano when 'ouro' then 2147483647 when 'prata' then 3 else 0 end then
+    v_limite := case v_ass.plano when 'ouro' then 2147483647 when 'prata' then 3 else 0 end;
+    if v_total >= v_limite then
       raise exception 'PLANO_LIMITE_FUNCIONARIOS' using errcode = 'P0001',
         hint = 'Bronze não tem funcionários, Prata até 3, Ouro sem limite.';
     end if;
