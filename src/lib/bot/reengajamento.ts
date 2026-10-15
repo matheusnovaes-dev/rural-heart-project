@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { ehBoi, normalizarCultura } from "@/config/culturas";
 import { ufs } from "@/config/ufs";
 import { buscarPreco } from "@/lib/bot/tools/preco";
+import { buscarLeite } from "@/lib/bot/tools/leite";
 import { buscarFerrugemAsiatica } from "@/lib/bot/tools/ferrugem";
 import { buscarProgressoSafraConab, buscarVariacaoCambio } from "@/lib/bot/tools/mercado";
 import { buscarSinalVenda } from "@/lib/bot/tools/sinalVenda";
@@ -13,6 +14,11 @@ import { buscarPrecosDaUf } from "@/lib/precos";
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const dataBr = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
 const mesAno = (iso: string) => `${MESES[Number(iso.slice(5, 7)) - 1]}/${iso.slice(2, 4)}`;
+// "hoje" só quando o dado é de hoje ou de ontem; fontes semanais (Imea, Deral) ficam "último preço".
+const quandoFoi = (iso: string) =>
+  (Date.now() - new Date(`${iso.slice(0, 10)}T12:00:00-03:00`).getTime()) / 86400000 <= 1.6
+    ? "hoje"
+    : "último preço";
 const nomeDaUf = (uf: string) => ufs.find((u) => u.value === uf)?.label ?? uf;
 const brl = (n: number) => `R$${n.toFixed(2).replace(".", ",")}`;
 const pct = (fracao: number) =>
@@ -67,6 +73,23 @@ export async function montarResumoReengajamento(
   const uf = produtor.uf;
   const partes: string[] = [];
 
+  // Leite não está na tabela de preços por praça: o dado real vem de buscar_leite (cotação do
+  // Conseleite onde existe, senão a média anual do IBGE). Sem isso o cadastro de quem produz leite
+  // dizia "ainda não temos preço de leite" mesmo havendo dado.
+  if (cultura.startsWith("leite")) {
+    const leite = await buscarLeite(supabase, { uf }).catch(() => null);
+    if (leite?.encontrado) {
+      if (leite.cotacao_recente) partes.push(leite.cotacao_recente.frase_cotacao);
+      else if (leite.media_ibge && "preco_medio_litro" in leite.media_ibge) {
+        partes.push(
+          `Leite em ${nomeDaUf(uf)}: média de ${brl(leite.media_ibge.preco_medio_litro)} por litro em ${leite.media_ibge.ano} (IBGE, dado anual, não é a cotação de hoje).`,
+        );
+      }
+      if (leite.relacao_milho) partes.push(leite.relacao_milho.frase_relacao);
+      if (partes.length > 0) return limitarResumo(semTravessao(partes.join(" ")));
+    }
+  }
+
   const [preco, progresso, ferrugem] = await Promise.all([
     buscarPreco(supabase, { produto: cultura, uf, incluir_frete: false }).catch(() => null),
     buscarProgressoSafraConab(supabase, { produto: cultura, uf }).catch(() => null),
@@ -104,7 +127,13 @@ export async function montarResumoReengajamento(
     // único passa precisão que não existe (praças de MG: R$139 e R$146,50).
     const valores = preco.precos.map((x) => x.preco).filter((v) => Number.isFinite(v));
     const unidade = linha.unidade
-      ? `/${/^sc\.?\s*60\s*kg$/i.test(linha.unidade.trim()) ? "60 kg" : linha.unidade}`
+      ? `/${
+          /^sc\.?\s*60\s*kg$/i.test(linha.unidade.trim())
+            ? "60 kg"
+            : linha.unidade.trim() === "15 kg"
+              ? "arroba (15 kg)"
+              : linha.unidade
+        }`
       : "";
     const faixa =
       media != null && valores.length > 1 && Math.min(...valores) !== Math.max(...valores)
@@ -115,7 +144,7 @@ export async function montarResumoReengajamento(
         ? `média das praças ${brl(media)}${unidade}${faixa}`
         : `${brl(linha.preco)}${unidade}`;
     partes.push(
-      `${cultura[0]!.toUpperCase()}${cultura.slice(1)} hoje em ${nomeDaUf(uf)}: ${valorTexto} (${linha.fonte}, ${dataBr(linha.data_referencia)}).`,
+      `${cultura[0]!.toUpperCase()}${cultura.slice(1)} ${quandoFoi(linha.data_referencia)} em ${nomeDaUf(uf)}: ${valorTexto} (${linha.fonte}, ${dataBr(linha.data_referencia)}).`,
     );
   } else if (preco?.referencia_mercado) {
     partes.push(preco.referencia_mercado.frase);

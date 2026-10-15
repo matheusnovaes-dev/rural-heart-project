@@ -156,6 +156,9 @@ const ALIAS_CULTURA: Record<string, string> = {
   café: "café",
   // Quem já está falando de café diz só o tipo ("e o conillon no ES?"): sem isso a pergunta de
   // acompanhamento era lida como "sem cultura" e voltava para o café arábica do histórico.
+  // "Algodão" sozinho é a pluma (o preço que o produtor acompanha); caroço tem unidade e preço
+  // outros e misturava na lista de referências (R$/t ao lado de R$/@).
+  algodão: "algodão em pluma",
   conillon: "café conillon",
   conilon: "café conillon",
   robusta: "café conillon",
