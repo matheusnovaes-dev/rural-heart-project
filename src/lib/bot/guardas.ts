@@ -765,3 +765,23 @@ export function respostaLinkDeAssinatura(link: string): string {
 export function respostaAssinarComLoginProprio(): string {
   return `Pra escolher o plano e pagar (Pix, cartão ou boleto), entre em ${SITE_URL}/assinar com o e-mail e a senha que você cadastrou. Se esqueceu a senha, use o "Esqueci minha senha" na mesma tela.`;
 }
+
+/**
+ * Preço de defensivo e fertilizante é do Prata. Para o Bronze a ferramenta nem consulta, mas o modelo
+ * escreve "não consegui encontrar o preço da ureia", o que sugere falta de dado quando é só plano
+ * (visto ao vivo em 2026-10-15). Tira essa negativa e garante que a frase diga que é do Prata.
+ */
+export function tirarNegativaDeInsumoParaBronze(
+  resposta: string,
+  insumoForaDoPlano: boolean,
+): string {
+  if (!insumoForaDoPlano) return resposta;
+  const limpa = resposta
+    .replace(
+      /(^|\s)Não (?:consegui encontrar|achei|encontrei|encontro|há|tem|tenho)[^.!?\n]*(?:pre[çc]o|ureia|insumo|fertilizante|defensivo|produto)[^.!?\n]*[.!?]\s*/gi,
+      "$1",
+    )
+    .trim();
+  if (/prata/i.test(limpa)) return limpa;
+  return `Preço de defensivo e fertilizante é do plano Prata, é só me pedir aqui que eu te explico. ${limpa}`.trim();
+}

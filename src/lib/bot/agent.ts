@@ -66,6 +66,7 @@ import {
   garantirCanalDeTexto,
   garantirMencaoPainel,
   garantirMencaoLeilao,
+  tirarNegativaDeInsumoParaBronze,
   garantirCotacaoLeite,
   garantirRelacaoLeiteMilho,
   medidasNaoAutorizadas,
@@ -814,6 +815,27 @@ function extrairResultadoLeilao(messages: OpenAIMessage[]): ResultadoLeilao | nu
   return null;
 }
 
+// buscar_preco_insumo devolveu "fora do plano" neste turno (Bronze): ver tirarNegativaDeInsumoParaBronze.
+function insumoForaDoPlano(messages: OpenAIMessage[]): boolean {
+  const nomePorToolCallId = new Map<string, string>();
+  for (const m of messages) {
+    if (m.role === "assistant" && m.tool_calls) {
+      for (const tc of m.tool_calls) nomePorToolCallId.set(tc.id, tc.function.name);
+    }
+  }
+  for (const m of messages) {
+    if (m.role !== "tool" || !m.tool_call_id) continue;
+    if (nomePorToolCallId.get(m.tool_call_id) !== "buscar_preco_insumo") continue;
+    try {
+      if ((JSON.parse(m.content ?? "{}") as Record<string, unknown>).disponivel_no_plano === false)
+        return true;
+    } catch {
+      // resultado malformado não derruba a resposta.
+    }
+  }
+  return false;
+}
+
 // Referência de mercado que buscar_preco trouxe (estado sem dado recente), só
 // quando a resposta é sobre UMA consulta de preço.
 function extrairReferenciaMercado(
@@ -1533,37 +1555,40 @@ async function runAgentBase(input: {
 
     const numerosPermitidos = coletarNumerosPermitidos(messages, texto, historico);
     const leite = extrairResultadoLeite(messages);
-    const resposta = garantirMencaoLeilao(
-      garantirMencaoPainel(
-        garantirCanalDeTexto(
-          garantirCotacaoLeite(
-            garantirRelacaoLeiteMilho(
-              garantirMediaDasPracas(
-                garantirReferenciaMercado(
-                  garantirParidade(
-                    garantirRotaFrete(
-                      garantirDataDoPreco(
-                        removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
-                        extrairDataDoPreco(messages),
+    const resposta = tirarNegativaDeInsumoParaBronze(
+      garantirMencaoLeilao(
+        garantirMencaoPainel(
+          garantirCanalDeTexto(
+            garantirCotacaoLeite(
+              garantirRelacaoLeiteMilho(
+                garantirMediaDasPracas(
+                  garantirReferenciaMercado(
+                    garantirParidade(
+                      garantirRotaFrete(
+                        garantirDataDoPreco(
+                          removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
+                          extrairDataDoPreco(messages),
+                        ),
+                        extrairUltimoFreteCitado(messages),
                       ),
-                      extrairUltimoFreteCitado(messages),
+                      extrairParidade(messages),
                     ),
-                    extrairParidade(messages),
+                    extrairReferenciaMercado(messages),
                   ),
-                  extrairReferenciaMercado(messages),
+                  extrairMediaDasPracas(messages),
                 ),
-                extrairMediaDasPracas(messages),
+                leite.fraseRelacao,
+                numerosPermitidos,
               ),
-              leite.fraseRelacao,
-              numerosPermitidos,
+              leite.cotacao,
             ),
-            leite.cotacao,
           ),
+          temDetalheExtraParaPainel(messages),
+          !!produtor.user_id,
         ),
-        temDetalheExtraParaPainel(messages),
-        !!produtor.user_id,
+        extrairResultadoLeilao(messages),
       ),
-      extrairResultadoLeilao(messages),
+      insumoForaDoPlano(messages),
     );
 
     const naoAutorizados = valoresNaoAutorizados(resposta, numerosPermitidos);
