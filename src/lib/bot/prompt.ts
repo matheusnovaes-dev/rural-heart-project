@@ -293,7 +293,7 @@ export function buildContextoFuncionalidades(hoje: Date = new Date()): string {
 
 /** Resposta pronta ao botão "Ver as novidades" do comunicado: por código, não depende do modelo. */
 export function respostaNovidades(hoje: Date = new Date()): string {
-  const itens = novidadesRecentes(hoje).slice(0, 5);
+  const itens = novidadesRecentes(hoje).slice(0, 6);
   if (itens.length === 0) {
     return "Por enquanto não temos novidade nova além do que você já usa. Se quiser conhecer tudo o que dá pra pedir por aqui, me pergunta 'o que o Safralume faz?' que eu te mostro.";
   }

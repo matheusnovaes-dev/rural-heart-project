@@ -84,7 +84,7 @@ export function respostaCatalogo(): string {
     item("resumo_diario", "Resumo diário no horário que você escolher"),
     item("comparar_proposta", "Estudo de proposta: foto, PDF ou texto, com ranking"),
     item("calculadora", "Quanto vale a sua safra"),
-    "• Também tem janela de plantio, previsão do tempo, ferrugem da soja, dólar, diesel e futuros.",
+    "• Também tem janela de plantio, previsão do tempo, ferrugem da soja, dólar, diesel, futuros, café, boi, leite, feijão, trigo, arroz, reposição de gado e o mercado de Mato Grosso (Imea).",
     "",
     "Pode mandar texto ou áudio. Quer ver o que tem de novo? É só mandar: novidades.",
   ].join("\n");

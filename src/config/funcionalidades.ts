@@ -105,7 +105,7 @@ export const funcionalidades: Funcionalidade[] = [
     id: "preco",
     titulo: "Preço da sua região",
     descricao:
-      "O preço de hoje da sua cultura na sua região, comparado com o porto (paridade) e com o frete.",
+      "O preço de hoje da sua cultura na sua região, comparado com o porto (paridade) e com o frete. Cobre soja, milho, café (arábica e conillon), boi, leite, feijão, trigo, arroz, algodão, cana, reposição de gado, ovos e mais de 70 produtos, onde há cotação oficial.",
     comoPedir: "Quanto tá a soja em Sorriso?",
     onde: "WhatsApp e painel",
   },
@@ -194,6 +194,45 @@ export const funcionalidades: Funcionalidade[] = [
       "Agenda de leilões do Brasil inteiro (presencial na sua região e virtual em destaque) e alerta de novos leilões.",
     comoPedir: "Tem leilão de gado essa semana?",
     onde: "WhatsApp e painel",
+    plano: "Prata",
+  },
+  {
+    id: "indicadores_imea",
+    titulo: "Mercado do boi, da soja, do milho e do algodão em Mato Grosso",
+    descricao:
+      "Os indicadores do Imea de Mato Grosso: escala de abate dos frigoríficos, vaca gorda e boi gordo a prazo, diferença do boi de MT para SP, prêmio no porto de Santos, diferencial de base contra Chicago, caroço de algodão e os indicadores do Cepea que o Imea publica. São dados de MT, atualizados toda semana.",
+    comoPedir: "Como está a escala de abate em MT?",
+    onde: "WhatsApp",
+    novidadeDesde: "2026-10-15",
+    destaque: 2.5,
+  },
+  {
+    id: "cafe_feijao_trigo_arroz",
+    titulo: "Café, feijão, trigo e arroz por praça",
+    descricao:
+      "Preço de cada praça (BBM): café arábica de MG, SP e BA, café conillon do ES, feijão, trigo e arroz, com 1 ano de histórico, então o sinal de venda dessas culturas já usa os últimos 90 dias.",
+    comoPedir: "Quanto tá o café em MG?",
+    onde: "WhatsApp e painel",
+    novidadeDesde: "2026-10-15",
+    destaque: 0.5,
+  },
+  {
+    id: "reposicao_ovos",
+    titulo: "Reposição de gado e ovos",
+    descricao:
+      "Preço de bezerro, bezerra, garrote, novilha, vaca gorda, vaca magra e ovos, onde há cotação (hoje São Paulo e Santa Catarina). Bezerro, bezerra, garrote e vaca magra são preço por cabeça.",
+    comoPedir: "Quanto tá o bezerro em SP?",
+    onde: "WhatsApp e painel",
+    novidadeDesde: "2026-10-15",
+    destaque: 2.6,
+  },
+  {
+    id: "cooperativas",
+    titulo: "Cooperativas e corretoras",
+    descricao:
+      'Painel da equipe para cooperativa ou corretora: convida os produtores e mostra o risco climático agregado. O cadastro é pelo site, na opção "Represento uma cooperativa".',
+    comoPedir: "Represento uma cooperativa",
+    onde: "painel",
     plano: "Prata",
   },
   {
