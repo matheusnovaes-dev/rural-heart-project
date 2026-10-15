@@ -85,16 +85,33 @@ function PrecosPage() {
     setCarregando(true);
     const desde = new Date();
     desde.setDate(desde.getDate() - JANELA_DIAS);
-    filtrarPorProduto(
-      supabase.from("precos").select("uf, regiao, preco, data_referencia, produto"),
-      cultura,
-    )
-      .gte("data_referencia", desde.toISOString().slice(0, 10))
-      .order("data_referencia", { ascending: true })
-      .then(({ data }) => {
-        setRawRows(data ?? []);
-        setCarregando(false);
-      });
+    // O servidor devolve no máximo 1000 linhas por consulta. Com histórico por praça (BBM) a janela de
+    // 180 dias de soja passa de 2.700 linhas e, ordenando do mais antigo, cortava justamente as
+    // cotações recentes: os cartões mostravam preço de meses atrás (achado 2026-10-15). Busca em páginas.
+    const TAMANHO_PAGINA = 1000;
+    let cancelado = false;
+    (async () => {
+      const acumuladas: PrecoRow[] = [];
+      for (let inicio = 0; ; inicio += TAMANHO_PAGINA) {
+        const { data, error } = await filtrarPorProduto(
+          supabase!.from("precos").select("uf, regiao, preco, data_referencia, produto"),
+          cultura,
+        )
+          .gte("data_referencia", desde.toISOString().slice(0, 10))
+          .order("data_referencia", { ascending: true })
+          .order("id", { ascending: true })
+          .range(inicio, inicio + TAMANHO_PAGINA - 1);
+        if (error || !data) break;
+        acumuladas.push(...(data as PrecoRow[]));
+        if (data.length < TAMANHO_PAGINA) break;
+      }
+      if (cancelado) return;
+      setRawRows(acumuladas);
+      setCarregando(false);
+    })();
+    return () => {
+      cancelado = true;
+    };
   }, [cultura]);
 
   // A busca por substring pode casar mais de uma variante de embalagem da

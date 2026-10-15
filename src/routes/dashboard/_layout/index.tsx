@@ -41,6 +41,7 @@ import { ProgressoSafraCard } from "@/components/dashboard/ProgressoSafraCard";
 import { ReferenciaMercadoCard } from "@/components/dashboard/ReferenciaMercadoCard";
 import { BenchmarkRegionalCard } from "@/components/dashboard/BenchmarkRegionalCard";
 import { DolarCard } from "@/components/dashboard/DolarCard";
+import { PecaNoWhatsApp } from "@/components/dashboard/PecaNoWhatsApp";
 import { DIAS_DADO_DESATUALIZADO } from "@/lib/referenciaMercado";
 import { diasEntre } from "@/lib/precoFonte";
 import { perguntaDePreco } from "@/lib/ativacaoTexto";
@@ -514,6 +515,10 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
 
       <motion.div variants={itemVariants}>
         <CompletarAcessoCard />
+      </motion.div>
+
+      <motion.div variants={itemVariants}>
+        <PecaNoWhatsApp cultura={produtor.cultura_principal} uf={produtor.uf} />
       </motion.div>
 
       {convitePrimeiraMensagem && (

@@ -63,6 +63,7 @@ type NavItem = { to: string; label: string; icon: LucideIcon };
 
 const produtorNavItemsBase: NavItem[] = [
   { to: "/dashboard", label: "Início", icon: LayoutDashboard },
+  { to: "/dashboard/precos", label: "Preços", icon: LineChart },
   { to: "/dashboard/calculadora", label: "Calculadora", icon: Calculator },
   { to: "/dashboard/alertas", label: "Alertas", icon: TrendingUp },
   { to: "/dashboard/leiloes", label: "Leilões", icon: Gavel },

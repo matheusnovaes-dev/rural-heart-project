@@ -142,7 +142,7 @@ export function Hero() {
           className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-medium text-white/90"
         >
           <BadgeCheck className="size-3.5" />
-          Dados oficiais Conab e órgãos estaduais
+          Fontes públicas: Conab, órgãos estaduais e bolsas
         </motion.div>
 
         <motion.h1

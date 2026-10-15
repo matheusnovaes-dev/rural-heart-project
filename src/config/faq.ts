@@ -31,7 +31,7 @@ export const perguntasFrequentes: PerguntaFrequente[] = [
   {
     pergunta: "De onde vêm os preços?",
     resposta:
-      "De fontes públicas oficiais: Conab para o Brasil todo e, onde elas dão um número mais completo, órgãos e boletins estaduais como Imea, Deral/PR, Epagri/SC, Emater/RS, BBM e IEA-SP. Mercado futuro vem da B3 e câmbio do Banco Central. Toda resposta mostra a fonte e a data.",
+      "De fontes públicas e abertas: Conab para o Brasil todo e, onde elas dão um número mais completo, órgãos e boletins estaduais como Imea, Deral/PR, Epagri/SC, Emater/RS, BBM e IEA-SP. Mercado futuro vem da B3 e câmbio do Banco Central. Toda resposta mostra a fonte e a data.",
   },
   {
     pergunta: "O Safralume lê foto ou PDF de proposta de compra?",
