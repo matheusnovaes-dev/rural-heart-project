@@ -32,9 +32,9 @@ const MARC_CORRIGIR = "Me diga de novo, numa mensagem só";
 const RE_CONFIRMA = /confirma:?\s*crio seu cadastro/i;
 const RE_CAFE = /ar[aá]bica ou conillon/i;
 const RE_UF =
-  /em qual estado (fica|voc[eê] est[aá]|voc[eê] produz)|qual (é )?o seu estado|qual é seu estado|sigla do estado/i;
+  /em qual estado (fica|voc[eê] est[aá]|voc[eê] produz|voc[eê] trabalha)|qual (é )?o seu estado|qual é seu estado|sigla do estado|saber o estado|em que estado|qual (é )?a sua uf|qual a uf|estado \(estado\)/i;
 const RE_CULTURA =
-  /o que voc[eê] produz|qual (é )?a sua cultura|sua cultura (principal|e estado)|cultura e estado|o que voc[eê] planta/i;
+  /o que voc[eê] (produz|planta)|qual (é )?a sua cultura|qual (é )?a cultura|cultura que voc[eê]|sua cultura (principal|e estado)|cultura principal|cultura e (o )?(estado|uf)|cultura\)? e (em )?qual/i;
 const RE_CONVITE = /quero testar|cadastro gr[aá]tis|teste gr[aá]tis/i;
 
 const OPCOES = ["soja", "milho", "boi", "café", "leite de vaca"] as const;
