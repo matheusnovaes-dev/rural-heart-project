@@ -20,6 +20,7 @@ import { useAuth } from "@/lib/auth";
 import { useAssinatura, type Plano } from "@/lib/planos";
 import { criarAssinaturaAsaas } from "@/lib/asaas.server";
 import { pricingPlans } from "@/config/site";
+import { limparNome, nomeCompletoValido } from "@/lib/nomes";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/assinar")({
@@ -47,6 +48,10 @@ function AssinarPage() {
   const [cpfCnpj, setCpfCnpj] = useState<string | null>(null);
   const [cpfCarregado, setCpfCarregado] = useState(false);
   const [cpfDigitado, setCpfDigitado] = useState("");
+  // Nome completo (igual ao CPF): vai como cliente na Asaas (boleto, Pix, recibo). Quem entra pelo
+  // cadastro rápido vem como "Produtor" ou com o apelido do WhatsApp, então a cobrança pede o nome real.
+  const [nomeCompleto, setNomeCompleto] = useState("");
+  const [nomePreenchido, setNomePreenchido] = useState(false);
   const [selecionado, setSelecionado] = useState<Plano>("bronze");
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
@@ -55,6 +60,12 @@ function AssinarPage() {
   useEffect(() => {
     if (plano) setSelecionado(plano);
   }, [plano]);
+
+  useEffect(() => {
+    if (nomePreenchido || !produtor) return;
+    setNomeCompleto(limparNome(produtor.nome) ?? "");
+    setNomePreenchido(true);
+  }, [produtor, nomePreenchido]);
 
   useEffect(() => {
     if (!supabase) return;
@@ -142,9 +153,18 @@ function AssinarPage() {
       setErro("Informe um CPF ou CNPJ válido pra emitir a cobrança.");
       return;
     }
+    if (produtor && !nomeCompletoValido(nomeCompleto)) {
+      setErro("Informe seu nome completo, igual ao do CPF, pra emitir a cobrança.");
+      return;
+    }
+    const nomeFinal = produtor ? (limparNome(nomeCompleto) ?? "") : (cooperativa?.nome ?? "");
     setEnviando(true);
     setErro("");
     try {
+      // Guarda o nome completo no cadastro: bot, painel e aviso à equipe passam a usar o nome real.
+      if (produtor && nomeFinal && nomeFinal !== produtor.nome) {
+        await supabase.from("produtores").update({ nome: nomeFinal }).eq("id", produtor.id);
+      }
       // Quem se cadastrou pelo formulário rápido da landing nunca informou
       // CPF/CNPJ (só nome/WhatsApp/cultura) — grava agora, na hora que
       // realmente precisa pra faturar.
@@ -196,7 +216,7 @@ function AssinarPage() {
           accessToken: session.access_token,
           plano: selecionado,
           assinaturaId: idAssinatura,
-          nome: produtor?.nome ?? cooperativa?.nome ?? "",
+          nome: nomeFinal,
           cpfCnpj: cpfCnpjFinal,
           email: session.user.email,
           whatsapp: produtor?.whatsapp,
@@ -250,6 +270,21 @@ function AssinarPage() {
             </button>
           ))}
         </div>
+
+        {produtor && (
+          <div className="mx-auto mt-6 max-w-xs space-y-2">
+            <Label htmlFor="nomeCompletoAssinar">Nome completo (igual ao CPF)</Label>
+            <Input
+              id="nomeCompletoAssinar"
+              autoComplete="name"
+              placeholder="Seu nome completo"
+              maxLength={80}
+              value={nomeCompleto}
+              onChange={(e) => setNomeCompleto(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">Aparece no boleto, no Pix e no recibo.</p>
+          </div>
+        )}
 
         {cpfCarregado && !cpfCnpj && (
           <div className="mx-auto mt-6 max-w-xs space-y-2">

@@ -156,7 +156,7 @@ export function buildContextoProdutor(produtor: {
       (produtor.user_id ? "." : ", só ainda não criou login no site.") +
       " NUNCA ofereça criar cadastro nem diga que precisa de cadastro: preço, clima e alertas funcionam normalmente pra ele."
     : "SITUAÇÃO: ESTE WHATSAPP AINDA NÃO TEM CADASTRO — pode oferecer o cadastro grátis pelo chat quando fizer sentido.";
-  return `Dados do produtor nesta conversa: nome=${produtor.nome}, uf_padrao=${produtor.uf ?? "(não informado)"}, cultura_padrao=${produtor.cultura_principal ?? "(não informada)"}, municipio=${produtor.municipio ?? "(não informado)"}, cadastro_feito=${produtor.id ? "sim" : "não"}, conta_no_painel=${produtor.user_id ? "sim" : "não"} (conta_no_painel só diz se ele tem login no site e serve pra decidir links). ${situacao}`;
+  return `Dados do produtor nesta conversa: nome=${produtor.nome || "(não informado: não chame a pessoa pelo nome)"}, uf_padrao=${produtor.uf ?? "(não informado)"}, cultura_padrao=${produtor.cultura_principal ?? "(não informada)"}, municipio=${produtor.municipio ?? "(não informado)"}, cadastro_feito=${produtor.id ? "sim" : "não"}, conta_no_painel=${produtor.user_id ? "sim" : "não"} (conta_no_painel só diz se ele tem login no site e serve pra decidir links). ${situacao}`;
 }
 
 /**

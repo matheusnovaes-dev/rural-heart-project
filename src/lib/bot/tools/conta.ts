@@ -82,7 +82,7 @@ export async function criarContaTeste(
   const { data: produtor, error: erroProdutor } = await supabase
     .from("produtores")
     .insert({
-      nome: ctx.produtor.nome,
+      nome: ctx.produtor.nome || "Produtor",
       whatsapp,
       cultura_principal: args.cultura_principal,
       uf: args.uf,
@@ -93,7 +93,10 @@ export async function criarContaTeste(
   // tempo): a constraint unique em `whatsapp` pega o que o SELECT acima
   // não pegou — trata como "já tem conta", não como erro de verdade.
   if (erroProdutor) {
-    return { sucesso: false, motivo: erroProdutor.code === "23505" ? "ja_tem_conta" : "erro_ao_criar" };
+    return {
+      sucesso: false,
+      motivo: erroProdutor.code === "23505" ? "ja_tem_conta" : "erro_ao_criar",
+    };
   }
   if (!produtor) {
     return { sucesso: false, motivo: "erro_ao_criar" };

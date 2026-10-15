@@ -21,6 +21,8 @@ type RequestBody = {
   historico: HistoricoLinha[];
   /** Foto ou PDF baixado pelo n8n (base64). */
   midia?: MidiaRecebida;
+  /** Nome do perfil do WhatsApp (contacts[0].profile.name). */
+  nome_contato?: string | null;
 };
 
 const TIMEOUT_MS = 25_000;
@@ -112,6 +114,7 @@ export const Route = createFileRoute("/api/bot/responder")({
             historico: body.historico ?? [],
             produtor: body.produtor,
             midia: body.midia,
+            nomeContato: body.nome_contato ?? null,
             supabase,
             apiKey: openaiApiKey,
             signal: controller.signal,

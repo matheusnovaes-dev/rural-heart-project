@@ -1,3 +1,4 @@
+import { primeiroNome as primeiroNomeLimpo } from "@/lib/nomes";
 import { pricingPlans } from "@/config/site";
 import { ufs } from "@/config/ufs";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
@@ -198,7 +199,7 @@ export function respostaCadastroCriado(params: {
   uf: string;
   cultura: string;
 }): string {
-  const primeiroNome = params.nome.trim().split(/\s+/)[0] || "";
+  const primeiroNome = primeiroNomeLimpo(params.nome) ?? "";
   const saudacao = primeiroNome ? `Pronto, ${primeiroNome}!` : "Pronto!";
   const ufPorExtenso = ufs.find((u) => u.value === params.uf.toUpperCase())?.label ?? params.uf;
   const cultura = params.cultura.toLowerCase();

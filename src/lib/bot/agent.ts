@@ -21,6 +21,7 @@ import { gerarLinkDeAcesso, tipoDeAcesso } from "@/lib/bot/tools/linkAcesso";
 import type { ResultadoBuscarLeite } from "@/lib/bot/tools/leite";
 import { buscarMemoriasProdutor } from "@/lib/bot/tools/memoria";
 import { ehPedidoDeSair, RESPOSTA_SAIDA_DE_MENSAGENS } from "@/lib/recuperacaoCadastro";
+import { resolverNome } from "@/lib/nomes";
 import {
   ehDetalheDeHorario,
   ehPedidoDeContatoHumano,
@@ -1141,8 +1142,26 @@ export async function runAgent(input: {
   signal: AbortSignal;
   /** Foto ou PDF que o n8n baixou do WhatsApp: vira estudo de proposta, sem passar pelo modelo conversacional. */
   midia?: MidiaRecebida | undefined;
+  /** Nome do perfil do WhatsApp (vem do n8n): usado para cumprimentar e para completar cadastro sem nome. */
+  nomeContato?: string | null | undefined;
 }): Promise<RespostaAgente> {
-  const { telefone, texto, produtor, supabase, apiKey, signal } = input;
+  const { telefone, texto, supabase, apiKey, signal } = input;
+  // Nome para a conversa: o do cadastro quando é de pessoa; senão o do perfil do WhatsApp, limpo de
+  // emoji ("😍LEIDE E JANDER🥰" vira "Leide E Jander"). Cadastro sem nome útil ("Produtor") recebe o
+  // nome do perfil, para a cobrança e as saudações deixarem de dizer "Produtor". Nunca sobrescreve
+  // um nome que a própria pessoa digitou.
+  const nomeResolvido = resolverNome(input.produtor.nome, input.nomeContato ?? null);
+  const produtor = { ...input.produtor, nome: nomeResolvido.nome };
+  if (nomeResolvido.gravar && produtor.id) {
+    await supabase
+      .from("produtores")
+      .update({ nome: nomeResolvido.nome })
+      .eq("id", produtor.id)
+      .then(
+        () => undefined,
+        () => undefined,
+      );
+  }
   // O estudo de proposta guardado na conversa sai do histórico antes de tudo: o resto do
   // agente (e o modelo) só enxerga a conversa de verdade; o estudo vira contexto à parte.
   const { historico, estudo: estudoRecente } = separarEstudoDoHistorico(input.historico);

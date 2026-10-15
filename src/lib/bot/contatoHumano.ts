@@ -8,6 +8,8 @@
  * Cuidado com falso positivo: "ligar/liga" também é "ligar o alerta" e "ligar o resumo diário".
  * Por isso só vale quando há "me", "pra mim", horário de ligação ou "ligação".
  */
+import { primeiroNome as primeiroNomeLimpo } from "@/lib/nomes";
+
 const semAcento = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 const PADROES: RegExp[] = [
@@ -49,12 +51,6 @@ export function ehDetalheDeHorario(texto: string): boolean {
 /** Marca dentro das respostas, para não avisar a equipe de novo a cada mensagem do mesmo pedido. */
 export const MARCADOR_DE_CONTATO = "Já avisei a nossa equipe";
 
-function primeiroNome(nome: string | null | undefined): string | null {
-  const n = nome?.trim().split(/\s+/)[0];
-  if (!n || /^(produtor|visitante)$/i.test(n) || n.length < 2) return null;
-  return n.charAt(0).toUpperCase() + n.slice(1);
-}
-
 /**
  * @param avisosAnteriores quantas respostas recentes do bot já continham o marcador.
  *   0 = primeiro pedido (avisa a equipe), 1 = pediu de novo ou deu mais detalhe (avisa de novo),
@@ -64,7 +60,7 @@ export function respostaDePedidoDeContato(
   nome: string | null | undefined,
   avisosAnteriores: number,
 ): { resposta: string; precisa_humano: boolean } {
-  const pn = primeiroNome(nome);
+  const pn = primeiroNomeLimpo(nome);
   const chamado = pn ? `, ${pn}` : "";
   if (avisosAnteriores === 0) {
     return {
