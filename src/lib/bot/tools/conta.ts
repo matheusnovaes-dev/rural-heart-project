@@ -56,6 +56,8 @@ export async function criarContaTeste(
     texto: string;
     produtor: { nome: string; user_id: string | null };
     historico: HistoricoLinha[];
+    /** O cadastro conversacional por código já leu a cultura da fala (ou do menu numerado) do produtor. */
+    culturaVemDoProdutor?: boolean;
   },
 ) {
   if (ctx.produtor.user_id) {
@@ -64,7 +66,10 @@ export async function criarContaTeste(
   if (aindaPrecisaConfirmar(ctx.historico)) {
     return { sucesso: false, motivo: "precisa_confirmar_primeiro" };
   }
-  if (!culturaConfirmadaPeloProdutor(args.cultura_principal, ctx.texto, ctx.historico)) {
+  if (
+    !ctx.culturaVemDoProdutor &&
+    !culturaConfirmadaPeloProdutor(args.cultura_principal, ctx.texto, ctx.historico)
+  ) {
     return { sucesso: false, motivo: "cultura_nao_confirmada" };
   }
 

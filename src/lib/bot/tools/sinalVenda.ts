@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { buscarPrevisao } from "@/lib/clima";
 import { CULTURA_PARA_B3 } from "@/config/b3";
-import { normalizarCultura, padraoIlikePorPalavra } from "@/config/culturas";
+import { filtrarPorProduto, normalizarCultura } from "@/config/culturas";
 import { rotuloFonte } from "@/lib/bot/tools/mercado";
 import {
   calcularPosicao,
@@ -59,10 +59,10 @@ export async function buscarSinalVenda(
   // inteira e o sinal de venda ficava sempre "indisponível" mesmo com preço
   // real no banco — bug real, achado 2026-09-10. `serieUnica` já lida bem
   // com múltiplas praças no mesmo dia (mesmo produto, linhas extras na série).
-  const { data: rows } = await supabase
-    .from("precos")
-    .select("preco, data_referencia, produto, unidade")
-    .ilike("produto", padraoIlikePorPalavra(produto))
+  const { data: rows } = await filtrarPorProduto(
+    supabase.from("precos").select("preco, data_referencia, produto, unidade"),
+    produto,
+  )
     .eq("uf", uf)
     .gte("data_referencia", desde.toISOString().slice(0, 10))
     .order("data_referencia", { ascending: true })

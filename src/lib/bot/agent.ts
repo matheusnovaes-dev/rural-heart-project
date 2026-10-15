@@ -22,6 +22,8 @@ import type { ResultadoBuscarLeite } from "@/lib/bot/tools/leite";
 import { buscarMemoriasProdutor } from "@/lib/bot/tools/memoria";
 import { ehPedidoDeSair, RESPOSTA_SAIDA_DE_MENSAGENS } from "@/lib/recuperacaoCadastro";
 import { resolverNome } from "@/lib/nomes";
+import { decidirCadastro, PERGUNTA_CULTURA } from "@/lib/bot/cadastroConversa";
+import { criarContaTeste } from "@/lib/bot/tools/conta";
 import {
   ehDetalheDeHorario,
   ehPedidoDeContatoHumano,
@@ -139,11 +141,11 @@ const GATILHO_ANUNCIO = /ol[áa]!?\s*posso\s+ter\s+mais\s+informa[çc][õo]es\s+
 // geral solta e ganhou. Por isso cada formato agora inclui a exigência de
 // nome dentro de si mesmo, não só como regra à parte.
 const FORMATOS_ABERTURA_ANUNCIO = [
-  "Formato desta resposta: comece com uma pergunta curiosa e breve sobre a lavoura/produção dela (ex: o que ela planta, como está a safra) ANTES de explicar o Safralume, chamando-a pelo nome nessa pergunta inicial (ex: 'Oi, [nome]! O que você planta...'). Só depois dessa pergunta inicial, explique em uma frase o que o Safralume faz.",
-  "Formato desta resposta: comece chamando-a pelo nome, depois seja bem direto e breve — UMA frase só explicando o essencial (preço comparado ao porto, clima e alerta automático, tudo no WhatsApp), sem listar todos os detalhes, e já pergunte cultura e estado.",
-  "Formato desta resposta: abra chamando-a pelo nome e reconhecendo uma dificuldade comum do produtor (ex: perder tempo ligando pra saber preço, ou descobrir tarde demais que o preço mudou) ANTES de apresentar o Safralume como resposta pra isso.",
-  "Formato desta resposta: vá direto pra pergunta de cultura e estado logo na primeira frase, já chamando-a pelo nome nessa mesma frase (ex: 'Oi, [nome]! Me conta rapidinho: você trabalha com o quê, em qual estado?'), e resuma o que o Safralume faz em só uma frase curta, sem listar todas as funcionalidades.",
-  "Formato desta resposta: abra com uma pergunta retórica ligada ao valor do produto, chamando-a pelo nome nessa mesma pergunta (ex: algo como 'Sabe quanto sua saca vale agora, [nome], comparado ao preço do porto?'), explique brevemente depois, e pergunte cultura e estado.",
+  "Formato desta resposta: comece chamando-a pelo nome e com uma observação curta e humana sobre a rotina de quem produz (ex: 'Oi, [nome]! Quem produz sabe como o preço muda de um dia pro outro.'). Só depois explique em uma ou duas frases o que o Safralume faz. NÃO faça pergunta nenhuma: a pergunta final é acrescentada por código.",
+  "Formato desta resposta: comece chamando-a pelo nome, depois seja bem direto e breve: UMA frase só explicando o essencial (preço comparado ao porto, clima e alerta automático, tudo no WhatsApp), sem listar todos os detalhes. NÃO faça pergunta nenhuma: a pergunta final é acrescentada por código.",
+  "Formato desta resposta: abra chamando-a pelo nome e reconhecendo uma dificuldade comum do produtor (ex: perder tempo ligando pra saber preço, ou descobrir tarde demais que o preço mudou) ANTES de apresentar o Safralume como resposta pra isso. NÃO faça pergunta nenhuma: a pergunta final é acrescentada por código.",
+  "Formato desta resposta: cumprimente pelo nome numa frase curta e resuma o que o Safralume faz em só uma frase, sem listar todas as funcionalidades. NÃO faça pergunta nenhuma: a pergunta final é acrescentada por código.",
+  "Formato desta resposta: abra com uma pergunta retórica ligada ao valor do produto, chamando-a pelo nome nessa mesma pergunta (ex: algo como 'Sabe quanto sua saca vale agora, [nome], comparado ao preço do porto?'), e explique brevemente depois o que o Safralume faz. Essa pergunta retórica é a ÚNICA permitida: não pergunte cultura nem estado, a pergunta final é acrescentada por código.",
 ];
 
 function notaDeAberturaDeAnuncio(texto: string): OpenAIMessage | null {
@@ -1132,7 +1134,7 @@ export async function responderPedidoDeAssinatura(
   }
 }
 
-export async function runAgent(input: {
+async function runAgentBase(input: {
   telefone: string;
   texto: string;
   historico: HistoricoLinha[];
@@ -1251,6 +1253,62 @@ export async function runAgent(input: {
       cadastro_criado: false,
       convite_dispensado: true,
     };
+  }
+
+  // Cadastro pelo WhatsApp conduzido por código (uma pergunta por vez, menu numerado, "sim" aceito,
+  // sem repetir a mesma pergunta). Achado 2026-10-15: dois leads do anúncio ficaram presos num
+  // ciclo de "Sim" porque o modelo repetia a pergunta de cultura e estado.
+  if (!produtor.id) {
+    const decisao = decidirCadastro({ texto, historico });
+    if (decisao?.tipo === "responder") {
+      return {
+        resposta: decisao.resposta,
+        precisa_humano: decisao.precisa_humano,
+        cadastro_criado: false,
+        convite_dispensado: true,
+      };
+    }
+    if (decisao?.tipo === "criar") {
+      const r = await criarContaTeste(
+        supabase,
+        { uf: decisao.uf, cultura_principal: decisao.cultura },
+        {
+          telefone,
+          texto,
+          produtor: { nome: produtor.nome, user_id: null },
+          historico,
+          culturaVemDoProdutor: true,
+        },
+      );
+      if (r.sucesso) {
+        return {
+          resposta: respostaCadastroCriado({
+            nome: produtor.nome,
+            uf: decisao.uf,
+            cultura: decisao.cultura,
+          }),
+          precisa_humano: false,
+          cadastro_criado: true,
+          convite_dispensado: true,
+        };
+      }
+      if (r.motivo === "ja_tem_conta") {
+        return {
+          resposta:
+            "Esse WhatsApp já tem cadastro aqui. Pode pedir o que quiser por aqui, por exemplo o preço da sua cultura hoje.",
+          precisa_humano: false,
+          cadastro_criado: false,
+          convite_dispensado: true,
+        };
+      }
+      return {
+        resposta:
+          "Tive um problema pra criar seu cadastro agora. Já avisei a nossa equipe e alguém te ajuda aqui no WhatsApp em instantes.",
+        precisa_humano: true,
+        cadastro_criado: false,
+        convite_dispensado: true,
+      };
+    }
   }
 
   // Paywall determinístico: quem já tem conta mas o trial venceu (ou a
@@ -1818,4 +1876,43 @@ export async function runAgent(input: {
     console.error("Erro no agente do bot:", err);
     return FALLBACK_DURO;
   }
+}
+
+/**
+ * Abertura para quem chegou do anúncio ("Olá! Posso ter mais informações sobre isso?") e ainda não
+ * tem cadastro: o modelo explica o Safralume e o CÓDIGO faz a única pergunta, com opções numeradas.
+ * Antes o modelo perguntava "cultura e estado" e o n8n ainda emendava "responda quero testar":
+ * duas perguntas na mesma mensagem, e metade das pessoas respondia "Sim" à errada.
+ */
+const PERGUNTA_QUE_PEDE_DADO =
+  /cultura|estado|planta|trabalha|produz|lavoura|quer (receber|que eu|testar)|responda|quero testar|cadastro|teste gr[aá]tis|o que voc[eê]/i;
+
+export function limparAberturaDeAnuncio(resposta: string): string {
+  const frases = resposta
+    .replace(/\*quero testar\*/gi, "quero testar")
+    .split(/(?<=[.!?])\s+|\n+/)
+    .map((f) => f.trim())
+    .filter(Boolean);
+  const mantidas: string[] = [];
+  frases.forEach((frase, i) => {
+    const ehPergunta = frase.endsWith("?");
+    // Só a primeira frase pode ser pergunta (retórica) e mesmo assim não pode pedir dado nem oferecer.
+    if (ehPergunta && (i > 0 || PERGUNTA_QUE_PEDE_DADO.test(frase))) return;
+    if (/responda|quero testar|cadastro gr[aá]tis|teste gr[aá]tis/i.test(frase)) return;
+    mantidas.push(frase);
+  });
+  const corpo = mantidas.join(" ").trim() || "Oi! Eu sou o assistente de mercado do Safralume.";
+  return `${corpo}\n\nTeste grátis de 7 dias, sem cartão. ${PERGUNTA_CULTURA}`;
+}
+
+export async function runAgent(input: Parameters<typeof runAgentBase>[0]): Promise<RespostaAgente> {
+  const resposta = await runAgentBase(input);
+  if (!input.produtor.id && !input.midia && GATILHO_ANUNCIO.test(input.texto)) {
+    return {
+      ...resposta,
+      resposta: limparAberturaDeAnuncio(resposta.resposta),
+      convite_dispensado: true,
+    };
+  }
+  return resposta;
 }

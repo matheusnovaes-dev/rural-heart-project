@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { normalizarCultura } from "@/config/culturas";
+import { filtrarPorProduto, normalizarCultura } from "@/config/culturas";
 import { escolherFontePreco, type FonteDePreco } from "@/lib/precoFonte";
 import { ehPracaDePorto } from "@/lib/paridade";
 
@@ -64,10 +64,11 @@ export async function buscarPrecosDaUf(
   const principal = produtoPrincipal(cultura);
 
   const consultaEstado = (soPrincipal: boolean) => {
-    let q = supabase
-      .from("precos")
-      .select("preco, data_referencia, updated_at")
-      .ilike("produto", `%${cultura}%`)
+    let q = filtrarPorProduto(
+      supabase.from("precos").select("preco, data_referencia, updated_at"),
+      cultura,
+      "substring",
+    )
       .eq("uf", uf)
       .eq("regiao", "")
       .gte("data_referencia", desdeIso)
@@ -76,10 +77,11 @@ export async function buscarPrecosDaUf(
     return q.returns<LinhaEstado[]>();
   };
   const consultaRegional = (soPrincipal: boolean) => {
-    let q = supabase
-      .from("precos")
-      .select("regiao, preco, data_referencia, fonte")
-      .ilike("produto", `%${cultura}%`)
+    let q = filtrarPorProduto(
+      supabase.from("precos").select("regiao, preco, data_referencia, fonte"),
+      cultura,
+      "substring",
+    )
       .eq("uf", uf)
       .neq("regiao", "")
       .order("data_referencia", { ascending: false })
@@ -140,10 +142,11 @@ export async function ultimaDataRegional(
   const cultura = normalizarCultura(culturaCadastrada);
   const principal = produtoPrincipal(cultura);
   const consulta = (soPrincipal: boolean) => {
-    let q = supabase
-      .from("precos")
-      .select("data_referencia")
-      .ilike("produto", `%${cultura}%`)
+    let q = filtrarPorProduto(
+      supabase.from("precos").select("data_referencia"),
+      cultura,
+      "substring",
+    )
       .eq("uf", uf)
       .neq("regiao", "")
       .not("regiao", "ilike", "%cif%")

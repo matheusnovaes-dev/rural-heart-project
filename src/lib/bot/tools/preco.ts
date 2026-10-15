@@ -7,7 +7,7 @@ import {
   type ReferenciaMercado,
   type BenchmarkRegional,
 } from "@/lib/referenciaMercado";
-import { normalizarCultura, padraoIlikePorPalavra } from "@/config/culturas";
+import { filtrarPorProduto, normalizarCultura } from "@/config/culturas";
 import { escolherFontePreco, mediaDePracas } from "@/lib/precoFonte";
 import { produtoPrincipal } from "@/lib/precos";
 
@@ -82,11 +82,10 @@ export async function buscarPreco(
   // (soja MT: R$129,80 de 21/08 vs ~R$143 de hoje nas praças).
   const principal = produtoPrincipal(produto);
   const buscarLinhas = (soPrincipal: boolean, regional: boolean) => {
-    let q = supabase
-      .from("precos")
-      .select("produto, preco, unidade, regiao, data_referencia, fonte")
-      .ilike("produto", padraoIlikePorPalavra(produto))
-      .eq("uf", uf);
+    let q = filtrarPorProduto(
+      supabase.from("precos").select("produto, preco, unidade, regiao, data_referencia, fonte"),
+      produto,
+    ).eq("uf", uf);
     q = regional ? q.neq("regiao", "") : q.eq("regiao", "");
     if (soPrincipal && principal) q = q.eq("produto", principal);
     return q
@@ -126,10 +125,10 @@ export async function buscarPreco(
   if (atuais.length === 0) {
     const desde = new Date();
     desde.setDate(desde.getDate() - 90);
-    const { data: outrasUfs } = await supabase
-      .from("precos")
-      .select("uf")
-      .ilike("produto", padraoIlikePorPalavra(produto))
+    const { data: outrasUfs } = await filtrarPorProduto(
+      supabase.from("precos").select("uf"),
+      produto,
+    )
       .gte("data_referencia", desde.toISOString().slice(0, 10))
       .returns<{ uf: string }[]>();
     const referencia = await buscarReferenciaMercado(supabase, {

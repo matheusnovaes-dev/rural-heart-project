@@ -10,6 +10,10 @@ const NOME_GENERICO = /^(produtor|produtora|visitante|cliente|usuario|usuaria|am
 const COMECA_COMO_EMPRESA =
   /^(fazenda|sitio|chacara|agro|agropecuaria|agricola|comercial|cooperativa|coop|grupo|loja|casa|armazem|transportadora)$/i;
 
+// Tratamento não é nome: "Dona Nice" é cumprimentada como "Nice", não como "Dona".
+const TRATAMENTO =
+  /^(dona|seu|sr|sra|senhor|senhora|dr|dra|doutor|doutora|tio|tia|prof|professor|professora|pastor|padre|irma|irmao|comadre|compadre|mestre)$/;
+
 const semAcento = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
 
 /** Tira emoji e símbolos, fica só com letras, espaço, hífen, apóstrofo e ponto. Null se não sobrar nome. */
@@ -39,9 +43,10 @@ export function limparNome(bruto: string | null | undefined): string | null {
 export function primeiroNome(bruto: string | null | undefined): string | null {
   const limpo = limparNome(bruto);
   if (!limpo) return null;
-  const p = limpo.split(" ")[0]!;
-  if (p.replace(/[^\p{L}]/gu, "").length < 2) return null;
-  if (COMECA_COMO_EMPRESA.test(semAcento(p))) return null;
+  const palavras = limpo.split(" ");
+  if (COMECA_COMO_EMPRESA.test(semAcento(palavras[0]!).toLowerCase())) return null;
+  const p = palavras.find((w) => !TRATAMENTO.test(semAcento(w).toLowerCase().replace(/\./g, "")));
+  if (!p || p.replace(/[^\p{L}]/gu, "").length < 2) return null;
   return p;
 }
 

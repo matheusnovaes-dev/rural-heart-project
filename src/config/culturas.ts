@@ -173,6 +173,35 @@ export function padraoIlikePorPalavra(termo: string): string {
   return `%${termo.trim().split(/\s+/).join("%")}%`;
 }
 
+// Achado real 2026-10-15: o Thiago (SP, café arábica) recebeu "ainda não temos preço de café
+// arábica em São Paulo" com R$1.750 do IEA-SP no banco. Essas fontes gravam o arábica como "CAFÉ
+// BENEFICIADO ..." (IEA-SP, Deral/PR) sem a palavra "arábica", e a busca por palavras nunca casava.
+// Só entra aqui o que for do mesmo produto: o "café cereja descascado" do IEA-SP é outro estágio
+// (outro preço) e fica de fora para não misturar na média das praças.
+const NOMES_NA_BASE: Record<string, string[]> = {
+  "café arábica": ["café*arábica*", "café*beneficiado*"],
+};
+
+type FiltravelPorProduto<Q> = {
+  ilike: (coluna: string, padrao: string) => Q;
+  or: (filtros: string) => Q;
+};
+
+/**
+ * Filtro de `produto` na tabela de preços para uma cultura do catálogo. Igual ao antigo
+ * `.ilike("produto", padraoIlikePorPalavra(x))`, mas cobre o nome que cada fonte usa para o mesmo
+ * produto (ver NOMES_NA_BASE). `modo: "substring"` mantém o `%termo%` literal de quem o usava.
+ */
+export function filtrarPorProduto<Q extends FiltravelPorProduto<Q>>(
+  q: Q,
+  cultura: string,
+  modo: "palavra" | "substring" = "palavra",
+): Q {
+  const variantes = NOMES_NA_BASE[normalizarCultura(cultura)];
+  if (variantes) return q.or(variantes.map((v) => `produto.ilike.${v}`).join(","));
+  return q.ilike("produto", modo === "palavra" ? padraoIlikePorPalavra(cultura) : `%${cultura}%`);
+}
+
 // Todo termo reconhecido (catálogo + apelidos), do mais específico (mais
 // palavras) pro mais genérico — "café arábica" tem que casar antes de
 // "café" sozinho não existir no catálogo evitar, e termos compostos tipo

@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/lib/supabase";
-import { culturas } from "@/config/culturas";
+import { culturas, filtrarPorProduto } from "@/config/culturas";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { Sparkline } from "@/components/dashboard/Sparkline";
@@ -85,10 +85,11 @@ function PrecosPage() {
     setCarregando(true);
     const desde = new Date();
     desde.setDate(desde.getDate() - JANELA_DIAS);
-    supabase
-      .from("precos")
-      .select("uf, regiao, preco, data_referencia, produto")
-      .ilike("produto", `%${cultura}%`)
+    filtrarPorProduto(
+      supabase.from("precos").select("uf, regiao, preco, data_referencia, produto"),
+      cultura,
+      "substring",
+    )
       .gte("data_referencia", desde.toISOString().slice(0, 10))
       .order("data_referencia", { ascending: true })
       .then(({ data }) => {

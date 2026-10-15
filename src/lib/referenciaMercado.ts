@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { ehBoi, normalizarCultura } from "@/config/culturas";
+import { ehBoi, filtrarPorProduto, normalizarCultura } from "@/config/culturas";
 import { ufs } from "@/config/ufs";
 import { ehPracaDePorto } from "@/lib/paridade";
 import { diasEntre } from "@/lib/precoFonte";
@@ -130,7 +130,14 @@ export function montarReferenciaMercado(params: {
     // comentário em escolherPrecosOutrasUfs) — citar uma unidade só "pra
     // todo mundo" ficaria errado pros estados que usam outra.
     const comUnidade = (o: PrecoOutraUf) => {
-      const un = o.unidade ? ` por ${o.unidade === "15 kg" ? "arroba (15 kg)" : o.unidade}` : "";
+      const unidade = o.unidade
+        ? /^sc\.?\s*60\s*kg$/i.test(o.unidade.trim())
+          ? "60 kg"
+          : o.unidade === "15 kg"
+            ? "arroba (15 kg)"
+            : o.unidade
+        : null;
+      const un = unidade ? ` por ${unidade}` : "";
       return `${nomeDaUf(o.uf)} ${brl(o.preco)}${un} (${o.fonte}, ${dataBr(o.data_referencia)})`;
     };
     partes.push(`Referências recentes em outros estados: ${outras.map(comUnidade).join("; ")}.`);
@@ -167,7 +174,7 @@ export async function buscarPrecosOutrasUfs(
     .neq("uf", uf)
     .order("data_referencia", { ascending: false })
     .limit(600);
-  q = principal ? q.eq("produto", principal) : q.ilike("produto", `%${cultura}%`);
+  q = principal ? q.eq("produto", principal) : filtrarPorProduto(q, cultura, "substring");
   const { data } = await q.returns<LinhaOutraUf[]>();
   return escolherPrecosOutrasUfs(data ?? [], uf, hoje.toISOString().slice(0, 10));
 }

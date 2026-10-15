@@ -19,7 +19,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useRequireCooperativa } from "@/lib/auth";
 import { siteConfig } from "@/config/site";
-import { culturas } from "@/config/culturas";
+import { culturas, filtrarPorProduto } from "@/config/culturas";
 
 export const Route = createFileRoute("/dashboard/_layout/relatorios")({
   component: RelatoriosPage,
@@ -122,10 +122,11 @@ function RelatoriosPage() {
     // Sem filtro de regiao de propósito: fontes como BBM/IEA-SP só publicam
     // por praça em alguns estados (MG, SP...) — excluir isso fazia esses
     // estados sumirem do relatório em silêncio, mesmo tendo dado real.
-    supabase
-      .from("precos")
-      .select("produto, uf, regiao, preco, data_referencia")
-      .ilike("produto", `%${cultura}%`)
+    filtrarPorProduto(
+      supabase.from("precos").select("produto, uf, regiao, preco, data_referencia"),
+      cultura,
+      "substring",
+    )
       .order("data_referencia", { ascending: false })
       .limit(50)
       .then(({ data }) => {

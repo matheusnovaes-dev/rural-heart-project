@@ -1,3 +1,4 @@
+import { primeiroNome } from "@/lib/nomes";
 import {
   dataCurta,
   ehNovidade,
@@ -93,7 +94,7 @@ Também existe a mensagem proativa diária: diferente do resumo diário (que é 
 ## Primeiro contato vindo de anúncio
 A mensagem "Olá! Posso ter mais informações sobre isso?" é o texto padrão que o anúncio do Safralume pré-preenche no WhatsApp — NÃO é sobre um link nem um arquivo. Trate como primeiro contato de quem clicou no anúncio. Nunca responda que "não consegue acessar links" a essa mensagem.
 
-Essa mensagem exata chega pra gente diferente o tempo todo com o mesmo texto, então pedir "varie a abertura" sozinho não é suficiente aqui (testado ao vivo: saía sempre na mesma estrutura, só trocando palavra) — por isso você vai receber uma nota de sistema nessa mensagem dizendo o FORMATO estrutural certo pra usar nessa resposta específica (ex: abrir com pergunta sobre a lavoura dela, ou ir direto pra pergunta de cultura/UF, etc). Siga esse formato à risca. Independente do formato sorteado, o conteúdo essencial nunca muda: cumprimentar ou se dirigir a ela pelo nome EM ALGUM PONTO da resposta (não precisa ser a primeira palavra — pode vir no meio ou perto do fim, dependendo do formato), explicar em linguagem simples o que o Safralume faz (preço da saca na sua região comparado com o porto e o frete, clima, alerta automático) e perguntar a cultura e o estado dela pra começar. Isso é só pra esse primeiro contato "em branco" — pergunta direta de dado (preço, clima etc.) continua curta e objetiva, sem papo antes do número.
+Essa mensagem exata chega pra gente diferente o tempo todo com o mesmo texto, então pedir "varie a abertura" sozinho não é suficiente aqui (testado ao vivo: saía sempre na mesma estrutura, só trocando palavra) — por isso você vai receber uma nota de sistema nessa mensagem dizendo o FORMATO estrutural certo pra usar nessa resposta específica (ex: abrir com uma observação sobre a rotina do produtor, ou ser bem direto e breve). Siga esse formato à risca. Independente do formato sorteado, o conteúdo essencial nunca muda: cumprimentar ou se dirigir a ela pelo nome EM ALGUM PONTO da resposta (não precisa ser a primeira palavra — pode vir no meio ou perto do fim, dependendo do formato), explicar em linguagem simples o que o Safralume faz (preço da saca na sua região comparado com o porto e o frete, clima, alerta automático) e NADA mais: NÃO pergunte cultura nem estado, NÃO diga "responda quero testar" e NÃO termine com pergunta nenhuma, porque a pergunta de cultura (com opções numeradas) é acrescentada por código logo depois da sua resposta. Isso é só pra esse primeiro contato "em branco" — pergunta direta de dado (preço, clima etc.) continua curta e objetiva, sem papo antes do número.
 
 ## Dúvidas sobre o produto, planos e preço da assinatura
 O login do painel no site é sempre por e-mail e senha — nunca diga que se entra "com o WhatsApp" ou com código enviado por mensagem.
@@ -156,7 +157,7 @@ export function buildContextoProdutor(produtor: {
       (produtor.user_id ? "." : ", só ainda não criou login no site.") +
       " NUNCA ofereça criar cadastro nem diga que precisa de cadastro: preço, clima e alertas funcionam normalmente pra ele."
     : "SITUAÇÃO: ESTE WHATSAPP AINDA NÃO TEM CADASTRO — pode oferecer o cadastro grátis pelo chat quando fizer sentido.";
-  return `Dados do produtor nesta conversa: nome=${produtor.nome || "(não informado: não chame a pessoa pelo nome)"}, uf_padrao=${produtor.uf ?? "(não informado)"}, cultura_padrao=${produtor.cultura_principal ?? "(não informada)"}, municipio=${produtor.municipio ?? "(não informado)"}, cadastro_feito=${produtor.id ? "sim" : "não"}, conta_no_painel=${produtor.user_id ? "sim" : "não"} (conta_no_painel só diz se ele tem login no site e serve pra decidir links). ${situacao}`;
+  return `Dados do produtor nesta conversa: nome=${primeiroNome(produtor.nome) ?? "(não informado: não chame a pessoa pelo nome)"}, uf_padrao=${produtor.uf ?? "(não informado)"}, cultura_padrao=${produtor.cultura_principal ?? "(não informada)"}, municipio=${produtor.municipio ?? "(não informado)"}, cadastro_feito=${produtor.id ? "sim" : "não"}, conta_no_painel=${produtor.user_id ? "sim" : "não"} (conta_no_painel só diz se ele tem login no site e serve pra decidir links). ${situacao}`;
 }
 
 /**

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { padraoIlikePorPalavra, normalizarCultura } from "@/config/culturas";
+import { filtrarPorProduto, normalizarCultura } from "@/config/culturas";
 import { buscarPreco } from "@/lib/bot/tools/preco";
 import type { ReferenciaDeMercado } from "@/lib/bot/propostas/tipos";
 import { ehPracaDePorto } from "@/lib/paridade";
@@ -61,10 +61,10 @@ async function faixaDos90Dias(
   const desde = new Date();
   desde.setDate(desde.getDate() - 90);
   const principal = produtoPrincipal(args.produto);
-  let q = supabase
-    .from("precos")
-    .select("produto, preco, regiao, data_referencia, unidade")
-    .ilike("produto", padraoIlikePorPalavra(args.produto))
+  let q = filtrarPorProduto(
+    supabase.from("precos").select("produto, preco, regiao, data_referencia, unidade"),
+    args.produto,
+  )
     .eq("uf", args.uf)
     .gte("data_referencia", desde.toISOString().slice(0, 10));
   if (principal) q = q.eq("produto", principal);
