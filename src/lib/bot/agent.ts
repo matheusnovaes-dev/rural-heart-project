@@ -21,6 +21,12 @@ import { gerarLinkDeAcesso, tipoDeAcesso } from "@/lib/bot/tools/linkAcesso";
 import type { ResultadoBuscarLeite } from "@/lib/bot/tools/leite";
 import { buscarMemoriasProdutor } from "@/lib/bot/tools/memoria";
 import { ehPedidoDeSair, RESPOSTA_SAIDA_DE_MENSAGENS } from "@/lib/recuperacaoCadastro";
+import {
+  ehDetalheDeHorario,
+  ehPedidoDeContatoHumano,
+  MARCADOR_DE_CONTATO,
+  respostaDePedidoDeContato,
+} from "@/lib/bot/contatoHumano";
 import { normalizarWhatsapp } from "@/lib/telefone";
 import type { ProdutorContexto } from "@/lib/bot/types";
 import {
@@ -1203,6 +1209,26 @@ export async function runAgent(input: {
     return {
       resposta: RESPOSTA_SAIDA_DE_MENSAGENS,
       precisa_humano: false,
+      cadastro_criado: false,
+      convite_dispensado: true,
+    };
+  }
+
+  // Pedido de ligação / de falar com uma pessoa: SEMPRE avisa a equipe, mesmo com o teste vencido
+  // (é cliente quente). Decidido por código: o modelo não marcava precisa_humano (achado 2026-10-14).
+  const respostasRecentes = [...historico]
+    .filter((h) => h.role === "assistant")
+    .sort((a, b) => b.ordem - a.ordem)
+    .slice(0, 8);
+  const aguardandoHorario = !!respostasRecentes[0]?.conteudo.includes(MARCADOR_DE_CONTATO);
+  if (ehPedidoDeContatoHumano(texto) || (aguardandoHorario && ehDetalheDeHorario(texto))) {
+    const avisosAnteriores = respostasRecentes.filter((h) =>
+      h.conteudo.includes(MARCADOR_DE_CONTATO),
+    ).length;
+    const r = respostaDePedidoDeContato(produtor.nome, avisosAnteriores);
+    return {
+      resposta: r.resposta,
+      precisa_humano: r.precisa_humano,
       cadastro_criado: false,
       convite_dispensado: true,
     };

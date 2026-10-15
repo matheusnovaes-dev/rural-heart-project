@@ -130,7 +130,7 @@ export function CadastroProvider({ children }: { children: ReactNode }) {
             </DialogTitle>
             <DialogDescription>
               {jaTemWhatsapp
-                ? "Só mais 3 dados e seu painel fica pronto."
+                ? "Só mais 2 dados e seu painel fica pronto."
                 : "Comece pelo seu WhatsApp. Leva menos de 1 minuto."}
             </DialogDescription>
           </DialogHeader>

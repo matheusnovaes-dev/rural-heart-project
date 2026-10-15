@@ -38,7 +38,8 @@ import { lerCookiesMeta, trackCadastroConcluido, trackCadastroIniciado } from "@
 import { trackConversaoServidor } from "@/lib/metaCapi.server";
 
 const leadSchema = z.object({
-  name: z.string().min(2, "Digite seu nome completo"),
+  // Opcional: a tela 2 só exige cultura e estado (o formulário longo derrubava o cadastro: 22% terminavam).
+  name: z.string().max(80).optional(),
   whatsapp: z
     .string()
     .min(10, "Digite um WhatsApp válido com DDD")
@@ -212,6 +213,7 @@ export function LeadForm({
     // por produtor) só pra existir uma sessão logada. A pessoa nunca
     // precisa saber desse e-mail/senha: ela já sai daqui direto pro painel.
     const whatsapp = normalizarWhatsapp(values.whatsapp);
+    const nomeFinal = values.name?.trim() || "Produtor";
     const email = `lead-${whatsapp}@safralume.app`;
     const senha = crypto.randomUUID();
 
@@ -272,7 +274,7 @@ export function LeadForm({
       .from("produtores")
       .insert({
         user_id: authData.user.id,
-        nome: values.name,
+        nome: nomeFinal,
         whatsapp,
         cultura_principal: values.crop || null,
         uf: values.uf || null,
@@ -325,7 +327,7 @@ export function LeadForm({
     // vez de await (precisa de um dos dois pra sair de verdade, ver
     // comentário em logarFalhaCadastro; erro aqui é ignorado de propósito).
     void inserirComOrigem("leads", {
-      name: values.name,
+      name: nomeFinal,
       whatsapp: values.whatsapp,
       crop: values.crop,
     });
@@ -335,7 +337,7 @@ export function LeadForm({
     // já chama primeiro se apresentando.
     void enviarBoasVindasWhatsApp({
       data: {
-        nome: values.name,
+        nome: nomeFinal,
         whatsapp,
         plano: values.plano,
         uf: values.uf || undefined,
@@ -467,25 +469,6 @@ export function LeadForm({
 
               <FormField
                 control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome completo</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Seu nome"
-                        autoComplete="name"
-                        autoFocus={autoFocar}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="crop"
                 render={({ field }) => (
                   <FormItem>
@@ -557,47 +540,18 @@ export function LeadForm({
 
               <FormField
                 control={form.control}
-                name="cidade"
+                name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Cidade (opcional)</FormLabel>
+                    <FormLabel>Como podemos te chamar? (opcional)</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Ex: Rio Verde"
-                        autoComplete="address-level2"
-                        maxLength={80}
+                        placeholder="Seu primeiro nome"
+                        autoComplete="name"
                         {...field}
                         value={field.value ?? ""}
                       />
                     </FormControl>
-                    <p className="text-xs text-muted-foreground">
-                      Deixa o clima e o frete mais precisos para a sua cidade.
-                    </p>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="plano"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Plano pra testar</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecione o plano" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {pricingPlans.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>
-                            {p.name} (R$ {p.price}/mês)
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
