@@ -463,7 +463,7 @@ export function LeadForm({
                 Representa uma cooperativa ou corretora?{" "}
                 <a
                   href="/login?plano=prata"
-                  className="text-foreground inline-block font-medium underline underline-offset-2 pointer-coarse:py-3"
+                  className="text-foreground inline-block font-medium underline underline-offset-2 pointer-coarse:py-3.5"
                 >
                   Cadastre aqui
                 </a>
@@ -645,6 +645,15 @@ export function LeadForm({
 
               <p className="text-center text-xs text-muted-foreground">
                 Sem cartão de crédito. Cancele quando quiser.
+              </p>
+              <p className="text-center text-xs text-muted-foreground">
+                Representa uma cooperativa ou corretora?{" "}
+                <a
+                  href="/login?plano=prata"
+                  className="text-foreground inline-block font-medium underline underline-offset-2 pointer-coarse:py-3.5"
+                >
+                  Cadastre aqui
+                </a>
               </p>
             </motion.div>
           )}
