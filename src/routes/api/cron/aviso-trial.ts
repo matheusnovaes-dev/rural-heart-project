@@ -114,7 +114,7 @@ async function notificarWhatsAppTrial(whatsapp: string, nome: string, diasRestan
     headers: { "Content-Type": "application/json", "x-safralume-token": token },
     body: JSON.stringify({
       telefone: `55${whatsapp}`,
-      template: "trial_expirando_safralu",
+      template: "trial_expirando_safralume_v2",
       nome: primeiroNome,
       prazo,
     }),
