@@ -237,7 +237,11 @@ export function montarBenchmarkRegional(params: {
   precoUf: number;
   outras: PrecoOutraUf[];
 }): BenchmarkRegional | null {
-  const { uf, precoUf, outras } = params;
+  const { uf, precoUf } = params;
+  // Só compara com estados na mesma ordem de grandeza: cada fonte usa a sua unidade (trigo em R$/t numa e
+  // R$/60 kg noutra, boi em @ ou em kg vivo) e a média misturada dava "89% abaixo". Um preço de outra
+  // unidade difere do do estado por muito mais que 4x.
+  const outras = params.outras.filter((o) => o.preco / precoUf >= 0.25 && o.preco / precoUf <= 4);
   if (outras.length === 0 || precoUf <= 0) return null;
   const mediaOutrasUfs = outras.reduce((soma, o) => soma + o.preco, 0) / outras.length;
   if (mediaOutrasUfs <= 0) return null;
