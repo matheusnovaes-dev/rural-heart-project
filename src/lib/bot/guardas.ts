@@ -575,7 +575,7 @@ export function garantirMencaoPainel(
 }
 
 const FRASE_TEASER_LEILAO =
-  "A propósito: o Safralume também acompanha a agenda de leilão de gado no Brasil inteiro (presencial e virtual) — isso é do plano Prata, dá pra conhecer em safralume.com.br/dashboard/assinatura.";
+  "A propósito: o Safralume também acompanha a agenda de leilão de gado no Brasil inteiro (presencial e virtual) — isso é do plano Prata, é só me pedir aqui que eu te explico.";
 
 /**
  * Cross-sell de leilão em cima de pergunta de preço de boi: Bronze recebe um
@@ -588,8 +588,17 @@ const FRASE_TEASER_LEILAO =
 export function garantirMencaoLeilao(resposta: string, resultado: ResultadoLeilao | null): string {
   if (!resultado) return resposta;
   if (!resultado.disponivelNoPlano) {
-    if (/prata/i.test(resposta) && /leil[ãa]o/i.test(resposta)) return resposta;
-    return `${resposta} ${FRASE_TEASER_LEILAO}`;
+    // Bronze não consulta a agenda, então "não achei leilão essa semana" seria falso. O modelo
+    // insiste em dizer isso mesmo com a regra no prompt (visto ao vivo em 2026-10-15), por isso
+    // a frase sai por código.
+    const limpa = resposta
+      .replace(
+        /(^|\s)Não (?:achei|encontrei|consegui encontrar|há|tem|tenho|existe)[^.!?\n]*leil[ãa]o[^.!?\n]*[.!?]\s*/gi,
+        "$1",
+      )
+      .trim();
+    if (/prata/i.test(limpa) && /leil[ãa]o/i.test(limpa)) return limpa;
+    return `${limpa} ${FRASE_TEASER_LEILAO}`;
   }
   if (!resultado.encontrado) return resposta;
   if (/leil[ãa]o/i.test(resposta) && /\d/.test(resposta)) return resposta;
