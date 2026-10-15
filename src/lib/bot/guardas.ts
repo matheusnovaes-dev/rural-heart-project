@@ -281,6 +281,8 @@ const semAcento = (t: string) =>
 const PADROES_PEDIDO_DIRETO_DE_ACESSO = [
   /\b(manda|mande|envia|envie|passa|passe|gera|gere|quero|preciso)\b.{0,30}\b(link|acesso)\b/,
   /\blink\s+de\s+acesso\b/,
+  /\bquero\b.{0,15}\b(o\s+|meu\s+)?painel\b/,
+  /\bme\s+(manda|envia|passa)\b.{0,15}\bpainel\b/,
   /\bquero\b.{0,20}\b(acessar|entrar)\b.{0,25}\b(painel|site|dashboard|conta)\b/,
   /\b(esqueci|perdi)\b.{0,25}\b(acesso|senha|login)\b/,
   /\bnao\s+consigo\s+(entrar|acessar|logar)\b/,
@@ -288,10 +290,15 @@ const PADROES_PEDIDO_DIRETO_DE_ACESSO = [
 ];
 
 const RESPOSTA_SIM =
-  /^\s*(sim|s|pode|pode sim|quero|quero sim|manda|mande|claro|ok|isso|por favor|pf)\b/;
+  /^\s*(sim|s|ss|pode|pode sim|pode ser|quero|quero sim|eu quero|manda|mande|me manda|claro|ok|okay|isso|por favor|pf|uhum|aham|bora|vamos|beleza|blz|com certeza|positivo)\b/;
 
 /** Trecho fixo da oferta — a confirmação "sim" só vale se a última mensagem do bot foi essa oferta. */
 const MARCA_DA_OFERTA_DE_ACESSO = "te mande agora um link de acesso";
+// Achado real 2026-10-15 (teste do Matheus): a mensagem de "cadastro criado" também oferece o painel
+// ("Se quiser também um painel no site, é só me pedir aqui...") e o "Quero" que veio em seguida foi
+// lido pelo modelo como pedido de ajuda humana. A oferta feita nessa mensagem vale como oferta de
+// acesso, igual à de cima.
+const MARCA_DA_OFERTA_NO_CADASTRO = "um painel no site, é só me pedir";
 
 export function respostaOfertaDeAcesso(): string {
   return `O painel é opcional: lá você vê preço e clima da sua região, gerencia alertas e lembretes e acompanha seu plano. Quer que eu ${MARCA_DA_OFERTA_DE_ACESSO}? É só responder "sim".`;
@@ -319,7 +326,8 @@ export function classificarPedidoDeAcesso(
     .find((h) => h.role === "assistant")?.conteudo;
   if (
     ultimaDoAssistente &&
-    ultimaDoAssistente.includes(MARCA_DA_OFERTA_DE_ACESSO) &&
+    (ultimaDoAssistente.includes(MARCA_DA_OFERTA_DE_ACESSO) ||
+      ultimaDoAssistente.includes(MARCA_DA_OFERTA_NO_CADASTRO)) &&
     RESPOSTA_SIM.test(t)
   ) {
     return "gerar";
