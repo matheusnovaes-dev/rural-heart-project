@@ -289,8 +289,10 @@ const PADROES_PEDIDO_DIRETO_DE_ACESSO = [
   /\bacessar\s+(o\s+|meu\s+)?painel\b/,
 ];
 
+// A mensagem inteira tem que ser a confirmação: "Quero ver meu preço agora" (botão do modelo de
+// boas-vindas) começa com "quero" mas é outro pedido e virava link de acesso (achado 2026-10-15).
 const RESPOSTA_SIM =
-  /^\s*(sim|s|ss|pode|pode sim|pode ser|quero|quero sim|eu quero|manda|mande|me manda|claro|ok|okay|isso|por favor|pf|uhum|aham|bora|vamos|beleza|blz|com certeza|positivo)\b/;
+  /^\s*(sim|s|ss|pode|pode sim|pode ser|quero|quero sim|eu quero|manda|mande|me manda|claro|ok|okay|isso|por favor|pf|uhum|aham|bora|vamos|beleza|blz|com certeza|positivo)[\s!.?,]*$/;
 
 /** Trecho fixo da oferta — a confirmação "sim" só vale se a última mensagem do bot foi essa oferta. */
 const MARCA_DA_OFERTA_DE_ACESSO = "te mande agora um link de acesso";

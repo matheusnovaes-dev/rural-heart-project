@@ -23,6 +23,11 @@ import { buscarMemoriasProdutor } from "@/lib/bot/tools/memoria";
 import { ehPedidoDeSair, RESPOSTA_SAIDA_DE_MENSAGENS } from "@/lib/recuperacaoCadastro";
 import { resolverNome } from "@/lib/nomes";
 import { decidirCadastro, PERGUNTA_CULTURA } from "@/lib/bot/cadastroConversa";
+import {
+  ehPedidoDeTesteDrive,
+  montarCadastroComTesteDrive,
+  montarTesteDriveDoBotao,
+} from "@/lib/bot/testeDrive";
 import { criarContaTeste } from "@/lib/bot/tools/conta";
 import {
   ehDetalheDeHorario,
@@ -1281,12 +1286,21 @@ async function runAgentBase(input: {
         },
       );
       if (r.sucesso) {
+        // Test drive de cara: dado real de hoje da cultura/estado dele (preço, porto, sinal de venda,
+        // clima). Sem nenhum dado real, cai na confirmação simples de sempre.
+        const comTesteDrive = await montarCadastroComTesteDrive(supabase, {
+          nome: produtor.nome,
+          uf: decisao.uf,
+          cultura: decisao.cultura,
+        }).catch(() => null);
         return {
-          resposta: respostaCadastroCriado({
-            nome: produtor.nome,
-            uf: decisao.uf,
-            cultura: decisao.cultura,
-          }),
+          resposta:
+            comTesteDrive ??
+            respostaCadastroCriado({
+              nome: produtor.nome,
+              uf: decisao.uf,
+              cultura: decisao.cultura,
+            }),
           precisa_humano: false,
           cadastro_criado: true,
           convite_dispensado: true,
@@ -1346,6 +1360,21 @@ async function runAgentBase(input: {
         convite_dispensado: false,
       };
     }
+  }
+
+  // Botão "Quero ver meu preço agora" do modelo de boas-vindas do cadastro pelo site: test drive por
+  // código (preço, porto, sinal de venda e clima de hoje) em vez de deixar o modelo improvisar.
+  if (produtor.id && ehPedidoDeTesteDrive(texto)) {
+    return {
+      resposta: await montarTesteDriveDoBotao(supabase, {
+        nome: produtor.nome,
+        uf: produtor.uf,
+        cultura_principal: produtor.cultura_principal,
+      }),
+      precisa_humano: false,
+      cadastro_criado: false,
+      convite_dispensado: true,
+    };
   }
 
   // Produtor insistindo num pedido que o bot genuinamente não resolve (hoje

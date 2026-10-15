@@ -103,7 +103,9 @@ export async function montarResumoReengajamento(
     // Mostra a faixa junto da média: sem saber a região do produtor, um número
     // único passa precisão que não existe (praças de MG: R$139 e R$146,50).
     const valores = preco.precos.map((x) => x.preco).filter((v) => Number.isFinite(v));
-    const unidade = linha.unidade ? `/${linha.unidade}` : "";
+    const unidade = linha.unidade
+      ? `/${/^sc\.?\s*60\s*kg$/i.test(linha.unidade.trim()) ? "60 kg" : linha.unidade}`
+      : "";
     const faixa =
       media != null && valores.length > 1 && Math.min(...valores) !== Math.max(...valores)
         ? ` (de ${brl(Math.min(...valores))} a ${brl(Math.max(...valores))})`
