@@ -24,6 +24,14 @@ import { ehPedidoDeSair, RESPOSTA_SAIDA_DE_MENSAGENS } from "@/lib/recuperacaoCa
 import { resolverNome } from "@/lib/nomes";
 import { decidirCadastro, PERGUNTA_CULTURA } from "@/lib/bot/cadastroConversa";
 import {
+  escolherSugestoes,
+  notaDeSugestoes,
+  ofereceuAlgo,
+  quantasOferecidas,
+  respostaTemConvite,
+  type Sugestao,
+} from "@/lib/bot/sugestoes";
+import {
   ehInteresseDeCooperativa,
   respostaDeCooperativa,
   ultimaFoiDeCooperativa,
@@ -187,11 +195,6 @@ const TURNOS_INICIO_DE_RELACAO = 6;
 // duas disponíveis. Mesmo padrão de sempre desse modelo: "ou" dentro de uma
 // instrução solta não garante variedade de verdade. Igual
 // FORMATOS_ABERTURA_ANUNCIO, o CÓDIGO sorteia o ângulo (não o modelo).
-const ANGULOS_INCENTIVO_ATIVACAO = [
-  "Depois de responder a pergunta dele normalmente, pergunte se ele quer que você crie um alerta automático pra isso (preço, câmbio ou clima, o que for o assunto da pergunta dele) — avisa sozinho quando mudar.",
-  "Depois de responder a pergunta dele normalmente, pergunte se ele também quer acompanhar outra cultura ou outro estado além do principal dele, já que o Safralume cobre mais de 70 culturas.",
-  "Depois de responder a pergunta dele normalmente, pergunte se ele quer saber se é um bom momento pra vender a cultura principal dele (sinal de venda) — cruza o preço dos últimos 90 dias com o mercado futuro da B3.",
-];
 
 // Pedido real do Matheus (2026-10-09): o incentivo acima só cobre quem
 // ACABOU de se cadastrar (poucas trocas). Pra quem já é cliente antigo
@@ -225,31 +228,10 @@ const JANELA_SEM_REPETIR_INCENTIVO = 10; // linhas de histórico, ~5 trocas
 // como "gancho recém-oferecido", suprimindo o convite de verdade. Os dois
 // primeiros padrões agora exigem a combinação real do convite (não uma
 // palavra solta que também aparece em resposta normal, sem ser convite).
-const PADROES_INCENTIVO_JA_OFERECIDO = [
-  /alertas? autom[aá]tico|(criar?|crie|quer|quero|gostaria|posso)[^.?!]{0,25}\balertas?\b/i,
-  /\boutr[ao]s?\s+culturas?\b[^.?!]{0,40}\boutr[ao]s?\s+estados?\b|\boutr[ao]s?\s+estados?\b[^.?!]{0,40}\boutr[ao]s?\s+culturas?\b/i,
-  /bom momento (pra|para) vender/i,
-  /sinal de venda/i,
-];
 
 // Pra verificar se a resposta realmente mostrou as 2 funcionalidades extras
 // que notaDePrimeiraRespostaPosCadastro pediu — mesmo padrão de detecção
 // (regex ampla, não literal) já provado necessário hoje pro incentivo normal.
-const PADROES_FUNCIONALIDADE_EXTRA = [
-  /\balertas?\b/i,
-  /sinal de venda|bom momento (pra|para) vender/i,
-  /insumos?|defensivos?|fertilizantes?/i,
-  /c[aâ]mbio|d[oó]lar|chicago|futuros?/i,
-  /janela de plantio|plantar/i,
-  /outras? culturas?|outros? estados?/i,
-  /previs[ãa]o do tempo|clima/i,
-  /leil\w*/i,
-  /ferrugem/i,
-];
-
-function temDuasFuncionalidadesExtras(resposta: string): boolean {
-  return PADROES_FUNCIONALIDADE_EXTRA.filter((p) => p.test(resposta)).length >= 2;
-}
 
 // Mesmo achado de 2026-10-12 que corrigiu culturaMaisRecenteNoHistorico:
 // `historico` chega do n8n em ordem DESC (mais recente primeiro), então
@@ -258,9 +240,7 @@ function temDuasFuncionalidadesExtras(resposta: string): boolean {
 function incentivoRecenteNoHistorico(historico: HistoricoLinha[]): boolean {
   const ordenado = [...historico].sort((a, b) => a.ordem - b.ordem);
   const recentes = ordenado.slice(-JANELA_SEM_REPETIR_INCENTIVO);
-  return recentes.some(
-    (h) => h.role === "assistant" && PADROES_INCENTIVO_JA_OFERECIDO.some((p) => p.test(h.conteudo)),
-  );
+  return recentes.some((h) => h.role === "assistant" && ofereceuAlgo(h.conteudo));
 }
 
 // 1ª versão só tinha "chuva" (substantivo) — não casava "vai chover", "tá
@@ -440,40 +420,28 @@ function respostaTratouPragaComoAlertaValido(
   return !PADRAO_RESPOSTA_DECLINOU.test(resposta);
 }
 
+// Pedido do Matheus (2026-10-15): o convite deixou de ser só "alerta" (com sinal de venda e outra cultura
+// sorteados): o CÓDIGO escolhe 2 caminhos diferentes e contextuais do catálogo (ver sugestoes.ts) e o
+// modelo só os escreve. Achados anteriores continuam valendo: tom imperativo e o retry quando faltar o
+// convite, porque o modelo copia o padrão (sem convite) das respostas anteriores.
 function notaDeIncentivoAtivacao(
   produtor: ProdutorContexto,
   historico: HistoricoLinha[],
   texto: string,
-): OpenAIMessage | null {
+): { nota: OpenAIMessage; escolhidas: Sugestao[] } | null {
   if (!produtor.id) return null;
   const cedoNaConversa = historico.length <= TURNOS_INICIO_DE_RELACAO;
   if (!cedoNaConversa && (!assuntoAlertavel(texto) || incentivoRecenteNoHistorico(historico))) {
     return null;
   }
-  const angulo =
-    ANGULOS_INCENTIVO_ATIVACAO[Math.floor(Math.random() * ANGULOS_INCENTIVO_ATIVACAO.length)]!;
-  const contexto = cedoNaConversa
-    ? "esse produtor já tem cadastro e ainda está no início da conversa com você (poucas trocas até agora)"
-    : "esse produtor já é cliente e acabou de perguntar algo que dá pra transformar em alerta automático — um momento-chave real, não só uma pergunta qualquer";
-  // Achado real testando ao vivo (2026-10-09): com a permissão "não force se
-  // a resposta já tiver ficado longa", o modelo usou essa desculpa pra pular
-  // o convite em 8 de 8 tentativas (4 de preço com frete/paridade, 4 de
-  // previsão de 5 dias) — exatamente as respostas mais detalhadas do
-  // produto, que são a maioria das respostas reais. Removida essa desculpa,
-  // mas isso sozinho NÃO resolveu: numa conversa já longa (histórico de
-  // cliente antigo, não mais o início), o modelo seguiu pulando 8 de 8 vezes
-  // de novo, mesmo sem a desculpa — provável "contágio" do padrão das
-  // respostas anteriores do próprio histórico (nenhuma delas tinha convite,
-  // o modelo repetiu esse padrão). A mesma nota funcionava bem no início da
-  // conversa (3 de 3), só falhava com histórico longo. Por isso agora o
-  // texto é mais imperativo ("OBRIGATÓRIO", não "é um momento-chave pra") e
-  // explicitamente desautoriza copiar o padrão das respostas anteriores.
-  const imperativo = cedoNaConversa
-    ? `Nota: ${contexto} — é um momento-chave pra incentivar o uso de verdade do Safralume, não só responder e parar.`
-    : `Nota OBRIGATÓRIA pra esta resposta: ${contexto}. Mesmo que suas respostas anteriores nesta mesma conversa não tenham incluído nenhum convite, ESTA precisa incluir — não copie o padrão das respostas de antes, esta pergunta é o momento-chave, aquelas não eram.`;
+  const escolhidas = escolherSugestoes({ produtor, historico, texto, max: 2 });
+  if (escolhidas.length === 0) return null;
   return {
-    role: "system",
-    content: `${imperativo} ${angulo} Isso não é a mesma coisa que a oferta de ajuda genérica proibida ("se precisar de algo, é só falar") — é um convite específico e acionável. O tamanho da resposta (mesmo com vários dados/dias/valores) NÃO é motivo pra pular isso — o convite é só uma frase curta a mais no final, independente de quão detalhada a resposta já ficou. Só pule se o pedido dele já foi exatamente sobre o que essa pergunta sugere (ex: já era sobre criar alerta).`,
+    nota: {
+      role: "system",
+      content: notaDeSugestoes(escolhidas, cedoNaConversa ? "comeco" : "momento"),
+    },
+    escolhidas,
   };
 }
 
@@ -494,28 +462,23 @@ function notaDeIncentivoAtivacao(
 // Cada combinação junta só funcionalidades reais, já confirmadas no
 // código (nunca uma promessa que o produto não cumpre — foi exatamente o
 // erro achado nos 2 vídeos de anúncio analisados nesta mesma sessão).
-const GANCHOS_FUNCIONALIDADES_PRIMEIRA_RESPOSTA = [
-  "clima da região dele com alerta automático de geada, seca ou chuva forte, e também quando é a janela oficial de plantio pra cultura dele",
-  "sinal de venda (se é um bom momento pra vender, cruzando o preço dos últimos 90 dias com o mercado futuro da B3) e preço de defensivo/fertilizante",
-  "câmbio e mercado futuro (dólar e Chicago) e alerta automático de preço, que avisa sozinho quando bater o valor que ele quiser",
-  "acompanhar outra cultura ou outro estado além do principal dele (o Safralume cobre mais de 70 culturas) e previsão do tempo oficial",
-];
 
 function notaDePrimeiraRespostaPosCadastro(
   produtor: ProdutorContexto,
   historico: HistoricoLinha[],
-): OpenAIMessage | null {
+  texto: string,
+): { nota: OpenAIMessage; escolhidas: Sugestao[] } | null {
   // Só faz sentido pra quem JÁ tem cadastro e esta é a primeira troca real
   // da conversa (historico vazio) — exatamente o momento em que a pessoa
   // responde a mensagem de boas-vindas pela primeira vez.
   if (!produtor.id || historico.length > 0) return null;
-  const gancho =
-    GANCHOS_FUNCIONALIDADES_PRIMEIRA_RESPOSTA[
-      Math.floor(Math.random() * GANCHOS_FUNCIONALIDADES_PRIMEIRA_RESPOSTA.length)
-    ]!;
+  // Pedido do Matheus (2026-10-15): a primeira resposta mostra TRÊS caminhos concretos e contextuais
+  // (antes era um "seu plano cobre muito mais, são mais de 10 funcionalidades" genérico).
+  const escolhidas = escolherSugestoes({ produtor, historico, texto, max: 3 });
+  if (escolhidas.length === 0) return null;
   return {
-    role: "system",
-    content: `Nota OBRIGATÓRIA pra esta resposta: esta é a PRIMEIRA mensagem de verdade desse produtor depois de criar a conta — o momento de maior atenção que ele vai dar ao Safralume. Responda a pergunta dele normalmente primeiro (com o dado real, igual sempre). Depois, numa ou duas frases curtas a mais, deixe claro que o plano dele cobre muito mais do que só isso — mencione especificamente: ${gancho}. O objetivo é ele entender que não está pagando só por "responder preço", são mais de 10 funcionalidades reais. Isso não é a mesma coisa que a oferta de ajuda genérica proibida ("se precisar de algo, é só falar") — são funcionalidades concretas e nomeadas. O tamanho da resposta não é motivo pra pular isso.`,
+    nota: { role: "system", content: notaDeSugestoes(escolhidas, "primeira_resposta") },
+    escolhidas,
   };
 }
 
@@ -1488,14 +1451,18 @@ async function runAgentBase(input: {
   const notaRecusaCadastro = notaDeRecusaCadastro(texto);
   const notaAflicaoPessoal = notaDeAflicaoPessoal(texto);
   const notaAberturaDeAnuncio = notaDeAberturaDeAnuncio(texto);
-  const notaPrimeiraResposta = notaDePrimeiraRespostaPosCadastro(produtor, historico);
+  const primeiraResposta = notaDePrimeiraRespostaPosCadastro(produtor, historico, texto);
+  const notaPrimeiraResposta = primeiraResposta?.nota ?? null;
+  const sugestoesPrimeira = primeiraResposta?.escolhidas ?? [];
   // Quando é a primeira resposta pós-cadastro, a nota acima já cobre "mostre
   // valor" com mais força (2 funcionalidades, não 1) — não empilha com o
   // incentivo normal na mesma mensagem, senão vira uma lista grande demais
   // logo na primeira troca.
-  const notaIncentivoAtivacao = notaPrimeiraResposta
+  const incentivoEscolhido = notaPrimeiraResposta
     ? null
     : notaDeIncentivoAtivacao(produtor, historico, texto);
+  const notaIncentivoAtivacao = incentivoEscolhido?.nota ?? null;
+  const sugestoesEscolhidas = incentivoEscolhido?.escolhidas ?? [];
   const notaMemoriaPotencial = notaDeMemoriaPotencial(produtor, texto);
   // Memória entre conversas (não confundir com `historico`, que é só desta
   // conversa) — ver tools/memoria.ts. Só existe pra quem já tem cadastro.
@@ -1661,14 +1628,14 @@ async function runAgentBase(input: {
       notaIncentivoAtivacao &&
       podeCorrigir &&
       tentativasForcarIncentivo < MAX_TENTATIVAS_FORCAR_INCENTIVO &&
-      !PADROES_INCENTIVO_JA_OFERECIDO.some((p) => p.test(resposta))
+      !respostaTemConvite(resposta, sugestoesEscolhidas)
     ) {
       tentativasForcarIncentivo++;
       messages.push({ role: "assistant", content: conteudoBruto ?? parsed.resposta });
       messages.push({
         role: "system",
         content:
-          "Sua resposta anterior não incluiu o convite obrigatório que a nota pediu (alerta automático, outra cultura/estado, ou sinal de venda). Reescreva a MESMA resposta, mantendo os dados que você já deu, mas acrescente no final uma frase curta com esse convite — dessa vez não pode faltar.",
+          "Sua resposta anterior não incluiu o convite obrigatório que a nota pediu (dois caminhos diferentes que o produtor pode pedir agora). Reescreva a MESMA resposta, mantendo os dados que você já deu, mas acrescente no final uma frase curta oferecendo esses dois caminhos, nas palavras da nota. Dessa vez não pode faltar.",
       });
       return null;
     }
@@ -1681,7 +1648,7 @@ async function runAgentBase(input: {
       notaPrimeiraResposta &&
       podeCorrigir &&
       tentativasForcarPrimeiraResposta < MAX_TENTATIVAS_FORCAR_PRIMEIRA_RESPOSTA &&
-      !temDuasFuncionalidadesExtras(resposta)
+      quantasOferecidas(resposta, sugestoesPrimeira) < Math.min(2, sugestoesPrimeira.length)
     ) {
       tentativasForcarPrimeiraResposta++;
       messages.push({ role: "assistant", content: conteudoBruto ?? parsed.resposta });
