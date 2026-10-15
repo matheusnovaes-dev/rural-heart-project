@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { produtoresComAcesso } from "@/lib/acessoConta.server";
 import { supabaseServiceRole } from "@/lib/supabase.server";
 import { montarResumoReativacao } from "@/lib/bot/reengajamento";
 
@@ -84,8 +85,14 @@ export const Route = createFileRoute("/api/cron/resumo-diario")({
         let pulados = 0;
         const simulados: { nome: string; uf: string; cultura: string; resumo: string }[] = [];
 
+        const comAcesso = await produtoresComAcesso(supabase);
+
         for (const produtor of candidatos) {
           try {
+            if (comAcesso && !comAcesso.has(produtor.id)) {
+              pulados++;
+              continue;
+            }
             if (!produtor.whatsapp || !produtor.uf || !produtor.cultura_principal) {
               pulados++;
               continue;

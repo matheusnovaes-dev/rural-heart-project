@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { produtoresComAcesso } from "@/lib/acessoConta.server";
 import { supabaseServiceRole } from "@/lib/supabase.server";
 
 type AlertaLeilao = {
@@ -63,11 +64,18 @@ export const Route = createFileRoute("/api/cron/leiloes-alertas")({
           .gte("data_hora", new Date().toISOString())
           .returns<Leilao[]>();
 
+        // Conta cancelada, com trial vencido ou cortada por inadimplência não recebe mais aviso.
+        const comAcesso = await produtoresComAcesso(supabase);
+
         let notificados = 0;
         let pulados = 0;
 
         for (const alerta of alertas ?? []) {
           try {
+            if (comAcesso && !comAcesso.has(alerta.produtor_id)) {
+              pulados++;
+              continue;
+            }
             const candidatos = (leiloes ?? []).filter((l) => {
               const virtual = ehVirtual(l);
               if (alerta.tipo_preferido === "presencial" && virtual) return false;

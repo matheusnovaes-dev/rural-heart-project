@@ -5,7 +5,11 @@ import { MENSAGEM_CORTE_COBRANCA, verificarCobranca } from "@/lib/bot/cobranca";
 
 export type AcessoWhatsapp =
   | { liberado: true }
-  | { liberado: false; comLogin: boolean; motivo: "sem_plano" | "inadimplente_vencido" };
+  | {
+      liberado: false;
+      comLogin: boolean;
+      motivo: "sem_plano" | "inadimplente_vencido" | "cancelada";
+    };
 
 /**
  * Mesma regra de gating do painel web (useAcessoDashboard em src/lib/planos.ts):
@@ -69,7 +73,12 @@ export async function verificarAcessoWhatsapp(
       return { liberado: true };
     }
 
-    return { liberado: false, comLogin: !!produtor?.user_id, motivo: "sem_plano" };
+    // Quem cancelou o plano pago não é "teste grátis acabou": a mensagem tem que falar de assinatura.
+    return {
+      liberado: false,
+      comLogin: !!produtor?.user_id,
+      motivo: status === "cancelada" ? "cancelada" : "sem_plano",
+    };
   } catch (err) {
     // Falha na checagem não pode derrubar o bot pra todo mundo por causa de
     // uma instabilidade pontual do banco — nesse caso libera (fail open) e
@@ -81,10 +90,13 @@ export async function verificarAcessoWhatsapp(
 
 export function mensagemBloqueioAcesso(
   _comLogin: boolean,
-  motivo: "sem_plano" | "inadimplente_vencido" = "sem_plano",
+  motivo: "sem_plano" | "inadimplente_vencido" | "cancelada" = "sem_plano",
 ): string {
   if (motivo === "inadimplente_vencido") {
     return MENSAGEM_CORTE_COBRANCA;
+  }
+  if (motivo === "cancelada") {
+    return 'Sua assinatura do Safralume foi cancelada, então pausei as respostas por aqui. Se quiser voltar, é só responder "quero assinar" que eu te mando agora o link pra escolher o plano e pagar (Pix, cartão ou boleto).';
   }
   return 'Seu teste grátis de 7 dias no Safralume acabou. Pra continuar recebendo preço, clima e alertas por aqui, é só responder "quero assinar" que eu te mando agora o link pra escolher o plano e pagar (Pix, cartão ou boleto).';
 }
