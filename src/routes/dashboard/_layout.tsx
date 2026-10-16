@@ -46,6 +46,7 @@ import { useAcessoDashboard } from "@/lib/planos";
 import { useSair } from "@/components/dashboard/useSair";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { PainelEsqueleto } from "@/components/dashboard/PainelEsqueleto";
+import { MIDIA } from "@/assets/midia";
 
 export const Route = createFileRoute("/dashboard/_layout")({
   head: () => ({
@@ -262,7 +263,7 @@ function AppSidebar({
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border px-3 py-4">
         <div className="flex items-center gap-3 px-1">
-          <img src="/logo-icon.webp" alt="" className="size-9 rounded-[0.65rem]" />
+          <img src={MIDIA.logo} alt="" className="size-9 rounded-[0.65rem]" />
           <div className="min-w-0">
             <span className="block truncate font-display text-sm font-semibold text-sidebar-foreground">
               {headerTitle}

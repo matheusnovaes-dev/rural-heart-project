@@ -4,6 +4,7 @@ import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion
 
 import { Reveal } from "@/components/landing/Reveal";
 import { IconesSafralume } from "@/components/icons/SafralumeIcon";
+import { MIDIA } from "@/assets/midia";
 
 const steps = [
   {
@@ -39,10 +40,14 @@ function VideoComoFunciona() {
   const prefereMenosMovimento = useReducedMotion();
   const containerRef = useRef<HTMLDivElement>(null);
   const [visivel, setVisivel] = useState(false);
+  // No celular a moldura é 4:5 e mostra só o miolo do vídeo: lá vai a versão recortada nesse formato, em resolução
+  // nativa (nítida e mais leve). Decidido só quando o vídeo entra na tela (o vídeo nunca existe no HTML do servidor).
+  const [celular, setCelular] = useState(false);
 
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+    setCelular(window.matchMedia("(max-width: 639px)").matches);
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry?.isIntersecting) {
@@ -64,8 +69,8 @@ function VideoComoFunciona() {
     >
       {visivel && !prefereMenosMovimento ? (
         <video
-          src="/videos/como-funciona.mp4"
-          poster="/videos/como-funciona-poster.webp"
+          src={MIDIA[celular ? "videoMobile" : "videoDesktop"]}
+          poster={MIDIA.posterComoFunciona}
           autoPlay
           muted
           loop
@@ -75,7 +80,7 @@ function VideoComoFunciona() {
         />
       ) : (
         <img
-          src="/videos/como-funciona-poster.webp"
+          src={MIDIA.posterComoFunciona}
           alt="Conversa de exemplo no WhatsApp com o Safralume, mostrando preço, câmbio, janela de plantio, comparação regional e sinal de venda"
           className="size-full object-cover"
           loading="lazy"

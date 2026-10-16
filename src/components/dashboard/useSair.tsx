@@ -45,8 +45,8 @@ export function useSair() {
         <AlertDialogHeader>
           <AlertDialogTitle>Você ainda não criou e-mail e senha</AlertDialogTitle>
           <AlertDialogDescription>
-            Sem eles, se você sair agora só consegue voltar pedindo um link novo pelo WhatsApp.
-            Leva 10 segundos pra criar e você entra de qualquer aparelho.
+            Sem eles, se você sair agora só consegue voltar pedindo um link novo pelo WhatsApp. Leva
+            10 segundos pra criar e você entra de qualquer aparelho.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

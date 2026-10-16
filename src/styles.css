@@ -530,7 +530,7 @@ html.lenis body {
   left: 0;
   width: 200%;
   height: 120%;
-  background-image: url("/images/fumaca-faixa.webp");
+  background-image: url("./assets/fumaca-faixa.webp");
   background-repeat: repeat;
   will-change: transform;
 }

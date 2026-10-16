@@ -80,8 +80,8 @@ export function CancelarAssinaturaDialog({
         <DialogHeader>
           <DialogTitle>Cancelar assinatura</DialogTitle>
           <DialogDescription>
-            Seu acesso é cortado assim que confirmar. Nos ajuda a entender o motivo: isso não muda
-            o cancelamento, só nos ajuda a melhorar.
+            Seu acesso é cortado assim que confirmar. Nos ajuda a entender o motivo: isso não muda o
+            cancelamento, só nos ajuda a melhorar.
           </DialogDescription>
         </DialogHeader>
 

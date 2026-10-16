@@ -1,3 +1,4 @@
+import { MIDIA } from "@/assets/midia";
 /**
  * Tela de transição entre rotas — antes disso, trocar de página no
  * dashboard "travava" sem indicação nenhuma (o pedaço de código daquela
@@ -11,7 +12,7 @@ export function LoadingScreen() {
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
       <div className="relative flex size-14 items-center justify-center">
         <span className="absolute inline-flex size-14 animate-ping rounded-full bg-primary/40" />
-        <img src="/logo-icon.webp" alt="" className="relative size-14 rounded-xl" />
+        <img src={MIDIA.logo} alt="" className="relative size-14 rounded-xl" />
       </div>
       <span className="font-display text-sm font-medium tracking-wide text-muted-foreground">
         Carregando...

@@ -36,6 +36,7 @@ import { supabase } from "@/lib/supabase";
 import { buscarPrecosDaUf } from "@/lib/precos";
 import { useExemplosDoDia, useHoje } from "@/hooks/useExemplosDoDia";
 import { brl2, haDiasAtras, proximosDecendios } from "@/lib/exemplosLanding";
+import { MIDIA } from "@/assets/midia";
 
 /**
  * Preço real de soja (GO/MT/PR) pra substituir o número ilustrativo no
@@ -299,7 +300,7 @@ export function DashboardPreview() {
                   className="relative flex shrink-0 flex-col gap-1 border-b border-sidebar-border bg-sidebar p-2 sm:w-52 sm:border-r sm:border-b-0 sm:p-3"
                 >
                   <div className="mb-2 hidden items-center gap-2.5 px-1 pb-3 sm:flex">
-                    <img src="/logo-icon.webp" alt="" className="size-8 rounded-[0.6rem]" />
+                    <img src={MIDIA.logo} alt="" className="size-8 rounded-[0.6rem]" />
                     <div className="min-w-0">
                       <span className="block truncate font-display text-sm font-semibold text-sidebar-foreground">
                         Safralume

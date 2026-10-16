@@ -14,6 +14,7 @@ import { BadgeCheck, ShieldCheck } from "lucide-react";
 
 import { CampoWhatsappCta } from "@/components/landing/CampoWhatsappCta";
 import { useCadastro } from "@/components/landing/CadastroProvider";
+import { MIDIA } from "@/assets/midia";
 
 // Título em movimento: cada palavra entra sozinha (só transform e opacidade, nada que force recalcular
 // layout). O trecho em destaque ganha a cor do CTA e um traço que se desenha por baixo.
@@ -100,14 +101,10 @@ export function Hero() {
             {/* A foto fica sob um gradiente escuro que cobre quase toda ela: as versões
                 pequenas (640px/1000px, 14-29 KB) são idênticas a olho nu e tiram ~140 KB
                 do caminho crítico de quem chega do anúncio pelo celular. */}
-            <source
-              media="(max-width: 640px)"
-              srcSet="/images/hero-field-640.webp"
-              type="image/webp"
-            />
-            <source srcSet="/images/hero-field-1000.webp" type="image/webp" />
+            <source media="(max-width: 640px)" srcSet={MIDIA.hero640} type="image/webp" />
+            <source srcSet={MIDIA.hero1000Webp} type="image/webp" />
             <img
-              src="/images/hero-field-1000.jpg"
+              src={MIDIA.hero1000Jpg}
               alt="Lavoura ao entardecer"
               className="size-full object-cover"
               fetchPriority="high"

@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ShieldCheck } from "lucide-react";
 
 import { Reveal } from "@/components/landing/Reveal";
+import { MIDIA } from "@/assets/midia";
 
 export function TrustProof() {
   return (
@@ -17,12 +18,12 @@ export function TrustProof() {
         >
           <picture>
             <source
-              srcSet="/images/soybean-field-640.webp 640w, /images/soybean-field.webp 1000w"
+              srcSet={`${MIDIA.soja640} 640w, ${MIDIA.sojaWebp} 1000w`}
               sizes="(max-width: 1024px) 100vw, 50vw"
               type="image/webp"
             />
             <img
-              src="/images/soybean-field.jpg"
+              src={MIDIA.sojaJpg}
               alt="Lavoura de soja"
               data-parallax
               className="h-72 w-full object-cover sm:h-96"
