@@ -66,6 +66,8 @@ function CartaoPlano({ plan, semTrial }: { plan: PricingPlan; semTrial: boolean 
 
   return (
     <div
+      data-tilt
+      data-spotlight
       className={cn(
         "flex h-full flex-col rounded-2xl border p-6",
         plan.highlighted

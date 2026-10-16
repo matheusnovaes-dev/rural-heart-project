@@ -46,6 +46,7 @@ export function Header() {
               href={buildWhatsAppLink()}
               target="_blank"
               rel="noopener noreferrer"
+              data-magnetico
               onClick={() => trackLanding("WhatsappClique", { origem: "header" })}
             >
               Falar no WhatsApp

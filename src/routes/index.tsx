@@ -1,3 +1,4 @@
+import { DesktopFXLoader } from "@/components/landing/desktop/DesktopFXLoader";
 import { FaixaGigante } from "@/components/landing/FaixaGigante";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
@@ -72,6 +73,7 @@ function Index() {
         </main>
         <Footer />
         <RastreioScroll />
+        <DesktopFXLoader />
         <BarraCtaFixa />
         <WhatsAppFloatingButton />
       </div>

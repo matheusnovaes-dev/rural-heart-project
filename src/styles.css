@@ -482,3 +482,39 @@
   margin: -0.22em 0.26em -0.16em 0;
   padding: 0.22em 0 0.16em;
 }
+
+/* Efeitos exclusivos de desktop (ver components/landing/desktop): só valem com mouse de verdade. */
+@media (hover: hover) and (pointer: fine) {
+  [data-spotlight] {
+    position: relative;
+  }
+  [data-spotlight]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.35s;
+    background: radial-gradient(
+      420px circle at var(--mx, 50%) var(--my, 50%),
+      oklch(0.82 0.15 70 / 0.16),
+      transparent 60%
+    );
+  }
+  [data-spotlight]:hover::after {
+    opacity: 1;
+  }
+}
+
+/* Lenis (scroll com inércia): regras oficiais da biblioteca. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: clip;
+}

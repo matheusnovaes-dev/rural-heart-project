@@ -34,17 +34,26 @@ export function FaixaGigante() {
   return (
     <section
       aria-label="Culturas cobertas: soja, milho, algodão, café, boi, leite, feijão, trigo, arroz e mais de 70 produtos. Fontes: Conab, Imea, Deral, Epagri, Emater, BBM, IEA-SP, B3 e Conseleite."
-      className="overflow-hidden bg-primary py-10 text-primary-foreground sm:py-14"
+      className="relative isolate overflow-hidden bg-primary py-10 text-primary-foreground sm:py-14"
     >
       <Marquee velocidade={70} repeticoes={2}>
         {CULTURAS.map((nome, i) => (
           <span
             key={nome}
-            className="font-display flex items-center text-[clamp(3.6rem,13vw,9rem)] leading-none font-extrabold tracking-tight"
+            className="flex items-center text-[clamp(3.6rem,13vw,9rem)] leading-none"
           >
+            {/* duas vozes: grotesca pesada e serifa fina, alternando (a serifa dispensa contorno vazado,
+                que em fonte variável mostra as sobreposições dos traços) */}
             <span
-              className={i % 2 ? "text-transparent" : ""}
-              style={i % 2 ? { WebkitTextStroke: "2px oklch(0.97 0.01 90)" } : undefined}
+              className={i % 2 ? "" : "font-display font-extrabold tracking-tight"}
+              style={
+                i % 2
+                  ? {
+                      fontFamily: '"Instrument Serif", "Times New Roman", serif',
+                      fontSize: "1.12em",
+                    }
+                  : undefined
+              }
             >
               {nome}
             </span>

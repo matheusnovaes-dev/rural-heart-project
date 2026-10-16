@@ -17,6 +17,7 @@ export function TrustProof() {
             <img
               src="/images/soybean-field.jpg"
               alt="Lavoura de soja"
+              data-parallax
               className="h-72 w-full object-cover sm:h-96"
               loading="lazy"
             />

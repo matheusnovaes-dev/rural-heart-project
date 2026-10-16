@@ -1,0 +1,302 @@
+import Lenis from "lenis";
+
+/**
+ * Interações de desktop da landing, todas num único laço de animação compartilhado: cursor próprio, botões
+ * magnéticos, cartões que inclinam e brilham com o mouse, parallax de imagens e scroll com inércia (Lenis).
+ * Nada aqui toca o layout: só transform e variáveis CSS. Cada função devolve a sua limpeza.
+ */
+
+type Tarefa = (agora: number) => void;
+const tarefas = new Set<Tarefa>();
+let raf = 0;
+function laco(agora: number) {
+  tarefas.forEach((t) => t(agora));
+  raf = requestAnimationFrame(laco);
+}
+function registrar(t: Tarefa): () => void {
+  tarefas.add(t);
+  if (!raf) raf = requestAnimationFrame(laco);
+  return () => {
+    tarefas.delete(t);
+    if (!tarefas.size && raf) {
+      cancelAnimationFrame(raf);
+      raf = 0;
+    }
+  };
+}
+
+const lerp = (a: number, b: number, k: number) => a + (a === b ? 0 : (b - a) * k);
+
+// ---------------------------------------------------------------- scroll suave
+export function iniciarScrollSuave(): () => void {
+  const lenis = new Lenis({ lerp: 0.09, smoothWheel: true, anchors: true });
+  const parar = registrar((agora) => lenis.raf(agora));
+  // Diálogos (cadastro) travam o scroll da página: o Lenis precisa parar junto, senão rola por trás.
+  const travado = () =>
+    document.body.hasAttribute("data-scroll-locked") || document.body.style.overflow === "hidden";
+  const sincronizar = () => (travado() ? lenis.stop() : lenis.start());
+  const mo = new MutationObserver(sincronizar);
+  mo.observe(document.body, { attributes: true, attributeFilter: ["data-scroll-locked", "style"] });
+  sincronizar();
+  return () => {
+    mo.disconnect();
+    parar();
+    lenis.destroy();
+  };
+}
+
+// --------------------------------------------------------------------- cursor
+const ALVOS_CLICAVEIS = "a,button,[role=button],summary,label,select,[data-cursor]";
+const CAMPOS_DE_TEXTO = "input,textarea,[contenteditable=true]";
+
+export function iniciarCursor(): () => void {
+  const estilo = document.createElement("style");
+  estilo.dataset["fx"] = "cursor";
+  estilo.textContent = `html.fx-cursor, html.fx-cursor * { cursor: none !important; }
+html.fx-cursor ${CAMPOS_DE_TEXTO.replace(/,/g, ", html.fx-cursor ")} { cursor: text !important; }`;
+  document.head.appendChild(estilo);
+
+  const caixa = (css: string) => {
+    const d = document.createElement("div");
+    d.setAttribute("aria-hidden", "true");
+    d.dataset["fx"] = "cursor";
+    d.style.cssText = `position:fixed;left:0;top:0;pointer-events:none;z-index:2147483000;will-change:transform;opacity:0;transition:opacity .25s;${css}`;
+    document.body.appendChild(d);
+    return d;
+  };
+  const aro = caixa("width:0;height:0;");
+  const miolo = document.createElement("div");
+  miolo.style.cssText =
+    "position:absolute;left:-19px;top:-19px;width:38px;height:38px;border-radius:9999px;border:1.5px solid #fff;mix-blend-mode:difference;transition:transform .3s cubic-bezier(.22,1,.36,1),background-color .3s;";
+  aro.appendChild(miolo);
+  const ponto = caixa("width:0;height:0;");
+  const bolinha = document.createElement("div");
+  bolinha.style.cssText =
+    "position:absolute;left:-3px;top:-3px;width:6px;height:6px;border-radius:9999px;background:#fff;mix-blend-mode:difference;";
+  ponto.appendChild(bolinha);
+
+  let alvoX = -100;
+  let alvoY = -100;
+  let ax = -100;
+  let ay = -100;
+  let px = -100;
+  let py = -100;
+  let visivel = false;
+  let escala = 1;
+  let apertado = false;
+  const aplicarEscala = () => {
+    miolo.style.transform = `scale(${apertado ? escala * 0.8 : escala})`;
+  };
+
+  const aoMover = (e: PointerEvent) => {
+    if (e.pointerType !== "mouse") return;
+    alvoX = e.clientX;
+    alvoY = e.clientY;
+    if (!visivel) {
+      ax = px = alvoX;
+      ay = py = alvoY;
+      visivel = true;
+      document.documentElement.classList.add("fx-cursor");
+      aro.style.opacity = ponto.style.opacity = "1";
+    }
+  };
+  const aoSobrepor = (e: PointerEvent) => {
+    const t = e.target as Element | null;
+    if (!t || !t.closest) return;
+    const campo = !!t.closest(CAMPOS_DE_TEXTO);
+    const clicavel = !!t.closest(ALVOS_CLICAVEIS);
+    aro.style.opacity = ponto.style.opacity = campo ? "0" : "1";
+    escala = clicavel ? 1.7 : 1;
+    miolo.style.backgroundColor = clicavel ? "rgba(255,255,255,.18)" : "transparent";
+    aplicarEscala();
+  };
+  const aoApertar = (v: boolean) => () => {
+    apertado = v;
+    aplicarEscala();
+  };
+  const apertar = aoApertar(true);
+  const soltar = aoApertar(false);
+  const aoSair = () => {
+    visivel = false;
+    document.documentElement.classList.remove("fx-cursor");
+    aro.style.opacity = ponto.style.opacity = "0";
+  };
+
+  window.addEventListener("pointermove", aoMover, { passive: true });
+  window.addEventListener("pointerover", aoSobrepor, { passive: true });
+  window.addEventListener("pointerdown", apertar, { passive: true });
+  window.addEventListener("pointerup", soltar, { passive: true });
+  document.documentElement.addEventListener("pointerleave", aoSair);
+  const parar = registrar(() => {
+    ax = lerp(ax, alvoX, 0.18);
+    ay = lerp(ay, alvoY, 0.18);
+    px = lerp(px, alvoX, 0.65);
+    py = lerp(py, alvoY, 0.65);
+    aro.style.transform = `translate3d(${ax}px,${ay}px,0)`;
+    ponto.style.transform = `translate3d(${px}px,${py}px,0)`;
+  });
+
+  return () => {
+    parar();
+    window.removeEventListener("pointermove", aoMover);
+    window.removeEventListener("pointerover", aoSobrepor);
+    window.removeEventListener("pointerdown", apertar);
+    window.removeEventListener("pointerup", soltar);
+    document.documentElement.removeEventListener("pointerleave", aoSair);
+    document.documentElement.classList.remove("fx-cursor");
+    aro.remove();
+    ponto.remove();
+    estilo.remove();
+  };
+}
+
+// ----------------------------------------------------------------- magnéticos
+export function iniciarMagneticos(): () => void {
+  type Estado = { x: number; y: number; alvoX: number; alvoY: number };
+  const estados = new Map<HTMLElement, Estado>();
+  let mx = -9999;
+  let my = -9999;
+  const aoMover = (e: PointerEvent) => {
+    mx = e.clientX;
+    my = e.clientY;
+  };
+  window.addEventListener("pointermove", aoMover, { passive: true });
+  let ultimaBusca = 0;
+  const parar = registrar((agora) => {
+    if (agora - ultimaBusca > 1000) {
+      ultimaBusca = agora;
+      document.querySelectorAll<HTMLElement>("[data-magnetico]").forEach((el) => {
+        if (!estados.has(el)) estados.set(el, { x: 0, y: 0, alvoX: 0, alvoY: 0 });
+      });
+    }
+    estados.forEach((s, el) => {
+      if (!el.isConnected) {
+        estados.delete(el);
+        return;
+      }
+      const r = el.getBoundingClientRect();
+      const dx = mx - (r.left + r.width / 2);
+      const dy = my - (r.top + r.height / 2);
+      const raio = Math.max(r.width, r.height) * 0.6 + 30;
+      if (Math.hypot(dx, dy) < raio) {
+        // puxa de leve na direção do mouse, com teto: o botão nunca invade o que está ao lado
+        s.alvoX = Math.max(-9, Math.min(9, dx * 0.16));
+        s.alvoY = Math.max(-7, Math.min(7, dy * 0.16));
+      } else {
+        s.alvoX = 0;
+        s.alvoY = 0;
+      }
+      if (
+        Math.abs(s.x - s.alvoX) < 0.05 &&
+        Math.abs(s.y - s.alvoY) < 0.05 &&
+        !s.alvoX &&
+        !s.alvoY
+      ) {
+        if (s.x || s.y) {
+          s.x = s.y = 0;
+          el.style.transform = "";
+        }
+        return;
+      }
+      s.x = lerp(s.x, s.alvoX, 0.16);
+      s.y = lerp(s.y, s.alvoY, 0.16);
+      el.style.transform = `translate3d(${s.x.toFixed(2)}px,${s.y.toFixed(2)}px,0)`;
+    });
+  });
+  return () => {
+    window.removeEventListener("pointermove", aoMover);
+    parar();
+    estados.forEach((_, el) => (el.style.transform = ""));
+  };
+}
+
+// ------------------------------------------------- cartões: inclinação e brilho
+export function iniciarCartoes(): () => void {
+  type Estado = { rx: number; ry: number; alvoRx: number; alvoRy: number };
+  const estados = new Map<HTMLElement, Estado>();
+  let atual: HTMLElement | null = null;
+  let mx = 0;
+  let my = 0;
+
+  const aoMover = (e: PointerEvent) => {
+    if (e.pointerType !== "mouse") return;
+    mx = e.clientX;
+    my = e.clientY;
+    const el =
+      (e.target as Element | null)?.closest?.<HTMLElement>("[data-tilt],[data-spotlight]") ?? null;
+    atual = el;
+    if (el) {
+      const r = el.getBoundingClientRect();
+      el.style.setProperty("--mx", `${((mx - r.left) / r.width) * 100}%`);
+      el.style.setProperty("--my", `${((my - r.top) / r.height) * 100}%`);
+      if (el.hasAttribute("data-tilt") && !estados.has(el)) {
+        estados.set(el, { rx: 0, ry: 0, alvoRx: 0, alvoRy: 0 });
+      }
+    }
+  };
+  window.addEventListener("pointermove", aoMover, { passive: true });
+
+  const parar = registrar(() => {
+    estados.forEach((s, el) => {
+      if (el === atual) {
+        const r = el.getBoundingClientRect();
+        s.alvoRy = ((mx - r.left) / r.width - 0.5) * 9;
+        s.alvoRx = -((my - r.top) / r.height - 0.5) * 7;
+      } else {
+        s.alvoRx = 0;
+        s.alvoRy = 0;
+      }
+      s.rx = lerp(s.rx, s.alvoRx, 0.12);
+      s.ry = lerp(s.ry, s.alvoRy, 0.12);
+      if (Math.abs(s.rx) < 0.01 && Math.abs(s.ry) < 0.01 && el !== atual) {
+        el.style.transform = "";
+        estados.delete(el);
+        return;
+      }
+      el.style.transform = `perspective(1000px) rotateX(${s.rx.toFixed(2)}deg) rotateY(${s.ry.toFixed(2)}deg)`;
+    });
+  });
+  return () => {
+    window.removeEventListener("pointermove", aoMover);
+    parar();
+    estados.forEach((_, el) => (el.style.transform = ""));
+  };
+}
+
+// ------------------------------------------------------------------- parallax
+export function iniciarParallax(): () => void {
+  const els = Array.from(document.querySelectorAll<HTMLElement>("[data-parallax]"));
+  if (!els.length) return () => {};
+  const visiveis = new Set<HTMLElement>();
+  const io = new IntersectionObserver(
+    (entradas) =>
+      entradas.forEach((e) => {
+        const el = e.target as HTMLElement;
+        if (e.isIntersecting) visiveis.add(el);
+        else visiveis.delete(el);
+      }),
+    { rootMargin: "100px" },
+  );
+  els.forEach((el) => {
+    el.style.willChange = "transform";
+    io.observe(el);
+  });
+  const parar = registrar(() => {
+    const vh = window.innerHeight;
+    visiveis.forEach((el) => {
+      const pai = el.parentElement ?? el;
+      const r = pai.getBoundingClientRect();
+      const centro = r.top + r.height / 2 - vh / 2;
+      const y = Math.max(-1, Math.min(1, centro / vh)) * -34;
+      el.style.transform = `translate3d(0,${y.toFixed(1)}px,0) scale(1.14)`;
+    });
+  });
+  return () => {
+    parar();
+    io.disconnect();
+    els.forEach((el) => {
+      el.style.transform = "";
+      el.style.willChange = "";
+    });
+  };
+}
