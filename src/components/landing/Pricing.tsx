@@ -1,3 +1,4 @@
+import { ContaAte } from "@/components/landing/ContaAte";
 import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
 import { useState } from "react";
 import { Check, ChevronDown, Leaf, Sprout, Wheat } from "lucide-react";
@@ -100,7 +101,7 @@ function CartaoPlano({ plan, semTrial }: { plan: PricingPlan; semTrial: boolean 
       <h3 className="font-display text-lg font-semibold text-foreground">{plan.name}</h3>
       <p className="text-sm text-muted-foreground">{plan.audience}</p>
       <p className="mt-4 font-mono text-2xl font-bold tabular-nums text-foreground">
-        R$ {plan.price.toLocaleString("pt-BR")}
+        R$ <ContaAte alvo={plan.price} />
         <span className="text-base font-normal text-muted-foreground">/mês</span>
       </p>
       <p className="mt-0.5 text-xs text-muted-foreground">

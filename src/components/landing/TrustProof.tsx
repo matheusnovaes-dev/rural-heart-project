@@ -5,7 +5,7 @@ import { Reveal } from "@/components/landing/Reveal";
 
 export function TrustProof() {
   return (
-    <section className="bg-primary py-12 sm:py-20 text-primary-foreground">
+    <section data-cortina className="bg-primary py-12 sm:py-20 text-primary-foreground">
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2">
         <Reveal className="overflow-hidden rounded-2xl">
           <picture>

@@ -1,3 +1,4 @@
+import { ContaAte } from "@/components/landing/ContaAte";
 import {
   animate,
   motion,
@@ -30,30 +31,6 @@ const PALAVRAS_TITULO = [
   "vender?",
 ];
 const A_PARTIR_DO_DESTAQUE = 8;
-
-/** Conta de 0 até o número quando entra na tela. O HTML já nasce com o valor final (sem JS e para buscadores). */
-function ContaAte({ alvo, sufixo = "" }: { alvo: number; sufixo?: string }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const emTela = useInView(ref, { once: true });
-  const reduz = useReducedMotion();
-  useEffect(() => {
-    if (!emTela || reduz) return;
-    const controle = animate(0, alvo, {
-      duration: 1.4,
-      ease: "easeOut",
-      onUpdate: (v) => {
-        if (ref.current) ref.current.textContent = `${Math.round(v)}${sufixo}`;
-      },
-    });
-    return () => controle.stop();
-  }, [emTela, reduz, alvo, sufixo]);
-  return (
-    <span ref={ref}>
-      {alvo}
-      {sufixo}
-    </span>
-  );
-}
 
 export function Hero() {
   const { abrirCadastro } = useCadastro();

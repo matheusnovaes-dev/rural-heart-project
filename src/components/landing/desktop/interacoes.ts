@@ -302,3 +302,41 @@ export function iniciarParallax(): () => void {
     });
   };
 }
+
+// -------------------------------------------------------------------- cortinas
+/**
+ * Seções marcadas com data-cortina "abrem" ao entrar na tela: começam recortadas e arredondadas nas
+ * laterais e se alargam até ocupar tudo (clip-path, sem mexer no layout), como uma cortina subindo.
+ */
+export function iniciarCortinas(): () => void {
+  const els = Array.from(document.querySelectorAll<HTMLElement>("[data-cortina]"));
+  if (!els.length) return () => {};
+  const visiveis = new Set<HTMLElement>();
+  const io = new IntersectionObserver(
+    (entradas) =>
+      entradas.forEach((e) => {
+        const el = e.target as HTMLElement;
+        if (e.isIntersecting) visiveis.add(el);
+        else visiveis.delete(el);
+      }),
+    { rootMargin: "50px" },
+  );
+  els.forEach((el) => io.observe(el));
+  const parar = registrar(() => {
+    const vh = window.innerHeight;
+    visiveis.forEach((el) => {
+      const topo = el.getBoundingClientRect().top;
+      const p = Math.max(0, Math.min(1, (vh - topo) / (vh * 0.65)));
+      const e = 1 - (1 - p) * (1 - p);
+      el.style.clipPath =
+        e >= 0.999
+          ? ""
+          : `inset(0 ${((1 - e) * 7).toFixed(2)}% round ${((1 - e) * 56).toFixed(1)}px)`;
+    });
+  });
+  return () => {
+    parar();
+    io.disconnect();
+    els.forEach((el) => (el.style.clipPath = ""));
+  };
+}

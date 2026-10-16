@@ -34,6 +34,7 @@ export function FaixaGigante() {
   return (
     <section
       aria-label="Culturas cobertas: soja, milho, algodão, café, boi, leite, feijão, trigo, arroz e mais de 70 produtos. Fontes: Conab, Imea, Deral, Epagri, Emater, BBM, IEA-SP, B3 e Conseleite."
+      data-cortina
       className="relative isolate overflow-hidden bg-primary py-10 text-primary-foreground sm:py-14"
     >
       {/* Brilho laranja que escorre atrás das palavras. No celular é só CSS (dois borrões que se movem por
@@ -46,7 +47,7 @@ export function FaixaGigante() {
         {CULTURAS.map((nome, i) => (
           <span
             key={nome}
-            className="flex items-center text-[clamp(3.6rem,13vw,9rem)] leading-none"
+            className="faixa-palavra flex items-center text-[clamp(3.6rem,13vw,9rem)] leading-none"
           >
             {/* duas vozes: grotesca pesada e serifa fina, alternando (a serifa dispensa contorno vazado,
                 que em fonte variável mostra as sobreposições dos traços) */}

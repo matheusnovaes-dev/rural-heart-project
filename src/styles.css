@@ -561,3 +561,17 @@ html.lenis body {
 [data-glow] .faixa-brilho {
   display: none;
 }
+
+/* Palavras da faixa gigante: no desktop acendem em laranja e sobem um pouco sob o mouse. */
+@media (hover: hover) and (pointer: fine) {
+  .faixa-palavra {
+    transition:
+      color 0.35s,
+      transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    cursor: default;
+  }
+  .faixa-palavra:hover {
+    color: var(--cta);
+    transform: translateY(-6px);
+  }
+}

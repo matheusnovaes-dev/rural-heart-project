@@ -6,6 +6,7 @@ import { iniciarVento } from "@/components/landing/desktop/vento";
 import { iniciarLetrasRolando } from "@/components/landing/desktop/letrasRolando";
 import {
   iniciarCartoes,
+  iniciarCortinas,
   iniciarCursor,
   iniciarMagneticos,
   iniciarParallax,
@@ -33,6 +34,7 @@ export default function DesktopFX() {
     seguro(iniciarMagneticos);
     seguro(iniciarCartoes);
     seguro(iniciarParallax);
+    seguro(iniciarCortinas);
     seguro(iniciarLetrasRolando);
     const hero = document.getElementById("topo");
     if (hero) seguro(() => iniciarParticulas(hero));

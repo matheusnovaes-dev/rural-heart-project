@@ -1,23 +1,25 @@
 import { criarCanvasGl, criarPrograma, lacoVisivel, observarTamanho } from "./gl";
 
-// Poeira dourada de grãos subindo pelo hero. Cada partícula tem 4 números fixos (posição, velocidade, fase);
+// Poeira dourada de grãos levada pelo vento sobre a lavoura (pouca, rente ao chão e longe do texto). Cada partícula tem 4 números fixos (posição, velocidade, fase);
 // toda a animação (subida, balanço, fuga do mouse) é calculada na GPU a partir do tempo.
 const VS = `
 attribute vec4 a;
 uniform float t; uniform vec2 m; uniform float asp; uniform float dpr; uniform float sc;
 varying float v;
 void main(){
-  float vel = 0.010 + a.z * 0.045;
-  float y = fract(a.y + t * vel + sc);
-  float x = a.x + sin(t * 0.35 + a.w * 6.2831) * 0.035 + y * 0.05;
+  // Corre com o vento (mesma direção da onda no trigo), concentrada na metade de baixo, perto da lavoura.
+  float x = fract(a.x - t * (0.010 + a.z * 0.030) + sc);
+  float y = 0.05 + a.y * a.y * 0.70 + sin(t * 0.45 + a.w * 6.2831) * 0.028 + sin(t * 0.9 + a.x * 20.0) * a.z * 0.012;
   vec2 p = vec2(x, y) * 2.0 - 1.0;
   vec2 d = (p - m) * vec2(asp, 1.0);
   float f = exp(-dot(d, d) * 9.0);
   p += normalize(d + 0.0001) * f * 0.2 * vec2(1.0 / asp, 1.0);
-  float fade = smoothstep(0.0, 0.14, y) * smoothstep(1.0, 0.75, y);
-  v = fade * (0.3 + a.z * 0.7) * (1.0 + f * 1.4);
+  float borda = smoothstep(0.0, 0.08, x) * smoothstep(1.0, 0.92, x);
+  // some onde está o texto (elipse central), para o pó nunca atravessar as palavras
+  float txt = exp(-pow(p.x / 0.62, 2.0) - pow((p.y - 0.12) / 0.5, 2.0));
+  v = borda * (0.3 + a.z * 0.7) * (1.0 + f * 1.4) * (1.0 - 0.8 * txt);
   gl_Position = vec4(p, 0.0, 1.0);
-  gl_PointSize = (1.5 + a.z * 4.5 + f * 3.5) * dpr;
+  gl_PointSize = (1.4 + a.z * 3.4 + f * 3.0) * dpr;
 }`;
 const FS = `
 precision mediump float;
@@ -42,7 +44,7 @@ export function iniciarParticulas(hero: HTMLElement): () => void {
   }
   gl.useProgram(prog);
 
-  const TOTAL = 1100;
+  const TOTAL = 520;
   const dados = new Float32Array(TOTAL * 4);
   for (let i = 0; i < dados.length; i++) dados[i] = Math.random();
   const buf = gl.createBuffer();
@@ -93,7 +95,7 @@ export function iniciarParticulas(hero: HTMLElement): () => void {
       my += (alvoY - my) * 0.12;
       gl.uniform1f(uT, agora / 1000);
       gl.uniform2f(uM, mx, my);
-      gl.uniform1f(uSc, window.scrollY * 0.00012);
+      gl.uniform1f(uSc, window.scrollY * 0.00008);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.POINTS, 0, quantas);
@@ -101,7 +103,7 @@ export function iniciarParticulas(hero: HTMLElement): () => void {
       // Qualidade adaptativa: se a máquina não dá conta, reduz as partículas e, no limite, desiste.
       media = media * 0.94 + Math.min(dt, 100) * 0.06;
       if (++quadros % 90 === 0) {
-        if (media > 24 && quantas > 250) quantas = Math.floor(quantas * 0.6);
+        if (media > 24 && quantas > 150) quantas = Math.floor(quantas * 0.6);
         else if (media > 42 && !desistiu) {
           desistiu = true;
           canvas.style.display = "none";
