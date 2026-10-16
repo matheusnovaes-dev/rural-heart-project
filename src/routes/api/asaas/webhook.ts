@@ -187,7 +187,10 @@ async function enviarEmailBoasVindasAsaas({
       headers: { access_token: apiKey, "User-Agent": "Safralume/1.0" },
     });
     const customer = (await res.json()) as { name?: string; email?: string };
-    if (customer.email) {
+    // Quem se cadastrou pela landing ou pelo WhatsApp tem e-mail técnico (lead-<fone>@safralume.app), que
+    // não recebe nada: mandar pra lá só gera devolução e prejudica a reputação do remetente. Visto na
+    // primeira venda (Bruno, 16/10/2026).
+    if (customer.email && !customer.email.toLowerCase().endsWith("@safralume.app")) {
       await enviarEmailBoasVindas({
         to: customer.email,
         nome: customer.name ?? "produtor",
