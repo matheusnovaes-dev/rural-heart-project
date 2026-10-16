@@ -22,6 +22,6 @@ export const MIDIA = {
   sojaJpg,
   /** 1920x1080, para telas largas */
   videoDesktop,
-  /** 720x900 (corte 4:5 do centro, nativo), para celular */
+  /** 864x1080 (corte 4:5 do centro, resolução nativa da fonte), para celular */
   videoMobile,
 } as const;

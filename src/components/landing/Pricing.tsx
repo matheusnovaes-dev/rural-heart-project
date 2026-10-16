@@ -49,7 +49,14 @@ export function Pricing({ semTrial = false }: { semTrial?: boolean }) {
             delay={index * 0.1}
             className={cn("h-full", plan.highlighted && "max-sm:order-first")}
           >
-            <CartaoPlano plan={plan} semTrial={semTrial} />
+            {plan.highlighted ? (
+              // Plano em destaque: um fio de luz laranja dá a volta no cartão (só transform, ver .anel-destaque)
+              <div className="anel-destaque">
+                <CartaoPlano plan={plan} semTrial={semTrial} />
+              </div>
+            ) : (
+              <CartaoPlano plan={plan} semTrial={semTrial} />
+            )}
           </Reveal>
         ))}
       </div>
@@ -72,7 +79,7 @@ function CartaoPlano({ plan, semTrial }: { plan: PricingPlan; semTrial: boolean 
       className={cn(
         "flex h-full flex-col rounded-2xl border p-6",
         plan.highlighted
-          ? "border-primary bg-card shadow-lg ring-1 ring-primary"
+          ? "relative border-transparent bg-card shadow-lg"
           : isOuro
             ? "border-gold bg-gold-soft/40 ring-1 ring-gold/50"
             : "border-border bg-card",

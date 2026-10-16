@@ -635,3 +635,42 @@ html.lenis body {
 
 /* Desktop de verdade (tela larga, mouse): onde as seções "fixas" do painel acompanham a rolagem. */
 @custom-variant desk (@media (min-width: 1024px) and (hover: hover) and (pointer: fine));
+
+/* Fio de luz dando a volta no cartão do plano em destaque: um conic-gradient maior que o cartão gira atrás dele
+   (transform, composto na GPU) e o cartão cobre o miolo, deixando só 2px de borda iluminada. */
+.anel-destaque {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 1rem;
+  padding: 2px;
+  background: color-mix(in oklab, var(--primary) 85%, transparent);
+}
+.anel-destaque::before {
+  content: "";
+  position: absolute;
+  inset: -80%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 58%,
+    var(--cta) 78%,
+    #fff3d6 84%,
+    transparent 92%
+  );
+  animation: anel-giro 5.5s linear infinite;
+}
+.anel-destaque > * {
+  position: relative;
+  border-radius: calc(1rem - 2px);
+}
+@keyframes anel-giro {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .anel-destaque::before {
+    animation: none;
+    opacity: 0.55;
+  }
+}
