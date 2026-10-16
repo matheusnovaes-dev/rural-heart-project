@@ -1,3 +1,4 @@
+import { IndicadorCapitulos } from "@/components/landing/IndicadorCapitulos";
 import { MapaBrasilFundo } from "@/components/landing/MapaBrasilFundo";
 import { DesktopFXLoader } from "@/components/landing/desktop/DesktopFXLoader";
 import { FaixaGigante } from "@/components/landing/FaixaGigante";
@@ -76,6 +77,7 @@ function Index() {
         </main>
         <Footer />
         <RastreioScroll />
+        <IndicadorCapitulos />
         <DesktopFXLoader />
         <BarraCtaFixa />
         <WhatsAppFloatingButton />

@@ -66,6 +66,7 @@ export function PrecosCarrossel() {
 
   return (
     <section
+      id="precos"
       aria-labelledby="precos-do-dia"
       className="relative overflow-hidden bg-background py-14 sm:py-24"
     >

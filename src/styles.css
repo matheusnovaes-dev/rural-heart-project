@@ -632,3 +632,6 @@ html.lenis body {
     animation: none;
   }
 }
+
+/* Desktop de verdade (tela larga, mouse): onde as seções "fixas" do painel acompanham a rolagem. */
+@custom-variant desk (@media (min-width: 1024px) and (hover: hover) and (pointer: fine));

@@ -1,7 +1,7 @@
 import { carregarFonte, FONTES_PAINEL_URL } from "@/lib/fontes";
 import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "framer-motion";
 import {
   LineChart,
   TrendingUp,
@@ -105,6 +105,21 @@ const abas: { id: AbaId; label: string; icon: typeof LineChart; plano: PlanoId }
 ];
 
 const INTERVALO_AUTOPLAY = 3800;
+/** Quanto de rolagem cada aba "ocupa" no modo que acompanha o scroll (desktop). */
+const VH_POR_ABA = 46;
+
+const legendas: Record<AbaId, string> = {
+  precos: "O preço da sua praça, com histórico e a variação da semana.",
+  sinal: "Preço, futuros da B3 e clima juntos dizem se é hora de vender ou esperar.",
+  alertas: "Avisos de preço, clima e dólar, e lembretes da lavoura direto no WhatsApp.",
+  clima: "Previsão de chuva e temperatura pra sua cidade, pelos próximos dias.",
+  plantio: "A janela de plantio oficial (ZARC) pra sua cultura e região.",
+  ferrugem: "O risco de ferrugem da soja na sua região, pra se antecipar.",
+  insumos: "Preço de insumos como a ureia, pra comparar antes de comprar.",
+  leiloes: "Agenda de leilões de gado, presencial na região e virtuais.",
+  suporte: "Abra um chamado e acompanhe a resposta no painel e no WhatsApp.",
+  acompanhamento: "Acompanhe o preço de outras culturas e estados numa lista só sua.",
+};
 
 export function DashboardPreview() {
   const raiz = useRef<HTMLDivElement>(null);
@@ -124,7 +139,28 @@ export function DashboardPreview() {
     io.observe(el);
     return () => io.disconnect();
   }, []);
+  const trilho = useRef<HTMLDivElement>(null);
+  // Desktop: a rolagem escolhe a aba (seção fixa na tela). Detectado no navegador; o CSS (variante "desk") já reserva
+  // a altura e gruda a seção, então a página não pula quando isso liga.
+  const [fixo, setFixo] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px) and (hover: hover) and (pointer: fine)");
+    const atualizar = () => setFixo(mq.matches);
+    atualizar();
+    mq.addEventListener("change", atualizar);
+    return () => mq.removeEventListener("change", atualizar);
+  }, []);
+  const { scrollYProgress: progresso } = useScroll({
+    target: trilho,
+    offset: ["start start", "end end"],
+  });
   const [aba, setAba] = useState<AbaId>("precos");
+  useMotionValueEvent(progresso, "change", (v) => {
+    if (!fixo) return;
+    const i = Math.min(abas.length - 1, Math.max(0, Math.floor(v * abas.length * 0.999)));
+    const alvo = abas[i]!.id;
+    setAba((atual) => (atual === alvo ? atual : alvo));
+  });
   const [autoplay, setAutoplay] = useState(true);
   const retomarTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const precosReais = usePrecosReaisSoja();
@@ -151,7 +187,7 @@ export function DashboardPreview() {
   }, [aba]);
 
   useEffect(() => {
-    if (!autoplay) return;
+    if (!autoplay || fixo) return;
     const id = setInterval(() => {
       setAba((atual) => {
         const idx = abas.findIndex((a) => a.id === atual);
@@ -159,7 +195,7 @@ export function DashboardPreview() {
       });
     }, INTERVALO_AUTOPLAY);
     return () => clearInterval(id);
-  }, [autoplay]);
+  }, [autoplay, fixo]);
 
   function selecionarManual(id: AbaId) {
     setAba(id);
@@ -170,7 +206,7 @@ export function DashboardPreview() {
   }
 
   return (
-    <section ref={raiz} className="mx-auto max-w-6xl px-4 py-12 sm:py-20 sm:px-6">
+    <section id="painel" ref={raiz} className="mx-auto max-w-6xl px-4 py-12 sm:py-20 sm:px-6">
       <Reveal className="mx-auto max-w-2xl text-center">
         <span className="text-sm font-semibold uppercase tracking-wide text-primary">
           Além do WhatsApp
@@ -189,141 +225,187 @@ export function DashboardPreview() {
         </p>
       </Reveal>
 
-      <Reveal delay={0.15} className="mx-auto mt-12 max-w-3xl">
-        {/* dashboard-shell: escopa as MESMAS variáveis de cor/fonte do painel
+      <div
+        ref={trilho}
+        className="mt-12 desk:h-[calc(100vh+var(--vh-abas))]"
+        style={{ "--vh-abas": `${abas.length * VH_POR_ABA}vh` } as React.CSSProperties}
+      >
+        <div className="desk:sticky desk:top-[13vh] desk:grid desk:grid-cols-[17rem_1fr] desk:items-center desk:gap-10">
+          {/* Legenda grande da aba atual (só no desktop): número, nome e uma linha do que é */}
+          <div className="hidden desk:block" aria-hidden="true">
+            <p
+              className="text-6xl leading-none text-[color:var(--cta)] italic"
+              style={{ fontFamily: '"Instrument Serif", "Times New Roman", serif' }}
+            >
+              {String(abas.findIndex((x) => x.id === aba) + 1).padStart(2, "0")}
+              <span className="text-2xl text-muted-foreground not-italic"> / {abas.length}</span>
+            </p>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={aba}
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.25 }}
+              >
+                <h3 className="mt-4 font-display text-3xl leading-tight font-extrabold tracking-tight text-foreground">
+                  {abas.find((x) => x.id === aba)!.label}
+                </h3>
+                <p className="mt-3 text-base text-muted-foreground">{legendas[aba]}</p>
+              </motion.div>
+            </AnimatePresence>
+            <div className="mt-6 flex gap-1.5">
+              {abas.map((x) => (
+                <span
+                  key={x.id}
+                  className={cn(
+                    "h-1 flex-1 rounded-full transition-colors duration-300",
+                    x.id === aba ? "bg-[color:var(--cta)]" : "bg-border",
+                  )}
+                />
+              ))}
+            </div>
+            <p className="mt-6 text-xs text-muted-foreground">
+              Role para ver cada parte do painel.
+            </p>
+          </div>
+          <Reveal delay={0.15} className="mx-auto w-full max-w-3xl desk:max-w-none">
+            {/* dashboard-shell: escopa as MESMAS variáveis de cor/fonte do painel
             de verdade (sidebar verde-escuro, DM Sans, Space Grotesk nos
             títulos), em vez das cores da própria landing — era por isso que
             o preview nunca parecia o produto real, por mais que o conteúdo
             batesse. Pedido do Matheus 2026-10-12: "tem que ser FODA, o mais
             realista possível". */}
-        <div
-          className="dashboard-shell overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
-          onMouseEnter={() => setAutoplay(false)}
-          onMouseLeave={() => setAutoplay(true)}
-        >
-          {/* barra de navegador, só decorativa */}
-          <div className="flex items-center gap-2 border-b border-border bg-secondary/60 px-4 py-2.5">
-            <span className="size-2.5 rounded-full bg-destructive/60" />
-            <span className="size-2.5 rounded-full bg-gold/50" />
-            <span className="size-2.5 rounded-full bg-primary/60" />
-            <span className="ml-3 rounded-md bg-background px-3 py-1 font-mono text-xs text-muted-foreground">
-              app.safralume.com.br/dashboard
-            </span>
-          </div>
-
-          <div className="flex flex-col sm:flex-row">
-            {/* mini sidebar — mesma cor/estrutura da sidebar real (bg-sidebar
-                verde-escuro, badge de logo, item ativo em sidebar-accent) */}
             <div
-              ref={sidebarRef}
-              className="relative flex shrink-0 flex-col gap-1 border-b border-sidebar-border bg-sidebar p-2 sm:w-52 sm:border-r sm:border-b-0 sm:p-3"
+              className="dashboard-shell overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
+              onMouseEnter={() => setAutoplay(false)}
+              onMouseLeave={() => setAutoplay(true)}
             >
-              <div className="mb-2 hidden items-center gap-2.5 px-1 pb-3 sm:flex">
-                <img src="/logo-icon.webp" alt="" className="size-8 rounded-[0.6rem]" />
-                <div className="min-w-0">
-                  <span className="block truncate font-display text-sm font-semibold text-sidebar-foreground">
-                    Safralume
-                  </span>
-                  <span className="block text-[10px] font-medium tracking-wide text-sidebar-foreground/55 uppercase">
-                    Fazenda Santa Luzia
-                  </span>
+              {/* barra de navegador, só decorativa */}
+              <div className="flex items-center gap-2 border-b border-border bg-secondary/60 px-4 py-2.5">
+                <span className="size-2.5 rounded-full bg-destructive/60" />
+                <span className="size-2.5 rounded-full bg-gold/50" />
+                <span className="size-2.5 rounded-full bg-primary/60" />
+                <span className="ml-3 rounded-md bg-background px-3 py-1 font-mono text-xs text-muted-foreground">
+                  app.safralume.com.br/dashboard
+                </span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row">
+                {/* mini sidebar — mesma cor/estrutura da sidebar real (bg-sidebar
+                verde-escuro, badge de logo, item ativo em sidebar-accent) */}
+                <div
+                  ref={sidebarRef}
+                  className="relative flex shrink-0 flex-col gap-1 border-b border-sidebar-border bg-sidebar p-2 sm:w-52 sm:border-r sm:border-b-0 sm:p-3"
+                >
+                  <div className="mb-2 hidden items-center gap-2.5 px-1 pb-3 sm:flex">
+                    <img src="/logo-icon.webp" alt="" className="size-8 rounded-[0.6rem]" />
+                    <div className="min-w-0">
+                      <span className="block truncate font-display text-sm font-semibold text-sidebar-foreground">
+                        Safralume
+                      </span>
+                      <span className="block text-[10px] font-medium tracking-wide text-sidebar-foreground/55 uppercase">
+                        Fazenda Santa Luzia
+                      </span>
+                    </div>
+                  </div>
+
+                  <CursorFantasma pos={cursorPos} />
+                  <div className="grid grid-cols-5 gap-1 sm:flex sm:flex-col">
+                    {abas.map((item) => (
+                      <button
+                        key={item.id}
+                        ref={(el) => {
+                          botaoRefs.current[item.id] = el;
+                        }}
+                        type="button"
+                        aria-label={item.label}
+                        aria-pressed={aba === item.id}
+                        onClick={() => selecionarManual(item.id)}
+                        className={cn(
+                          "flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors pointer-coarse:min-h-11 pointer-coarse:min-w-11 sm:flex-none sm:justify-start",
+                          aba === item.id
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+                        )}
+                      >
+                        <item.icon className="size-4 shrink-0" />
+                        <span className="hidden flex-1 sm:inline">{item.label}</span>
+                        <span
+                          className={cn(
+                            "hidden shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold sm:inline",
+                            aba === item.id
+                              ? "bg-sidebar-primary/25 text-sidebar-primary"
+                              : planoBadge[item.plano].className,
+                          )}
+                        >
+                          {planoBadge[item.plano].label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="mt-1 flex items-center gap-1.5 border-t border-sidebar-border px-3 pt-3 sm:hidden">
+                    {abas.map((item) => (
+                      <span
+                        key={item.id}
+                        className={cn(
+                          "h-1 flex-1 rounded-full transition-colors",
+                          aba === item.id ? "bg-sidebar-primary" : "bg-sidebar-border",
+                        )}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="mt-auto hidden items-center gap-2 border-t border-sidebar-border px-1 pt-3 text-sidebar-foreground/55 sm:flex">
+                    <LogOut className="size-3.5" />
+                    <span className="text-xs">Sair</span>
+                  </div>
+                </div>
+
+                {/* conteúdo, muda com a aba */}
+                <div className="min-h-96 flex-1 overflow-hidden bg-background p-4 sm:p-6">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={aba}
+                      initial={{ opacity: 0, x: 14 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -14 }}
+                      transition={{ duration: 0.25, ease: "easeOut" }}
+                    >
+                      {aba === "precos" && <PreviewPrecos precosReais={precosReais} />}
+                      {aba === "sinal" && <PreviewSinalVenda />}
+                      {aba === "alertas" && <PreviewAlertas />}
+                      {aba === "clima" && <PreviewClima />}
+                      {aba === "plantio" && <PreviewPlantio />}
+                      {aba === "ferrugem" && <PreviewFerrugem />}
+                      {aba === "insumos" && <PreviewInsumos />}
+                      {aba === "leiloes" && <PreviewLeiloes />}
+                      {aba === "suporte" && <PreviewSuporte />}
+                      {aba === "acompanhamento" && <PreviewAcompanhamento />}
+                    </motion.div>
+                  </AnimatePresence>
                 </div>
               </div>
-
-              <CursorFantasma pos={cursorPos} />
-              <div className="grid grid-cols-5 gap-1 sm:flex sm:flex-col">
-                {abas.map((item) => (
-                  <button
-                    key={item.id}
-                    ref={(el) => {
-                      botaoRefs.current[item.id] = el;
-                    }}
-                    type="button"
-                    aria-label={item.label}
-                    aria-pressed={aba === item.id}
-                    onClick={() => selecionarManual(item.id)}
-                    className={cn(
-                      "flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors pointer-coarse:min-h-11 pointer-coarse:min-w-11 sm:flex-none sm:justify-start",
-                      aba === item.id
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
-                    )}
-                  >
-                    <item.icon className="size-4 shrink-0" />
-                    <span className="hidden flex-1 sm:inline">{item.label}</span>
-                    <span
-                      className={cn(
-                        "hidden shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold sm:inline",
-                        aba === item.id
-                          ? "bg-sidebar-primary/25 text-sidebar-primary"
-                          : planoBadge[item.plano].className,
-                      )}
-                    >
-                      {planoBadge[item.plano].label}
-                    </span>
-                  </button>
-                ))}
-              </div>
-
-              <div className="mt-1 flex items-center gap-1.5 border-t border-sidebar-border px-3 pt-3 sm:hidden">
-                {abas.map((item) => (
-                  <span
-                    key={item.id}
-                    className={cn(
-                      "h-1 flex-1 rounded-full transition-colors",
-                      aba === item.id ? "bg-sidebar-primary" : "bg-sidebar-border",
-                    )}
-                  />
-                ))}
-              </div>
-
-              <div className="mt-auto hidden items-center gap-2 border-t border-sidebar-border px-1 pt-3 text-sidebar-foreground/55 sm:flex">
-                <LogOut className="size-3.5" />
-                <span className="text-xs">Sair</span>
-              </div>
             </div>
-
-            {/* conteúdo, muda com a aba */}
-            <div className="min-h-96 flex-1 overflow-hidden bg-background p-4 sm:p-6">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={aba}
-                  initial={{ opacity: 0, x: 14 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -14 }}
-                  transition={{ duration: 0.25, ease: "easeOut" }}
-                >
-                  {aba === "precos" && <PreviewPrecos precosReais={precosReais} />}
-                  {aba === "sinal" && <PreviewSinalVenda />}
-                  {aba === "alertas" && <PreviewAlertas />}
-                  {aba === "clima" && <PreviewClima />}
-                  {aba === "plantio" && <PreviewPlantio />}
-                  {aba === "ferrugem" && <PreviewFerrugem />}
-                  {aba === "insumos" && <PreviewInsumos />}
-                  {aba === "leiloes" && <PreviewLeiloes />}
-                  {aba === "suporte" && <PreviewSuporte />}
-                  {aba === "acompanhamento" && <PreviewAcompanhamento />}
-                </motion.div>
-              </AnimatePresence>
-            </div>
-          </div>
+            <p className="mt-3 text-center text-xs text-muted-foreground">
+              Prévia ilustrativa do painel
+              {precosReais
+                ? ", preço da soja é o real de hoje, o resto é exemplo"
+                : ", dados de exemplo"}
+              . Recurso com selo{" "}
+              <span className="rounded-full bg-gold px-1.5 py-0.5 font-semibold text-gold-foreground">
+                Ouro
+              </span>{" "}
+              faz parte desse plano,{" "}
+              <a href="#planos" className="font-medium text-primary underline underline-offset-2">
+                veja a comparação completa
+              </a>
+              .
+            </p>
+          </Reveal>
         </div>
-        <p className="mt-3 text-center text-xs text-muted-foreground">
-          Prévia ilustrativa do painel
-          {precosReais
-            ? ", preço da soja é o real de hoje, o resto é exemplo"
-            : ", dados de exemplo"}
-          . Recurso com selo{" "}
-          <span className="rounded-full bg-gold px-1.5 py-0.5 font-semibold text-gold-foreground">
-            Ouro
-          </span>{" "}
-          faz parte desse plano,{" "}
-          <a href="#planos" className="font-medium text-primary underline underline-offset-2">
-            veja a comparação completa
-          </a>
-          .
-        </p>
-      </Reveal>
+      </div>
     </section>
   );
 }

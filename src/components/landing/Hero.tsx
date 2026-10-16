@@ -56,6 +56,11 @@ export function Hero() {
   });
   const fotoY = useTransform(scrollYProgress, [0, 1], ["-10%", "10%"]);
   const cristaFundoY = useTransform(scrollYProgress, [0, 1], ["0px", "30px"]);
+  // O conteúdo do hero "se afasta" ao rolar: encolhe um pouco, desce devagar (atrás da rolagem) e esmaece, dando a sensação
+  // de que a próxima seção chega por cima. Só transform e opacidade.
+  const conteudoEscala = useTransform(scrollYProgress, [0, 0.7], [1, 0.94]);
+  const conteudoY = useTransform(scrollYProgress, [0, 0.7], ["0px", "46px"]);
+  const conteudoOpacidade = useTransform(scrollYProgress, [0.25, 0.8], [1, 0.25]);
   const cristaFrenteY = useTransform(scrollYProgress, [0, 1], ["0px", "55px"]);
 
   // Luz dourada que segue o cursor sobre a foto — inspirado no site do Lando
@@ -154,7 +159,10 @@ export function Hero() {
         </motion.svg>
       </div>
 
-      <div className="relative mx-auto flex max-w-4xl flex-col items-center px-4 pt-14 pb-24 text-center sm:px-6 sm:pt-24 sm:pb-32">
+      <motion.div
+        style={{ scale: conteudoEscala, y: conteudoY, opacity: conteudoOpacidade }}
+        className="relative mx-auto flex max-w-4xl flex-col items-center px-4 pt-14 pb-24 text-center sm:px-6 sm:pt-24 sm:pb-32 motion-reduce:transform-none! motion-reduce:opacity-100!"
+      >
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -257,7 +265,7 @@ export function Hero() {
             <li>fonte e data em toda resposta</li>
           </ul>
         </motion.div>
-      </div>
+      </motion.div>
     </section>
   );
 }

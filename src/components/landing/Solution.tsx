@@ -9,7 +9,7 @@ import { brl2, diaMes, fraseDeFuturo, fraseDePlantio, fraseDeSinal } from "@/lib
 
 export function Solution() {
   return (
-    <section className="bg-secondary/50 py-12 sm:py-20">
+    <section id="problema" className="bg-secondary/50 py-12 sm:py-20">
       <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2">
         <Reveal>
           {/* A antiga seção "O problema não é falta de dado" (3 cards) repetia
