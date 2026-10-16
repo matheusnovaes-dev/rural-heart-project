@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
 import { Header } from "@/components/landing/Header";
+import { PrecosCarrossel } from "@/components/landing/PrecosCarrossel";
 import { Hero } from "@/components/landing/Hero";
 import { CalculadoraSafraLanding } from "@/components/landing/CalculadoraSafraLanding";
 import { Solution } from "@/components/landing/Solution";
@@ -57,6 +58,7 @@ function Index() {
         <Header />
         <main>
           <Hero />
+          <PrecosCarrossel />
           <Solution />
           <CalculadoraSafraLanding />
           <HowItWorks />

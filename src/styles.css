@@ -263,6 +263,17 @@
   }
 }
 
+/* Mesmo loop, mais lento: o carrossel de preços da landing precisa ser legível no celular. */
+@utility animate-marquee-lento {
+  animation: marquee 48s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee-lento {
+    animation: none;
+  }
+}
+
 /* Wash de fundo do painel de marca (login) — rotação lenta e sutil, nunca
    chama mais atenção que o conteúdo por cima. */
 @keyframes slow-drift {

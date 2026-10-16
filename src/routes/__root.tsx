@@ -29,6 +29,11 @@ const FONTES_CRITICAS_URL =
 const FONTES_SECUNDARIAS_URL =
   "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap";
 
+// Só as letras dos títulos grandes do carrossel de preços (serifa de alto contraste e traço de pincel):
+// o parâmetro text= entrega poucos KB em vez da família inteira.
+const FONTES_DESTAQUE_URL =
+  "https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Caveat+Brush&text=%26MERCADOhoje&display=swap";
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -259,10 +264,12 @@ function RootComponent() {
   useEffect(() => {
     if (document.querySelector(`link[href="${FONTES_SECUNDARIAS_URL}"]`)) return;
     const carregar = () => {
-      const link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = FONTES_SECUNDARIAS_URL;
-      document.head.appendChild(link);
+      for (const href of [FONTES_SECUNDARIAS_URL, FONTES_DESTAQUE_URL]) {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = href;
+        document.head.appendChild(link);
+      }
     };
     if ("requestIdleCallback" in window) {
       const id = window.requestIdleCallback(carregar, { timeout: 2000 });
