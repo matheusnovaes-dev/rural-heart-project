@@ -231,7 +231,9 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
-    overflow-x: hidden;
+    /* "clip" em vez de "hidden": com os dois em html e body, o body vira um contêiner de rolagem
+       e o position: sticky da demo do WhatsApp deixa de grudar. Clip corta igual, sem criar rolagem. */
+    overflow-x: clip;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -259,6 +261,17 @@
 
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee {
+    animation: none;
+  }
+}
+
+/* Mesmo loop, mais lento: a faixa de preços do topo da landing precisa ser legível no celular. */
+@utility animate-marquee-lento {
+  animation: marquee 48s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee-lento {
     animation: none;
   }
 }
