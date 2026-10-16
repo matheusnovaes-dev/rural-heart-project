@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -28,6 +29,14 @@ const FONTES_CRITICAS_URL =
   "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap";
 const FONTES_SECUNDARIAS_URL =
   "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap";
+
+// No painel (/dashboard) o que aparece é DM Sans e Space Grotesk; Bricolage e IBM Plex Sans (da landing) não são
+// usadas ali e bloqueavam o primeiro desenho por ~115 KB. Lá a ordem inverte: as do painel são as críticas e as da
+// landing entram depois da hidratação (só para modais e telas fora do painel).
+const FONTES_PAINEL_URL =
+  "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=Space+Grotesk:wght@500;600;700&display=swap";
+const FONTES_MONO_URL =
+  "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap";
 
 // Só as letras dos títulos grandes do carrossel de preços (serifa de alto contraste e traço de pincel):
 // o parâmetro text= entrega poucos KB em vez da família inteira.
@@ -96,7 +105,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
+  head: ({ matches }) => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
@@ -154,7 +163,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: FONTES_CRITICAS_URL,
+        href: matches.some((m) => m.routeId.startsWith("/dashboard"))
+          ? FONTES_PAINEL_URL
+          : FONTES_CRITICAS_URL,
       },
       {
         rel: "stylesheet",
@@ -261,10 +272,16 @@ function RootComponent() {
     capturarOrigem();
   }, []);
 
+  const noPainel = useRouterState({
+    select: (s) => s.matches.some((m) => m.routeId.startsWith("/dashboard")),
+  });
   useEffect(() => {
-    if (document.querySelector(`link[href="${FONTES_SECUNDARIAS_URL}"]`)) return;
+    const urls = noPainel
+      ? [FONTES_CRITICAS_URL, FONTES_MONO_URL]
+      : [FONTES_SECUNDARIAS_URL, FONTES_DESTAQUE_URL];
     const carregar = () => {
-      for (const href of [FONTES_SECUNDARIAS_URL, FONTES_DESTAQUE_URL]) {
+      for (const href of urls) {
+        if (document.querySelector(`link[href="${href}"]`)) continue;
         const link = document.createElement("link");
         link.rel = "stylesheet";
         link.href = href;
@@ -277,7 +294,7 @@ function RootComponent() {
     }
     const t = setTimeout(carregar, 300);
     return () => clearTimeout(t);
-  }, []);
+  }, [noPainel]);
 
   return (
     // reducedMotion="user": toda animação de transform/layout (x, y, scale,

@@ -45,6 +45,7 @@ import { EMAIL_SAFRALUME_ADMIN, useAuth } from "@/lib/auth";
 import { useAcessoDashboard } from "@/lib/planos";
 import { useSair } from "@/components/dashboard/useSair";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { PainelEsqueleto } from "@/components/dashboard/PainelEsqueleto";
 
 export const Route = createFileRoute("/dashboard/_layout")({
   head: () => ({
@@ -135,6 +136,10 @@ function DashboardGuard() {
     voltandoDoCheckout,
     navigate,
   ]);
+
+  // Enquanto confere login e acesso, mostra a casca do painel (a maioria entra logada); só quem vai ser
+  // redirecionado (sem sessão, sem cadastro ou sem acesso) vê a tela de carregamento comum.
+  if (loading || carregandoAcesso) return <PainelEsqueleto />;
 
   if (
     loading ||

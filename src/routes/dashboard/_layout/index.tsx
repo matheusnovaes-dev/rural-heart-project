@@ -517,9 +517,11 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
         <CompletarAcessoCard />
       </motion.div>
 
-      <motion.div variants={itemVariants}>
-        <PecaNoWhatsApp cultura={produtor.cultura_principal} uf={produtor.uf} />
-      </motion.div>
+      {jaConversouNoWhatsapp !== true && (
+        <motion.div variants={itemVariants}>
+          <PecaNoWhatsApp cultura={produtor.cultura_principal} uf={produtor.uf} />
+        </motion.div>
+      )}
 
       {convitePrimeiraMensagem && (
         <motion.div
@@ -886,6 +888,12 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
           </motion.div>
         </motion.div>
       </motion.div>
+
+      {jaConversouNoWhatsapp === true && (
+        <motion.div variants={itemVariants}>
+          <PecaNoWhatsApp cultura={produtor.cultura_principal} uf={produtor.uf} />
+        </motion.div>
+      )}
     </motion.div>
   );
 }

@@ -169,7 +169,7 @@ export function ContextoMercado({ cultura }: { cultura?: string }) {
       });
   }, [cultura]);
 
-  if (carregando) return <Skeleton className="h-20 w-full" />;
+  if (carregando) return <Skeleton className="h-[5.25rem] w-full" />;
   if (!cambio && wasde.length === 0 && diesel.length === 0 && !ibge && b3.length === 0) return null;
 
   const dataFinalDiesel = diesel.reduce<string | null>(
@@ -315,7 +315,7 @@ export function ContextoMercado({ cultura }: { cultura?: string }) {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-3 px-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-6">
+          <div className="flex flex-row items-center gap-6 overflow-x-auto px-4 sm:flex-wrap sm:overflow-visible">
             {itens.map((item) => (
               <Bloco key={item.chave} item={item} sufixo="unico" />
             ))}
