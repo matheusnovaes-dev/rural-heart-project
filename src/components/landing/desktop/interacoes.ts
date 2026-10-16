@@ -66,13 +66,15 @@ html.fx-cursor ${CAMPOS_DE_TEXTO.replace(/,/g, ", html.fx-cursor ")} { cursor: t
   };
   const aro = caixa("width:0;height:0;");
   const miolo = document.createElement("div");
+  // Contorno duplo (branco com filete escuro dos dois lados) em vez de mix-blend: continua visível sobre
+  // foto escura, fundo creme, verde e laranja. O miolo vira laranja translúcido sobre o que é clicável.
   miolo.style.cssText =
-    "position:absolute;left:-19px;top:-19px;width:38px;height:38px;border-radius:9999px;border:1.5px solid #fff;mix-blend-mode:difference;transition:transform .3s cubic-bezier(.22,1,.36,1),background-color .3s;";
+    "position:absolute;left:-19px;top:-19px;width:38px;height:38px;border-radius:9999px;border:2px solid #fff;box-shadow:0 0 0 1.5px rgba(10,24,16,.7),inset 0 0 0 1.5px rgba(10,24,16,.7),0 2px 10px rgba(0,0,0,.25);transition:transform .3s cubic-bezier(.22,1,.36,1),background-color .3s;";
   aro.appendChild(miolo);
   const ponto = caixa("width:0;height:0;");
   const bolinha = document.createElement("div");
   bolinha.style.cssText =
-    "position:absolute;left:-3px;top:-3px;width:6px;height:6px;border-radius:9999px;background:#fff;mix-blend-mode:difference;";
+    "position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:9999px;background:#e8912a;border:2px solid #fff;box-shadow:0 0 0 1.5px rgba(10,24,16,.7);";
   ponto.appendChild(bolinha);
 
   let alvoX = -100;
@@ -106,8 +108,8 @@ html.fx-cursor ${CAMPOS_DE_TEXTO.replace(/,/g, ", html.fx-cursor ")} { cursor: t
     const campo = !!t.closest(CAMPOS_DE_TEXTO);
     const clicavel = !!t.closest(ALVOS_CLICAVEIS);
     aro.style.opacity = ponto.style.opacity = campo ? "0" : "1";
-    escala = clicavel ? 1.7 : 1;
-    miolo.style.backgroundColor = clicavel ? "rgba(255,255,255,.18)" : "transparent";
+    escala = clicavel ? 1.4 : 1;
+    miolo.style.backgroundColor = clicavel ? "rgba(232,145,42,.3)" : "transparent";
     aplicarEscala();
   };
   const aoApertar = (v: boolean) => () => {

@@ -30,6 +30,7 @@ export function Header() {
             <a
               key={link.href}
               href={link.href}
+              data-rolar
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               {link.label}
@@ -37,6 +38,7 @@ export function Header() {
           ))}
           <Link
             to="/login"
+            data-rolar
             className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             Entrar
@@ -47,6 +49,7 @@ export function Header() {
               target="_blank"
               rel="noopener noreferrer"
               data-magnetico
+              data-rolar
               onClick={() => trackLanding("WhatsappClique", { origem: "header" })}
             >
               Falar no WhatsApp

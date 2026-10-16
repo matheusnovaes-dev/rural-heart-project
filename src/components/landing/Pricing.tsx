@@ -159,6 +159,7 @@ function CartaoPlano({ plan, semTrial }: { plan: PricingPlan; semTrial: boolean 
             plano: plan.id as "bronze" | "prata" | "ouro",
             ...(semTrial ? { semTrial: "1" as const } : {}),
           }}
+          data-rolar
           onClick={() => trackLanding("PlanoClique", { plano: plan.id })}
         >
           {semTrial ? "Assinar agora" : "Testar grátis"}

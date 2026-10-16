@@ -77,6 +77,7 @@ export function CampoWhatsappCta({
         <button
           type="submit"
           data-magnetico
+          data-rolar
           className="inline-flex h-14 shrink-0 touch-manipulation items-center justify-center gap-2 rounded-xl bg-cta px-6 text-base font-bold whitespace-nowrap text-cta-foreground shadow-lg shadow-cta/25 transition-[transform,box-shadow,background-color] hover:-translate-y-0.5 hover:bg-cta/90 hover:shadow-xl hover:shadow-cta/30 focus-visible:ring-4 focus-visible:ring-cta/40 focus-visible:outline-none active:translate-y-0 active:scale-[0.98] motion-reduce:transition-none"
         >
           Testar grátis por 7 dias
