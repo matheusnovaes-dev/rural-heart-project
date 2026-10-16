@@ -371,16 +371,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
   const [bannerWhatsappVisivel, setBannerWhatsappVisivel] = useState(true);
   // null = ainda não sabemos (checagem em andamento): o convite só aparece quando
   // o servidor confirma que NÃO conversou, senão ele piscava pra quem já conversou.
-  // Quem já conversou com o bot continua tendo conversado: guarda isso no aparelho para a tela já nascer na
-  // ordem certa (preço antes das sugestões) em vez de trocar de lugar quando a checagem volta (pulo de layout).
-  const chaveConversou = `safralume_conversou_${produtor.id}`;
-  const [jaConversouNoWhatsapp, setJaConversouNoWhatsapp] = useState<boolean | null>(() => {
-    try {
-      return localStorage.getItem(chaveConversou) === "1" ? true : null;
-    } catch {
-      return null;
-    }
-  });
+  const [jaConversouNoWhatsapp, setJaConversouNoWhatsapp] = useState<boolean | null>(null);
   const [serie, setSerie] = useState<PrecoHistorico[] | null>(null);
   const [precosRegionais, setPrecosRegionais] = useState<PrecoRegional[]>([]);
   const [regionaisHistorico, setRegionaisHistorico] = useState<PrecoRegionalHistorico[]>([]);
@@ -400,17 +391,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
     let vivo = true;
     const checar = () => {
       verificarConversaWhatsapp({ data: { accessToken: token } })
-        .then(({ jaConversou }) => {
-          if (!vivo) return;
-          setJaConversouNoWhatsapp(jaConversou);
-          if (jaConversou) {
-            try {
-              localStorage.setItem(chaveConversou, "1");
-            } catch {
-              // sem armazenamento: só não lembra na próxima visita
-            }
-          }
-        })
+        .then(({ jaConversou }) => vivo && setJaConversouNoWhatsapp(jaConversou))
         // Falha na checagem: convida por segurança (melhor convidar que esconder).
         .catch(() => vivo && setJaConversouNoWhatsapp((atual) => atual ?? false));
     };
@@ -425,7 +406,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
       vivo = false;
       document.removeEventListener("visibilitychange", aoVoltar);
     };
-  }, [token, chaveConversou]);
+  }, [token]);
 
   const convitePrimeiraMensagem = bannerWhatsappVisivel && jaConversouNoWhatsapp === false;
   useEffect(() => {
@@ -536,11 +517,9 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
         <CompletarAcessoCard />
       </motion.div>
 
-      {jaConversouNoWhatsapp !== true && (
-        <motion.div variants={itemVariants}>
-          <PecaNoWhatsApp cultura={produtor.cultura_principal} uf={produtor.uf} />
-        </motion.div>
-      )}
+      <motion.div variants={itemVariants}>
+        <PecaNoWhatsApp cultura={produtor.cultura_principal} uf={produtor.uf} />
+      </motion.div>
 
       {convitePrimeiraMensagem && (
         <motion.div
@@ -913,12 +892,6 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
           </motion.div>
         </motion.div>
       </motion.div>
-
-      {jaConversouNoWhatsapp === true && (
-        <motion.div variants={itemVariants}>
-          <PecaNoWhatsApp cultura={produtor.cultura_principal} uf={produtor.uf} />
-        </motion.div>
-      )}
     </motion.div>
   );
 }
