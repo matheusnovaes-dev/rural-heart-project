@@ -1,60 +1,16 @@
 import {
-  animate,
   motion,
-  useInView,
   useMotionTemplate,
   useMotionValue,
   useReducedMotion,
   useScroll,
   useTransform,
 } from "framer-motion";
-import { useEffect, useRef, type MouseEvent } from "react";
+import { useRef, type MouseEvent } from "react";
 import { BadgeCheck, ShieldCheck } from "lucide-react";
 
 import { CampoWhatsappCta } from "@/components/landing/CampoWhatsappCta";
 import { useCadastro } from "@/components/landing/CadastroProvider";
-import { TickerPrecos } from "@/components/landing/TickerPrecos";
-
-// Título em movimento: cada palavra entra sozinha (só transform e opacidade, nada que force recalcular
-// layout). O trecho em destaque ganha a cor do CTA e um traço que se desenha por baixo.
-const PALAVRAS_TITULO = [
-  "Preço",
-  "você",
-  "já",
-  "sabe.",
-  "Mas",
-  "sabe",
-  "se",
-  "é",
-  "hora",
-  "de",
-  "vender?",
-];
-const A_PARTIR_DO_DESTAQUE = 8;
-
-/** Conta de 0 até o número quando entra na tela. O HTML já nasce com o valor final (sem JS e para buscadores). */
-function ContaAte({ alvo, sufixo = "" }: { alvo: number; sufixo?: string }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const emTela = useInView(ref, { once: true });
-  const reduz = useReducedMotion();
-  useEffect(() => {
-    if (!emTela || reduz) return;
-    const controle = animate(0, alvo, {
-      duration: 1.4,
-      ease: "easeOut",
-      onUpdate: (v) => {
-        if (ref.current) ref.current.textContent = `${Math.round(v)}${sufixo}`;
-      },
-    });
-    return () => controle.stop();
-  }, [emTela, reduz, alvo, sufixo]);
-  return (
-    <span ref={ref}>
-      {alvo}
-      {sufixo}
-    </span>
-  );
-}
 
 export function Hero() {
   const { abrirCadastro } = useCadastro();
@@ -178,8 +134,6 @@ export function Hero() {
         </motion.svg>
       </div>
 
-      <TickerPrecos />
-
       <div className="relative mx-auto flex max-w-4xl flex-col items-center px-4 pt-14 pb-24 text-center sm:px-6 sm:pt-24 sm:pb-32">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -191,48 +145,14 @@ export function Hero() {
           Fontes públicas: Conab, órgãos estaduais e bolsas
         </motion.div>
 
-        <h1 className="text-balance font-display text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl">
-          {PALAVRAS_TITULO.map((palavra, i) => {
-            const destaque = i >= A_PARTIR_DO_DESTAQUE;
-            const ultima = i === PALAVRAS_TITULO.length - 1;
-            return (
-              <span key={palavra + i}>
-                <motion.span
-                  initial={{ opacity: 0, y: "0.55em" }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.55, delay: 0.1 + i * 0.055, ease: [0.22, 1, 0.36, 1] }}
-                  className={`relative inline-block ${destaque ? "text-[color:var(--cta)]" : ""}`}
-                >
-                  {palavra}
-                  {ultima ? (
-                    <svg
-                      aria-hidden="true"
-                      viewBox="0 0 100 8"
-                      preserveAspectRatio="none"
-                      className="pointer-events-none absolute -bottom-1 left-0 h-2 w-full"
-                    >
-                      <motion.path
-                        d="M1 5 Q 25 0 50 4 T 99 3"
-                        fill="none"
-                        stroke="var(--cta)"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        initial={{ pathLength: 0 }}
-                        animate={{ pathLength: 1 }}
-                        transition={{
-                          duration: 0.7,
-                          delay: 0.1 + i * 0.055 + 0.45,
-                          ease: "easeOut",
-                        }}
-                      />
-                    </svg>
-                  ) : null}
-                </motion.span>
-                {ultima ? "" : " "}
-              </span>
-            );
-          })}
-        </h1>
+        <motion.h1
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-balance font-display text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl"
+        >
+          Preço você já sabe. Mas sabe se é hora de vender?
+        </motion.h1>
 
         <motion.p
           initial={{ opacity: 0, y: 16 }}
@@ -263,21 +183,6 @@ export function Hero() {
             <ShieldCheck className="mr-1.5 -mt-0.5 inline size-4 align-middle" aria-hidden="true" />
             7 dias grátis · Sem cartão · Cancele quando quiser
           </p>
-          <ul className="mt-4 flex flex-wrap items-baseline justify-center gap-x-5 gap-y-1 text-[13px] text-white/80 sm:text-sm">
-            <li>
-              <b className="font-display text-base text-white tabular-nums sm:text-lg">
-                <ContaAte alvo={70} sufixo="+" />
-              </b>{" "}
-              produtos
-            </li>
-            <li>
-              <b className="font-display text-base text-white tabular-nums sm:text-lg">
-                <ContaAte alvo={90} />
-              </b>{" "}
-              dias de histórico
-            </li>
-            <li>fonte e data em toda resposta</li>
-          </ul>
         </motion.div>
       </div>
     </section>

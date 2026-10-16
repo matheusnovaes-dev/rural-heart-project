@@ -13,7 +13,7 @@ export function Footer() {
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 sm:px-6">
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex items-center gap-2">
-            <img src="/logo-icon.webp" alt="" className="size-7 rounded-[0.55rem]" />
+            <img src="/logo-icon.png" alt="" className="size-7 rounded-[0.55rem]" />
             <span className="font-display font-semibold text-foreground">{siteConfig.name}</span>
           </div>
 

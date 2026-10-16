@@ -54,7 +54,7 @@ function AcessoPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-secondary/40 px-4 py-12">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
-        <img src="/logo-icon.webp" alt="" className="mx-auto size-10 rounded-[0.7rem]" />
+        <img src="/logo-icon.png" alt="" className="mx-auto size-10 rounded-[0.7rem]" />
         <p className="mt-2 text-sm font-semibold text-foreground">{siteConfig.name}</p>
 
         {status === "entrando" ? (

@@ -1,6 +1,6 @@
-import { useCadastro } from "@/components/landing/CadastroProvider";
-import { CampoWhatsappCta } from "@/components/landing/CampoWhatsappCta";
-import { ChatScrollDemo } from "@/components/landing/ChatScrollDemo";
+import { useEffect, useRef, useState } from "react";
+import { useReducedMotion } from "framer-motion";
+
 import { Reveal } from "@/components/landing/Reveal";
 import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 
@@ -24,46 +24,98 @@ const steps = [
   },
 ];
 
-export function HowItWorks() {
-  const { abrirCadastro } = useCadastro();
+/**
+ * Vídeo 3D/cinematográfico (gerado por IA, pedido do Matheus 2026-10-12)
+ * mostrando 5 perguntas reais do produto em loop: preço, câmbio, janela de
+ * plantio, benchmark regional, sinal de venda — dados reais do dia em que
+ * foi gerado, não é um preview ao vivo. 14MB mesmo já comprimido (de 37MB
+ * original via AVFoundation, sem ffmpeg disponível na máquina), então só
+ * carrega quando a seção chega perto da viewport (IntersectionObserver),
+ * nunca no load inicial da página. Quem prefere menos movimento recebe só
+ * o primeiro frame como imagem estática, sem autoplay.
+ */
+function VideoComoFunciona() {
+  const prefereMenosMovimento = useReducedMotion();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [visivel, setVisivel] = useState(false);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setVisivel(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <section id="como-funciona" className="scroll-mt-16">
-      {/* A conversa se escreve conforme a pessoa rola (no lugar do vídeo de 14 MB). */}
-      <ChatScrollDemo />
+    <div
+      ref={containerRef}
+      className="mx-auto aspect-[4/5] w-full max-w-3xl overflow-hidden rounded-2xl bg-[#101c15] shadow-lg sm:aspect-video"
+    >
+      {visivel && !prefereMenosMovimento ? (
+        <video
+          src="/videos/como-funciona.mp4"
+          poster="/videos/como-funciona-poster.png"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="none"
+          className="size-full object-cover"
+        />
+      ) : (
+        <img
+          src="/videos/como-funciona-poster.png"
+          alt="Conversa de exemplo no WhatsApp com o Safralume, mostrando preço, câmbio, janela de plantio, comparação regional e sinal de venda"
+          className="size-full object-cover"
+          loading="lazy"
+          decoding="async"
+        />
+      )}
+    </div>
+  );
+}
 
-      <div className="mx-auto max-w-md px-4 pb-4 sm:px-6">
-        <Reveal>
-          <p className="mb-3 text-center font-display text-lg font-semibold text-foreground">
-            Faça a sua pergunta agora
-          </p>
-          <CampoWhatsappCta
-            variante="claro"
-            aoEnviar={(whatsapp) => abrirCadastro({ whatsapp, origem: "demo" })}
-          />
-          <p className="mt-3 text-center text-[13px] text-muted-foreground">
-            7 dias grátis · Sem cartão · Cancele quando quiser
-          </p>
-        </Reveal>
-      </div>
+export function HowItWorks() {
+  return (
+    <section
+      id="como-funciona"
+      className="mx-auto max-w-6xl scroll-mt-16 px-4 py-12 sm:py-20 sm:px-6"
+    >
+      <Reveal className="mx-auto max-w-2xl text-center">
+        <h2 className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          Como funciona
+        </h2>
+      </Reveal>
 
-      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-20">
-        <div className="relative grid gap-8 sm:grid-cols-3">
-          <div
-            aria-hidden
-            className="absolute top-7 left-[calc(16.66%+1.75rem)] right-[calc(16.66%+1.75rem)] hidden h-px bg-primary/40 sm:block"
-          />
-          {steps.map((step, index) => (
-            <Reveal key={step.title} delay={index * 0.1} className="relative text-center">
-              <span className="relative z-10 mx-auto block w-fit rounded-full ring-4 ring-background">
-                <step.icon className="size-14" />
-              </span>
-              <h3 className="mt-4 font-display text-lg font-semibold text-foreground">
-                {step.title}
-              </h3>
-              <p className="mt-2 text-sm text-muted-foreground">{step.description}</p>
-            </Reveal>
-          ))}
-        </div>
+      <Reveal delay={0.1} className="mt-10">
+        <VideoComoFunciona />
+      </Reveal>
+
+      <div className="relative mt-12 grid gap-8 sm:grid-cols-3">
+        <div
+          aria-hidden
+          className="absolute top-7 left-[calc(16.66%+1.75rem)] right-[calc(16.66%+1.75rem)] hidden h-px bg-primary/40 sm:block"
+        />
+        {steps.map((step, index) => (
+          <Reveal key={step.title} delay={index * 0.1} className="relative text-center">
+            <span className="relative z-10 mx-auto block w-fit rounded-full ring-4 ring-background">
+              <step.icon className="size-14" />
+            </span>
+            <h3 className="mt-4 font-display text-lg font-semibold text-foreground">
+              {step.title}
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">{step.description}</p>
+          </Reveal>
+        ))}
       </div>
     </section>
   );

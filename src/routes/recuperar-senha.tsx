@@ -44,7 +44,7 @@ function RecuperarSenhaPage() {
     <div className="flex min-h-screen items-center justify-center bg-secondary/40 px-4">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-8 shadow-sm">
         <Link to="/" className="mb-6 flex items-center justify-center gap-2">
-          <img src="/logo-icon.webp" alt="" className="size-8 rounded-[0.6rem]" />
+          <img src="/logo-icon.png" alt="" className="size-8 rounded-[0.6rem]" />
           <span className="text-lg font-bold tracking-tight text-foreground">
             {siteConfig.name}
           </span>
