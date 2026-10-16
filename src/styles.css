@@ -231,7 +231,9 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
-    overflow-x: hidden;
+    /* "clip" e não "hidden": com hidden em html e body o body vira contêiner de rolagem e o position: sticky de
+       qualquer filho (mapa do Brasil de fundo) deixa de grudar. Clip corta igual, sem criar rolagem. */
+    overflow-x: clip;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -606,5 +608,27 @@ html.lenis body {
   .assinatura-pisca {
     animation: none;
     opacity: 0.9;
+  }
+}
+
+/* Pulso discreto dos pontos do mapa de fundo (só os que já acenderam; transform + opacidade). */
+.mapa-pino-pulso {
+  animation: mapa-pino 2.8s ease-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes mapa-pino {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.35;
+  }
+  100% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mapa-pino-pulso {
+    animation: none;
   }
 }

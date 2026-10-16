@@ -1,3 +1,4 @@
+import { MapaBrasilFundo } from "@/components/landing/MapaBrasilFundo";
 import { DesktopFXLoader } from "@/components/landing/desktop/DesktopFXLoader";
 import { FaixaGigante } from "@/components/landing/FaixaGigante";
 import { createFileRoute } from "@tanstack/react-router";
@@ -62,8 +63,10 @@ function Index() {
           <Hero />
           <PrecosCarrossel />
           <Solution />
-          <CalculadoraSafraLanding />
-          <HowItWorks />
+          <MapaBrasilFundo>
+            <CalculadoraSafraLanding />
+            <HowItWorks />
+          </MapaBrasilFundo>
           <FaixaGigante />
           <DashboardPreview />
           <TrustProof />

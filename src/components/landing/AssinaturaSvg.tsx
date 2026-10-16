@@ -83,7 +83,6 @@ export function AssinaturaSvg({ ativo, className }: { ativo: boolean; className?
     florioRef.current && florio > 0
       ? florioRef.current.getPointAtLength(comprimento * florio)
       : null;
-  const brilho = florio >= 1 || reduz ? 1 : 0;
 
   return (
     <svg
@@ -118,7 +117,9 @@ export function AssinaturaSvg({ ativo, className }: { ativo: boolean; className?
       />
       {escrevendo && caneta ? <Faisca x={caneta.x} y={caneta.y} tam={1} /> : null}
       {florioFim && florio < 1 ? <Faisca x={florioFim.x} y={florioFim.y} tam={1} /> : null}
-      {brilho ? <Faisca x={3190} y={70} tam={1.6} piscando /> : null}
+      <g style={{ opacity: florio >= 1 ? 1 : 0 }} className="motion-reduce:opacity-100!">
+        <Faisca x={3190} y={70} tam={1.6} piscando />
+      </g>
     </svg>
   );
 }
