@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
 /**
- * Virada de cor entre capítulos: o fundo da página muda de tom (creme, areia, menta) conforme a seção que cruza o
+ * Virada de cor entre capítulos: o fundo da página muda de tom (creme, areia, pêssego) conforme a seção que cruza o
  * meio da tela, num fade lento, como as viradas de cor do site do Lando Norris. Cada capítulo declara a sua cor aqui;
  * quem não está na lista (faixas escuras, rodapé) não muda nada. Um IntersectionObserver por seção (nada de ouvir o
  * scroll) escreve uma única variável CSS no <html>; o fade é uma transição de background-color em um só elemento
@@ -11,10 +11,10 @@ const CORES: Record<string, string> = {
   precos: "oklch(0.988 0.005 95.1)",
   problema: "oklch(0.988 0.005 95.1)",
   calculadora: "oklch(0.96 0.024 88)",
-  "como-funciona": "oklch(0.96 0.017 150)",
+  "como-funciona": "oklch(0.96 0.02 62)",
   painel: "oklch(0.988 0.005 95.1)",
   planos: "oklch(0.96 0.024 88)",
-  duvidas: "oklch(0.96 0.017 150)",
+  duvidas: "oklch(0.96 0.02 62)",
 };
 
 export function FundoDosCapitulos() {

@@ -101,12 +101,14 @@ export function Hero() {
             {/* A foto fica sob um gradiente escuro que cobre quase toda ela: as versões
                 pequenas (640px/1000px, 14-29 KB) são idênticas a olho nu e tiram ~140 KB
                 do caminho crítico de quem chega do anúncio pelo celular. */}
-            <source media="(max-width: 640px)" srcSet={MIDIA.hero640} type="image/webp" />
+            <source media="(max-width: 640px)" srcSet={MIDIA.hero828} type="image/webp" />
+            {/* telas largas ganham a foto em 1920px (138 KB): a de 1000px esticada ficava macia demais */}
+            <source media="(min-width: 1100px)" srcSet={MIDIA.hero1920} type="image/webp" />
             <source srcSet={MIDIA.hero1000Webp} type="image/webp" />
             <img
               src={MIDIA.hero1000Jpg}
               alt="Lavoura ao entardecer"
-              className="size-full object-cover"
+              className="size-full object-cover object-[50%_62%]"
               fetchPriority="high"
             />
           </picture>
@@ -118,7 +120,12 @@ export function Hero() {
             escurece com força só a partir de onde o texto começa, e o tom é
             quente (hue 60, like --cta) em vez de frio, pra combinar com a
             própria foto em vez de brigar com ela. */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,oklch(0.22_0.03_60/0.3)_0%,oklch(0.17_0.03_60/0.74)_32%,oklch(0.15_0.03_60/0.84)_78%,oklch(0.988_0.005_95.1)_100%)]" />
+        {/* Camada 1: escurecimento só de baixo para cima (o céu e as nuvens ficam vivos no topo).
+            Camada 2: um "palco" escuro e suave atrás do bloco de texto, que garante a leitura sem apagar a foto toda.
+            Camada 3: brilho quente no horizonte, onde está o sol. */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,oklch(0.2_0.03_55/0.24)_0%,oklch(0.18_0.03_55/0.50)_30%,oklch(0.15_0.03_55/0.66)_62%,oklch(0.15_0.03_55/0.78)_86%,oklch(0.988_0.005_95.1)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_72%_54%_at_50%_46%,oklch(0.12_0.03_55/0.66),transparent_74%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_30%_at_50%_44%,oklch(0.85_0.16_72/0.30),transparent_70%)] mix-blend-soft-light" />
         {/* Sempre renderizada (escondida por CSS em motion-reduce): renderizar
             condicional por useReducedMotion gera HTML diferente entre servidor
             (sem preferência) e cliente (com preferência), e o React derruba e
@@ -164,7 +171,7 @@ export function Hero() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-medium text-white/90"
+          className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/30 px-4 py-1.5 text-xs font-medium text-white/95 backdrop-blur-sm"
         >
           <BadgeCheck className="size-3.5" />
           Fontes públicas: Conab, órgãos estaduais e bolsas

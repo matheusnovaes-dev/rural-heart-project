@@ -1,6 +1,7 @@
 import { ContaAte } from "@/components/landing/ContaAte";
 import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Check, ChevronDown, Leaf, Sprout, Wheat } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
@@ -51,7 +52,7 @@ export function Pricing({ semTrial = false }: { semTrial?: boolean }) {
           >
             {plan.highlighted ? (
               // Plano em destaque: um fio de luz laranja dá a volta no cartão (só transform, ver .anel-destaque)
-              <div className="anel-destaque">
+              <div className="anel-destaque lg:-translate-y-3 lg:scale-[1.02]">
                 <CartaoPlano plan={plan} semTrial={semTrial} />
               </div>
             ) : (
@@ -71,53 +72,97 @@ function CartaoPlano({ plan, semTrial }: { plan: PricingPlan; semTrial: boolean 
   const temMais = plan.features.length > RECURSOS_VISIVEIS;
   const recursos = expandido ? plan.features : plan.features.slice(0, RECURSOS_VISIVEIS);
   const idLista = `recursos-${plan.id}`;
+  const nivel = isOuro ? 2 : plan.highlighted ? 1 : 0;
 
   return (
     <div
       data-tilt
       data-spotlight
       className={cn(
-        "flex h-full flex-col rounded-2xl border p-6",
+        "group/plano relative flex h-full flex-col overflow-hidden rounded-2xl border p-6 sm:p-7",
         plan.highlighted
-          ? "relative border-transparent bg-card shadow-lg"
+          ? "border-transparent bg-card shadow-xl"
           : isOuro
             ? "border-gold bg-gold-soft/40 ring-1 ring-gold/50"
             : "border-border bg-card",
       )}
     >
-      <div className="mb-3 flex items-center justify-between gap-2">
+      {/* brilho de fundo do plano (muda de cor com o nível) */}
+      <div
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none absolute -top-24 -right-16 size-64 rounded-full opacity-70 blur-3xl transition-opacity duration-500 group-hover/plano:opacity-100",
+          isOuro
+            ? "bg-[oklch(0.82_0.14_85/0.45)]"
+            : plan.highlighted
+              ? "bg-[oklch(0.78_0.15_65/0.35)]"
+              : "bg-[oklch(0.8_0.06_150/0.35)]",
+        )}
+      />
+      {isOuro ? (
+        <span aria-hidden="true" className="plano-brilho pointer-events-none absolute inset-0" />
+      ) : null}
+
+      <div className="relative mb-4 flex items-start justify-between gap-2">
         <span
           className={cn(
-            "flex size-11 items-center justify-center rounded-lg",
+            "flex size-12 items-center justify-center rounded-xl shadow-sm",
             isOuro ? "bg-gold text-gold-foreground" : "bg-primary text-primary-foreground",
           )}
         >
-          <PlanIcon className="size-5" aria-hidden="true" />
+          <PlanIcon className="size-6" aria-hidden="true" />
         </span>
         {plan.highlighted && (
-          <span className="rounded-full bg-cta px-3 py-1 text-xs font-semibold text-cta-foreground">
+          <span className="rounded-full bg-cta px-3 py-1 text-xs font-semibold text-cta-foreground shadow-sm">
             Mais popular
           </span>
         )}
         {isOuro && (
-          <span className="rounded-full bg-gold px-3 py-1 text-xs font-semibold text-gold-foreground">
+          <span className="rounded-full bg-gold px-3 py-1 text-xs font-semibold text-gold-foreground shadow-sm">
             Nível premium
           </span>
         )}
       </div>
-      <h3 className="font-display text-lg font-semibold text-foreground">{plan.name}</h3>
-      <p className="text-sm text-muted-foreground">{plan.audience}</p>
-      <p className="mt-4 font-mono text-2xl font-bold tabular-nums text-foreground">
-        R$ <ContaAte alvo={plan.price} />
-        <span className="text-base font-normal text-muted-foreground">/mês</span>
+
+      <h3 className="relative font-display text-3xl leading-none font-extrabold tracking-tight text-foreground">
+        {plan.name}
+      </h3>
+      <p className="relative mt-1.5 text-sm text-muted-foreground">{plan.audience}</p>
+
+      {/* nível da operação: a metáfora de crescimento da lavoura (broto, folha, espiga) */}
+      <div className="relative mt-4 flex items-center gap-1.5" aria-hidden="true">
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            className={cn(
+              "h-1.5 flex-1 rounded-full",
+              i <= nivel ? (isOuro ? "bg-gold" : "bg-[color:var(--cta)]") : "bg-border",
+            )}
+          />
+        ))}
+      </div>
+
+      <p className="relative mt-5 flex items-baseline gap-1.5 text-foreground">
+        <span className="text-xl font-semibold text-muted-foreground">R$</span>
+        <span className="font-display text-6xl leading-none font-extrabold tracking-tighter tabular-nums">
+          <ContaAte alvo={plan.price} />
+        </span>
+        <span className="text-base font-medium text-muted-foreground">/mês</span>
       </p>
-      <p className="mt-0.5 text-xs text-muted-foreground">
+      <p className="relative mt-2.5 inline-flex w-fit items-center rounded-full bg-secondary px-3 py-1 text-xs font-medium text-muted-foreground">
         Equivale a R$&nbsp;{porDia(plan.price)} por dia
       </p>
 
-      <ul id={idLista} className="mt-6 flex-1 space-y-3">
-        {recursos.map((feature) => (
-          <li key={feature} className="flex items-start gap-2 text-sm text-foreground">
+      <ul id={idLista} className="relative mt-6 flex-1 space-y-3">
+        {recursos.map((feature, i) => (
+          <motion.li
+            key={feature}
+            initial={{ opacity: 0, x: -12 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-30px" }}
+            transition={{ duration: 0.4, delay: Math.min(i, 8) * 0.05, ease: [0.22, 1, 0.36, 1] }}
+            className="flex items-start gap-2 text-sm text-foreground"
+          >
             <Check
               className={cn(
                 "mt-0.5 size-4 shrink-0",
@@ -126,7 +171,7 @@ function CartaoPlano({ plan, semTrial }: { plan: PricingPlan; semTrial: boolean 
               aria-hidden="true"
             />
             {feature}
-          </li>
+          </motion.li>
         ))}
       </ul>
 

@@ -685,3 +685,33 @@ html.lenis body {
     transition: none;
   }
 }
+
+/* Brilho que varre o cartão do plano Ouro de tempos em tempos (um gradiente diagonal deslizando por transform). */
+.plano-brilho::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 38%,
+    oklch(0.95 0.1 90 / 0.5) 50%,
+    transparent 62%
+  );
+  transform: translateX(-120%);
+  animation: plano-varre 6.5s ease-in-out infinite;
+}
+@keyframes plano-varre {
+  0%,
+  55% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .plano-brilho::before {
+    animation: none;
+    display: none;
+  }
+}

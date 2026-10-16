@@ -1,7 +1,8 @@
 // URLs das imagens e vídeos da landing, importadas pelo bundler (?url): saem com hash no nome em /assets/, o que dá
 // cache de 1 ano com "immutable" (a hospedagem só faz isso para /assets) e troca automática quando o arquivo muda.
-import hero640 from "@/assets/hero-field-640.webp?url";
+import hero828 from "@/assets/hero-field-828.webp?url";
 import hero1000Webp from "@/assets/hero-field-1000.webp?url";
+import hero1920 from "@/assets/hero-field-1920.webp?url";
 import hero1000Jpg from "@/assets/hero-field-1000.jpg?url";
 import logo from "@/assets/logo-icon.webp?url";
 import posterComoFunciona from "@/assets/como-funciona-poster.webp?url";
@@ -12,8 +13,9 @@ import videoDesktop from "@/assets/como-funciona-desktop.mp4?url";
 import videoMobile from "@/assets/como-funciona-mobile.mp4?url";
 
 export const MIDIA = {
-  hero640,
+  hero828,
   hero1000Webp,
+  hero1920,
   hero1000Jpg,
   logo,
   posterComoFunciona,
