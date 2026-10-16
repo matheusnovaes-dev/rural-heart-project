@@ -584,3 +584,27 @@ html.lenis body {
     color: var(--cta);
   }
 }
+
+/* Cintilada final da assinatura do rodapé. */
+.assinatura-pisca {
+  animation: assinatura-pisca 2.2s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes assinatura-pisca {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.7) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15) rotate(45deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .assinatura-pisca {
+    animation: none;
+    opacity: 0.9;
+  }
+}

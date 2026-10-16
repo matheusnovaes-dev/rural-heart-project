@@ -1,3 +1,4 @@
+import { AssinaturaSvg } from "@/components/landing/AssinaturaSvg";
 import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
 import { DesktopFXLoader } from "@/components/landing/desktop/DesktopFXLoader";
 import { useEffect, useState } from "react";
@@ -208,6 +209,10 @@ function LoginPage() {
           </div>
         </div>
 
+        <AssinaturaSvg
+          ativo
+          className="pointer-events-none relative z-10 -mb-2 w-56 -rotate-[4deg] opacity-95"
+        />
         <Ticker />
       </div>
 

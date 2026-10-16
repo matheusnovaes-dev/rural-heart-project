@@ -10,11 +10,13 @@ function Palavra({
   indice,
   visivel,
   serifa,
+  cor,
 }: {
   texto: string;
   indice: number;
   visivel: boolean;
   serifa?: boolean;
+  cor?: string | undefined;
 }) {
   return (
     <span className="palavra-mascara">
@@ -47,6 +49,7 @@ export function TituloDuasVozes({
   className,
   id,
   como: Tag = "h2",
+  corSerifa,
 }: {
   antes?: string;
   serifa: string;
@@ -54,6 +57,8 @@ export function TituloDuasVozes({
   id?: string;
   /** Elemento ou componente que faz o papel de título (h1, h2 ou o DialogTitle do Radix). */
   como?: ElementType;
+  /** Cor só do trecho em serifa (o resto herda a cor do título). */
+  corSerifa?: string;
 }) {
   const ref = useRef<HTMLHeadingElement>(null);
   const visivel = useInView(ref, { once: true, margin: "0px 0px -12% 0px" });
@@ -80,6 +85,7 @@ export function TituloDuasVozes({
             indice={palavrasAntes.length + i}
             visivel={visivel}
             serifa
+            cor={corSerifa}
           />
         ))}
       </span>
