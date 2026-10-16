@@ -615,7 +615,13 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                   )}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="relative flex flex-col gap-4 px-5 pt-5 sm:px-6 sm:pt-6">
+              <CardContent
+                className={`relative flex flex-col gap-4 px-5 pt-5 sm:px-6 sm:pt-6 ${
+                  // enquanto carrega, reserva uma altura parecida com a do cartão pronto: sem isso ele nascia com
+                  // ~60px e crescia até ~600px, empurrando tudo que vem embaixo (pulo de layout)
+                  serie === null || frete === undefined ? "min-h-[28rem] sm:min-h-[19rem]" : ""
+                }`}
+              >
                 {serie === null || frete === undefined ? (
                   <Skeleton className="h-14 w-56 bg-primary-foreground/15" />
                 ) : atual && precoExibido != null ? (
