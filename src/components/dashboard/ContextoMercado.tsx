@@ -169,7 +169,7 @@ export function ContextoMercado({ cultura }: { cultura?: string }) {
       });
   }, [cultura]);
 
-  if (carregando) return <Skeleton className="h-[5.25rem] w-full" />;
+  if (carregando) return <Skeleton className="h-[5.875rem] w-full" />;
   if (!cambio && wasde.length === 0 && diesel.length === 0 && !ibge && b3.length === 0) return null;
 
   const dataFinalDiesel = diesel.reduce<string | null>(

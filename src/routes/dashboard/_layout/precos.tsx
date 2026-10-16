@@ -333,113 +333,118 @@ function PrecosPage() {
         )
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-display text-lg font-semibold">
-            Histórico de preço · {culturaLabel}
-          </CardTitle>
-          <CardDescription>
-            Últimos 6 meses · estado inteiro quando tem, por região quando a fonte só publica assim
-            {series.length > QTD_VISIVEL_PADRAO &&
-              ` · mostrando as ${QTD_VISIVEL_PADRAO} séries com mais histórico, clique pra ver outras`}
-            .
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {series.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {series.map((serie) => {
-                const ativo = visiveis?.has(serie) ?? false;
-                const cor = corPorSerie.get(serie) ?? corDoUf(0);
-                return (
-                  <button
-                    key={serie}
-                    type="button"
-                    onClick={() => toggleSerie(serie)}
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors pointer-coarse:min-h-11 ${
-                      ativo
-                        ? "border-transparent bg-secondary text-foreground"
-                        : "border-border text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <span
-                      className="size-2 shrink-0 rounded-full transition-opacity"
-                      style={{ backgroundColor: cor, opacity: ativo ? 1 : 0.35 }}
-                    />
-                    {serie}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+      {/* Enquanto os preços carregam, o histórico nem aparece: o esqueleto dele ficava embaixo da grade e era
+          empurrado centenas de pixels quando os cartões chegavam (maior pulo de layout da página). */}
+      {!carregando && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-display text-lg font-semibold">
+              Histórico de preço · {culturaLabel}
+            </CardTitle>
+            <CardDescription>
+              Últimos 6 meses · estado inteiro quando tem, por região quando a fonte só publica
+              assim
+              {series.length > QTD_VISIVEL_PADRAO &&
+                ` · mostrando as ${QTD_VISIVEL_PADRAO} séries com mais histórico, clique pra ver outras`}
+              .
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            {series.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {series.map((serie) => {
+                  const ativo = visiveis?.has(serie) ?? false;
+                  const cor = corPorSerie.get(serie) ?? corDoUf(0);
+                  return (
+                    <button
+                      key={serie}
+                      type="button"
+                      onClick={() => toggleSerie(serie)}
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors pointer-coarse:min-h-11 ${
+                        ativo
+                          ? "border-transparent bg-secondary text-foreground"
+                          : "border-border text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <span
+                        className="size-2 shrink-0 rounded-full transition-opacity"
+                        style={{ backgroundColor: cor, opacity: ativo ? 1 : 0.35 }}
+                      />
+                      {serie}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
-          {carregando ? (
-            <Skeleton className="h-80 w-full" />
-          ) : chartData.length === 0 ? (
-            <EmptyState
-              icon={LineChartIcon}
-              title="Sem dados pra essa cultura"
-              description={`Ainda não temos preço de ${culturaLabel.toLowerCase()} nos últimos 6 meses, nem por estado nem por região. Tente outra cultura no seletor acima.`}
-            />
-          ) : (
-            <ChartContainer config={chartConfig} className="h-80 w-full">
-              <LineChart data={chartData} margin={{ left: 8, right: 8 }}>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="data"
-                  tickLine={false}
-                  axisLine={false}
-                  tick={{ fontSize: 12, fontFamily: "var(--font-mono)" }}
-                />
-                <YAxis
-                  tickLine={false}
-                  axisLine={false}
-                  width={52}
-                  tick={{ fontSize: 12, fontFamily: "var(--font-mono)" }}
-                  tickFormatter={(v) => `R$${v}`}
-                  domain={[
-                    (dataMin: number) => Math.floor(dataMin - 2),
-                    (dataMax: number) => Math.ceil(dataMax + 2),
-                  ]}
-                />
-                <ChartTooltip
-                  content={
-                    <ChartTooltipContent
-                      formatter={(value, name) => (
-                        <div className="flex w-full items-center justify-between gap-3">
-                          <span className="flex items-center gap-1.5 text-muted-foreground">
-                            <span
-                              className="size-2 shrink-0 rounded-[2px]"
-                              style={{ backgroundColor: corPorSerie.get(String(name)) }}
-                            />
-                            {name}
-                          </span>
-                          <span className="font-mono font-medium tabular-nums text-foreground">
-                            R$ {formatBRL(Number(value))}
-                          </span>
-                        </div>
-                      )}
-                    />
-                  }
-                />
-                {series.map((serie) => (
-                  <Line
-                    key={serie}
-                    dataKey={serie}
-                    type="monotone"
-                    stroke={corPorSerie.get(serie)}
-                    strokeWidth={2.25}
-                    dot={false}
-                    activeDot={{ r: 4 }}
-                    hide={!(visiveis?.has(serie) ?? false)}
-                    connectNulls
+            {carregando ? (
+              <Skeleton className="h-80 w-full" />
+            ) : chartData.length === 0 ? (
+              <EmptyState
+                icon={LineChartIcon}
+                title="Sem dados pra essa cultura"
+                description={`Ainda não temos preço de ${culturaLabel.toLowerCase()} nos últimos 6 meses, nem por estado nem por região. Tente outra cultura no seletor acima.`}
+              />
+            ) : (
+              <ChartContainer config={chartConfig} className="h-80 w-full">
+                <LineChart data={chartData} margin={{ left: 8, right: 8 }}>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="data"
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fontSize: 12, fontFamily: "var(--font-mono)" }}
                   />
-                ))}
-              </LineChart>
-            </ChartContainer>
-          )}
-        </CardContent>
-      </Card>
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    width={52}
+                    tick={{ fontSize: 12, fontFamily: "var(--font-mono)" }}
+                    tickFormatter={(v) => `R$${v}`}
+                    domain={[
+                      (dataMin: number) => Math.floor(dataMin - 2),
+                      (dataMax: number) => Math.ceil(dataMax + 2),
+                    ]}
+                  />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        formatter={(value, name) => (
+                          <div className="flex w-full items-center justify-between gap-3">
+                            <span className="flex items-center gap-1.5 text-muted-foreground">
+                              <span
+                                className="size-2 shrink-0 rounded-[2px]"
+                                style={{ backgroundColor: corPorSerie.get(String(name)) }}
+                              />
+                              {name}
+                            </span>
+                            <span className="font-mono font-medium tabular-nums text-foreground">
+                              R$ {formatBRL(Number(value))}
+                            </span>
+                          </div>
+                        )}
+                      />
+                    }
+                  />
+                  {series.map((serie) => (
+                    <Line
+                      key={serie}
+                      dataKey={serie}
+                      type="monotone"
+                      stroke={corPorSerie.get(serie)}
+                      strokeWidth={2.25}
+                      dot={false}
+                      activeDot={{ r: 4 }}
+                      hide={!(visiveis?.has(serie) ?? false)}
+                      connectNulls
+                    />
+                  ))}
+                </LineChart>
+              </ChartContainer>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
