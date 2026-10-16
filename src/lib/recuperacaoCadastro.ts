@@ -6,8 +6,8 @@ import { DDDS_VALIDOS } from "@/lib/telefone";
  * fica em routes/api/cron/recuperar-cadastro.ts.
  */
 
-/** Espera antes de mandar: dá tempo de a pessoa terminar sozinha (a maioria termina em minutos). */
-export const MINUTOS_ANTES_DE_ENVIAR = 45;
+/** Espera antes de mandar: dá tempo de a pessoa terminar sozinha (a maioria termina em minutos). Era 45; baixou pra 20 em 16/10/2026 (a recuperação saía com mediana de 5h40 de atraso, e quanto antes chega mais quente). */
+export const MINUTOS_ANTES_DE_ENVIAR = 20;
 /** Depois disso o lead esfriou e a mensagem vira ruído: não manda mais. */
 export const HORAS_MAXIMAS_PARA_ENVIAR = 24;
 export const MAX_ENVIOS_POR_RODADA = 20;
