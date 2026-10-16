@@ -1,3 +1,4 @@
+import { carregarFonte, FONTES_PAINEL_URL } from "@/lib/fontes";
 import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -106,6 +107,23 @@ const abas: { id: AbaId; label: string; icon: typeof LineChart; plano: PlanoId }
 const INTERVALO_AUTOPLAY = 3800;
 
 export function DashboardPreview() {
+  const raiz = useRef<HTMLDivElement>(null);
+  // As fontes do painel (DM Sans e Space Grotesk, ~85 KB) só são baixadas quando o mockup está perto de aparecer.
+  useEffect(() => {
+    const el = raiz.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e?.isIntersecting) {
+          carregarFonte(FONTES_PAINEL_URL);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "900px 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   const [aba, setAba] = useState<AbaId>("precos");
   const [autoplay, setAutoplay] = useState(true);
   const retomarTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -152,7 +170,7 @@ export function DashboardPreview() {
   }
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-12 sm:py-20 sm:px-6">
+    <section ref={raiz} className="mx-auto max-w-6xl px-4 py-12 sm:py-20 sm:px-6">
       <Reveal className="mx-auto max-w-2xl text-center">
         <span className="text-sm font-semibold uppercase tracking-wide text-primary">
           Além do WhatsApp
@@ -201,7 +219,7 @@ export function DashboardPreview() {
               className="relative flex shrink-0 flex-col gap-1 border-b border-sidebar-border bg-sidebar p-2 sm:w-52 sm:border-r sm:border-b-0 sm:p-3"
             >
               <div className="mb-2 hidden items-center gap-2.5 px-1 pb-3 sm:flex">
-                <img src="/logo-icon.png" alt="" className="size-8 rounded-[0.6rem]" />
+                <img src="/logo-icon.webp" alt="" className="size-8 rounded-[0.6rem]" />
                 <div className="min-w-0">
                   <span className="block truncate font-display text-sm font-semibold text-sidebar-foreground">
                     Safralume

@@ -65,7 +65,7 @@ function VideoComoFunciona() {
       {visivel && !prefereMenosMovimento ? (
         <video
           src="/videos/como-funciona.mp4"
-          poster="/videos/como-funciona-poster.png"
+          poster="/videos/como-funciona-poster.webp"
           autoPlay
           muted
           loop
@@ -75,7 +75,7 @@ function VideoComoFunciona() {
         />
       ) : (
         <img
-          src="/videos/como-funciona-poster.png"
+          src="/videos/como-funciona-poster.webp"
           alt="Conversa de exemplo no WhatsApp com o Safralume, mostrando preço, câmbio, janela de plantio, comparação regional e sinal de venda"
           className="size-full object-cover"
           loading="lazy"

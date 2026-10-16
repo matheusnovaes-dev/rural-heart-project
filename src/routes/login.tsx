@@ -182,7 +182,7 @@ function LoginPage() {
         />
 
         <Link to="/" className="relative z-10 flex items-center gap-2">
-          <img src="/logo-icon.png" alt="" className="size-9 rounded-[0.65rem]" />
+          <img src="/logo-icon.webp" alt="" className="size-9 rounded-[0.65rem]" />
           <span className="text-lg font-bold tracking-tight">{siteConfig.name}</span>
         </Link>
 
@@ -224,7 +224,7 @@ function LoginPage() {
         <BrandBackdrop animado={false} />
         <div className="relative z-10 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src="/logo-icon.png" alt="" className="size-7 rounded-[0.55rem]" />
+            <img src="/logo-icon.webp" alt="" className="size-7 rounded-[0.55rem]" />
             <span className="text-sm font-bold tracking-tight">{siteConfig.name}</span>
           </div>
           <Link to="/" className="alvo-toque min-w-11 justify-end text-sm text-white/70">

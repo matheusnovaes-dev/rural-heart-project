@@ -18,6 +18,7 @@ import { Toaster } from "../components/ui/sonner";
 import { CookieConsent } from "../components/CookieConsent";
 import { pricingPlans } from "../config/site";
 import { capturarOrigem } from "../lib/origem";
+import { FONTES_PAINEL_URL } from "../lib/fontes";
 
 // Fontes em duas levas (auditoria de performance 2026-10-13: FCP de 3,9s em 4G
 // lento e CSS do Google Fonts bloqueando a renderização com 5 famílias). Só o
@@ -27,14 +28,12 @@ import { capturarOrigem } from "../lib/origem";
 // ambas, então nada some enquanto carrega.
 const FONTES_CRITICAS_URL =
   "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap";
-const FONTES_SECUNDARIAS_URL =
-  "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap";
+const FONTES_MONO_LANDING_URL =
+  "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&display=swap";
 
 // No painel (/dashboard) o que aparece é DM Sans e Space Grotesk; Bricolage e IBM Plex Sans (da landing) não são
 // usadas ali e bloqueavam o primeiro desenho por ~115 KB. Lá a ordem inverte: as do painel são as críticas e as da
 // landing entram depois da hidratação (só para modais e telas fora do painel).
-const FONTES_PAINEL_URL =
-  "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=Space+Grotesk:wght@500;600;700&display=swap";
 const FONTES_MONO_URL =
   "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap";
 
@@ -278,7 +277,7 @@ function RootComponent() {
   useEffect(() => {
     const urls = noPainel
       ? [FONTES_CRITICAS_URL, FONTES_MONO_URL]
-      : [FONTES_SECUNDARIAS_URL, FONTES_DESTAQUE_URL];
+      : [FONTES_MONO_LANDING_URL, FONTES_DESTAQUE_URL];
     const carregar = () => {
       for (const href of urls) {
         if (document.querySelector(`link[href="${href}"]`)) continue;
