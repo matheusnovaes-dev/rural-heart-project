@@ -674,3 +674,14 @@ html.lenis body {
     opacity: 0.55;
   }
 }
+
+/* Virada de cor entre capítulos da landing (ver FundoDosCapitulos): a raiz da página troca de tom devagar. */
+.fundo-capitulos {
+  background-color: var(--fundo-capitulo, var(--color-background));
+  transition: background-color 1s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fundo-capitulos {
+    transition: none;
+  }
+}

@@ -1,3 +1,4 @@
+import { FundoDosCapitulos } from "@/components/landing/FundoDosCapitulos";
 import { MapaBrasilFundo } from "@/components/landing/MapaBrasilFundo";
 import { DesktopFXLoader } from "@/components/landing/desktop/DesktopFXLoader";
 import { FaixaGigante } from "@/components/landing/FaixaGigante";
@@ -57,7 +58,7 @@ function Index() {
 
   return (
     <CadastroProvider>
-      <div className="min-h-screen bg-background">
+      <div className="fundo-capitulos min-h-screen bg-background">
         <Header />
         <main>
           <Hero />
@@ -76,6 +77,7 @@ function Index() {
         </main>
         <Footer />
         <RastreioScroll />
+        <FundoDosCapitulos />
         <DesktopFXLoader />
         <BarraCtaFixa />
         <WhatsAppFloatingButton />
