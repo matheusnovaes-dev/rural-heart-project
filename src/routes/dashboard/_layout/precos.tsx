@@ -2,8 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
-import { ArrowDown, ArrowUp, LineChart as LineChartIcon, Minus } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, LineChart as LineChartIcon, Minus } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 import {
@@ -48,6 +49,8 @@ function chaveSerie(r: { uf: string; regiao: string }) {
 }
 
 const QTD_VISIVEL_PADRAO = 6;
+// Cartões de cotação visíveis antes de "ver todas as praças" (a página chegava a ~9.300px no celular).
+const QTD_CARTOES_INICIAL = 6;
 // 2 anos inteiros de semanas espremidas num gráfico só viram ruído
 // ilegível (era exatamente esse o bug: eixo X com dois anos de marcações,
 // linhas praticamente invisíveis de tão finas/esparsas). 6 meses dá uma
@@ -78,6 +81,8 @@ function PrecosPage() {
   const [rawRows, setRawRows] = useState<PrecoRow[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [visiveis, setVisiveis] = useState<Set<string> | null>(null);
+  const [todasAsPracas, setTodasAsPracas] = useState(false);
+  useEffect(() => setTodasAsPracas(false), [cultura]);
 
   useEffect(() => {
     if (!supabase) return;
@@ -220,6 +225,11 @@ function PrecosPage() {
     });
   }, [rows, series, corPorSerie]);
 
+  // Colapsa só quando esconde ao menos 3 cartões (esconder 1 ou 2 não compensa o clique).
+  const colapsavel = stats.length > QTD_CARTOES_INICIAL + 2;
+  const cartoesMostrados =
+    colapsavel && !todasAsPracas ? stats.slice(0, QTD_CARTOES_INICIAL) : stats;
+
   function toggleSerie(serie: string) {
     setVisiveis((prev) => {
       const next = new Set(prev ?? []);
@@ -264,7 +274,7 @@ function PrecosPage() {
         stats.length > 0 && (
           <div className="@container">
             <div className="grid gap-4 @lg:grid-cols-2 @2xl:grid-cols-3">
-              {stats.map((s, index) => (
+              {cartoesMostrados.map((s, index) => (
                 <motion.div
                   key={s.serie}
                   initial={{ opacity: 0, y: 10 }}
@@ -329,6 +339,22 @@ function PrecosPage() {
                 </motion.div>
               ))}
             </div>
+            {colapsavel && (
+              <div className="mt-4 flex justify-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  aria-expanded={todasAsPracas}
+                  onClick={() => setTodasAsPracas((v) => !v)}
+                >
+                  {todasAsPracas ? "Mostrar menos" : `Ver todas as praças (${stats.length})`}
+                  <ChevronDown
+                    className={`size-4 transition-transform ${todasAsPracas ? "rotate-180" : ""}`}
+                    aria-hidden="true"
+                  />
+                </Button>
+              </div>
+            )}
           </div>
         )
       )}
