@@ -519,37 +519,32 @@ html.lenis body {
   overflow: clip;
 }
 
-/* Brilho da faixa gigante (versão leve, vale no celular): dois borrões radiais derivando devagar. */
+/* Fumaça da faixa gigante (versão leve, vale no celular): duas camadas de uma textura de ruído pré-renderizada
+   (WebP de ~9 KB, sem costura na horizontal) correndo em sentidos opostos. Só transform, composto na GPU:
+   nenhuma CPU de JavaScript e nenhum filtro de blur. No desktop o shader WebGL ocupa o lugar. */
 .faixa-brilho span {
   position: absolute;
-  border-radius: 9999px;
-  filter: blur(36px);
+  top: -10%;
+  left: 0;
+  width: 200%;
+  height: 120%;
+  background-image: url("/images/fumaca-faixa.webp");
+  background-repeat: repeat;
   will-change: transform;
 }
 .faixa-brilho-a {
-  width: 62%;
-  height: 150%;
-  top: -25%;
-  left: -8%;
-  background: radial-gradient(closest-side, oklch(0.78 0.15 65 / 0.42), transparent);
-  animation: faixa-deriva-a 16s ease-in-out infinite alternate;
+  background-size: 50% auto;
+  opacity: 0.3;
+  animation: faixa-fumaca 80s linear infinite;
 }
 .faixa-brilho-b {
-  width: 55%;
-  height: 130%;
-  top: -15%;
-  right: -10%;
-  background: radial-gradient(closest-side, oklch(0.7 0.12 110 / 0.34), transparent);
-  animation: faixa-deriva-b 21s ease-in-out infinite alternate;
+  background-size: 25% auto;
+  opacity: 0.17;
+  animation: faixa-fumaca 120s linear infinite reverse;
 }
-@keyframes faixa-deriva-a {
+@keyframes faixa-fumaca {
   to {
-    transform: translate3d(48%, 14%, 0) scale(1.15);
-  }
-}
-@keyframes faixa-deriva-b {
-  to {
-    transform: translate3d(-52%, -10%, 0) scale(0.9);
+    transform: translate3d(-50%, 0, 0);
   }
 }
 @media (prefers-reduced-motion: reduce) {

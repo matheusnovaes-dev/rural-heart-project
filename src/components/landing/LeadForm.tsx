@@ -604,6 +604,7 @@ export function LeadForm({
                 type="submit"
                 size="lg"
                 disabled={status === "submitting"}
+                data-magnetico
                 className="bg-cta text-cta-foreground hover:bg-cta/90 mt-2"
               >
                 {status === "submitting" ? (
@@ -612,7 +613,7 @@ export function LeadForm({
                     Preparando seu painel...
                   </>
                 ) : (
-                  "Testar grátis por 7 dias"
+                  <span data-rolar>Testar grátis por 7 dias</span>
                 )}
               </Button>
 

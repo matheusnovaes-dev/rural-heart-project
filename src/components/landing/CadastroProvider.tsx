@@ -1,3 +1,4 @@
+import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
 import {
   createContext,
   useCallback,
@@ -125,9 +126,12 @@ export function CadastroProvider({ children }: { children: ReactNode }) {
           }}
         >
           <DialogHeader className="pr-6 text-left">
-            <DialogTitle className="font-display text-2xl leading-tight font-bold">
-              {jaTemWhatsapp ? "Falta pouco pro seu teste grátis" : "Teste grátis por 7 dias"}
-            </DialogTitle>
+            <TituloDuasVozes
+              como={DialogTitle}
+              antes={jaTemWhatsapp ? "Falta pouco pro seu" : "Teste grátis por"}
+              serifa={jaTemWhatsapp ? "TESTE GRÁTIS" : "7 DIAS"}
+              className="text-2xl leading-tight font-bold sm:text-3xl"
+            />
             <DialogDescription>
               {jaTemWhatsapp
                 ? "Só mais 2 dados e seu painel fica pronto."

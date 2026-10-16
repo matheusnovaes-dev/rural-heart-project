@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, type ElementType } from "react";
 import { useInView } from "framer-motion";
 
 import { cn } from "@/lib/utils";
@@ -46,18 +46,21 @@ export function TituloDuasVozes({
   serifa,
   className,
   id,
+  como: Tag = "h2",
 }: {
   antes?: string;
   serifa: string;
   className?: string;
   id?: string;
+  /** Elemento ou componente que faz o papel de título (h1, h2 ou o DialogTitle do Radix). */
+  como?: ElementType;
 }) {
   const ref = useRef<HTMLHeadingElement>(null);
   const visivel = useInView(ref, { once: true, margin: "0px 0px -12% 0px" });
   const palavrasAntes = antes ? antes.split(" ") : [];
   const palavrasSerifa = serifa.split(" ");
   return (
-    <h2
+    <Tag
       ref={ref}
       id={id}
       aria-label={[antes, serifa].filter(Boolean).join(" ")}
@@ -80,6 +83,6 @@ export function TituloDuasVozes({
           />
         ))}
       </span>
-    </h2>
+    </Tag>
   );
 }

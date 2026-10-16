@@ -19,7 +19,7 @@ import {
  * próprio, botões magnéticos, cartões que inclinam e brilham, parallax nas fotos e scroll com inércia.
  * O celular nunca baixa nem executa nada daqui. Tudo é desfeito se a tela encolher ou a aba sair.
  */
-export default function DesktopFX() {
+export default function DesktopFX({ leve = false }: { leve?: boolean }) {
   useEffect(() => {
     const limpezas: Array<() => void> = [];
     const seguro = (fn: () => () => void) => {
@@ -29,13 +29,14 @@ export default function DesktopFX() {
         // um efeito que falha não pode derrubar a página nem os outros efeitos
       }
     };
-    seguro(iniciarScrollSuave);
     seguro(iniciarCursor);
     seguro(iniciarMagneticos);
+    seguro(iniciarLetrasRolando);
+    if (leve) return () => limpezas.reverse().forEach((f) => f());
+    seguro(iniciarScrollSuave);
     seguro(iniciarCartoes);
     seguro(iniciarParallax);
     seguro(iniciarCortinas);
-    seguro(iniciarLetrasRolando);
     const hero = document.getElementById("topo");
     if (hero) seguro(() => iniciarParticulas(hero));
     if (hero) seguro(() => iniciarVento(hero));

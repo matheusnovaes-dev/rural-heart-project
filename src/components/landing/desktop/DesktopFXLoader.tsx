@@ -6,12 +6,13 @@ import { useDesktopFino } from "@/components/landing/desktop/useDesktopFino";
 // efeitos de desktop nunca é baixado.
 const DesktopFX = lazy(() => import("@/components/landing/desktop/DesktopFX"));
 
-export function DesktopFXLoader() {
+/** leve: só cursor, botões magnéticos e letras que rolam (telas de login e cadastro, sem WebGL nem scroll suave). */
+export function DesktopFXLoader({ leve = false }: { leve?: boolean }) {
   const fino = useDesktopFino();
   if (!fino) return null;
   return (
     <Suspense fallback={null}>
-      <DesktopFX />
+      <DesktopFX leve={leve} />
     </Suspense>
   );
 }

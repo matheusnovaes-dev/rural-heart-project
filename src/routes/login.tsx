@@ -1,3 +1,5 @@
+import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
+import { DesktopFXLoader } from "@/components/landing/desktop/DesktopFXLoader";
 import { useEffect, useState } from "react";
 import type { MouseEvent } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
@@ -165,6 +167,7 @@ function LoginPage() {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-secondary/40 lg:h-screen lg:flex-row lg:overflow-visible">
+      <DesktopFXLoader leve />
       {/* Painel de marca (desktop) */}
       <div
         className="relative hidden w-full max-w-xl flex-col justify-between overflow-hidden p-10 text-white lg:flex"
@@ -185,18 +188,11 @@ function LoginPage() {
         <div className="relative z-10 flex flex-1 flex-col justify-center gap-9 py-8">
           <CartoesDeMercado />
           <div>
-            <h2 className="text-balance font-display text-3xl font-bold leading-tight tracking-tight">
-              {tituloDoPainel.split(" ").map((palavra, i) => (
-                <span key={`${palavra}-${i}`}>
-                  <span
-                    className="login-rise inline-block"
-                    style={{ "--d": `${200 + i * 45}ms` } as React.CSSProperties}
-                  >
-                    {palavra}
-                  </span>{" "}
-                </span>
-              ))}
-            </h2>
+            <TituloDuasVozes
+              antes="Saiba o preço da sua saca e quanto o porto paga, direto no"
+              serifa="WHATSAPP"
+              className="text-3xl leading-tight font-bold sm:text-3xl"
+            />
             <ul className="mt-6 flex flex-col gap-3">
               {destaques.map((item, i) => (
                 <li
@@ -313,9 +309,13 @@ function LoginPage() {
             </div>
 
             <div className="mt-3 text-center lg:mt-6">
-              <h1 className="font-display text-xl font-semibold text-foreground">
-                {entrando ? "Entrar na sua conta" : "Criar sua conta"}
-              </h1>
+              <TituloDuasVozes
+                key={entrando ? "entrar" : "criar"}
+                como="h1"
+                antes={entrando ? "Entrar na sua" : "Criar sua"}
+                serifa="CONTA"
+                className="text-2xl font-semibold text-foreground sm:text-2xl"
+              />
               <p className="mt-1 text-sm text-muted-foreground">
                 {entrando ? "Bom te ver de novo." : "7 dias grátis, sem cartão de crédito."}
               </p>
@@ -387,6 +387,7 @@ function LoginPage() {
                 <Button
                   type="submit"
                   size="lg"
+                  data-magnetico
                   disabled={status === "loading"}
                   className="group relative mt-1 w-full overflow-hidden bg-cta text-cta-foreground transition-[transform,box-shadow,background-color] hover:-translate-y-0.5 hover:bg-cta/90 hover:shadow-lg hover:shadow-cta/30 active:translate-y-0 active:scale-[0.97]"
                 >
@@ -398,7 +399,9 @@ function LoginPage() {
                     <Loader2 className="size-4 animate-spin" />
                   ) : (
                     <>
-                      {entrando ? "Entrar" : "Criar conta"}
+                      <span key={entrando ? "entrar" : "criar"} data-rolar>
+                        {entrando ? "Entrar" : "Criar conta"}
+                      </span>
                       <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
                     </>
                   )}
