@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { enviarEmailBoasVindas, enviarEmailCobranca } from "@/lib/email";
+import { primeiroNome } from "@/lib/nomes";
 import { supabaseServiceRole } from "@/lib/supabase.server";
 
 type AsaasPayment = {
@@ -103,6 +104,7 @@ export const Route = createFileRoute("/api/asaas/webhook")({
                 customerId: payment.customer,
                 plano: assinatura.plano,
               });
+              await notificarPagamentoConfirmado(supabase, assinatura);
             }
           }
         } else if (EVENTOS_INADIMPLENCIA.has(body.event)) {
@@ -200,6 +202,43 @@ async function enviarEmailBoasVindasAsaas({
   } catch (err) {
     // E-mail é um extra — não deve derrubar o processamento do webhook.
     console.error("Falha ao buscar cliente na Asaas pro e-mail de boas-vindas:", err);
+  }
+}
+
+const ROTULO_PLANO: Record<string, string> = { bronze: "Bronze", prata: "Prata", ouro: "Ouro" };
+
+/**
+ * Boas-vindas pelo WhatsApp quando o pagamento cai (a assinatura passa a ativa). Vale pra todo produtor:
+ * o e-mail de boas-vindas não chega a quem se cadastrou pela landing ou pelo WhatsApp (e-mail técnico),
+ * e o WhatsApp é o canal que ele de fato usa. Template `pagamento_confirmado_safralume` (UTILITY, aprovado
+ * pela Meta), enviado pelo mesmo webhook do n8n das cobranças. Falha aqui nunca derruba o webhook.
+ */
+async function notificarPagamentoConfirmado(supabase: SupabaseClient, assinatura: Assinatura) {
+  try {
+    if (!assinatura.produtor_id) return;
+    const webhookUrl = process.env["N8N_COBRANCA_WEBHOOK_URL"];
+    const token = process.env["N8N_COBRANCA_TOKEN"];
+    if (!webhookUrl || !token) return;
+    const { data: produtor } = await supabase
+      .from("produtores")
+      .select("nome, whatsapp")
+      .eq("id", assinatura.produtor_id)
+      .maybeSingle();
+    if (!produtor?.whatsapp) return;
+    const primeiro = primeiroNome(produtor.nome) ?? "produtor";
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-safralume-token": token },
+      body: JSON.stringify({
+        telefone: `55${produtor.whatsapp}`,
+        template: "pagamento_confirmado_safralume",
+        nome: primeiro,
+        plano: ROTULO_PLANO[assinatura.plano] ?? assinatura.plano,
+      }),
+    });
+    if (!res.ok) console.error("n8n recusou a boas-vindas de pagamento:", res.status);
+  } catch (err) {
+    console.error("Falha ao mandar boas-vindas de pagamento por WhatsApp:", err);
   }
 }
 
