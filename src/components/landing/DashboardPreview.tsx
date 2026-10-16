@@ -1,3 +1,4 @@
+import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -156,9 +157,11 @@ export function DashboardPreview() {
         <span className="text-sm font-semibold uppercase tracking-wide text-primary">
           Além do WhatsApp
         </span>
-        <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          Um painel que cresce junto com sua operação
-        </h2>
+        <TituloDuasVozes
+          antes="Um painel que cresce junto com"
+          serifa="SUA OPERAÇÃO"
+          className="mt-3 text-foreground sm:text-4xl lg:text-5xl"
+        />
         <p className="mt-4 text-muted-foreground">
           Preço, sinal de venda, alertas, lembretes, clima, janela de plantio e suporte, tudo num
           lugar só, desde o plano Bronze. Câmbio, diesel e boletins de mercado vêm junto.{" "}

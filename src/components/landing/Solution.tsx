@@ -1,3 +1,5 @@
+import { Flutuar } from "@/components/landing/Flutuar";
+import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
 import { motion } from "framer-motion";
 import { ArrowRight, Check, Sprout } from "lucide-react";
 
@@ -13,9 +15,11 @@ export function Solution() {
           {/* A antiga seção "O problema não é falta de dado" (3 cards) repetia
               o que o H1 do hero já diz: virou o título desta, que mostra a
               solução logo em seguida. Menos uma tela inteira no celular. */}
-          <h2 className="font-display text-3xl font-bold tracking-tight text-balance text-foreground sm:text-4xl">
-            O problema não é falta de dado. É não saber a hora certa.
-          </h2>
+          <TituloDuasVozes
+            antes="O problema não é falta de dado. É não saber"
+            serifa="A HORA CERTA."
+            className="text-foreground sm:text-4xl lg:text-5xl"
+          />
           <p className="mt-4 max-w-md text-muted-foreground">
             Pergunte no WhatsApp e receba o preço da sua região, o do porto com frete e um sinal de
             que é hora de vender ou esperar, sempre com fonte e data.
@@ -45,7 +49,9 @@ export function Solution() {
         </Reveal>
 
         <Reveal delay={0.15} className="flex flex-col items-center gap-3">
-          <PhoneMockup />
+          <Flutuar className="flex w-full justify-center">
+            <PhoneMockup />
+          </Flutuar>
           <p className="text-xs text-muted-foreground">Exemplo ilustrativo de conversa</p>
         </Reveal>
       </div>

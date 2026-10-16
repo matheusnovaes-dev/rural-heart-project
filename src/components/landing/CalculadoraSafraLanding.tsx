@@ -1,3 +1,4 @@
+import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Calculator, ChevronDown, Loader2 } from "lucide-react";
@@ -139,9 +140,11 @@ export function CalculadoraSafraLanding() {
           <Calculator className="size-3.5" aria-hidden="true" />
           Uma das ferramentas do Safralume
         </span>
-        <h2 className="mt-4 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          Quanto sua produção vale hoje?
-        </h2>
+        <TituloDuasVozes
+          antes="Quanto sua produção"
+          serifa="VALE HOJE?"
+          className="mt-4 text-foreground"
+        />
         <p className="mt-2.5 text-muted-foreground">
           Essa é a Calculadora de Safra, uma amostra do que o Safralume faz. Cultura, estado e
           quantidade de sacas. O preço é real, do dia, das mesmas fontes oficiais que usamos em

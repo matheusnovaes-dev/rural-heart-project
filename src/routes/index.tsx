@@ -1,3 +1,4 @@
+import { FaixaGigante } from "@/components/landing/FaixaGigante";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
@@ -62,6 +63,7 @@ function Index() {
           <Solution />
           <CalculadoraSafraLanding />
           <HowItWorks />
+          <FaixaGigante />
           <DashboardPreview />
           <TrustProof />
           <Pricing semTrial={semTrial === "1"} />

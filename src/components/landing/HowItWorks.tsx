@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "framer-motion";
+import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
+import React, { useEffect, useRef, useState } from "react";
+import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 
 import { Reveal } from "@/components/landing/Reveal";
 import { IconesSafralume } from "@/components/icons/SafralumeIcon";
@@ -84,6 +85,30 @@ function VideoComoFunciona() {
   );
 }
 
+/**
+ * O vídeo "abre" conforme a seção sobe pela tela: começa recortado e arredondado e se revela até ocupar
+ * o espaço todo (clip-path, sem mexer no layout). Chega inteiro quando o centro dele cruza o meio da tela.
+ */
+function RevelarAoRolar({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "center center"] });
+  const clipPath = useTransform(scrollYProgress, (v) => {
+    const t = Math.min(1, Math.max(0, v));
+    return `inset(${(1 - t) * 14}% ${(1 - t) * 10}% round ${28 - t * 12}px)`;
+  });
+  return (
+    <motion.div ref={ref} style={{ clipPath }} className={className}>
+      {children}
+    </motion.div>
+  );
+}
+
 export function HowItWorks() {
   return (
     <section
@@ -91,20 +116,27 @@ export function HowItWorks() {
       className="mx-auto max-w-6xl scroll-mt-16 px-4 py-12 sm:py-20 sm:px-6"
     >
       <Reveal className="mx-auto max-w-2xl text-center">
-        <h2 className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          Como funciona
-        </h2>
+        <TituloDuasVozes antes="Como" serifa="FUNCIONA" className="text-foreground" />
       </Reveal>
 
-      <Reveal delay={0.1} className="mt-10">
+      <RevelarAoRolar className="mt-10">
         <VideoComoFunciona />
-      </Reveal>
+      </RevelarAoRolar>
 
       <div className="relative mt-12 grid gap-8 sm:grid-cols-3">
         <div
           aria-hidden
-          className="absolute top-7 left-[calc(16.66%+1.75rem)] right-[calc(16.66%+1.75rem)] hidden h-px bg-primary/40 sm:block"
-        />
+          className="absolute top-7 left-[calc(16.66%+1.75rem)] right-[calc(16.66%+1.75rem)] hidden h-px bg-primary/15 sm:block"
+        >
+          {/* O traço se desenha da esquerda para a direita quando os passos entram na tela */}
+          <motion.div
+            className="h-full origin-left bg-primary/60"
+            initial={{ scaleX: 0 }}
+            whileInView={{ scaleX: 1 }}
+            viewport={{ once: true, margin: "-120px" }}
+            transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+          />
+        </div>
         {steps.map((step, index) => (
           <Reveal key={step.title} delay={index * 0.1} className="relative text-center">
             <span className="relative z-10 mx-auto block w-fit rounded-full ring-4 ring-background">

@@ -1,3 +1,4 @@
+import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
 import { Link } from "@tanstack/react-router";
 
 import { Reveal } from "@/components/landing/Reveal";
@@ -20,9 +21,7 @@ export function Faq() {
   return (
     <section id="duvidas" className="mx-auto max-w-3xl scroll-mt-16 px-4 py-12 sm:py-20 sm:px-6">
       <Reveal className="text-center">
-        <h2 className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          Perguntas frequentes
-        </h2>
+        <TituloDuasVozes antes="Perguntas" serifa="FREQUENTES" className="text-foreground" />
       </Reveal>
 
       <Reveal delay={0.1} className="mt-10">

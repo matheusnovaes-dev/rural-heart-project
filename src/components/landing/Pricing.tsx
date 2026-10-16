@@ -1,3 +1,4 @@
+import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
 import { useState } from "react";
 import { Check, ChevronDown, Leaf, Sprout, Wheat } from "lucide-react";
 import { Link } from "@tanstack/react-router";
@@ -26,9 +27,11 @@ export function Pricing({ semTrial = false }: { semTrial?: boolean }) {
   return (
     <section id="planos" className="mx-auto max-w-6xl scroll-mt-16 px-4 py-12 sm:py-20 sm:px-6">
       <Reveal className="mx-auto max-w-2xl text-center">
-        <h2 className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          Planos para cada tamanho de operação
-        </h2>
+        <TituloDuasVozes
+          antes="Planos para cada tamanho de"
+          serifa="OPERAÇÃO"
+          className="text-foreground"
+        />
         <p className="mt-3 text-muted-foreground">
           {semTrial
             ? "Escolha o plano e comece agora. Cancele quando quiser."

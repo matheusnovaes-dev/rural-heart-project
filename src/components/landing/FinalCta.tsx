@@ -1,3 +1,5 @@
+import { Pincel } from "@/components/landing/Pincel";
+import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
 import { ArrowRight, Check } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
@@ -12,12 +14,18 @@ const garantias = [
 
 export function FinalCta() {
   return (
-    <section id="comece" className="bg-secondary/50 py-12 sm:py-20">
+    <section id="comece" className="relative overflow-hidden bg-secondary/50 py-12 sm:py-20">
+      <Pincel
+        palavra="grátis"
+        className="top-[2%] left-[-4%] text-[clamp(8rem,30vw,20rem)] text-[color:var(--cta)]/25"
+      />
       <div className="mx-auto grid max-w-5xl items-start gap-10 px-4 sm:px-6 lg:grid-cols-2">
         <Reveal>
-          <h2 className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            Teste grátis por 7 dias
-          </h2>
+          <TituloDuasVozes
+            antes="Teste grátis por"
+            serifa="7 DIAS"
+            className="text-foreground sm:text-4xl lg:text-5xl"
+          />
           <p className="mt-4 max-w-md text-muted-foreground">
             Enquanto você lê isso, o preço de hoje já pode estar diferente do de ontem.
           </p>

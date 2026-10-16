@@ -32,7 +32,7 @@ const FONTES_SECUNDARIAS_URL =
 // Só as letras dos títulos grandes do carrossel de preços (serifa de alto contraste e traço de pincel):
 // o parâmetro text= entrega poucos KB em vez da família inteira.
 const FONTES_DESTAQUE_URL =
-  "https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Caveat+Brush&text=%26MERCADOhoje&display=swap";
+  "https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Caveat+Brush&text=%26%3F%21%2C.-%2F0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ%C3%87%C3%83%C3%81%C3%80%C3%82%C3%89%C3%8A%C3%8D%C3%93%C3%94%C3%95%C3%9Ahojegr%C3%A1tis&display=swap";
 
 function NotFoundComponent() {
   return (

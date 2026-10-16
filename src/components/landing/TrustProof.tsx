@@ -1,3 +1,4 @@
+import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
 import { ShieldCheck } from "lucide-react";
 
 import { Reveal } from "@/components/landing/Reveal";
@@ -28,9 +29,11 @@ export function TrustProof() {
             Fonte oficial, sempre visível
           </div>
 
-          <h2 className="mt-4 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-            Dado com origem clara, não achismo de IA
-          </h2>
+          <TituloDuasVozes
+            antes="Dado com origem clara, não"
+            serifa="ACHISMO DE IA"
+            className="mt-4 sm:text-4xl lg:text-5xl"
+          />
 
           <p className="mt-4 max-w-lg text-primary-foreground/85">
             Todo preço mostrado no Safralume vem de fontes públicas e abertas: Conab pra cobertura
