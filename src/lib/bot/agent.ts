@@ -25,7 +25,12 @@ import {
 import { gerarLinkDeAcesso, tipoDeAcesso } from "@/lib/bot/tools/linkAcesso";
 import type { ResultadoBuscarLeite } from "@/lib/bot/tools/leite";
 import { buscarMemoriasProdutor } from "@/lib/bot/tools/memoria";
-import { ehPedidoDeSair, RESPOSTA_SAIDA_DE_MENSAGENS } from "@/lib/recuperacaoCadastro";
+import {
+  ehPedidoDePararAvisos,
+  ehPedidoDeSair,
+  RESPOSTA_PAROU_AVISOS,
+  RESPOSTA_SAIDA_DE_MENSAGENS,
+} from "@/lib/recuperacaoCadastro";
 import { resolverNome } from "@/lib/nomes";
 import { decidirCadastro, PERGUNTA_CULTURA } from "@/lib/bot/cadastroConversa";
 import {
@@ -1205,6 +1210,31 @@ async function runAgentBase(input: {
       precisa_humano: deProduto.precisa_humano,
       cadastro_criado: false,
       convite_dispensado: false,
+    };
+  }
+
+  // "Não quero mais esses avisos" (rodapé do template de novidades): vale para qualquer pessoa, cliente ou não. Para o
+  // cliente desliga a mensagem proativa e entra na lista de opt-out de marketing (novidades, reengajamento, reativação);
+  // os alertas e lembretes que ele mesmo configurou seguem (são utilidade, não marketing). Decidido por código.
+  if (ehPedidoDePararAvisos(texto)) {
+    const numero = normalizarWhatsapp(telefone);
+    const { error: erroOptout } = await supabase
+      .from("whatsapp_optout")
+      .upsert({ whatsapp: numero, origem: "bot" }, { onConflict: "whatsapp" });
+    if (produtor.id) {
+      await supabase
+        .from("produtores")
+        .update({ mensagem_proativa_ativa: false })
+        .eq("id", produtor.id);
+    }
+    if (erroOptout) console.error("Erro ao registrar opt-out (parar avisos):", erroOptout);
+    return {
+      resposta: erroOptout
+        ? "Recebi seu pedido pra parar de receber esses avisos. Vou pedir pra nossa equipe confirmar isso pra você."
+        : RESPOSTA_PAROU_AVISOS,
+      precisa_humano: !!erroOptout,
+      cadastro_criado: false,
+      convite_dispensado: true,
     };
   }
 

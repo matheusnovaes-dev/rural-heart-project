@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { normalizarWhatsapp } from "@/lib/telefone";
 import { supabaseServiceRole } from "@/lib/supabase.server";
 import { montarResumoReengajamento } from "@/lib/bot/reengajamento";
 
@@ -86,6 +87,17 @@ export const Route = createFileRoute("/api/cron/reengajamento")({
               .maybeSingle<Produtor>();
 
             if (!produtor?.whatsapp || !produtor.uf || !produtor.cultura_principal) {
+              pulados++;
+              continue;
+            }
+
+            // Quem pediu pra parar (opt-out de marketing, "não quero mais esses avisos") não recebe mais nada daqui.
+            const { data: pediuParar } = await supabase
+              .from("whatsapp_optout")
+              .select("whatsapp")
+              .eq("whatsapp", normalizarWhatsapp(produtor.whatsapp))
+              .maybeSingle();
+            if (pediuParar) {
               pulados++;
               continue;
             }

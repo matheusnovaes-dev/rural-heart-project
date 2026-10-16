@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { getRequestHeader } from "@tanstack/react-start/server";
 
-import { montarEventoCapi } from "@/lib/metaCapi";
+import { montarEventoCapi, type DadosEventoCapi } from "@/lib/metaCapi";
 
 const trackConversaoSchema = z.object({
   eventId: z.string().min(1),
@@ -75,3 +75,29 @@ export const trackConversaoServidor = createServerFn({ method: "POST" })
       return { ok: false as const };
     }
   });
+
+/**
+ * Envia um evento direto da rotina do servidor (webhook da Asaas, bot), sem passar por createServerFn: é daqui que
+ * sai o Purchase, que NUNCA pode ser disparável pelo navegador (qualquer um poderia inflar a receita no Meta).
+ */
+export async function enviarEventoCapiDoServidor(data: DadosEventoCapi): Promise<boolean> {
+  const pixelId = process.env["META_PIXEL_ID"];
+  const accessToken = process.env["META_CAPI_ACCESS_TOKEN"];
+  if (!pixelId || !accessToken) return false;
+  const evento = montarEventoCapi(data, { agora: Math.floor(Date.now() / 1000) });
+  try {
+    const res = await fetch(`https://graph.facebook.com/v21.0/${pixelId}/events`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: [evento], access_token: accessToken }),
+    });
+    if (!res.ok) {
+      console.error("Falha ao enviar evento pro Meta CAPI:", await res.text());
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("Erro ao chamar Meta Conversions API:", err);
+    return false;
+  }
+}

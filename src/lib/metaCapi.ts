@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 export type DadosEventoCapi = {
   eventId: string;
   /** Padrão CompleteRegistration (cadastro concluído); "Lead" é a etapa 1 do formulário. */
-  evento?: "CompleteRegistration" | "Lead" | undefined;
+  evento?: "CompleteRegistration" | "Lead" | "Purchase" | undefined;
   plano?: string | undefined;
   valor?: number | undefined;
   email?: string | undefined;
@@ -44,10 +44,14 @@ export function montarEventoCapi(
   }
 
   const evento = data.evento ?? "CompleteRegistration";
+  // Purchase (primeiro pagamento confirmado na Asaas) leva valor e moeda reais, senão a Meta não consegue
+  // otimizar por receita. Só sai do servidor (webhook da Asaas), nunca do navegador.
   const customData: Record<string, unknown> =
     evento === "Lead"
       ? { content_name: "etapa_1_whatsapp" }
-      : { content_name: data.plano, currency: "BRL", value: data.valor };
+      : evento === "Purchase"
+        ? { content_name: data.plano, content_type: "product", currency: "BRL", value: data.valor }
+        : { content_name: data.plano, currency: "BRL", value: data.valor };
 
   return {
     event_name: evento,

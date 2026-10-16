@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { enviarEmailBoasVindas, enviarEmailCobranca } from "@/lib/email";
 import { primeiroNome } from "@/lib/nomes";
+import { enviarEventoCapiDoServidor } from "@/lib/metaCapi.server";
 import { supabaseServiceRole } from "@/lib/supabase.server";
 
 type AsaasPayment = {
@@ -111,6 +112,7 @@ export const Route = createFileRoute("/api/asaas/webhook")({
                 plano: assinatura.plano,
               });
               await notificarPagamentoConfirmado(supabase, assinatura);
+              await registrarCompraNoMeta(supabase, assinatura, payment);
             } else {
               await supabase.from("assinaturas").update(dados).eq("id", assinatura.id);
             }
@@ -341,4 +343,33 @@ async function notificarWhatsApp(
       vencimento,
     }),
   });
+}
+
+/**
+ * Avisa a Meta (API de Conversões) que alguém pagou pela primeira vez: o evento Purchase com o valor real da cobrança.
+ * Sem ele os anúncios só otimizam por cadastro e nunca aprendem quem vira cliente. Deduplicado por pagamento
+ * (event_id) e nunca derruba o webhook: se a Meta falhar, a assinatura já está ativa e o cliente já foi avisado.
+ */
+async function registrarCompraNoMeta(
+  supabase: ReturnType<typeof supabaseServiceRole>,
+  assinatura: Assinatura,
+  payment: { id?: string; value?: number },
+) {
+  try {
+    if (!assinatura.produtor_id) return; // cooperativa: sem telefone para casar com o anúncio
+    const { data: produtor } = await supabase
+      .from("produtores")
+      .select("whatsapp")
+      .eq("id", assinatura.produtor_id)
+      .maybeSingle<{ whatsapp: string | null }>();
+    await enviarEventoCapiDoServidor({
+      eventId: `purchase_${payment.id ?? assinatura.id}`,
+      evento: "Purchase",
+      plano: assinatura.plano,
+      valor: typeof payment.value === "number" ? payment.value : undefined,
+      whatsapp: produtor?.whatsapp ?? undefined,
+    });
+  } catch (err) {
+    console.error("Falha ao registrar a compra no Meta:", err);
+  }
 }

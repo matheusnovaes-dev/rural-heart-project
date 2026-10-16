@@ -64,5 +64,24 @@ export function ehPedidoDeSair(texto: string): boolean {
   return /\bnao\s+quero\s+(mais\s+)?receber\b/.test(t);
 }
 
+/**
+ * Pedido explícito de parar os avisos (é o que o rodapé do template de novidades manda responder: "não quero mais esses
+ * avisos"). Vale também para CLIENTE, porque a frase não é ambígua como "sair": é compromisso legal com a pessoa.
+ */
+export function ehPedidoDePararAvisos(texto: string): boolean {
+  const t = texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+  return (
+    /\bnao\s+quero\s+mais\s+(esses\s+|os\s+|essas\s+|as\s+)?(avisos|mensagens|novidades|notificacoes)\b/.test(
+      t,
+    ) ||
+    /\b(parar|deixar)\s+de\s+receber\s+(esses\s+|os\s+|essas\s+|as\s+)?(avisos|mensagens|novidades|notificacoes)\b/.test(
+      t,
+    )
+  );
+}
+
+export const RESPOSTA_PAROU_AVISOS =
+  "Pronto, não vou mais te mandar novidades nem mensagens proativas. Os alertas e lembretes que você mesmo configurou continuam funcionando normalmente. Se mudar de ideia, é só pedir aqui.";
+
 export const RESPOSTA_SAIDA_DE_MENSAGENS =
   "Pronto, não vou mais te mandar mensagens. Se mudar de ideia, é só chamar aqui.";
