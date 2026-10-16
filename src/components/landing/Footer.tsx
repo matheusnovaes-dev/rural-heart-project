@@ -4,23 +4,11 @@ import { useInView } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 
 import { AssinaturaSvg } from "@/components/landing/AssinaturaSvg";
+import { MarcasFontes } from "@/components/landing/MarcasFontes";
 import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
 import { siteConfig, buildWhatsAppLink } from "@/config/site";
 
-const SERIFA = { fontFamily: '"Instrument Serif", "Times New Roman", serif' };
 const INSTAGRAM = "https://www.instagram.com/safralume/";
-
-const FONTES = [
-  "Conab",
-  "Imea",
-  "Deral/PR",
-  "Epagri/SC",
-  "Emater/RS",
-  "BBM",
-  "IEA-SP",
-  "B3",
-  "Conseleite",
-];
 
 const paginas = [
   { href: "/#topo", label: "Início" },
@@ -43,18 +31,7 @@ export function Footer() {
   return (
     <footer className="bg-[color:var(--cta)] px-2.5 pt-2.5 pb-5 text-[#0e3b2a] sm:px-4 sm:pt-4">
       <div className="mx-auto max-w-[96rem] overflow-hidden rounded-[1.6rem] bg-primary text-primary-foreground sm:rounded-[2.2rem]">
-        {/* Fontes oficiais (o "parceiros" do Lando) */}
-        <div className="flex flex-wrap items-baseline justify-center gap-x-6 gap-y-2 border-b border-white/10 px-5 py-5 sm:justify-between sm:gap-x-10 sm:px-10 sm:py-7">
-          {FONTES.map((f) => (
-            <span
-              key={f}
-              className="text-[1.35rem] tracking-wide uppercase text-primary-foreground/85 sm:text-[2rem]"
-              style={SERIFA}
-            >
-              {f}
-            </span>
-          ))}
-        </div>
+        <MarcasFontes />
 
         <div className="grid gap-10 px-5 py-9 sm:gap-12 sm:px-10 sm:py-14 lg:grid-cols-[1fr_1fr] lg:gap-14">
           {/* Colunas de navegação */}

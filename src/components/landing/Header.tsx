@@ -8,8 +8,8 @@ import { siteConfig, buildWhatsAppLink } from "@/config/site";
 import { trackLanding } from "@/lib/metaPixel";
 
 const navLinks = [
-  { href: "#como-funciona", label: "Como funciona" },
-  { href: "#planos", label: "Preços" },
+  { href: "/#como-funciona", label: "Como funciona" },
+  { href: "/#planos", label: "Preços" },
 ];
 
 export function Header() {
