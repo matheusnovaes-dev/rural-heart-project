@@ -10,6 +10,7 @@ import {
   iniciarCursor,
   iniciarMagneticos,
   iniciarParallax,
+  iniciarProfundidade,
   iniciarScrollSuave,
 } from "@/components/landing/desktop/interacoes";
 
@@ -36,6 +37,7 @@ export default function DesktopFX({ leve = false }: { leve?: boolean }) {
     seguro(iniciarScrollSuave);
     seguro(iniciarCartoes);
     seguro(iniciarParallax);
+    seguro(iniciarProfundidade);
     seguro(iniciarCortinas);
     const hero = document.getElementById("topo");
     if (hero) seguro(() => iniciarParticulas(hero));

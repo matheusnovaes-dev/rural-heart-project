@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 
+import { WordmarkGigante } from "@/components/landing/WordmarkGigante";
 import { siteConfig, buildWhatsAppLink } from "@/config/site";
 
 const links = [
@@ -11,6 +12,9 @@ export function Footer() {
   return (
     <footer className="border-t border-border bg-background py-10">
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 sm:px-6">
+        <div className="mb-4 sm:mb-6">
+          <WordmarkGigante nome={siteConfig.name} />
+        </div>
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex items-center gap-2">
             <img src="/logo-icon.png" alt="" className="size-7 rounded-[0.55rem]" />

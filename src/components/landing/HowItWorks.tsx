@@ -59,6 +59,7 @@ function VideoComoFunciona() {
   return (
     <div
       ref={containerRef}
+      data-cursor="Ver"
       className="mx-auto aspect-[4/5] w-full max-w-3xl overflow-hidden rounded-2xl bg-[#101c15] shadow-lg sm:aspect-video"
     >
       {visivel && !prefereMenosMovimento ? (

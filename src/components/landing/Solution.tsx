@@ -32,11 +32,18 @@ export function Solution() {
               "Alertas automáticos de preço e clima, sem precisar perguntar",
               "Foto ou PDF de proposta: compara com o mercado e ranqueia os compradores",
               "Mais de 70 culturas, de soja e milho a boi e café",
-            ].map((item) => (
-              <li key={item} className="flex items-start gap-2 text-sm text-foreground">
+            ].map((item, i) => (
+              <motion.li
+                key={item}
+                initial={{ opacity: 0, x: -18 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{ duration: 0.45, delay: i * 0.07, ease: [0.22, 1, 0.36, 1] }}
+                className="flex items-start gap-2 text-sm text-foreground"
+              >
                 <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
                 {item}
-              </li>
+              </motion.li>
             ))}
           </ul>
           <a

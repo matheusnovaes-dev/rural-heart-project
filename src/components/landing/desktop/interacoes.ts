@@ -71,6 +71,12 @@ html.fx-cursor ${CAMPOS_DE_TEXTO.replace(/,/g, ", html.fx-cursor ")} { cursor: t
   miolo.style.cssText =
     "position:absolute;left:-19px;top:-19px;width:38px;height:38px;border-radius:9999px;border:2px solid #fff;box-shadow:0 0 0 1.5px rgba(10,24,16,.7),inset 0 0 0 1.5px rgba(10,24,16,.7),0 2px 10px rgba(0,0,0,.25);transition:transform .3s cubic-bezier(.22,1,.36,1),background-color .3s;";
   aro.appendChild(miolo);
+  // Rótulo do cursor (como no site do Lando Norris: "Ver" sobre o vídeo): fica fora do círculo que escala, para o texto
+  // não crescer junto.
+  const rotuloEl = document.createElement("div");
+  rotuloEl.style.cssText =
+    "position:absolute;left:-60px;top:-12px;width:120px;text-align:center;font:700 15px/24px 'IBM Plex Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#0e3b2a;opacity:0;transition:opacity .2s;";
+  aro.appendChild(rotuloEl);
   const ponto = caixa("width:0;height:0;");
   const bolinha = document.createElement("div");
   bolinha.style.cssText =
@@ -107,9 +113,17 @@ html.fx-cursor ${CAMPOS_DE_TEXTO.replace(/,/g, ", html.fx-cursor ")} { cursor: t
     if (!t || !t.closest) return;
     const campo = !!t.closest(CAMPOS_DE_TEXTO);
     const clicavel = !!t.closest(ALVOS_CLICAVEIS);
+    const rotulo = (t.closest("[data-cursor]") as HTMLElement | null)?.dataset["cursor"] ?? "";
     aro.style.opacity = ponto.style.opacity = campo ? "0" : "1";
-    escala = clicavel ? 1.4 : 1;
-    miolo.style.backgroundColor = clicavel ? "rgba(232,145,42,.3)" : "transparent";
+    escala = rotulo ? 2.5 : clicavel ? 1.4 : 1;
+    miolo.style.backgroundColor = rotulo
+      ? "rgba(232,145,42,.96)"
+      : clicavel
+        ? "rgba(232,145,42,.3)"
+        : "transparent";
+    rotuloEl.textContent = rotulo;
+    rotuloEl.style.opacity = rotulo ? "1" : "0";
+    bolinha.style.opacity = rotulo ? "0" : "1";
     aplicarEscala();
   };
   const aoApertar = (v: boolean) => () => {
@@ -338,5 +352,41 @@ export function iniciarCortinas(): () => void {
     parar();
     io.disconnect();
     els.forEach((el) => (el.style.clipPath = ""));
+  };
+}
+
+// ----------------------------------------------------------------- profundidade
+/**
+ * Elementos com data-profundidade="N" se deslocam em sentido oposto ao do mouse (até N px), cada um com a sua
+ * intensidade: o título e o subtítulo do hero parecem em camadas. Usa a propriedade CSS `translate` (independente de
+ * `transform`), então não briga com as animações do framer-motion. Só desktop.
+ */
+export function iniciarProfundidade(): () => void {
+  const els = Array.from(document.querySelectorAll<HTMLElement>("[data-profundidade]"));
+  if (!els.length) return () => {};
+  let alvoX = 0;
+  let alvoY = 0;
+  let x = 0;
+  let y = 0;
+  const aoMover = (e: PointerEvent) => {
+    if (e.pointerType !== "mouse") return;
+    alvoX = (e.clientX / window.innerWidth - 0.5) * 2;
+    alvoY = (e.clientY / window.innerHeight - 0.5) * 2;
+  };
+  window.addEventListener("pointermove", aoMover, { passive: true });
+  const parar = registrar(() => {
+    x = lerp(x, alvoX, 0.07);
+    y = lerp(y, alvoY, 0.07);
+    // só trabalha enquanto o hero está na tela
+    if (window.scrollY > window.innerHeight * 1.1) return;
+    els.forEach((el) => {
+      const n = Number(el.dataset["profundidade"]) || 0;
+      el.style.translate = `${(-x * n).toFixed(2)}px ${(-y * n * 0.7).toFixed(2)}px`;
+    });
+  });
+  return () => {
+    window.removeEventListener("pointermove", aoMover);
+    parar();
+    els.forEach((el) => (el.style.translate = ""));
   };
 }

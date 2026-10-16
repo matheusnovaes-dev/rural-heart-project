@@ -165,7 +165,10 @@ export function Hero() {
           Fontes públicas: Conab, órgãos estaduais e bolsas
         </motion.div>
 
-        <h1 className="text-balance font-display text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl">
+        <h1
+          data-profundidade="14"
+          className="text-balance font-display text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl"
+        >
           {PALAVRAS_TITULO.map((palavra, i) => {
             const destaque = i >= A_PARTIR_DO_DESTAQUE;
             const ultima = i === PALAVRAS_TITULO.length - 1;
@@ -212,6 +215,7 @@ export function Hero() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
+          data-profundidade="7"
           className="mt-4 max-w-2xl text-balance text-base text-white/85 sm:mt-5 sm:text-lg"
         >
           Preço de hoje, pra onde o mercado aponta e 90 dias de histórico, avisados no seu WhatsApp

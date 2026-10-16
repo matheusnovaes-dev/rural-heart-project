@@ -570,3 +570,17 @@ html.lenis body {
     transform: translateY(-6px);
   }
 }
+
+/* Letras do wordmark gigante do rodapé: engordam e acendem sob o mouse (fonte variável). */
+.letra-viva {
+  transition:
+    transform 900ms cubic-bezier(0.22, 1, 0.36, 1),
+    font-weight 0.35s,
+    color 0.35s;
+}
+@media (hover: hover) and (pointer: fine) {
+  .letra-viva:hover {
+    font-weight: 800;
+    color: var(--cta);
+  }
+}
