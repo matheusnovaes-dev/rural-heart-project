@@ -88,23 +88,31 @@ export const Route = createFileRoute("/api/asaas/webhook")({
         if (EVENTOS_ATIVACAO.has(body.event)) {
           const assinatura = await buscarAssinatura();
           if (assinatura) {
-            await supabase
+            // A Asaas manda PAYMENT_CONFIRMED e PAYMENT_RECEIVED quase juntos (Pix). A virada pra "ativa" é
+            // reivindicada de forma atômica (só atualiza quem ainda não está ativa): quem ganha manda as
+            // boas-vindas, o outro evento só atualiza os ids. Sem isso os dois liam "não ativa" ao mesmo
+            // tempo e a pessoa recebia a boas-vindas em dobro.
+            const dados = {
+              asaas_customer_id: payment.customer,
+              asaas_subscription_id: payment.subscription ?? null,
+              updated_at: new Date().toISOString(),
+            };
+            const { data: virou } = await supabase
               .from("assinaturas")
-              .update({
-                status: "ativa",
-                asaas_customer_id: payment.customer,
-                asaas_subscription_id: payment.subscription ?? null,
-                updated_at: new Date().toISOString(),
-              })
-              .eq("id", assinatura.id);
+              .update({ status: "ativa", ...dados })
+              .eq("id", assinatura.id)
+              .neq("status", "ativa")
+              .select("id");
 
-            if (assinatura.status !== "ativa") {
+            if (virou && virou.length > 0) {
               await enviarEmailBoasVindasAsaas({
                 apiKey: process.env["ASAAS_API_KEY"],
                 customerId: payment.customer,
                 plano: assinatura.plano,
               });
               await notificarPagamentoConfirmado(supabase, assinatura);
+            } else {
+              await supabase.from("assinaturas").update(dados).eq("id", assinatura.id);
             }
           }
         } else if (EVENTOS_INADIMPLENCIA.has(body.event)) {
