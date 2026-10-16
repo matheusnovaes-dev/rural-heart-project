@@ -213,6 +213,11 @@ const ROTULO_PLANO: Record<string, string> = { bronze: "Bronze", prata: "Prata",
  * e o WhatsApp é o canal que ele de fato usa. Template `pagamento_confirmado_safralume` (UTILITY, aprovado
  * pela Meta), enviado pelo mesmo webhook do n8n das cobranças. Falha aqui nunca derruba o webhook.
  */
+/** Mesmo texto do template `pagamento_confirmado_safralume`, mandado como texto livre dentro da janela de 24h. */
+function textoPagamentoConfirmado(nome: string, plano: string): string {
+  return `Oi, ${nome}! 🎉 Seu pagamento do plano ${plano} foi confirmado e a gente está muito feliz de ter você no Safralume! 🌾\n\nObrigado pela confiança. Daqui pra frente, é só me chamar aqui quando quiser: pergunte o preço da sua cultura, peça o clima, mande a proposta de um comprador pra eu analisar. Estou aqui pra te ajudar a vender na hora certa.\n\nSeja muito bem-vindo! 💚`;
+}
+
 async function notificarPagamentoConfirmado(supabase: SupabaseClient, assinatura: Assinatura) {
   try {
     if (!assinatura.produtor_id) return;
@@ -226,14 +231,27 @@ async function notificarPagamentoConfirmado(supabase: SupabaseClient, assinatura
       .maybeSingle();
     if (!produtor?.whatsapp) return;
     const primeiro = primeiroNome(produtor.nome) ?? "produtor";
+    const plano = ROTULO_PLANO[assinatura.plano] ?? assinatura.plano;
+    // Dentro de 24h da última mensagem dele, texto livre: não gasta template e não cai na trava de
+    // marketing da Meta (131049). Quem paga costuma ter falado com o bot minutos antes (ex.: "quero pagar").
+    const desde = new Date(Date.now() - 23 * 3_600_000).toISOString();
+    const { count } = await supabase
+      .from("bot_conversas")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "user")
+      .like("telefone", `%${produtor.whatsapp.slice(-8)}`)
+      .gte("created_at", desde);
+    const dentroDaJanela = (count ?? 0) > 0;
     const res = await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-safralume-token": token },
       body: JSON.stringify({
         telefone: `55${produtor.whatsapp}`,
         template: "pagamento_confirmado_safralume",
+        modo: dentroDaJanela ? "texto" : "template",
+        mensagem: dentroDaJanela ? textoPagamentoConfirmado(primeiro, plano) : undefined,
         nome: primeiro,
-        plano: ROTULO_PLANO[assinatura.plano] ?? assinatura.plano,
+        plano,
       }),
     });
     if (!res.ok) console.error("n8n recusou a boas-vindas de pagamento:", res.status);
