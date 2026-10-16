@@ -36,6 +36,12 @@ export function FaixaGigante() {
       aria-label="Culturas cobertas: soja, milho, algodão, café, boi, leite, feijão, trigo, arroz e mais de 70 produtos. Fontes: Conab, Imea, Deral, Epagri, Emater, BBM, IEA-SP, B3 e Conseleite."
       className="relative isolate overflow-hidden bg-primary py-10 text-primary-foreground sm:py-14"
     >
+      {/* Brilho laranja que escorre atrás das palavras. No celular é só CSS (dois borrões que se movem por
+          transform, sem JS e sem WebGL); no desktop o shader assume (ver desktop/fluxo.ts). */}
+      <div aria-hidden="true" className="faixa-brilho pointer-events-none absolute inset-0 -z-10">
+        <span className="faixa-brilho-a" />
+        <span className="faixa-brilho-b" />
+      </div>
       <Marquee velocidade={70} repeticoes={2}>
         {CULTURAS.map((nome, i) => (
           <span

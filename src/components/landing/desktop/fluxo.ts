@@ -32,6 +32,7 @@ export function iniciarFluxo(secao: HTMLElement): () => void {
   const base = criarCanvasGl(secao, { posicao: "primeiro", zIndex: "-1" });
   if (!base) return () => {};
   const { canvas, gl } = base;
+  secao.dataset["glow"] = "1"; // esconde o brilho em CSS do celular: aqui o WebGL assume
   const prog = criarPrograma(gl, VS, FS);
   if (!prog) {
     canvas.remove();
@@ -93,6 +94,7 @@ export function iniciarFluxo(secao: HTMLElement): () => void {
   });
 
   return () => {
+    delete secao.dataset["glow"];
     parar();
     desfazerTamanho();
     window.removeEventListener("pointermove", aoMover);

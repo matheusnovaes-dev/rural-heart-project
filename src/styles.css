@@ -518,3 +518,46 @@ html.lenis body {
 .lenis.lenis-stopped {
   overflow: clip;
 }
+
+/* Brilho da faixa gigante (versão leve, vale no celular): dois borrões radiais derivando devagar. */
+.faixa-brilho span {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(36px);
+  will-change: transform;
+}
+.faixa-brilho-a {
+  width: 62%;
+  height: 150%;
+  top: -25%;
+  left: -8%;
+  background: radial-gradient(closest-side, oklch(0.78 0.15 65 / 0.42), transparent);
+  animation: faixa-deriva-a 16s ease-in-out infinite alternate;
+}
+.faixa-brilho-b {
+  width: 55%;
+  height: 130%;
+  top: -15%;
+  right: -10%;
+  background: radial-gradient(closest-side, oklch(0.7 0.12 110 / 0.34), transparent);
+  animation: faixa-deriva-b 21s ease-in-out infinite alternate;
+}
+@keyframes faixa-deriva-a {
+  to {
+    transform: translate3d(48%, 14%, 0) scale(1.15);
+  }
+}
+@keyframes faixa-deriva-b {
+  to {
+    transform: translate3d(-52%, -10%, 0) scale(0.9);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .faixa-brilho span {
+    animation: none;
+  }
+}
+/* No desktop o WebGL assume o brilho */
+[data-glow] .faixa-brilho {
+  display: none;
+}
