@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { useNavigate } from "@tanstack/react-router";
-import type { Session } from "@supabase/supabase-js";
+import { useLocation, useNavigate } from "@tanstack/react-router";
+import type { Session, SupabaseClient } from "@supabase/supabase-js";
 
-import { supabase } from "@/lib/supabase";
+import { carregarSupabase } from "@/lib/supabaseLazy";
 
 export type Produtor = {
   id: string;
@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [cooperativa, setCooperativa] = useState<Cooperativa | null>(null);
   const [papel, setPapel] = useState<"admin" | "membro" | null>(null);
 
-  async function loadProfile(currentSession: Session | null) {
+  async function loadProfile(supabase: SupabaseClient | null, currentSession: Session | null) {
     if (!supabase || !currentSession) {
       setProdutor(null);
       setCooperativa(null);
@@ -79,39 +79,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function refresh() {
+    const supabase = await carregarSupabase();
     if (!supabase) return;
     const {
       data: { session: currentSession },
     } = await supabase.auth.getSession();
     setSession(currentSession);
-    await loadProfile(currentSession);
+    await loadProfile(supabase, currentSession);
   }
 
+  // Na landing ("/") ninguém precisa da sessão para ver a página: o cliente do Supabase (52KB) é carregado com o
+  // navegador ocioso, depois do primeiro desenho. Em qualquer outra rota (login, painel, acesso) começa já.
+  // Se a pessoa sai da landing antes do ocioso, a mudança de rota dispara a inicialização na hora.
+  const naLanding = useLocation({ select: (l) => l.pathname === "/" });
   useEffect(() => {
-    if (!supabase) {
-      setLoading(false);
-      return;
-    }
-
     let active = true;
+    let cancelarEspera: (() => void) | undefined;
+    let desinscrever: (() => void) | undefined;
 
-    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
+    const iniciar = async () => {
+      const supabase = await carregarSupabase();
+      if (!active) return;
+      if (!supabase) {
+        setLoading(false);
+        return;
+      }
+      const {
+        data: { session: currentSession },
+      } = await supabase.auth.getSession();
       if (!active) return;
       setSession(currentSession);
-      await loadProfile(currentSession);
-      if (active) setLoading(false);
-    });
+      await loadProfile(supabase, currentSession);
+      if (!active) return;
+      setLoading(false);
+      const { data: subscription } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+        setSession(newSession);
+        await loadProfile(supabase, newSession);
+      });
+      desinscrever = () => subscription.subscription.unsubscribe();
+    };
 
-    const { data: subscription } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
-      setSession(newSession);
-      await loadProfile(newSession);
-    });
+    if (naLanding) {
+      // espera a página terminar de carregar e mais 3s, para o cliente do Supabase não disputar banda com o LCP
+      let timer: number | undefined;
+      const agendar = () => {
+        timer = window.setTimeout(() => void iniciar(), 3000);
+      };
+      if (document.readyState === "complete") agendar();
+      else window.addEventListener("load", agendar, { once: true });
+      cancelarEspera = () => {
+        window.removeEventListener("load", agendar);
+        if (timer !== undefined) window.clearTimeout(timer);
+      };
+    } else {
+      void iniciar();
+    }
 
     return () => {
       active = false;
-      subscription.subscription.unsubscribe();
+      cancelarEspera?.();
+      desinscrever?.();
     };
-  }, []);
+  }, [naLanding]);
 
   return (
     <AuthContext.Provider value={{ loading, session, produtor, cooperativa, papel, refresh }}>

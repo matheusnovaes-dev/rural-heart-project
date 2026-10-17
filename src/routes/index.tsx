@@ -1,3 +1,4 @@
+import { MIDIA } from "@/assets/midia";
 import { IntroAssinatura } from "@/components/landing/IntroAssinatura";
 import { FundoDosCapitulos } from "@/components/landing/FundoDosCapitulos";
 import { MapaBrasilFundo } from "@/components/landing/MapaBrasilFundo";
@@ -35,6 +36,34 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/")({
   validateSearch: searchSchema,
   head: () => ({
+    links: [
+      // A foto do hero é o LCP em todos os tamanhos de tela. Sem isto ela só era pedida depois dos scripts e fontes, e em
+      // rede lenta ficava para trás. Cada preload só vale para a faixa de tela da versão que o <picture> escolheria.
+      {
+        rel: "preload",
+        as: "image",
+        href: MIDIA.hero828,
+        type: "image/webp",
+        media: "(max-width: 640px)",
+        fetchPriority: "high" as const,
+      },
+      {
+        rel: "preload",
+        as: "image",
+        href: MIDIA.hero1000Webp,
+        type: "image/webp",
+        media: "(min-width: 641px) and (max-width: 1099px)",
+        fetchPriority: "high" as const,
+      },
+      {
+        rel: "preload",
+        as: "image",
+        href: MIDIA.hero1920,
+        type: "image/webp",
+        media: "(min-width: 1100px)",
+        fetchPriority: "high" as const,
+      },
+    ],
     scripts: [
       {
         // Decide, ANTES da primeira pintura, se a abertura com a assinatura roda: só desktop de verdade (tela larga, mouse,

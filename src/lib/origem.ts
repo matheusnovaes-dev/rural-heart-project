@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { carregarSupabase } from "@/lib/supabaseLazy";
 
 /**
  * De onde veio o visitante (UTM, anúncio, Instagram, direto), guardado no
@@ -89,6 +89,7 @@ export async function inserirComOrigem(
   tabela: TabelaComOrigem,
   linha: Record<string, unknown>,
 ): Promise<void> {
+  const supabase = await carregarSupabase();
   if (!supabase) return;
   const origem = lerOrigem();
   const { error } = await supabase.from(tabela).insert(origem ? { ...linha, ...origem } : linha);
@@ -98,6 +99,8 @@ export async function inserirComOrigem(
 /** Depois de criar o produtor: anota a origem nele (best-effort, ignora erro). */
 export async function anotarOrigemDoProdutor(produtorId: string): Promise<void> {
   const origem = lerOrigem();
-  if (!supabase || !origem) return;
+  if (!origem) return;
+  const supabase = await carregarSupabase();
+  if (!supabase) return;
   await supabase.from("produtores").update(origem).eq("id", produtorId);
 }

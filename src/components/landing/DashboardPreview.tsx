@@ -32,7 +32,7 @@ import { Badge } from "@/components/ui/badge";
 import { Sparkline } from "@/components/dashboard/Sparkline";
 import { AnimatedNumber } from "@/components/dashboard/AnimatedNumber";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/lib/supabase";
+import { carregarSupabase } from "@/lib/supabaseLazy";
 import { buscarPrecosDaUf } from "@/lib/precos";
 import { useExemplosDoDia, useHoje } from "@/hooks/useExemplosDoDia";
 import { brl2, haDiasAtras, proximosDecendios } from "@/lib/exemplosLanding";
@@ -48,26 +48,31 @@ import { MIDIA } from "@/assets/midia";
  * ilustrativo de sempre — a legenda "dados de exemplo" continua valendo
  * nesse meio tempo.
  */
-function usePrecosReaisSoja() {
+function usePrecosReaisSoja(perto: boolean) {
   const [precos, setPrecos] = useState<{ GO: number; MT: number; PR: number } | null>(null);
 
+  // Só busca quando a prévia está perto de aparecer: o cliente do Supabase (52KB) e as 3 consultas não disputam
+  // banda com o primeiro desenho da landing.
   useEffect(() => {
-    if (!supabase) return;
+    if (!perto) return;
     let cancelado = false;
-    Promise.all(
-      (["GO", "MT", "PR"] as const).map((uf) =>
-        buscarPrecosDaUf(supabase!, "soja", uf)
-          .then((r) => r.serieEstado.at(-1)?.preco ?? null)
-          .catch(() => null),
-      ),
-    ).then(([go, mt, pr]) => {
-      if (cancelado) return;
-      if (go != null && mt != null && pr != null) setPrecos({ GO: go, MT: mt, PR: pr });
+    carregarSupabase().then((supabase) => {
+      if (!supabase || cancelado) return;
+      Promise.all(
+        (["GO", "MT", "PR"] as const).map((uf) =>
+          buscarPrecosDaUf(supabase, "soja", uf)
+            .then((r) => r.serieEstado.at(-1)?.preco ?? null)
+            .catch(() => null),
+        ),
+      ).then(([go, mt, pr]) => {
+        if (cancelado) return;
+        if (go != null && mt != null && pr != null) setPrecos({ GO: go, MT: mt, PR: pr });
+      });
     });
     return () => {
       cancelado = true;
     };
-  }, []);
+  }, [perto]);
 
   return precos;
 }
@@ -124,6 +129,7 @@ const legendas: Record<AbaId, string> = {
 
 export function DashboardPreview() {
   const raiz = useRef<HTMLDivElement>(null);
+  const [perto, setPerto] = useState(false);
   // As fontes do painel (DM Sans e Space Grotesk, ~85 KB) só são baixadas quando o mockup está perto de aparecer.
   useEffect(() => {
     const el = raiz.current;
@@ -132,6 +138,7 @@ export function DashboardPreview() {
       ([e]) => {
         if (e?.isIntersecting) {
           carregarFonte(FONTES_PAINEL_URL);
+          setPerto(true);
           io.disconnect();
         }
       },
@@ -164,7 +171,7 @@ export function DashboardPreview() {
   });
   const [autoplay, setAutoplay] = useState(true);
   const retomarTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const precosReais = usePrecosReaisSoja();
+  const precosReais = usePrecosReaisSoja(perto);
 
   // Cursor fantasma: mede a posição real do botão ativo (getBoundingClientRect,
   // não um cálculo de índice × altura fixa, que quebraria se o texto quebrasse

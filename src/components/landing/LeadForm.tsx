@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+import { carregarSupabase } from "@/lib/supabaseLazy";
 import { normalizarWhatsapp } from "@/lib/telefone";
 import { useAuth } from "@/lib/auth";
 import { buildWhatsAppLink, pricingPlans } from "@/config/site";
@@ -154,15 +154,18 @@ export function LeadForm({
   const [semDadoNoEstado, setSemDadoNoEstado] = useState(false);
   useEffect(() => {
     setSemDadoNoEstado(false);
-    if (!supabase || !cultura || !ufEscolhida) return;
+    if (!cultura || !ufEscolhida) return;
     let ativo = true;
     // A tabela de preços só é legível com login e este formulário roda sem
     // login: a função devolve só "há preço recente?", sem expor dado.
-    supabase
-      .rpc("tem_preco_recente", { p_cultura: normalizarCultura(cultura), p_uf: ufEscolhida })
-      .then(({ data, error }) => {
-        if (ativo && !error && data === false) setSemDadoNoEstado(true);
-      });
+    carregarSupabase().then((supabase) => {
+      if (!ativo || !supabase) return;
+      supabase
+        .rpc("tem_preco_recente", { p_cultura: normalizarCultura(cultura), p_uf: ufEscolhida })
+        .then(({ data, error }) => {
+          if (ativo && !error && data === false) setSemDadoNoEstado(true);
+        });
+    });
     return () => {
       ativo = false;
     };
@@ -212,6 +215,7 @@ export function LeadForm({
   ) {
     // Precisa de await de verdade — sem isso, o insert nunca chega a sair
     // (query builder do supabase-js é lazy, só dispara ao ser consumido).
+    const supabase = await carregarSupabase();
     await supabase?.from("cadastro_falhas").insert({ origem: "leadform", etapa, erro, whatsapp });
   }
 
@@ -221,7 +225,8 @@ export function LeadForm({
     // pessoa ver os campos da etapa 2. Isso bloqueia esse caminho mesmo se
     // o Enter escapar do onKeyDown da etapa 1.
     if (step !== 2) return;
-    if (!isSupabaseConfigured || !supabase) return;
+    const supabase = await carregarSupabase();
+    if (!supabase) return;
     setStatus("submitting");
     setErroMsg("");
     setCadastroJaExiste(false);

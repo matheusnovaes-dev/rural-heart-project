@@ -13,6 +13,9 @@ import { useEffect, type ReactNode } from "react";
 import { MotionConfig } from "framer-motion";
 
 import appCss from "../styles.css?url";
+import bricolageUrl from "../assets/fontes/bricolage-latin.woff2?url";
+import plexSansUrl from "../assets/fontes/plexsans-latin.woff2?url";
+
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "../lib/auth";
 import { Toaster } from "../components/ui/sonner";
@@ -21,14 +24,9 @@ import { pricingPlans } from "../config/site";
 import { capturarOrigem } from "../lib/origem";
 import { FONTES_PAINEL_URL } from "../lib/fontes";
 
-// Fontes em duas levas (auditoria de performance 2026-10-13: FCP de 3,9s em 4G
-// lento e CSS do Google Fonts bloqueando a renderização com 5 famílias). Só o
-// que aparece na primeira tela (títulos e texto corrido) bloqueia; DM Sans e
-// Space Grotesk (escopo do painel), e IBM Plex Mono (números), entram logo
-// depois da hidratação, sem travar o primeiro desenho. font-display: swap em
-// ambas, então nada some enquanto carrega.
-const FONTES_CRITICAS_URL =
-  "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap";
+// Fontes: as críticas da landing e do login (Bricolage Grotesque e IBM Plex Sans) são do próprio domínio, declaradas em
+// styles.css e com preload no head (nada de CSS de terceiros bloqueando o primeiro desenho). Entram depois da hidratação,
+// sem travar nada: IBM Plex Mono (números) e as de destaque. No painel, DM Sans e Space Grotesk são as críticas.
 const FONTES_MONO_LANDING_URL =
   "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&display=swap";
 
@@ -159,14 +157,34 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://connect.facebook.net" },
       { rel: "preconnect", href: "https://www.facebook.com" },
       { rel: "preload", as: "script", href: "https://connect.facebook.net/en_US/fbevents.js" },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: matches.some((m) => m.routeId.startsWith("/dashboard"))
-          ? FONTES_PAINEL_URL
-          : FONTES_CRITICAS_URL,
-      },
+      // Landing e login: fontes críticas do próprio domínio (declaradas em styles.css), com preload; nada de CSS de
+      // terceiros bloqueando o primeiro desenho. Painel: DM Sans e Space Grotesk seguem pelo Google (ver acima).
+      ...(matches.some((m) => m.routeId.startsWith("/dashboard"))
+        ? [
+            { rel: "preconnect", href: "https://fonts.googleapis.com" },
+            {
+              rel: "preconnect",
+              href: "https://fonts.gstatic.com",
+              crossOrigin: "anonymous" as const,
+            },
+            { rel: "stylesheet", href: FONTES_PAINEL_URL },
+          ]
+        : [
+            {
+              rel: "preload",
+              as: "font",
+              type: "font/woff2",
+              href: bricolageUrl,
+              crossOrigin: "anonymous" as const,
+            },
+            {
+              rel: "preload",
+              as: "font",
+              type: "font/woff2",
+              href: plexSansUrl,
+              crossOrigin: "anonymous" as const,
+            },
+          ]),
       {
         rel: "stylesheet",
         href: appCss,
@@ -276,9 +294,7 @@ function RootComponent() {
     select: (s) => s.matches.some((m) => m.routeId.startsWith("/dashboard")),
   });
   useEffect(() => {
-    const urls = noPainel
-      ? [FONTES_CRITICAS_URL, FONTES_MONO_URL]
-      : [FONTES_MONO_LANDING_URL, FONTES_DESTAQUE_URL];
+    const urls = noPainel ? [FONTES_MONO_URL] : [FONTES_MONO_LANDING_URL, FONTES_DESTAQUE_URL];
     const carregar = () => {
       for (const href of urls) {
         if (document.querySelector(`link[href="${href}"]`)) continue;
