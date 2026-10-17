@@ -3,6 +3,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -16,7 +17,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { LeadForm, registrarInicioDeCadastro } from "@/components/landing/LeadForm";
+import { LeadFormCarregavel, precarregarLeadForm } from "@/components/landing/LeadFormCarregavel";
+import { registrarInicioDeCadastro } from "@/lib/cadastroInicio";
 import { trackLanding } from "@/lib/metaPixel";
 
 export type AbrirCadastroOpcoes = {
@@ -76,6 +78,26 @@ export function CadastroProvider({ children }: { children: ReactNode }) {
   const [barraFixaVisivel, setBarraFixaVisivel] = useState(false);
   const [heroEmTela, setHeroEmTela] = useState(true);
   const [ctaInlineVisivel, setCtaInlineVisivel] = useState(false);
+
+  // Baixa o formulário antes de precisar: com a página ociosa (depois do carregamento) e já no primeiro toque no campo
+  // de WhatsApp. Assim o modal abre com o formulário pronto, sem pôr esse JS no caminho do primeiro desenho.
+  useEffect(() => {
+    const aoFocar = (e: Event) => {
+      if ((e.target as HTMLElement | null)?.closest?.("form")) precarregarLeadForm();
+    };
+    document.addEventListener("focusin", aoFocar, { once: true });
+    const quando = () => {
+      if ("requestIdleCallback" in window)
+        window.requestIdleCallback(precarregarLeadForm, { timeout: 4000 });
+      else setTimeout(precarregarLeadForm, 2500);
+    };
+    if (document.readyState === "complete") quando();
+    else window.addEventListener("load", quando, { once: true });
+    return () => {
+      document.removeEventListener("focusin", aoFocar);
+      window.removeEventListener("load", quando);
+    };
+  }, []);
 
   const abrirCadastro = useCallback((opcoes: AbrirCadastroOpcoes = {}) => {
     // Número já digitado = início do cadastro registrado aqui, uma vez, e o
@@ -139,7 +161,7 @@ export function CadastroProvider({ children }: { children: ReactNode }) {
             </DialogDescription>
           </DialogHeader>
           {sessao && (
-            <LeadForm
+            <LeadFormCarregavel
               key={sessao.id}
               iniciarNaEtapa2={jaTemWhatsapp}
               autoFocar={podeAutoFocar}

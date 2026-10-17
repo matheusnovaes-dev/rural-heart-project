@@ -4,7 +4,7 @@ import { ArrowRight, Check } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 import { Reveal } from "@/components/landing/Reveal";
-import { LeadForm } from "@/components/landing/LeadForm";
+import { LeadFormAoChegar } from "@/components/landing/LeadFormCarregavel";
 
 const garantias = [
   "Direto no seu painel, sem esperar contato",
@@ -57,7 +57,7 @@ export function FinalCta() {
               automático, o navegador rolava a página até aqui assim que ela
               carregava (scrollY de 0 até ~10 mil px e de volta), o que
               causava o "pulo" visível e boa parte do CLS. */}
-          <LeadForm
+          <LeadFormAoChegar
             autoFocar={false}
             className="rounded-2xl border border-border bg-card p-6 sm:p-8"
           />

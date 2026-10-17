@@ -1,20 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Loader2, MessageCircle } from "lucide-react";
-import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { buildWhatsAppLink, siteConfig } from "@/config/site";
 
-import { paramLiteral, paramTexto } from "@/lib/searchParams";
+import { lerLiteral, lerTexto, parametros } from "@/lib/searchParams";
 import { MIDIA } from "@/assets/midia";
 
-const searchSchema = z.object({ t: paramTexto, destino: paramLiteral("assinar") });
+const validarBusca = (busca: Record<string, unknown>) =>
+  parametros({ t: lerTexto(busca["t"]), destino: lerLiteral(busca["destino"], "assinar") });
 
 export const Route = createFileRoute("/acesso")({
-  validateSearch: searchSchema,
+  validateSearch: validarBusca,
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
   component: AcessoPage,
 });

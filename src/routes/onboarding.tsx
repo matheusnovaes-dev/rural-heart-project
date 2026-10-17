@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { z } from "zod";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -28,20 +27,20 @@ import { pricingPlans } from "@/config/site";
 import { lerCookiesMeta, trackCadastroConcluido } from "@/lib/metaPixel";
 import { trackConversaoServidor } from "@/lib/metaCapi.server";
 
-import { paramEnum, paramLiteral, paramUuid } from "@/lib/searchParams";
+import { lerEnum, lerLiteral, lerUuid, parametros } from "@/lib/searchParams";
 
-const searchSchema = z.object({
-  convite: paramUuid,
-  equipe: paramUuid,
-  plano: paramEnum(["bronze", "prata", "ouro"]),
-  // "1" = veio do fluxo "prefere assinar direto" (pulou o teste grátis de
-  // propósito) — string em vez de boolean pra não depender de coerção de
-  // query param.
-  semTrial: paramLiteral("1"),
-});
+// semTrial "1" = veio do fluxo "prefere assinar direto" (pulou o teste grátis de
+// propósito) — string em vez de boolean pra não depender de coerção de query param.
+const validarBusca = (busca: Record<string, unknown>) =>
+  parametros({
+    convite: lerUuid(busca["convite"]),
+    equipe: lerUuid(busca["equipe"]),
+    plano: lerEnum(busca["plano"], ["bronze", "prata", "ouro"] as const),
+    semTrial: lerLiteral(busca["semTrial"], "1"),
+  });
 
 export const Route = createFileRoute("/onboarding")({
-  validateSearch: searchSchema,
+  validateSearch: validarBusca,
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
   component: OnboardingPage,
 });

@@ -22,24 +22,16 @@ import { Toaster } from "../components/ui/sonner";
 import { CookieConsent } from "../components/CookieConsent";
 import { pricingPlans } from "../config/site";
 import { capturarOrigem } from "../lib/origem";
-import { FONTES_PAINEL_URL } from "../lib/fontes";
+import { FONTES_PAINEL_URL, carregarFontesDaLanding } from "../lib/fontes";
 
 // Fontes: as críticas da landing e do login (Bricolage Grotesque e IBM Plex Sans) são do próprio domínio, declaradas em
 // styles.css e com preload no head (nada de CSS de terceiros bloqueando o primeiro desenho). Entram depois da hidratação,
-// sem travar nada: IBM Plex Mono (números) e as de destaque. No painel, DM Sans e Space Grotesk são as críticas.
-const FONTES_MONO_LANDING_URL =
-  "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&display=swap";
-
+// sem travar nada: IBM Plex Mono (números) e as de destaque, também do próprio domínio (carregarFontesDaLanding). No painel, DM Sans e Space Grotesk são as críticas.
 // No painel (/dashboard) o que aparece é DM Sans e Space Grotesk; Bricolage e IBM Plex Sans (da landing) não são
 // usadas ali e bloqueavam o primeiro desenho por ~115 KB. Lá a ordem inverte: as do painel são as críticas e as da
 // landing entram depois da hidratação (só para modais e telas fora do painel).
 const FONTES_MONO_URL =
   "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap";
-
-// Só as letras dos títulos grandes do carrossel de preços (serifa de alto contraste e traço de pincel):
-// o parâmetro text= entrega poucos KB em vez da família inteira.
-const FONTES_DESTAQUE_URL =
-  "https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Caveat+Brush&text=%26%3F%21%2C.-%2F0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ%C3%87%C3%83%C3%81%C3%80%C3%82%C3%89%C3%8A%C3%8D%C3%93%C3%94%C3%95%C3%9Ahojegr%C3%A1tis&display=swap";
 
 function NotFoundComponent() {
   return (
@@ -294,9 +286,12 @@ function RootComponent() {
     select: (s) => s.matches.some((m) => m.routeId.startsWith("/dashboard")),
   });
   useEffect(() => {
-    const urls = noPainel ? [FONTES_MONO_URL] : [FONTES_MONO_LANDING_URL, FONTES_DESTAQUE_URL];
     const carregar = () => {
-      for (const href of urls) {
+      if (!noPainel) {
+        carregarFontesDaLanding();
+        return;
+      }
+      for (const href of [FONTES_MONO_URL]) {
         if (document.querySelector(`link[href="${href}"]`)) continue;
         const link = document.createElement("link");
         link.rel = "stylesheet";

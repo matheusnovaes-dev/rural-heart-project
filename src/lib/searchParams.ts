@@ -1,5 +1,3 @@
-import { z } from "zod";
-
 /**
  * Parâmetros de URL tolerantes. O parser de query do roteador transforma "1"
  * em número e rejeitava qualquer valor fora do esperado, o que derrubava a
@@ -8,21 +6,41 @@ import { z } from "zod";
  * 2026-10-13, ao testar o cadastro). Agora: número vira texto e valor inválido
  * é ignorado (a página abre normal, sem o parâmetro). Importa porque links
  * montados à mão (bio do Instagram, ManyChat, anúncios) vão ter erro de digitação.
+ *
+ * Funções simples em vez de zod: a landing não carrega mais a biblioteca só pra ler dois parâmetros (~13 KB a menos).
  */
 const comoTexto = (valor: unknown) => (typeof valor === "number" ? String(valor) : valor);
 
-export const paramEnum = <const T extends readonly [string, ...string[]]>(valores: T) =>
-  z.preprocess(
-    comoTexto,
-    z
-      .enum(valores as unknown as [T[number], ...T[number][]])
-      .optional()
-      .catch(undefined),
-  );
+export const lerEnum = <const T extends readonly string[]>(
+  valor: unknown,
+  valores: T,
+): T[number] | undefined => {
+  const texto = comoTexto(valor);
+  return typeof texto === "string" && (valores as readonly string[]).includes(texto)
+    ? (texto as T[number])
+    : undefined;
+};
 
-export const paramLiteral = <T extends string>(valor: T) =>
-  z.preprocess(comoTexto, z.literal(valor).optional().catch(undefined));
+export const lerLiteral = <T extends string>(valor: unknown, esperado: T): T | undefined =>
+  comoTexto(valor) === esperado ? esperado : undefined;
 
-export const paramUuid = z.preprocess(comoTexto, z.string().uuid().optional().catch(undefined));
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const lerUuid = (valor: unknown): string | undefined => {
+  const texto = comoTexto(valor);
+  return typeof texto === "string" && UUID.test(texto) ? texto : undefined;
+};
 
-export const paramTexto = z.preprocess(comoTexto, z.string().optional().catch(undefined));
+export const lerTexto = (valor: unknown): string | undefined => {
+  const texto = comoTexto(valor);
+  return typeof texto === "string" ? texto : undefined;
+};
+
+/** Tira as chaves sem valor (o tipo do parâmetro fica opcional, como o roteador espera). */
+export function parametros<T extends Record<string, unknown>>(
+  objeto: T,
+): { [K in keyof T]?: T[K] } {
+  const saida: Record<string, unknown> = {};
+  for (const [chave, valor] of Object.entries(objeto))
+    if (valor !== undefined) saida[chave] = valor;
+  return saida as { [K in keyof T]?: T[K] };
+}

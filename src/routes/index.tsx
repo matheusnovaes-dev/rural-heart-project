@@ -5,7 +5,6 @@ import { MapaBrasilFundo } from "@/components/landing/MapaBrasilFundo";
 import { DesktopFXLoader } from "@/components/landing/desktop/DesktopFXLoader";
 import { FaixaGigante } from "@/components/landing/FaixaGigante";
 import { createFileRoute } from "@tanstack/react-router";
-import { z } from "zod";
 
 import { Header } from "@/components/landing/Header";
 import { PrecosCarrossel } from "@/components/landing/PrecosCarrossel";
@@ -25,16 +24,15 @@ import { WhatsAppFloatingButton } from "@/components/landing/WhatsAppFloatingBut
 import { BarraCtaFixa } from "@/components/landing/BarraCtaFixa";
 import { CadastroProvider } from "@/components/landing/CadastroProvider";
 
-import { paramLiteral } from "@/lib/searchParams";
+import { lerLiteral, parametros } from "@/lib/searchParams";
 
-const searchSchema = z.object({
-  // "1" = veio do link "prefere assinar direto" — os botões de plano abaixo
-  // devem pular o teste grátis e cobrar imediatamente.
-  semTrial: paramLiteral("1"),
-});
+// "1" = veio do link "prefere assinar direto" — os botões de plano abaixo
+// devem pular o teste grátis e cobrar imediatamente.
+const validarBusca = (busca: Record<string, unknown>) =>
+  parametros({ semTrial: lerLiteral(busca["semTrial"], "1") });
 
 export const Route = createFileRoute("/")({
-  validateSearch: searchSchema,
+  validateSearch: validarBusca,
   head: () => ({
     links: [
       // A foto do hero é o LCP em todos os tamanhos de tela. Sem isto ela só era pedida depois dos scripts e fontes, e em

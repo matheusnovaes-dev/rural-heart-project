@@ -17,7 +17,6 @@ import {
   ArrowRight,
   MessageCircle,
 } from "lucide-react";
-import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,16 +69,17 @@ const ticker = [
   "CAFÉ ARÁBICA em alta na semana",
 ];
 
-import { paramEnum, paramLiteral } from "@/lib/searchParams";
+import { lerEnum, lerLiteral, parametros } from "@/lib/searchParams";
 import { MIDIA } from "@/assets/midia";
 
-const searchSchema = z.object({
-  plano: paramEnum(["bronze", "prata", "ouro"]),
-  semTrial: paramLiteral("1"),
-});
+const validarBusca = (busca: Record<string, unknown>) =>
+  parametros({
+    plano: lerEnum(busca["plano"], ["bronze", "prata", "ouro"] as const),
+    semTrial: lerLiteral(busca["semTrial"], "1"),
+  });
 
 export const Route = createFileRoute("/login")({
-  validateSearch: searchSchema,
+  validateSearch: validarBusca,
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
   component: LoginPage,
 });
