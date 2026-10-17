@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell, CloudRain, Loader2, MapPin } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 import { supabase } from "@/lib/supabase";
@@ -63,7 +63,7 @@ export function CooperativaInsights({ cooperativaId }: { cooperativaId: string }
 
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      <InsightCard icon={MapPin} tone="neutral" title="Cobertura">
+      <InsightCard marca="consultor-mapa" tone="neutral" title="Cobertura">
         <span className="font-mono font-semibold tabular-nums">{produtores.length}</span> produtor
         {produtores.length === 1 ? "" : "es"} em{" "}
         <span className="font-mono font-semibold tabular-nums">{ufsUnicas.length}</span> UF
@@ -81,7 +81,7 @@ export function CooperativaInsights({ cooperativaId }: { cooperativaId: string }
       </InsightCard>
 
       <InsightCard
-        icon={Bell}
+        marca="alerta"
         tone={alertasDisparados && alertasDisparados > 0 ? "up" : "neutral"}
         title="Alertas (7 dias)"
       >
@@ -106,7 +106,7 @@ export function CooperativaInsights({ cooperativaId }: { cooperativaId: string }
 
       {temAcessoPrata(plano) && (
         <InsightCard
-          icon={CloudRain}
+          marca="chuva"
           tone={ufsComRisco != null && ufsComRisco > 0 ? "warn" : "neutral"}
           title="Clima"
         >

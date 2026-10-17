@@ -1,23 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import {
-  Bell,
-  Calculator,
-  CloudSun,
-  CreditCard,
-  FileDown,
-  HardHat,
-  LayoutDashboard,
-  LifeBuoy,
-  LineChart,
-  ListChecks,
-  LogOut,
-  Megaphone,
-  Palette,
-  TrendingUp,
-  Users,
-  UsersRound,
-} from "lucide-react";
+import { LogOut } from "lucide-react";
 
 import {
   CommandDialog,
@@ -30,46 +13,63 @@ import {
 } from "@/components/ui/command";
 import { EMAIL_SAFRALUME_ADMIN, useAuth } from "@/lib/auth";
 import { useSair } from "@/components/dashboard/useSair";
+import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 
-type Destino = { to: string; label: string; icon: typeof Bell };
+type Destino = {
+  to: string;
+  label: string;
+  icon: (props: { className?: string }) => React.ReactNode;
+};
 
 const DESTINOS_PRODUTOR: Destino[] = [
-  { to: "/dashboard", label: "Início", icon: LayoutDashboard },
-  { to: "/dashboard/calculadora", label: "Calculadora de safra", icon: Calculator },
-  { to: "/dashboard/alertas", label: "Alertas de preço", icon: TrendingUp },
-  { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
-  { to: "/dashboard/funcionarios", label: "Funcionários", icon: HardHat },
-  { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
-  { to: "/dashboard/suporte", label: "Suporte", icon: LifeBuoy },
+  { to: "/dashboard", label: "Início", icon: IconesSafralume["inicio"] },
+  {
+    to: "/dashboard/calculadora",
+    label: "Calculadora de safra",
+    icon: IconesSafralume["calculadora-safra"],
+  },
+  { to: "/dashboard/alertas", label: "Alertas de preço", icon: IconesSafralume["alerta"] },
+  { to: "/dashboard/lembretes", label: "Lembretes", icon: IconesSafralume["lembrete"] },
+  { to: "/dashboard/funcionarios", label: "Funcionários", icon: IconesSafralume["equipe"] },
+  { to: "/dashboard/clima", label: "Clima", icon: IconesSafralume["clima-sol"] },
+  { to: "/dashboard/suporte", label: "Suporte", icon: IconesSafralume["suporte"] },
 ];
 
 const DESTINOS_COOPERATIVA: Destino[] = [
-  { to: "/dashboard", label: "Visão geral", icon: LayoutDashboard },
-  { to: "/dashboard/precos", label: "Preços", icon: LineChart },
-  { to: "/dashboard/calculadora", label: "Calculadora de safra", icon: Calculator },
-  { to: "/dashboard/alertas", label: "Alertas de preço", icon: TrendingUp },
-  { to: "/dashboard/produtores", label: "Produtores", icon: Users },
-  { to: "/dashboard/lembretes", label: "Lembretes", icon: Bell },
-  { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
-  { to: "/dashboard/suporte", label: "Suporte", icon: LifeBuoy },
+  { to: "/dashboard", label: "Visão geral", icon: IconesSafralume["inicio"] },
+  { to: "/dashboard/precos", label: "Preços", icon: IconesSafralume["preco"] },
+  {
+    to: "/dashboard/calculadora",
+    label: "Calculadora de safra",
+    icon: IconesSafralume["calculadora-safra"],
+  },
+  { to: "/dashboard/alertas", label: "Alertas de preço", icon: IconesSafralume["alerta"] },
+  { to: "/dashboard/produtores", label: "Produtores", icon: IconesSafralume["produtor"] },
+  { to: "/dashboard/lembretes", label: "Lembretes", icon: IconesSafralume["lembrete"] },
+  { to: "/dashboard/clima", label: "Clima", icon: IconesSafralume["clima-sol"] },
+  { to: "/dashboard/suporte", label: "Suporte", icon: IconesSafralume["suporte"] },
 ];
 
 const DESTINOS_ADMIN: Destino[] = [
-  { to: "/dashboard/equipe", label: "Equipe", icon: UsersRound },
-  { to: "/dashboard/marca", label: "Marca própria", icon: Palette },
-  { to: "/dashboard/relatorios", label: "Relatórios", icon: FileDown },
-  { to: "/dashboard/assinatura", label: "Assinatura", icon: CreditCard },
+  { to: "/dashboard/equipe", label: "Equipe", icon: IconesSafralume["equipe"] },
+  { to: "/dashboard/marca", label: "Marca própria", icon: IconesSafralume["marca"] },
+  { to: "/dashboard/relatorios", label: "Relatórios", icon: IconesSafralume["relatorio"] },
+  { to: "/dashboard/assinatura", label: "Assinatura", icon: IconesSafralume["assinatura"] },
 ];
 
 const DESTINO_ASSINATURA: Destino = {
   to: "/dashboard/assinatura",
   label: "Assinatura",
-  icon: CreditCard,
+  icon: IconesSafralume["assinatura"],
 };
 
 // Mesma checagem de _layout.tsx (EMAIL_SAFRALUME_ADMIN) — a RLS de `leads`
 // só libera esse e-mail, então o atalho não pode aparecer pra mais ninguém.
-const DESTINO_LEADS: Destino = { to: "/dashboard/leads", label: "Leads", icon: Megaphone };
+const DESTINO_LEADS: Destino = {
+  to: "/dashboard/leads",
+  label: "Leads",
+  icon: IconesSafralume["leads"],
+};
 
 /**
  * Paleta ⌘K — atalho de poder pra quem usa o painel todo dia, sem adicionar
@@ -127,7 +127,7 @@ export function CommandPalette() {
           <CommandGroup heading="Ir para">
             {destinos.map((d) => (
               <CommandItem key={d.to} value={d.label} onSelect={() => ir(d.to)}>
-                <d.icon className="mr-2 size-4" />
+                <d.icon className="mr-2 size-5" />
                 {d.label}
               </CommandItem>
             ))}

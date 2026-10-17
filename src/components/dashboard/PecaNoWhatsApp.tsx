@@ -1,4 +1,4 @@
-import { MessageCircle } from "lucide-react";
+import { SafralumeIcon } from "@/components/icons/SafralumeIcon";
 
 import { normalizarCultura } from "@/config/culturas";
 import { buildWhatsAppLink } from "@/config/site";
@@ -54,9 +54,7 @@ export function PecaNoWhatsApp({ cultura, uf }: { cultura: string | null; uf: st
       className="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5"
     >
       <div className="flex items-start gap-3">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-          <MessageCircle className="size-4" />
-        </span>
+        <SafralumeIcon nome="whatsapp" className="size-9 shrink-0" />
         <div>
           <h2 id="peca-no-whatsapp" className="text-base font-semibold text-foreground">
             O que mais você pode pedir no WhatsApp

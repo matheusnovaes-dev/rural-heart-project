@@ -1,13 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  AlertTriangle,
-  Bell,
-  Gauge,
-  Loader2,
-  Target,
-  TrendingDown,
-  TrendingUp,
-} from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
@@ -327,7 +319,7 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       {sinalVenda && (
-        <InsightCard icon={Target} tone={sinalVenda.tone} title="Sinal de venda">
+        <InsightCard marca="sinal-venda" tone={sinalVenda.tone} title="Sinal de venda">
           {posicao != null && <SinalVendaGauge posicao={posicao} />}
           {sinalVenda.texto}
           <p className="mt-1.5 text-xs text-muted-foreground">
@@ -339,7 +331,7 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
 
       {semHistorico && temDadoRegional && tendenciaRegional && (
         <InsightCard
-          icon={tendenciaRegional.variacao >= 0 ? TrendingUp : TrendingDown}
+          marca={tendenciaRegional.variacao >= 0 ? "preco-alta" : "preco-baixa"}
           tone={
             tendenciaRegional.variacao > 0.5
               ? "up"
@@ -367,14 +359,14 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
         </InsightCard>
       )}
       {semHistorico && temDadoRegional && !tendenciaRegional && (
-        <InsightCard icon={Gauge} tone="neutral" title="Sem histórico ainda">
+        <InsightCard marca="sinal-venda" tone="neutral" title="Sem histórico ainda">
           <strong>{cultura}</strong> em <strong>{uf}</strong> só tem preço por região (não um número
           único do estado), dá pra ver isso no card "Seu preço hoje" acima. Ainda não tem histórico
           suficiente das regiões pra calcular tendência.
         </InsightCard>
       )}
       {semHistorico && !temDadoRegional && (
-        <InsightCard icon={Gauge} tone="neutral" title="Sem histórico ainda">
+        <InsightCard marca="sinal-venda" tone="neutral" title="Sem histórico ainda">
           Ainda não temos preço registrado pra <strong>{cultura}</strong> em <strong>{uf}</strong>.
           Assim que a Conab publicar, a tendência aparece aqui automaticamente.
         </InsightCard>
@@ -382,7 +374,7 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
 
       {tendencia && (
         <InsightCard
-          icon={anomalia ? AlertTriangle : tendencia.variacao >= 0 ? TrendingUp : TrendingDown}
+          marca={anomalia ? "alerta" : tendencia.variacao >= 0 ? "preco-alta" : "preco-baixa"}
           tone={
             anomalia
               ? "warn"
@@ -410,7 +402,7 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
       )}
 
       {divergenciaFonte && (
-        <InsightCard icon={AlertTriangle} tone="warn" title="Divergência entre fontes">
+        <InsightCard marca="alerta" tone="warn" title="Divergência entre fontes">
           Conab está em{" "}
           <span className="font-mono font-semibold tabular-nums">
             R$ {divergenciaFonte.conab.toFixed(2)}
@@ -428,7 +420,7 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
       )}
 
       {posicao != null && (
-        <InsightCard icon={Gauge} tone="neutral" title="Variação dos últimos 90 dias">
+        <InsightCard marca="sinal-venda" tone="neutral" title="Variação dos últimos 90 dias">
           Nesse período, o preço ficou entre{" "}
           <span className="font-mono font-semibold tabular-nums">R$ {min.toFixed(2)}</span> e{" "}
           <span className="font-mono font-semibold tabular-nums">R$ {max.toFixed(2)}</span>. Hoje
@@ -442,7 +434,7 @@ export function InsightsPanel({ produtor }: { produtor: Produtor }) {
       )}
 
       {temAlertaAtivo === false && (
-        <InsightCard icon={Bell} tone="warn" title="Sem alerta ativo">
+        <InsightCard marca="alerta" tone="warn" title="Sem alerta ativo">
           <p className="mb-2">
             Você não tem nenhum alerta de preço pra essa cultura. Crie um pra ser avisado quando o
             preço cruzar um valor.

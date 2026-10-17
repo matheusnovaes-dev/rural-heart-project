@@ -3,7 +3,6 @@ import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "framer-motion";
 import {
-  LineChart,
   TrendingUp,
   CloudSun,
   ArrowUp,
@@ -37,6 +36,7 @@ import { buscarPrecosDaUf } from "@/lib/precos";
 import { useExemplosDoDia, useHoje } from "@/hooks/useExemplosDoDia";
 import { brl2, haDiasAtras, proximosDecendios } from "@/lib/exemplosLanding";
 import { MIDIA } from "@/assets/midia";
+import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 
 /**
  * Preço real de soja (GO/MT/PR) pra substituir o número ilustrativo no
@@ -97,17 +97,32 @@ type AbaId =
   | "suporte"
   | "acompanhamento";
 
-const abas: { id: AbaId; label: string; icon: typeof LineChart; plano: PlanoId }[] = [
-  { id: "precos", label: "Preços", icon: LineChart, plano: "bronze" },
-  { id: "sinal", label: "Sinal de venda", icon: Target, plano: "bronze" },
-  { id: "alertas", label: "Alertas & lembretes", icon: Bell, plano: "bronze" },
-  { id: "clima", label: "Clima", icon: CloudSun, plano: "bronze" },
-  { id: "plantio", label: "Plantio", icon: Sprout, plano: "bronze" },
-  { id: "ferrugem", label: "Ferrugem", icon: Bug, plano: "bronze" },
-  { id: "insumos", label: "Insumos", icon: FlaskConical, plano: "prata" },
-  { id: "leiloes", label: "Leilões", icon: Gavel, plano: "prata" },
-  { id: "suporte", label: "Suporte", icon: LifeBuoy, plano: "bronze" },
-  { id: "acompanhamento", label: "Acompanhamento", icon: Star, plano: "ouro" },
+const abas: {
+  id: AbaId;
+  label: string;
+  icon: (props: { className?: string }) => React.ReactNode;
+  plano: PlanoId;
+}[] = [
+  { id: "precos", label: "Preços", icon: IconesSafralume["preco"], plano: "bronze" },
+  { id: "sinal", label: "Sinal de venda", icon: IconesSafralume["sinal-venda"], plano: "bronze" },
+  { id: "alertas", label: "Alertas & lembretes", icon: IconesSafralume["alerta"], plano: "bronze" },
+  { id: "clima", label: "Clima", icon: IconesSafralume["clima-sol"], plano: "bronze" },
+  { id: "plantio", label: "Plantio", icon: IconesSafralume["janela-plantio"], plano: "bronze" },
+  {
+    id: "ferrugem",
+    label: "Ferrugem",
+    icon: IconesSafralume["ferrugem-asiatica"],
+    plano: "bronze",
+  },
+  { id: "insumos", label: "Insumos", icon: IconesSafralume["insumos"], plano: "prata" },
+  { id: "leiloes", label: "Leilões", icon: IconesSafralume["leilao"], plano: "prata" },
+  { id: "suporte", label: "Suporte", icon: IconesSafralume["suporte"], plano: "bronze" },
+  {
+    id: "acompanhamento",
+    label: "Acompanhamento",
+    icon: IconesSafralume["acompanhamento"],
+    plano: "ouro",
+  },
 ];
 
 const INTERVALO_AUTOPLAY = 3800;
@@ -343,7 +358,7 @@ export function DashboardPreview() {
                             : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
                         )}
                       >
-                        <item.icon className="size-4 shrink-0" />
+                        <item.icon className="size-6 shrink-0" />
                         <span className="hidden min-w-0 flex-1 truncate sm:inline">
                           {item.label}
                         </span>

@@ -41,6 +41,7 @@ import { useRequireProdutor } from "@/lib/auth";
 import { normalizarWhatsapp } from "@/lib/telefone";
 import { limiteFuncionarios, useAssinatura, type Plano } from "@/lib/planos";
 import { UpgradeButton } from "@/components/dashboard/UpgradeButton";
+import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 
 export const Route = createFileRoute("/dashboard/_layout/funcionarios")({
   component: FuncionariosPage,
@@ -94,7 +95,8 @@ function FuncionariosPage() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        icon={HardHat}
+        icon={IconesSafralume.equipe}
+        iconePersonalizado
         title="Funcionários"
         description={
           limite === 0

@@ -2,26 +2,7 @@ import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tan
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
-import {
-  LayoutDashboard,
-  LineChart,
-  TrendingUp,
-  UserRound,
-  Users,
-  ListChecks,
-  UsersRound,
-  Palette,
-  FileDown,
-  LogOut,
-  CloudSun,
-  Search,
-  CreditCard,
-  HardHat,
-  LifeBuoy,
-  Calculator,
-  Megaphone,
-  Gavel,
-} from "lucide-react";
+import { LogOut, Search } from "lucide-react";
 
 import {
   Sidebar,
@@ -49,6 +30,7 @@ import { useSair } from "@/components/dashboard/useSair";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { PainelEsqueleto } from "@/components/dashboard/PainelEsqueleto";
 import { MIDIA } from "@/assets/midia";
+import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 
 export const Route = createFileRoute("/dashboard/_layout")({
   head: () => ({
@@ -63,48 +45,68 @@ export const Route = createFileRoute("/dashboard/_layout")({
   component: DashboardGuard,
 });
 
-type NavItem = { to: string; label: string; icon: LucideIcon };
+type NavItem = {
+  to: string;
+  label: string;
+  icon: (props: { className?: string }) => React.ReactNode;
+};
 
 const produtorNavItemsBase: NavItem[] = [
-  { to: "/dashboard", label: "Início", icon: LayoutDashboard },
-  { to: "/dashboard/precos", label: "Preços", icon: LineChart },
-  { to: "/dashboard/calculadora", label: "Calculadora", icon: Calculator },
-  { to: "/dashboard/alertas", label: "Alertas", icon: TrendingUp },
-  { to: "/dashboard/leiloes", label: "Leilões", icon: Gavel },
-  { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
-  { to: "/dashboard/funcionarios", label: "Funcionários", icon: HardHat },
-  { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
-  { to: "/dashboard/suporte", label: "Suporte", icon: LifeBuoy },
+  { to: "/dashboard", label: "Início", icon: IconesSafralume["inicio"] },
+  { to: "/dashboard/precos", label: "Preços", icon: IconesSafralume["preco"] },
+  {
+    to: "/dashboard/calculadora",
+    label: "Calculadora",
+    icon: IconesSafralume["calculadora-safra"],
+  },
+  { to: "/dashboard/alertas", label: "Alertas", icon: IconesSafralume["alerta"] },
+  { to: "/dashboard/leiloes", label: "Leilões", icon: IconesSafralume["leilao"] },
+  { to: "/dashboard/lembretes", label: "Lembretes", icon: IconesSafralume["lembrete"] },
+  { to: "/dashboard/funcionarios", label: "Funcionários", icon: IconesSafralume["equipe"] },
+  { to: "/dashboard/clima", label: "Clima", icon: IconesSafralume["clima-sol"] },
+  { to: "/dashboard/suporte", label: "Suporte", icon: IconesSafralume["suporte"] },
 ];
 
 // Seção "Conta" (separada da navegação principal, no fim da barra): perfil e assinatura do produtor.
-const perfilNavItem: NavItem = { to: "/dashboard/perfil", label: "Meu perfil", icon: UserRound };
+const perfilNavItem: NavItem = {
+  to: "/dashboard/perfil",
+  label: "Meu perfil",
+  icon: IconesSafralume["perfil"],
+};
 
 const assinaturaNavItem: NavItem = {
   to: "/dashboard/assinatura",
   label: "Assinatura",
-  icon: CreditCard,
+  icon: IconesSafralume["assinatura"],
 };
 
-const leadsNavItem: NavItem = { to: "/dashboard/leads", label: "Leads", icon: Megaphone };
+const leadsNavItem: NavItem = {
+  to: "/dashboard/leads",
+  label: "Leads",
+  icon: IconesSafralume["leads"],
+};
 
 const cooperativaNavItemsBase: NavItem[] = [
-  { to: "/dashboard", label: "Visão geral", icon: LayoutDashboard },
-  { to: "/dashboard/precos", label: "Preços", icon: LineChart },
-  { to: "/dashboard/calculadora", label: "Calculadora", icon: Calculator },
-  { to: "/dashboard/alertas", label: "Alertas", icon: TrendingUp },
-  { to: "/dashboard/leiloes", label: "Leilões", icon: Gavel },
-  { to: "/dashboard/produtores", label: "Produtores", icon: Users },
-  { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
-  { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
-  { to: "/dashboard/suporte", label: "Suporte", icon: LifeBuoy },
+  { to: "/dashboard", label: "Visão geral", icon: IconesSafralume["inicio"] },
+  { to: "/dashboard/precos", label: "Preços", icon: IconesSafralume["preco"] },
+  {
+    to: "/dashboard/calculadora",
+    label: "Calculadora",
+    icon: IconesSafralume["calculadora-safra"],
+  },
+  { to: "/dashboard/alertas", label: "Alertas", icon: IconesSafralume["alerta"] },
+  { to: "/dashboard/leiloes", label: "Leilões", icon: IconesSafralume["leilao"] },
+  { to: "/dashboard/produtores", label: "Produtores", icon: IconesSafralume["produtor"] },
+  { to: "/dashboard/lembretes", label: "Lembretes", icon: IconesSafralume["lembrete"] },
+  { to: "/dashboard/clima", label: "Clima", icon: IconesSafralume["clima-sol"] },
+  { to: "/dashboard/suporte", label: "Suporte", icon: IconesSafralume["suporte"] },
 ];
 
 const cooperativaAdminNavItems: NavItem[] = [
-  { to: "/dashboard/equipe", label: "Equipe", icon: UsersRound },
-  { to: "/dashboard/marca", label: "Marca própria", icon: Palette },
-  { to: "/dashboard/relatorios", label: "Relatórios", icon: FileDown },
-  { to: "/dashboard/assinatura", label: "Assinatura", icon: CreditCard },
+  { to: "/dashboard/equipe", label: "Equipe", icon: IconesSafralume["equipe"] },
+  { to: "/dashboard/marca", label: "Marca própria", icon: IconesSafralume["marca"] },
+  { to: "/dashboard/relatorios", label: "Relatórios", icon: IconesSafralume["relatorio"] },
+  { to: "/dashboard/assinatura", label: "Assinatura", icon: IconesSafralume["assinatura"] },
 ];
 
 function DashboardGuard() {
@@ -309,7 +311,7 @@ function AppSidebar({
                 <SidebarMenuItem key={item.to}>
                   <SidebarMenuButton asChild isActive={pathname === item.to}>
                     <Link to={item.to} data-tour={item.to} onClick={aoSelecionar}>
-                      <item.icon />
+                      <item.icon className="size-6 shrink-0" />
                       <span>{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -329,7 +331,7 @@ function AppSidebar({
                   <SidebarMenuItem key={item.to}>
                     <SidebarMenuButton asChild isActive={pathname === item.to}>
                       <Link to={item.to} data-tour={item.to} onClick={aoSelecionar}>
-                        <item.icon />
+                        <item.icon className="size-6 shrink-0" />
                         <span>{item.label}</span>
                       </Link>
                     </SidebarMenuButton>

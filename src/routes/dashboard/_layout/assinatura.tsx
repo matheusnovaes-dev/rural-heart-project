@@ -15,6 +15,7 @@ import { useAuth } from "@/lib/auth";
 import { useAssinatura, type Plano } from "@/lib/planos";
 import { listarCobrancas, type Cobranca } from "@/lib/asaas.server";
 import { pricingPlans } from "@/config/site";
+import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 
 export const Route = createFileRoute("/dashboard/_layout/assinatura")({
   component: AssinaturaPage,
@@ -86,7 +87,8 @@ function AssinaturaPage() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        icon={CreditCard}
+        icon={IconesSafralume.assinatura}
+        iconePersonalizado
         title="Assinatura"
         description="Seu plano atual e o histórico de cobranças"
       />

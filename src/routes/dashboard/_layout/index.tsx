@@ -48,6 +48,7 @@ import { mediaDePracas } from "@/lib/precoFonte";
 import { buildWhatsAppLink } from "@/config/site";
 import { verificarConversaWhatsapp } from "@/lib/notificacoes.server";
 import { AnimatedNumber } from "@/components/dashboard/AnimatedNumber";
+import { SafralumeIcon } from "@/components/icons/SafralumeIcon";
 
 // Entrada em stagger dos blocos do painel — pedido do Matheus 2026-10-07
 // pra tirar a sensação de "tudo aparece seco de uma vez". Offset pequeno
@@ -419,9 +420,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
           className="rounded-xl border border-primary/30 bg-primary/5 p-4 shadow-sm sm:flex sm:items-center sm:justify-between sm:gap-6 sm:p-5"
         >
           <div className="flex items-start gap-3">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <MessageCircle className="size-4" />
-            </span>
+            <SafralumeIcon nome="whatsapp" className="size-9 shrink-0" />
             <div>
               <p className="text-base font-semibold text-foreground">
                 Falta 1 passo: peça seu primeiro preço

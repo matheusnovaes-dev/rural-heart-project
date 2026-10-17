@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, Palette, Upload } from "lucide-react";
+import { Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import { useAuth, useRequireCooperativa } from "@/lib/auth";
 import { PageHeader } from "@/components/dashboard/PageHeader";
+import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 
 export const Route = createFileRoute("/dashboard/_layout/marca")({
   component: MarcaPage,
@@ -88,7 +89,8 @@ function MarcaPage() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        icon={Palette}
+        icon={IconesSafralume.marca}
+        iconePersonalizado
         title="Marca própria"
         description="Sua identidade nos relatórios e no painel da equipe"
       />

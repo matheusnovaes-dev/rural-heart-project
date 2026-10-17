@@ -41,6 +41,7 @@ import { useRequireCooperativa } from "@/lib/auth";
 import { normalizarWhatsapp } from "@/lib/telefone";
 import { ImportarProdutoresDialog } from "@/components/dashboard/ImportarProdutoresDialog";
 import { enviarBoasVindasWhatsApp } from "@/lib/notificacoes.server";
+import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 
 export const Route = createFileRoute("/dashboard/_layout/produtores")({
   component: ProdutoresPage,
@@ -135,7 +136,8 @@ function ProdutoresPage() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        icon={Users}
+        icon={IconesSafralume.produtor}
+        iconePersonalizado
         title="Produtores"
         description="Produtores associados à sua cooperativa"
         action={

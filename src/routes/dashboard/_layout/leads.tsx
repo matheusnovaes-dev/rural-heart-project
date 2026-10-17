@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/lib/supabase";
 import { useRequireSafralumeAdmin } from "@/lib/auth";
+import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 
 export const Route = createFileRoute("/dashboard/_layout/leads")({
   component: LeadsPage,
@@ -105,7 +106,8 @@ function LeadsPage() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        icon={ListChecks}
+        icon={IconesSafralume.leads}
+        iconePersonalizado
         title="Leads"
         description="Quem preencheu o formulário da landing page"
       />

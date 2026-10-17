@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Sprout } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -7,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { CULTURA_PARA_CONAB_PROGRESSO } from "@/config/conabProgressoSafra";
 import { ufs } from "@/config/ufs";
 import type { Produtor } from "@/lib/auth";
+import { SafralumeIcon } from "@/components/icons/SafralumeIcon";
 
 type LinhaProgresso = {
   produto: string;
@@ -113,9 +113,7 @@ export function ProgressoSafraCard({ produtor }: { produtor: Produtor }) {
     <Card className="gap-3 border-border/80 shadow-sm transition-shadow hover:shadow-md">
       <CardHeader className="px-4 pt-4 pb-3">
         <CardTitle className="flex items-center gap-2.5 font-display text-base font-semibold text-foreground">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Sprout className="size-4" />
-          </span>
+          <SafralumeIcon nome="safra" className="size-8" />
           Progresso da safra
         </CardTitle>
         <CardDescription>

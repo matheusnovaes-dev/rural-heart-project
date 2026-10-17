@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Milk } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,6 +15,7 @@ import {
   type ResumoLeite,
 } from "@/lib/leite";
 import type { Produtor } from "@/lib/auth";
+import { SafralumeIcon } from "@/components/icons/SafralumeIcon";
 
 type Dados = {
   resumo: ResumoLeite | null;
@@ -82,9 +82,7 @@ export function LeiteCard({ produtor }: { produtor: Produtor }) {
     <Card className="border-border/80 shadow-sm transition-shadow hover:shadow-md">
       <CardHeader className="px-4 pt-4 pb-3">
         <CardTitle className="flex items-center gap-2.5 font-display text-base font-semibold text-foreground">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Milk className="size-4" />
-          </span>
+          <SafralumeIcon nome="leite" className="size-8" />
           Leite em {uf}
         </CardTitle>
         <CardDescription>

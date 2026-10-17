@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { abrirTicket } from "@/lib/tickets.server";
+import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 
 export const Route = createFileRoute("/dashboard/_layout/suporte")({
   component: SuportePage,
@@ -86,7 +87,8 @@ function SuportePage() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        icon={LifeBuoy}
+        icon={IconesSafralume.suporte}
+        iconePersonalizado
         title="Suporte"
         description="Alguma dúvida ou problema? Manda pra gente aqui."
       />

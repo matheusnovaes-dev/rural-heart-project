@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SafralumeIcon, type SafralumeIconeNome } from "@/components/icons/SafralumeIcon";
 
 export type InsightTone = "up" | "down" | "neutral" | "warn";
 
@@ -13,11 +14,14 @@ const toneClasses: Record<InsightTone, string> = {
 
 export function InsightCard({
   icon: Icon,
+  marca,
   tone,
   title,
   children,
 }: {
-  icon: LucideIcon;
+  icon?: LucideIcon;
+  /** Ícone da marca (círculo pronto, sem chip colorido): quando vem, vale no lugar do `icon`. */
+  marca?: SafralumeIconeNome;
   tone: InsightTone;
   title: string;
   children: React.ReactNode;
@@ -26,11 +30,15 @@ export function InsightCard({
     <Card className="gap-3 border-border/80 py-4 shadow-sm transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md">
       <CardHeader className="gap-0 px-4 pt-0 pb-0">
         <div className="flex items-center gap-2">
-          <span
-            className={`flex size-8 items-center justify-center rounded-lg ${toneClasses[tone]}`}
-          >
-            <Icon className="size-4" />
-          </span>
+          {marca ? (
+            <SafralumeIcon nome={marca} className="size-8 shrink-0" />
+          ) : Icon ? (
+            <span
+              className={`flex size-8 items-center justify-center rounded-lg ${toneClasses[tone]}`}
+            >
+              <Icon className="size-4" />
+            </span>
+          ) : null}
           <CardTitle className="font-display text-base font-semibold text-foreground">
             {title}
           </CardTitle>

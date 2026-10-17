@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { Newspaper } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { supabase } from "@/lib/supabase";
 import type { Produtor } from "@/lib/auth";
+import { IconesSafralume, SafralumeIcon } from "@/components/icons/SafralumeIcon";
 
 type Boletim = {
   id: string;
@@ -105,9 +105,7 @@ export function BoletimSemanal({ produtor }: { produtor: Produtor }) {
     <Card className="gap-3 border-border/80 shadow-sm transition-shadow hover:shadow-md">
       <CardHeader className="px-4 pt-4 pb-3">
         <CardTitle className="flex items-center gap-2.5 font-display text-base font-semibold text-foreground">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Newspaper className="size-4" />
-          </span>
+          <SafralumeIcon nome="boletim" className="size-8" />
           Boletim Semanal
         </CardTitle>
         <CardDescription>Análise de mercado da Imea pra sua cultura, direto aqui.</CardDescription>
@@ -120,7 +118,7 @@ export function BoletimSemanal({ produtor }: { produtor: Produtor }) {
           </div>
         ) : boletins.length === 0 ? (
           <EmptyState
-            icon={Newspaper}
+            icon={IconesSafralume.boletim}
             title="Nenhuma edição ainda"
             description="Assim que sair a primeira edição pra sua cultura, ela aparece aqui."
           />

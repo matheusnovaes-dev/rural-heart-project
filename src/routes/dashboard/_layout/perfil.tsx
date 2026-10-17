@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { BrainCircuit, Camera, CreditCard, Loader2, MapPin, UserRound } from "lucide-react";
+import { BrainCircuit, Camera, CreditCard, Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 
 import { AvatarProdutor } from "@/components/dashboard/AvatarProdutor";
@@ -25,6 +25,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth, useRequireProdutor } from "@/lib/auth";
 import { reduzirParaQuadrado } from "@/lib/imagem";
 import { mascararTelefone } from "@/lib/telefone";
+import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 
 export const Route = createFileRoute("/dashboard/_layout/perfil")({
   component: PerfilPage,
@@ -52,7 +53,8 @@ function PerfilPage() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <PageHeader
-        icon={UserRound}
+        icon={IconesSafralume.perfil}
+        iconePersonalizado
         title="Meu perfil"
         description="Seus dados e preferências. O que você muda aqui vale também para o bot no WhatsApp."
       />

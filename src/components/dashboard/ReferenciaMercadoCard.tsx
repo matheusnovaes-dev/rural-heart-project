@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { BarChart3 } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -8,6 +7,7 @@ import { ufs } from "@/config/ufs";
 import { supabase } from "@/lib/supabase";
 import { buscarReferenciaMercado, type ReferenciaMercado } from "@/lib/referenciaMercado";
 import type { Produtor } from "@/lib/auth";
+import { SafralumeIcon } from "@/components/icons/SafralumeIcon";
 
 const brl = (n: number) => `R$ ${n.toFixed(2).replace(".", ",")}`;
 const dataBr = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
@@ -61,9 +61,7 @@ export function ReferenciaMercadoCard({
     <Card className="border-border/80 shadow-sm transition-shadow hover:shadow-md">
       <CardHeader className="px-4 pt-4 pb-3">
         <CardTitle className="flex items-center gap-2.5 font-display text-base font-semibold text-foreground">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <BarChart3 className="size-4" />
-          </span>
+          <SafralumeIcon nome="bolsa-b3" className="size-8" />
           {nomeCulturaCapitalizado}: referências de mercado
         </CardTitle>
         <CardDescription>

@@ -1,4 +1,4 @@
-// Conjunto de 33 ícones personalizados da marca (pedido do Matheus
+// Conjunto de 33 ícones (mais 19 da segunda leva, no fim da lista) personalizados da marca (pedido do Matheus
 // 2026-10-11, arquivo original em círculos verde-escuro com o estilo da
 // marca) — recortados em public/icons/*.png, cada um já com o próprio fundo
 // circular, então NUNCA colocar dentro do chip colorido (bg-primary/10
@@ -37,6 +37,26 @@ export const SAFRALUME_ICONES = [
   "sinal-fraco",
   "paridade",
   "whatsapp",
+  // Segunda leva (2026-10-17), desenhada no mesmo estilo: navegação do painel, cartões e mais culturas.
+  "inicio",
+  "suporte",
+  "perfil",
+  "assinatura",
+  "insumos",
+  "leite",
+  "safra",
+  "boletim",
+  "acompanhamento",
+  "mercado-externo",
+  "produtor",
+  "leads",
+  "marca",
+  "alvo",
+  "estudo-proposta",
+  "arroz",
+  "feijao",
+  "cana",
+  "laranja",
 ] as const;
 
 export type SafralumeIconeNome = (typeof SAFRALUME_ICONES)[number];

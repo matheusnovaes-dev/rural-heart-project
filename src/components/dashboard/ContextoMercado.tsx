@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { DollarSign, Fuel, Globe, TrendingUp, Wheat } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { SafralumeIcon, type SafralumeIconeNome } from "@/components/icons/SafralumeIcon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
@@ -179,12 +179,12 @@ export function ContextoMercado({ cultura }: { cultura?: string }) {
 
   // cada item é um bloco independente — vira uma "matéria" da faixa de
   // ticker abaixo, na ordem em que os dados existirem naquele momento.
-  const itens: { chave: string; icone: typeof DollarSign; label: string; valor: ReactNode }[] = [];
+  const itens: { chave: string; icone: SafralumeIconeNome; label: string; valor: ReactNode }[] = [];
 
   if (cambio) {
     itens.push({
       chave: "cambio",
-      icone: DollarSign,
+      icone: "dolar",
       label: `Dólar (PTAX) em ${formatData(cambio.data)}`,
       valor: (
         <span className="font-mono font-semibold tabular-nums">
@@ -197,7 +197,7 @@ export function ContextoMercado({ cultura }: { cultura?: string }) {
   for (const w of wasde) {
     itens.push({
       chave: `wasde-${w.cultura}`,
-      icone: Globe,
+      icone: "mercado-externo",
       label: `${culturaLabel[w.cultura]} Brasil ${w.ano_safra} (USDA)`,
       valor: (
         <>
@@ -220,7 +220,7 @@ export function ContextoMercado({ cultura }: { cultura?: string }) {
   if (diesel.length > 0) {
     itens.push({
       chave: "diesel",
-      icone: Fuel,
+      icone: "diesel",
       label: `Diesel em ${produtor?.uf}${dataFinalDiesel ? ` (semana até ${formatData(dataFinalDiesel)})` : ""}`,
       valor: (
         <>
@@ -244,7 +244,7 @@ export function ContextoMercado({ cultura }: { cultura?: string }) {
   )) {
     itens.push({
       chave: `b3-${produto}`,
-      icone: TrendingUp,
+      icone: "bolsa-b3",
       label: `${futuros[0]?.nome_produto} · futuro (B3)`,
       valor: (
         <>
@@ -265,7 +265,7 @@ export function ContextoMercado({ cultura }: { cultura?: string }) {
   if (ibge) {
     itens.push({
       chave: "ibge",
-      icone: Wheat,
+      icone: "safra",
       label: `Produção de ${ibge.produto} em ${produtor?.uf} (IBGE)`,
       valor: (
         <>
@@ -285,9 +285,7 @@ export function ContextoMercado({ cultura }: { cultura?: string }) {
   function Bloco({ item, sufixo }: { item: (typeof itens)[number]; sufixo: string }) {
     return (
       <div key={`${item.chave}-${sufixo}`} className="flex shrink-0 items-center gap-2 pr-8">
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-secondary text-primary">
-          <item.icone className="size-4" />
-        </span>
+        <SafralumeIcon nome={item.icone} className="size-8 shrink-0" />
         <div className="whitespace-nowrap">
           <p className="text-xs text-muted-foreground">{item.label}</p>
           <p className="text-sm">{item.valor}</p>
