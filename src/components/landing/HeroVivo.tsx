@@ -31,19 +31,14 @@ export function HeroTrigo() {
 // posição horizontal (%), tamanho (px), duração (s), atraso (s), deslocamento lateral (px)
 const POEIRA = [
   [8, 3, 16, 0, 24],
-  [16, 2, 21, 4, -18],
   [24, 4, 18, 9, 30],
   [33, 2, 24, 2, -26],
-  [41, 3, 19, 12, 20],
   [49, 2, 22, 6, -14],
   [57, 4, 17, 1, 28],
-  [65, 2, 23, 10, -22],
   [72, 3, 20, 5, 18],
   [80, 4, 18, 14, -30],
   [88, 2, 25, 8, 16],
   [94, 3, 21, 3, -20],
-  [12, 2, 26, 17, 22],
-  [60, 3, 24, 19, -16],
 ] as const;
 
 export function HeroLuz() {

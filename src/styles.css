@@ -765,8 +765,12 @@ html.lenis body {
   position: absolute;
   bottom: -2%;
   border-radius: 50%;
-  background: oklch(0.92 0.12 80);
-  box-shadow: 0 0 8px 2px oklch(0.85 0.14 75 / 0.55);
+  background: radial-gradient(
+    circle,
+    oklch(0.95 0.1 82),
+    oklch(0.85 0.14 75 / 0.55) 55%,
+    transparent 72%
+  );
   opacity: 0;
   animation-name: hero-poeira;
   animation-timing-function: linear;
