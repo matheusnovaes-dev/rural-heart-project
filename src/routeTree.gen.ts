@@ -41,6 +41,7 @@ import { Route as DashboardLayoutLeadsRouteImport } from './routes/dashboard/_la
 import { Route as DashboardLayoutLeiloesRouteImport } from './routes/dashboard/_layout/leiloes'
 import { Route as DashboardLayoutLembretesRouteImport } from './routes/dashboard/_layout/lembretes'
 import { Route as DashboardLayoutMarcaRouteImport } from './routes/dashboard/_layout/marca'
+import { Route as DashboardLayoutPerfilRouteImport } from './routes/dashboard/_layout/perfil'
 import { Route as DashboardLayoutPrecosRouteImport } from './routes/dashboard/_layout/precos'
 import { Route as DashboardLayoutProdutoresRouteImport } from './routes/dashboard/_layout/produtores'
 import { Route as DashboardLayoutRelatoriosRouteImport } from './routes/dashboard/_layout/relatorios'
@@ -212,6 +213,11 @@ const DashboardLayoutMarcaRoute = DashboardLayoutMarcaRouteImport.update({
   path: '/marca',
   getParentRoute: () => DashboardLayoutRoute,
 } as any)
+const DashboardLayoutPerfilRoute = DashboardLayoutPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => DashboardLayoutRoute,
+} as any)
 const DashboardLayoutPrecosRoute = DashboardLayoutPrecosRouteImport.update({
   id: '/precos',
   path: '/precos',
@@ -267,6 +273,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/leiloes': typeof DashboardLayoutLeiloesRoute
   '/dashboard/lembretes': typeof DashboardLayoutLembretesRoute
   '/dashboard/marca': typeof DashboardLayoutMarcaRoute
+  '/dashboard/perfil': typeof DashboardLayoutPerfilRoute
   '/dashboard/precos': typeof DashboardLayoutPrecosRoute
   '/dashboard/produtores': typeof DashboardLayoutProdutoresRoute
   '/dashboard/relatorios': typeof DashboardLayoutRelatoriosRoute
@@ -304,6 +311,7 @@ export interface FileRoutesByTo {
   '/dashboard/leiloes': typeof DashboardLayoutLeiloesRoute
   '/dashboard/lembretes': typeof DashboardLayoutLembretesRoute
   '/dashboard/marca': typeof DashboardLayoutMarcaRoute
+  '/dashboard/perfil': typeof DashboardLayoutPerfilRoute
   '/dashboard/precos': typeof DashboardLayoutPrecosRoute
   '/dashboard/produtores': typeof DashboardLayoutProdutoresRoute
   '/dashboard/relatorios': typeof DashboardLayoutRelatoriosRoute
@@ -343,6 +351,7 @@ export interface FileRoutesById {
   '/dashboard/_layout/leiloes': typeof DashboardLayoutLeiloesRoute
   '/dashboard/_layout/lembretes': typeof DashboardLayoutLembretesRoute
   '/dashboard/_layout/marca': typeof DashboardLayoutMarcaRoute
+  '/dashboard/_layout/perfil': typeof DashboardLayoutPerfilRoute
   '/dashboard/_layout/precos': typeof DashboardLayoutPrecosRoute
   '/dashboard/_layout/produtores': typeof DashboardLayoutProdutoresRoute
   '/dashboard/_layout/relatorios': typeof DashboardLayoutRelatoriosRoute
@@ -383,6 +392,7 @@ export interface FileRouteTypes {
     | '/dashboard/leiloes'
     | '/dashboard/lembretes'
     | '/dashboard/marca'
+    | '/dashboard/perfil'
     | '/dashboard/precos'
     | '/dashboard/produtores'
     | '/dashboard/relatorios'
@@ -420,6 +430,7 @@ export interface FileRouteTypes {
     | '/dashboard/leiloes'
     | '/dashboard/lembretes'
     | '/dashboard/marca'
+    | '/dashboard/perfil'
     | '/dashboard/precos'
     | '/dashboard/produtores'
     | '/dashboard/relatorios'
@@ -458,6 +469,7 @@ export interface FileRouteTypes {
     | '/dashboard/_layout/leiloes'
     | '/dashboard/_layout/lembretes'
     | '/dashboard/_layout/marca'
+    | '/dashboard/_layout/perfil'
     | '/dashboard/_layout/precos'
     | '/dashboard/_layout/produtores'
     | '/dashboard/_layout/relatorios'
@@ -715,6 +727,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLayoutMarcaRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
+    '/dashboard/_layout/perfil': {
+      id: '/dashboard/_layout/perfil'
+      path: '/perfil'
+      fullPath: '/dashboard/perfil'
+      preLoaderRoute: typeof DashboardLayoutPerfilRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
     '/dashboard/_layout/precos': {
       id: '/dashboard/_layout/precos'
       path: '/precos'
@@ -757,6 +776,7 @@ interface DashboardLayoutRouteChildren {
   DashboardLayoutLeiloesRoute: typeof DashboardLayoutLeiloesRoute
   DashboardLayoutLembretesRoute: typeof DashboardLayoutLembretesRoute
   DashboardLayoutMarcaRoute: typeof DashboardLayoutMarcaRoute
+  DashboardLayoutPerfilRoute: typeof DashboardLayoutPerfilRoute
   DashboardLayoutPrecosRoute: typeof DashboardLayoutPrecosRoute
   DashboardLayoutProdutoresRoute: typeof DashboardLayoutProdutoresRoute
   DashboardLayoutRelatoriosRoute: typeof DashboardLayoutRelatoriosRoute
@@ -775,6 +795,7 @@ const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
   DashboardLayoutLeiloesRoute: DashboardLayoutLeiloesRoute,
   DashboardLayoutLembretesRoute: DashboardLayoutLembretesRoute,
   DashboardLayoutMarcaRoute: DashboardLayoutMarcaRoute,
+  DashboardLayoutPerfilRoute: DashboardLayoutPerfilRoute,
   DashboardLayoutPrecosRoute: DashboardLayoutPrecosRoute,
   DashboardLayoutProdutoresRoute: DashboardLayoutProdutoresRoute,
   DashboardLayoutRelatoriosRoute: DashboardLayoutRelatoriosRoute,

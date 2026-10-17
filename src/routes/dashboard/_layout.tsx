@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   LineChart,
   TrendingUp,
+  UserRound,
   Users,
   ListChecks,
   UsersRound,
@@ -72,6 +73,7 @@ const produtorNavItemsBase: NavItem[] = [
   { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
   { to: "/dashboard/funcionarios", label: "Funcionários", icon: HardHat },
   { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
+  { to: "/dashboard/perfil", label: "Meu perfil", icon: UserRound },
   { to: "/dashboard/suporte", label: "Suporte", icon: LifeBuoy },
 ];
 
