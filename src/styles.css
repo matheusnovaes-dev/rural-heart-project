@@ -808,3 +808,43 @@ html.lenis .hero-poeira {
     display: none;
   }
 }
+
+/* Céu à deriva (ver HeroCeu): o horizonte, em px do contêiner da foto, sai da geometria do object-fit: cover (foto quase
+   quadrada, object-position 62%): y = 62cqh - (1 - k) * 0.62 * altura da imagem..., com k a fração da foto onde está
+   a linha das árvores (0,455 no fim da máscara, 0,40 no início). */
+.hero-foto {
+  container-type: size;
+}
+.hero-ceu {
+  --alt: max(100cqh, 101.1cqw);
+  --ini: calc(62cqh - 0.22 * var(--alt));
+  --fim: calc(62cqh - 0.165 * var(--alt));
+  -webkit-mask-image: linear-gradient(to bottom, #000 var(--ini), transparent var(--fim));
+  mask-image: linear-gradient(to bottom, #000 var(--ini), transparent var(--fim));
+}
+.hero-ceu-img {
+  animation: hero-ceu 42s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@keyframes hero-ceu {
+  from {
+    transform: translate3d(-34px, 0, 0);
+  }
+  to {
+    transform: translate3d(34px, 0, 0);
+  }
+}
+html.lenis .hero-ceu {
+  display: none;
+}
+/* Só em celular (foto ajustada pela altura): em telas largas a escala muda e a cópia não alinharia */
+@media (min-width: 641px) {
+  .hero-ceu {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-ceu {
+    display: none;
+  }
+}

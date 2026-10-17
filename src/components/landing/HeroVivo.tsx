@@ -9,6 +9,28 @@ import { MIDIA } from "@/assets/midia";
  * No desktop com a máquina boa o WebGL (vento na foto e partículas) assume o lugar do balanço e da poeira em CSS
  * (a classe "lenis" no <html> esconde essas duas). Quem prefere menos movimento vê tudo parado.
  */
+/**
+ * Céu à deriva (celular): a foto duplicada, recortada só até a linha das árvores e com a borda de baixo esmaecida, desliza
+ * devagar de lado por cima da foto parada. Como a cópia cobre o céu inteiro e some antes do horizonte, as nuvens se
+ * movem sem aparecer duas vezes. Fica DENTRO da camada com paralaxe da foto (mesma geometria) e usa unidades de contêiner
+ * para achar o horizonte em qualquer tela. No desktop o shader de vento faz o mesmo na própria textura.
+ */
+export function HeroCeu() {
+  return (
+    <div aria-hidden="true" className="hero-ceu pointer-events-none absolute inset-0">
+      <img
+        src={MIDIA.hero828}
+        srcSet={`${MIDIA.hero828} 828w, ${MIDIA.hero1920} 1920w`}
+        sizes="100vw"
+        alt=""
+        decoding="async"
+        loading="lazy"
+        className="hero-ceu-img absolute inset-y-0 inset-x-[-6%] h-full w-[112%] max-w-none object-cover object-[50%_62%]"
+      />
+    </div>
+  );
+}
+
 export function HeroTrigo() {
   return (
     <div

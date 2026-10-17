@@ -1,4 +1,4 @@
-import { HeroLuz, HeroTrigo } from "@/components/landing/HeroVivo";
+import { HeroCeu, HeroLuz, HeroTrigo } from "@/components/landing/HeroVivo";
 import { ContaAte } from "@/components/landing/ContaAte";
 import {
   animate,
@@ -95,7 +95,7 @@ export function Hero() {
         {/* inset-y-[-14%] dá uma "sobra" de foto pra cima e pra baixo: o
             translateY do parallax (±10%) nunca chega a expor uma borda vazia. */}
         <motion.div
-          className="absolute inset-x-0 inset-y-[-14%] motion-reduce:transform-none!"
+          className="hero-foto absolute inset-x-0 inset-y-[-14%] motion-reduce:transform-none!"
           style={{ y: fotoY }}
         >
           <picture>
@@ -113,6 +113,7 @@ export function Hero() {
               fetchPriority="high"
             />
           </picture>
+          <HeroCeu />
         </motion.div>
         <HeroTrigo />
         {/* A foto é um pôr do sol de verdade (céu dramático, trigo dourado) —
