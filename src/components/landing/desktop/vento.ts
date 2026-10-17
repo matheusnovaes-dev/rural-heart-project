@@ -20,12 +20,6 @@ void main(){
   vec2 uv = (vec2(v.x, 1.0 - v.y) - 0.5) * s + 0.5;
   uv.y += sc * 0.035;
 
-  // Nuvens à deriva: só o CÉU (acima da linha das árvores, uv.y < ~0.47) desliza de lado, mais rápido no alto que perto do
-  // horizonte (paralaxe). É um deslocamento da própria foto, sem camada extra, então nada se duplica; a máscara suave
-  // faz o movimento morrer antes do horizonte, que fica parado.
-  float ceu = smoothstep(0.47, 0.37, uv.y);
-  uv.x += ceu * (0.5 + (0.45 - uv.y)) * 0.03 * sin(t * 0.11 + uv.y * 2.5);
-
   float chao = smoothstep(0.75, 0.12, v.y);
   float w1 = sin(v.x * 7.0 + t * 0.8 + v.y * 3.0);
   float w2 = sin(v.x * 19.0 - t * 1.4 + v.y * 9.0);
