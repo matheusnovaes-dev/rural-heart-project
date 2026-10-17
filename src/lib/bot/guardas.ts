@@ -936,3 +936,56 @@ export function corrigirFimDeMes(resposta: string, agora: Date = new Date()): st
         `${ligacao} ${bissexto ? 29 : 28}${de}fevereiro`,
     );
 }
+
+// ---------------------------------------------------------------------------
+// Média das praças atribuída a uma cidade (auditoria 2026-10-16)
+// ---------------------------------------------------------------------------
+
+const SEM_ACENTO = (t: string) =>
+  t
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+const NOME_DE_CIDADE = String.raw`[A-ZÀ-Ú][\p{L}'’]+(?:\s+(?:d[aeo]s?\s+)?[A-ZÀ-Ú][\p{L}'’]+)*(?:\s*\([A-Z]{2}\))?`;
+
+/**
+ * A ferramenta de preço devolve as praças do estado e a MÉDIA delas. O modelo escrevia essa média como se fosse o
+ * preço de uma cidade só ("soja em Sorriso: R$138,25" quando Sorriso/Lucas do Rio Verde está em R$138,00 e 138,25
+ * é a média; "em Sinop (MT)", cidade que nem é praça). Quando o valor citado é exatamente a média e vem colado a
+ * "em <Cidade>", a cidade vira o estado com a etiqueta "média das praças".
+ */
+export function corrigirMediaAtribuidaACidade(
+  resposta: string,
+  media: number | null,
+  nomeUf: string | null,
+): string {
+  if (media == null || !nomeUf) return resposta;
+  const formatos = [
+    media.toFixed(2).replace(".", ","),
+    media.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+  ];
+  const valor = `R\\$\\s?(?:${[...new Set(formatos)].map((f) => f.replace(/\./g, "\\.")).join("|")})`;
+  const etiqueta = `${nomeUf} (média das praças)`;
+  const ehEstado = (c: string) => {
+    const n = SEM_ACENTO(c.replace(/\s*\([A-Z]{2}\)$/, ""));
+    return n === SEM_ACENTO(nomeUf) || n.startsWith("mato grosso") || n.startsWith("minas gerais");
+  };
+  // cidade antes do valor: "...em Sinop (MT) é de R$138,25"
+  const antes = new RegExp(
+    `\\bem\\s+(${NOME_DE_CIDADE})(?![\\p{L}'’])((?:(?!R\\$)[^.!?\\n]){0,70}?)(${valor})`,
+    "gu",
+  );
+  let saida = resposta.replace(antes, (todo, cidade: string, meio: string, v: string) =>
+    ehEstado(cidade) ? todo : `em ${etiqueta}${meio}${v}`,
+  );
+  // cidade depois do valor: "...R$138,25 em Sorriso, conforme a BBM"
+  const depois = new RegExp(
+    `(${valor})((?:(?!R\\$)[^.!?\\n]){0,50}?)\\bem\\s+(${NOME_DE_CIDADE})(?![\\p{L}'’])(?!(?:(?!R\\$)[^.!?\\n]){0,15}R\\$)`,
+    "gu",
+  );
+  saida = saida.replace(depois, (todo, v: string, meio: string, cidade: string) =>
+    ehEstado(cidade) ? todo : `${v}${meio}em ${etiqueta}`,
+  );
+  return saida;
+}

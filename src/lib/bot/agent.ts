@@ -78,6 +78,7 @@ import {
   garantirMencaoLeilao,
   garantirOpcaoDeCidadeNoAlertaDeClima,
   corrigirCalendario,
+  corrigirMediaAtribuidaACidade,
   corrigirFimDeMes,
   buildContextoDeData,
   tirarNegativaDeInsumoParaBronze,
@@ -95,6 +96,7 @@ import {
   type FreteCitado,
 } from "@/lib/bot/guardas";
 import { respostaDeProduto } from "@/lib/bot/respostasDeProduto";
+import { ufs } from "@/config/ufs";
 import { avisarCidadeSemCotacao } from "@/lib/bot/cidadeSemCotacao";
 import {
   conversaEraDePlanos,
@@ -1700,10 +1702,16 @@ async function runAgentBase(input: {
         /* argumento ilegível: fica com a UF do cadastro */
       }
     }
-    const resposta = await avisarCidadeSemCotacao(respostaBase, texto, {
-      uf: ufDoPreco,
-      chamouPreco: chamadasDePreco.length > 0,
-    });
+    const nomeUfDoPreco =
+      ufs.find((u) => u.value === (ufDoPreco ?? "").toUpperCase())?.label ?? null;
+    const resposta = await avisarCidadeSemCotacao(
+      corrigirMediaAtribuidaACidade(respostaBase, extrairMediaDasPracas(messages), nomeUfDoPreco),
+      texto,
+      {
+        uf: ufDoPreco,
+        chamouPreco: chamadasDePreco.length > 0,
+      },
+    );
 
     const naoAutorizados = valoresNaoAutorizados(resposta, numerosPermitidos);
     // Quantidades em kg/litros sem fonte (leite): sem frase pronta pra trocar,
