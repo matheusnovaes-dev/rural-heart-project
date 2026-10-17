@@ -4,8 +4,8 @@ import { MIDIA } from "@/assets/midia";
  * Camadas vivas do fundo do hero (só o fundo: os textos não mudam). Tudo é CSS e só mexe em transform e opacidade
  * (composto na GPU, sem JavaScript, sem recalcular layout), então funciona igual no celular e no desktop:
  *  - HeroTrigo: a metade de baixo da foto (a lavoura) duplicada e balançando de leve, como vento passando no trigo;
- *  - HeroLuz: raios de sol girando devagar a partir do horizonte, nuvens de luz à deriva no céu, brilho do sol
- *    pulsando e poeira de grãos subindo.
+ *  - HeroLuz: brilho suave do sol no horizonte (pulsando devagar) e poeira de grãos subindo.
+ *    (Raios de sol e nuvens de luz foram testados e removidos: viravam faixas e um "furo" em forma de estrela.)
  * No desktop com a máquina boa o WebGL (vento na foto e partículas) assume o lugar do balanço e da poeira em CSS
  * (a classe "lenis" no <html> esconde essas duas). Quem prefere menos movimento vê tudo parado.
  */
@@ -52,9 +52,6 @@ export function HeroLuz() {
       aria-hidden="true"
       className="hero-luz pointer-events-none absolute inset-0 overflow-hidden"
     >
-      <div className="hero-raios" />
-      <div className="hero-nuvem hero-nuvem-a" />
-      <div className="hero-nuvem hero-nuvem-b" />
       <div className="hero-sol" />
       <div className="hero-poeira">
         {POEIRA.map(([x, t, d, a, l], i) => (

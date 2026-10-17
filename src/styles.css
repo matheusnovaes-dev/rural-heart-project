@@ -734,55 +734,6 @@ html.lenis body {
     transform: translate3d(9px, 0, 0) skewX(0.7deg);
   }
 }
-.hero-raios {
-  position: absolute;
-  left: 44%;
-  top: 56%;
-  width: 150vmax;
-  height: 150vmax;
-  margin: -75vmax 0 0 -75vmax;
-  background: repeating-conic-gradient(
-    from 0deg,
-    transparent 0 5deg,
-    oklch(0.9 0.12 80 / 0.1) 7deg 9deg,
-    transparent 11deg 17deg
-  );
-  -webkit-mask-image: radial-gradient(circle, #000 0, transparent 52%);
-  mask-image: radial-gradient(circle, #000 0, transparent 52%);
-  animation: hero-raios 120s linear infinite;
-  will-change: transform;
-}
-@keyframes hero-raios {
-  to {
-    transform: rotate(360deg);
-  }
-}
-.hero-nuvem {
-  position: absolute;
-  left: 0;
-  width: 200%;
-  height: 34%;
-  background-image: url("./assets/fumaca-faixa.webp");
-  background-size: 25% 100%;
-  background-repeat: repeat-x;
-  will-change: transform;
-}
-.hero-nuvem-a {
-  top: 2%;
-  opacity: 0.42;
-  animation: hero-nuvem 95s linear infinite;
-}
-.hero-nuvem-b {
-  top: 14%;
-  opacity: 0.26;
-  background-size: 18% 100%;
-  animation: hero-nuvem 140s linear infinite reverse;
-}
-@keyframes hero-nuvem {
-  to {
-    transform: translate3d(-50%, 0, 0);
-  }
-}
 .hero-sol {
   position: absolute;
   left: 44%;
@@ -845,8 +796,6 @@ html.lenis .hero-poeira {
 }
 @media (prefers-reduced-motion: reduce) {
   .hero-trigo-img,
-  .hero-raios,
-  .hero-nuvem,
   .hero-sol,
   .hero-poeira span {
     animation: none;
