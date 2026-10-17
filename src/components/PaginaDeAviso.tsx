@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { MIDIA } from "@/assets/midia";
 import { buildWhatsAppLink, siteConfig } from "@/config/site";
+import { NomeMarca } from "@/components/landing/NomeMarca";
 
 const SERIFA = { fontFamily: '"Instrument Serif", "Times New Roman", serif' };
 const BOTAO =
@@ -41,7 +42,9 @@ export function PaginaDeAviso({
       <header className="mx-auto flex w-full max-w-6xl items-center px-4 py-5 sm:px-6">
         <a href="/" className="flex items-center gap-2">
           <img src={MIDIA.logo} alt="" className="size-8 rounded-[0.6rem]" />
-          <span className="text-lg font-bold tracking-tight">{siteConfig.name}</span>
+          <span className="text-lg font-bold tracking-tight">
+            <NomeMarca />
+          </span>
         </a>
       </header>
 

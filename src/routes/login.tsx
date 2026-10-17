@@ -71,6 +71,7 @@ const ticker = [
 
 import { lerEnum, lerLiteral, parametros } from "@/lib/searchParams";
 import { MIDIA } from "@/assets/midia";
+import { NomeMarca } from "@/components/landing/NomeMarca";
 
 const validarBusca = (busca: Record<string, unknown>) =>
   parametros({
@@ -184,7 +185,9 @@ function LoginPage() {
 
         <Link to="/" className="relative z-10 flex items-center gap-2">
           <img src={MIDIA.logo} alt="" className="size-9 rounded-[0.65rem]" />
-          <span className="text-lg font-bold tracking-tight">{siteConfig.name}</span>
+          <span className="text-lg font-bold tracking-tight">
+            <NomeMarca />
+          </span>
         </Link>
 
         <div className="relative z-10 flex flex-1 flex-col justify-center gap-9 py-8">
@@ -226,7 +229,9 @@ function LoginPage() {
         <div className="relative z-10 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img src={MIDIA.logo} alt="" className="size-7 rounded-[0.55rem]" />
-            <span className="text-sm font-bold tracking-tight">{siteConfig.name}</span>
+            <span className="text-sm font-bold tracking-tight">
+              <NomeMarca />
+            </span>
           </div>
           <Link to="/" className="alvo-toque min-w-11 justify-end text-sm text-white/70">
             Voltar

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { siteConfig } from "@/config/site";
 import { MIDIA } from "@/assets/midia";
+import { NomeMarca } from "@/components/landing/NomeMarca";
 
 export const Route = createFileRoute("/redefinir-senha")({
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
@@ -83,7 +84,7 @@ function RedefinirSenhaPage() {
         <Link to="/" className="mb-6 flex items-center justify-center gap-2">
           <img src={MIDIA.logo} alt="" className="size-8 rounded-[0.6rem]" />
           <span className="text-lg font-bold tracking-tight text-foreground">
-            {siteConfig.name}
+            <NomeMarca />
           </span>
         </Link>
 

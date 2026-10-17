@@ -9,6 +9,7 @@ import { buildWhatsAppLink, siteConfig } from "@/config/site";
 
 import { lerLiteral, lerTexto, parametros } from "@/lib/searchParams";
 import { MIDIA } from "@/assets/midia";
+import { NomeMarca } from "@/components/landing/NomeMarca";
 
 const validarBusca = (busca: Record<string, unknown>) =>
   parametros({ t: lerTexto(busca["t"]), destino: lerLiteral(busca["destino"], "assinar") });
@@ -56,7 +57,9 @@ function AcessoPage() {
     <div className="flex min-h-screen items-center justify-center bg-secondary/40 px-4 py-12">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
         <img src={MIDIA.logo} alt="" className="mx-auto size-10 rounded-[0.7rem]" />
-        <p className="mt-2 text-sm font-semibold text-foreground">{siteConfig.name}</p>
+        <p className="mt-2 text-sm font-semibold text-foreground">
+          <NomeMarca />
+        </p>
 
         {status === "entrando" ? (
           <div className="mt-6 flex flex-col items-center gap-3">
