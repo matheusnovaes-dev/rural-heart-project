@@ -44,12 +44,36 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+// Landing ("/"): os ~55 <link rel="modulepreload"> do HTML disputavam banda com a foto do hero (que é o LCP) e a foto, de
+// 28KB, só chegava depois dos ~340KB de JS. Marcados como prioridade baixa, a foto vai primeiro e os scripts chegam logo
+// em seguida (a página já está desenhada: o JS só serve para a hidratação). Streaming com HTMLRewriter (Cloudflare e Bun);
+// se não existir ou falhar, a resposta segue intocada.
+function baixarPrioridadeDosScripts(request: Request, response: Response): Response {
+  try {
+    const rewriter = (globalThis as unknown as { HTMLRewriter?: new () => unknown }).HTMLRewriter;
+    if (!rewriter || response.status !== 200) return response;
+    if (new URL(request.url).pathname !== "/") return response;
+    if (!(response.headers.get("content-type") ?? "").includes("text/html")) return response;
+    const r = new rewriter() as {
+      on: (
+        seletor: string,
+        h: { element: (e: { setAttribute: (k: string, v: string) => void }) => void },
+      ) => { transform: (r: Response) => Response };
+    };
+    return r
+      .on('link[rel="modulepreload"]', { element: (e) => e.setAttribute("fetchpriority", "low") })
+      .transform(response);
+  } catch {
+    return response;
+  }
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      return baixarPrioridadeDosScripts(request, await normalizeCatastrophicSsrResponse(response));
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
