@@ -52,6 +52,29 @@ function valorFoiDitoPeloProdutor(
   return historico.some((h) => h.role === "user" && h.conteudo.includes(inteiro));
 }
 
+// Achado real (2026-10-16 22:05, produtor pediu "alerta de chuva amanhã às 8 horas"): sem número dito
+// por ele, a trava acima barrava o valor padrão de chuva forte (70%) mesmo depois de o assistente
+// perguntar "Confirma: alerta de chuva forte ... acima de 70%?" e o produtor responder "Ss". O modelo
+// então inventou "você mencionou 70%" e perguntou de novo 3 vezes. O padrão documentado (o mesmo que
+// o painel usa) vale quando a pergunta de confirmação o mostrou com todas as letras e o produtor
+// respondeu em seguida: ele viu o número e aceitou, não é valor inventado.
+const LIMITE_PADRAO_CLIMA: Record<string, number> = {
+  chuva_forte: 70,
+  geada: 3,
+  seca_prolongada: 20,
+  vento_forte: 40,
+};
+
+function padraoMostradoNaConfirmacao(
+  condicao: string,
+  valor: number,
+  historico: HistoricoLinha[],
+): boolean {
+  if (LIMITE_PADRAO_CLIMA[condicao] !== valor) return false;
+  const ultima = ultimaMensagemDoAssistente(historico);
+  return !!ultima && new RegExp(`(?<![\\d,.])${Math.trunc(valor)}(?![\\d])`).test(ultima);
+}
+
 /** Mesmo teto do plano usado no dashboard (alertas.tsx) — preço + clima
  * somados, contados por produtor_id. Consulta a assinatura por produtor_id
  * (não por cooperativa) de propósito: o bot sempre fala com um produtor
@@ -209,7 +232,10 @@ export async function criarAlertaClima(
   if (aindaPrecisaConfirmar(ctx.historico)) {
     return { sucesso: false, motivo: "precisa_confirmar_primeiro" };
   }
-  if (!valorFoiDitoPeloProdutor(args.limite, ctx.texto, ctx.historico)) {
+  if (
+    !valorFoiDitoPeloProdutor(args.limite, ctx.texto, ctx.historico) &&
+    !padraoMostradoNaConfirmacao(args.condicao, args.limite, ctx.historico)
+  ) {
     return { sucesso: false, motivo: "valor_nao_confirmado" };
   }
   if (await limiteDeAlertasAtingido(supabase, ctx.produtor.id)) {
