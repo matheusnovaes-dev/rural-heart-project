@@ -29,6 +29,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -73,9 +74,11 @@ const produtorNavItemsBase: NavItem[] = [
   { to: "/dashboard/lembretes", label: "Lembretes", icon: ListChecks },
   { to: "/dashboard/funcionarios", label: "Funcionários", icon: HardHat },
   { to: "/dashboard/clima", label: "Clima", icon: CloudSun },
-  { to: "/dashboard/perfil", label: "Meu perfil", icon: UserRound },
   { to: "/dashboard/suporte", label: "Suporte", icon: LifeBuoy },
 ];
+
+// Seção "Conta" (separada da navegação principal, no fim da barra): perfil e assinatura do produtor.
+const perfilNavItem: NavItem = { to: "/dashboard/perfil", label: "Meu perfil", icon: UserRound };
 
 const assinaturaNavItem: NavItem = {
   to: "/dashboard/assinatura",
@@ -168,9 +171,11 @@ function DashboardGuard() {
       ]
     : [
         ...produtorNavItemsBase,
-        ...(!produtor!.cooperativa_id ? [assinaturaNavItem] : []),
         ...(emailDoUsuario === EMAIL_SAFRALUME_ADMIN ? [leadsNavItem] : []),
       ];
+  const itemsConta: NavItem[] = cooperativa
+    ? []
+    : [perfilNavItem, ...(!produtor!.cooperativa_id ? [assinaturaNavItem] : [])];
   const headerTitle = cooperativa ? cooperativa.nome : produtor!.nome;
   const headerSubtitle = cooperativa ? "Painel executivo" : "Produtor rural";
 
@@ -188,6 +193,7 @@ function DashboardGuard() {
           headerSubtitle={headerSubtitle}
           avatarUrl={cooperativa ? null : (produtor?.foto_url ?? null)}
           items={items}
+          itemsConta={itemsConta}
         />
         <SidebarInset>
           <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-border/80 bg-background/95 px-4 backdrop-blur-sm sm:px-6">
@@ -252,11 +258,13 @@ function AppSidebar({
   headerSubtitle,
   avatarUrl,
   items,
+  itemsConta,
 }: {
   headerTitle: string;
   headerSubtitle: string;
   avatarUrl: string | null;
   items: NavItem[];
+  itemsConta: NavItem[];
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { isMobile, setOpenMobile } = useSidebar();
@@ -310,6 +318,27 @@ function AppSidebar({
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        {itemsConta.length > 0 ? (
+          <SidebarGroup className="mt-auto border-t border-sidebar-border px-3 py-3">
+            <SidebarGroupLabel className="px-2 text-[11px] font-semibold tracking-wider text-sidebar-foreground/55 uppercase">
+              Conta
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {itemsConta.map((item) => (
+                  <SidebarMenuItem key={item.to}>
+                    <SidebarMenuButton asChild isActive={pathname === item.to}>
+                      <Link to={item.to} data-tour={item.to} onClick={aoSelecionar}>
+                        <item.icon />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ) : null}
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-3">
         <SignOutButton />
