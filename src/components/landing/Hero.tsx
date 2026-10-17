@@ -1,3 +1,4 @@
+import { HeroLuz, HeroTrigo } from "@/components/landing/HeroVivo";
 import { ContaAte } from "@/components/landing/ContaAte";
 import {
   animate,
@@ -113,6 +114,7 @@ export function Hero() {
             />
           </picture>
         </motion.div>
+        <HeroTrigo />
         {/* A foto é um pôr do sol de verdade (céu dramático, trigo dourado) —
             o overlay antigo (preto-esverdeado, hue 158, até 88% opaco já no
             topo) enterrava exatamente essa cor. 4 paradas em vez de 2: o
@@ -126,6 +128,7 @@ export function Hero() {
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,oklch(0.2_0.03_55/0.24)_0%,oklch(0.18_0.03_55/0.50)_30%,oklch(0.15_0.03_55/0.66)_62%,oklch(0.15_0.03_55/0.78)_86%,oklch(0.988_0.005_95.1)_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_72%_54%_at_50%_46%,oklch(0.12_0.03_55/0.66),transparent_74%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_30%_at_50%_44%,oklch(0.85_0.16_72/0.30),transparent_70%)] mix-blend-soft-light" />
+        <HeroLuz />
         {/* Sempre renderizada (escondida por CSS em motion-reduce): renderizar
             condicional por useReducedMotion gera HTML diferente entre servidor
             (sem preferência) e cliente (com preferência), e o React derruba e
