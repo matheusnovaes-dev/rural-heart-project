@@ -55,7 +55,7 @@ export function SafralumeIcon({
   // foto do hero na conexão lenta de quem chega do celular.
   return (
     <img
-      src={`/icons/${nome}.png`}
+      src={`/icons/${nome}.webp`}
       alt={alt}
       className={className}
       loading="lazy"
