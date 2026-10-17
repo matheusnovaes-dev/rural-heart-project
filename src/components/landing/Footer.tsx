@@ -19,7 +19,7 @@ const paginas = [
 ];
 
 const itemClasse =
-  "block w-fit font-display text-[clamp(1.45rem,5.6vw,2.1rem)] leading-[1.04] font-extrabold tracking-tight uppercase transition-colors hover:text-[color:var(--cta)] focus-visible:text-[color:var(--cta)]";
+  "block w-fit font-display text-[clamp(1.3rem,5.4vw,2.1rem)] leading-[1.04] font-extrabold tracking-tight uppercase transition-colors hover:text-[color:var(--cta)] focus-visible:text-[color:var(--cta)]";
 
 /**
  * Rodapé no estilo do site do Lando Norris: moldura laranja da marca, painel verde com as fontes oficiais, colunas de

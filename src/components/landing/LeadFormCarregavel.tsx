@@ -27,7 +27,7 @@ function Esqueleto({ className }: { className?: string }) {
     <div
       aria-busy="true"
       className={cn(
-        "flex min-h-[21.5rem] flex-col gap-4 sm:min-h-[19rem] lg:min-h-[20rem]",
+        "flex min-h-[26rem] flex-col gap-4 min-[360px]:min-h-[23.5rem] min-[390px]:min-h-[21.5rem] sm:min-h-[19rem] lg:min-h-[20rem]",
         className,
       )}
     >

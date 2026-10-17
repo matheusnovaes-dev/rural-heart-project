@@ -940,11 +940,3 @@ button[data-aguardando] {
   animation-duration: 0.28s;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-/* Fileira que desliza pro lado sem barra de rolagem visível (fotos e planos no celular). */
-.no-scrollbar {
-  scrollbar-width: none;
-}
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}

@@ -195,7 +195,10 @@ export function DashboardPreview() {
   }, [aba]);
 
   useEffect(() => {
-    if (!autoplay || fixo) return;
+    // Celular (< 640px): sem troca automática. Cada aba tem uma altura (384 a 788px) e trocar sozinha empurrava a
+    // página inteira, com a pessoa lendo outra seção (achado 2026-10-17: o conteúdo abaixo do painel pulava ~400px).
+    // Ali quem troca é o toque, e o que está embaixo não se mexe fora da vista.
+    if (!autoplay || fixo || window.matchMedia("(max-width: 639px)").matches) return;
     const id = setInterval(() => {
       setAba((atual) => {
         const idx = abas.findIndex((a) => a.id === atual);
@@ -229,6 +232,9 @@ export function DashboardPreview() {
           lugar só, desde o plano Bronze. Câmbio, diesel e boletins de mercado vêm junto.{" "}
           <span className="hidden [@media(pointer:fine)]:inline">
             Passe o mouse pra pausar e explorar no seu ritmo.
+          </span>
+          <span className="[@media(pointer:fine)]:hidden sm:hidden">
+            Toque nos ícones pra explorar cada parte.
           </span>
         </p>
       </Reveal>
@@ -331,14 +337,16 @@ export function DashboardPreview() {
                         aria-pressed={aba === item.id}
                         onClick={() => selecionarManual(item.id)}
                         className={cn(
-                          "flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors pointer-coarse:min-h-11 pointer-coarse:min-w-11 sm:flex-none sm:justify-start",
+                          "flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors sm:gap-1.5 sm:px-2.5 sm:text-[13px] sm:tracking-tight pointer-coarse:min-h-11 pointer-coarse:min-w-11 sm:flex-none sm:justify-start",
                           aba === item.id
                             ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
                             : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
                         )}
                       >
                         <item.icon className="size-4 shrink-0" />
-                        <span className="hidden flex-1 sm:inline">{item.label}</span>
+                        <span className="hidden min-w-0 flex-1 truncate sm:inline">
+                          {item.label}
+                        </span>
                         <span
                           className={cn(
                             "hidden shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold sm:inline",

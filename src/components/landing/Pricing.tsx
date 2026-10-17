@@ -1,6 +1,6 @@
 import { ContaAte } from "@/components/landing/ContaAte";
 import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Check, ChevronDown, Leaf, Sprout, Wheat } from "lucide-react";
 import { Link } from "@tanstack/react-router";
@@ -27,36 +27,9 @@ const porDia = (preco: number) =>
   (preco / 30).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export function Pricing({ semTrial = false }: { semTrial?: boolean }) {
-  // Celular: os três planos viram uma fileira que desliza pro lado (scroll-snap), abrindo já no plano em destaque
-  // (Prata, o do meio) com os vizinhos aparecendo pela borda. Sem JavaScript a fileira abre no Bronze e desliza igual.
-  const faixa = useRef<HTMLDivElement>(null);
-  const [indice, setIndice] = useState(1);
-  useEffect(() => {
-    const el = faixa.current;
-    if (!el || !window.matchMedia("(max-width: 639px)").matches) return;
-    const destaque = Math.max(
-      0,
-      pricingPlans.findIndex((p) => p.highlighted),
-    );
-    const alvo = el.children[destaque] as HTMLElement | undefined;
-    if (alvo) el.scrollLeft = alvo.offsetLeft - (el.clientWidth - alvo.clientWidth) / 2;
-    const io = new IntersectionObserver(
-      (entradas) => {
-        for (const e of entradas)
-          if (e.isIntersecting) setIndice(Array.prototype.indexOf.call(el.children, e.target));
-      },
-      { root: el, threshold: 0.6 },
-    );
-    Array.from(el.children).forEach((c) => io.observe(c));
-    return () => io.disconnect();
-  }, []);
-
   return (
     // Capítulo escuro (verde da marca, como o rodapé): os cartões claros e o laranja dos botões saltam do fundo.
-    <section
-      id="planos"
-      className="relative isolate scroll-mt-16 overflow-hidden bg-[#0e1d15] text-[#f6f3ec]"
-    >
+    <section id="planos" className="relative isolate scroll-mt-16 overflow-hidden bg-[#0e1d15]">
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-10"
@@ -81,15 +54,14 @@ export function Pricing({ semTrial = false }: { semTrial?: boolean }) {
           </p>
         </Reveal>
 
-        <div
-          ref={faixa}
-          className="no-scrollbar -mx-4 mt-12 flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto px-[8vw] pb-4 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-3 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0"
-        >
+        <div className="mx-auto mt-12 grid max-w-md items-stretch gap-6 lg:max-w-none lg:grid-cols-3">
           {pricingPlans.map((plan, index) => (
             <Reveal
               key={plan.id}
               delay={index * 0.1}
-              className="h-full max-sm:w-[84vw] max-sm:shrink-0 max-sm:snap-center max-sm:transform-none! max-sm:opacity-100!"
+              // No celular e no tablet (um cartão por linha) o plano em destaque (Prata) sobe pro topo: antes ele só aparecia depois de rolar o
+              // card inteiro do Bronze.
+              className={cn("h-full", plan.highlighted && "max-lg:order-first")}
             >
               {plan.highlighted ? (
                 // Plano em destaque: um fio de luz laranja dá a volta no cartão (só transform, ver .anel-destaque)
@@ -100,17 +72,6 @@ export function Pricing({ semTrial = false }: { semTrial?: boolean }) {
                 <CartaoPlano plan={plan} semTrial={semTrial} />
               )}
             </Reveal>
-          ))}
-        </div>
-        <div aria-hidden="true" className="mt-3 flex justify-center gap-2 sm:hidden">
-          {pricingPlans.map((p, i) => (
-            <span
-              key={p.id}
-              className={cn(
-                "h-1.5 rounded-full transition-[width,background-color] duration-300",
-                i === indice ? "w-6 bg-[#ee942b]" : "w-1.5 bg-[#f6f3ec]/35",
-              )}
-            />
           ))}
         </div>
       </div>
