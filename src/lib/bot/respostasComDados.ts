@@ -580,3 +580,30 @@ export async function responderSituacaoDaConta(
   }
   return null; // inadimplente, cancelada...: o fluxo de cobrança já cuida disso
 }
+
+// ---------------------------------------------------------------- alerta sem dizer de quê
+
+const MENCIONA_ALERTA = /\balertas?\b/i;
+const ALERTA_JA_ESPECIFICO =
+  /chuva|geada|seca|vento|clima|pre[cç]o|soja|milho|boi|caf[eé]|d[oó]lar|c[aâ]mbio|leil[aã]o|trigo|arroz|feij[aã]o|algod[aã]o|cana|leite|avis\w+|passar|cair|subir|abaixo|acima|\d|resumo/i;
+
+/**
+ * "a cidade que quero que alerta é Belo Horizonte", sem conversa de alerta antes: o modelo respondia preço de soja.
+ * Quando só se fala de "alerta" sem dizer de quê e a conversa não estava num pedido de alerta, pergunta de quê.
+ */
+export function ehPedidoDeAlertaSemTipo(texto: string, historico: HistoricoLinha[]): boolean {
+  const t = texto.trim();
+  if (t.length > 110 || !MENCIONA_ALERTA.test(t) || ALERTA_JA_ESPECIFICO.test(t)) return false;
+  if (ehPedidoDeListarAlertas(t) || ehPedidoDeCancelarAlerta(t)) return false;
+  const ultima = ultimaDoAssistente(historico);
+  return !(ultima && /alerta|confirma/i.test(ultima));
+}
+
+export function respostaDeAlertaSemTipo(): RespostaComDados {
+  return {
+    resposta:
+      'Que alerta você quer criar? Posso te avisar de clima (chuva forte, geada, seca ou vento, até pela previsão de uma cidade), do preço de uma cultura, do dólar ou de leilão de gado. Me diz, por exemplo: "me avisa quando a soja passar de R$140" ou "alerta de chuva forte em Sorriso".',
+    precisa_humano: false,
+    convite_dispensado: true,
+  };
+}

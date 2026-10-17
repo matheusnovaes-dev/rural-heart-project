@@ -118,7 +118,9 @@ import {
   respostaDeLinkDoSite,
   respostaDePagamento,
   responderAcenoSolto,
+  ehPedidoDeAlertaSemTipo,
   ehPedidoDeCancelarAlerta,
+  respostaDeAlertaSemTipo,
   ehPedidoDeListarAlertas,
   ehPedidoDeOpiniaoDeInvestimento,
   ehPerguntaDePlanos,
@@ -874,9 +876,13 @@ function extrairResultadoLeilao(messages: OpenAIMessage[]): ResultadoLeilao | nu
           disponivelNoPlano: true,
           encontrado: true,
           totalPresenciais:
-            typeof r["total_presenciais_na_regiao"] === "number" ? r["total_presenciais_na_regiao"] : 0,
+            typeof r["total_presenciais_na_regiao"] === "number"
+              ? r["total_presenciais_na_regiao"]
+              : 0,
           totalVirtuais:
-            typeof r["total_virtuais_em_destaque"] === "number" ? r["total_virtuais_em_destaque"] : 0,
+            typeof r["total_virtuais_em_destaque"] === "number"
+              ? r["total_virtuais_em_destaque"]
+              : 0,
         };
       }
       return { disponivelNoPlano: true, encontrado: false };
@@ -1370,6 +1376,9 @@ async function runAgentBase(input: {
         ? pronta(await responderListaDeAlertas(supabase, produtor))
         : null) ??
       (ehPedidoDeCancelarAlerta(texto) ? pronta(respostaDeCancelarAlerta(produtor)) : null) ??
+      (produtor.id && ehPedidoDeAlertaSemTipo(texto, historico)
+        ? pronta(respostaDeAlertaSemTipo())
+        : null) ??
       (ehPerguntaDePlanos(texto) || (ehPerguntaVagaDePreco(texto) && conversaEraDePlanos(historico))
         ? pronta(await responderPlanos(supabase, produtor))
         : null) ??
