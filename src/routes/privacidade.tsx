@@ -5,7 +5,9 @@ import { siteConfig } from "@/config/site";
 
 export const Route = createFileRoute("/privacidade")({
   head: () => ({
+    links: [{ rel: "canonical", href: "https://www.safralume.com.br/privacidade" }],
     meta: [
+      { property: "og:url", content: "https://www.safralume.com.br/privacidade" },
       { title: "Política de Privacidade | Safralume" },
       {
         name: "description",

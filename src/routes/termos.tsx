@@ -5,7 +5,9 @@ import { siteConfig } from "@/config/site";
 
 export const Route = createFileRoute("/termos")({
   head: () => ({
+    links: [{ rel: "canonical", href: "https://www.safralume.com.br/termos" }],
     meta: [
+      { property: "og:url", content: "https://www.safralume.com.br/termos" },
       { title: "Termos de Uso | Safralume" },
       {
         name: "description",

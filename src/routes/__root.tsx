@@ -98,7 +98,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "Safralume traduz relatórios oficiais (Conab e órgãos estaduais) em respostas simples, para grãos e pecuária: o preço da sua região, a comparação com o porto e o frete, direto no WhatsApp do produtor.",
+          "O preço da sua saca, a comparação com o porto e o frete, com fonte e data, direto no WhatsApp. Teste grátis por 7 dias, sem cartão.",
       },
       {
         property: "og:title",
@@ -110,7 +110,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { property: "og:locale", content: "pt_BR" },
-      { property: "og:url", content: "https://www.safralume.com.br" },
       { property: "og:site_name", content: "Safralume" },
       { property: "og:image", content: "https://www.safralume.com.br/images/og-image.jpg" },
       { property: "og:image:width", content: "1200" },
@@ -169,7 +168,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
       { rel: "icon", href: "/favicon.png", type: "image/png", sizes: "32x32" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
-      { rel: "canonical", href: "https://www.safralume.com.br" },
     ],
     scripts: [
       {
@@ -179,7 +177,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "@type": "Organization",
           name: "Safralume",
           url: "https://www.safralume.com.br",
-          logo: "https://www.safralume.com.br/favicon.png",
+          logo: "https://www.safralume.com.br/logo-icon.png",
+          sameAs: ["https://www.instagram.com/safralume/"],
+          contactPoint: {
+            "@type": "ContactPoint",
+            contactType: "customer support",
+            telephone: "+5531990040215",
+            availableLanguage: "pt-BR",
+            url: "https://wa.me/5531990040215",
+          },
           description:
             "Assistente via WhatsApp que traduz preços agrícolas oficiais (Conab e órgãos estaduais) em respostas com o preço da região, a comparação com o porto e o frete.",
         }),

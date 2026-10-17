@@ -34,7 +34,9 @@ const validarBusca = (busca: Record<string, unknown>) =>
 export const Route = createFileRoute("/")({
   validateSearch: validarBusca,
   head: () => ({
+    meta: [{ property: "og:url", content: "https://www.safralume.com.br/" }],
     links: [
+      { rel: "canonical", href: "https://www.safralume.com.br/" },
       // A foto do hero é o LCP em todos os tamanhos de tela. Sem isto ela só era pedida depois dos scripts e fontes, e em
       // rede lenta ficava para trás. Cada preload só vale para a faixa de tela da versão que o <picture> escolheria.
       {
