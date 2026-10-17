@@ -78,10 +78,7 @@ export const SUGESTOES: Sugestao[] = [
     convite:
       'ver o mercado de Mato Grosso do Imea (escala de abate, vaca gorda, prêmio no porto): "Como está a escala de abate em MT?"',
     reconhecer: /escala de abate|pr[êe]mio (no )?porto|indicadores do imea/i,
-    quando: (c) =>
-      (c.uf === "MT" || c.falouDeMT) &&
-      ["boi", "grao"].includes(c.categoria) &&
-      c.assunto === "preco",
+    quando: (c) => (c.uf === "MT" || c.falouDeMT) && c.categoria === "boi" && c.assunto === "preco",
   },
   {
     id: "leilao",

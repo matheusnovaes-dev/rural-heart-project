@@ -77,6 +77,9 @@ import {
   garantirMencaoPainel,
   garantirMencaoLeilao,
   garantirOpcaoDeCidadeNoAlertaDeClima,
+  corrigirCalendario,
+  corrigirFimDeMes,
+  buildContextoDeData,
   tirarNegativaDeInsumoParaBronze,
   garantirCotacaoLeite,
   garantirRelacaoLeiteMilho,
@@ -92,6 +95,22 @@ import {
   type FreteCitado,
 } from "@/lib/bot/guardas";
 import { respostaDeProduto } from "@/lib/bot/respostasDeProduto";
+import { avisarCidadeSemCotacao } from "@/lib/bot/cidadeSemCotacao";
+import {
+  conversaEraDePlanos,
+  ehPedidoDeCancelarAlerta,
+  ehPedidoDeListarAlertas,
+  ehPedidoDeOpiniaoDeInvestimento,
+  ehPerguntaDePlanos,
+  ehPerguntaVagaDePreco,
+  respostaDeCancelarAlerta,
+  respostaDeInvestimento,
+  respostaDePrecoSemAssunto,
+  responderCidadeDeclarada,
+  responderConversaoDeUnidade,
+  responderListaDeAlertas,
+  responderPlanos,
+} from "@/lib/bot/respostasComDados";
 import { responderMidia } from "@/lib/bot/estudoDeProposta";
 import {
   contextoDoEstudo,
@@ -1288,6 +1307,36 @@ async function runAgentBase(input: {
     };
   }
 
+  // Pedidos que o modelo errava na auditoria de 2026-10-16 e que têm resposta certa por código (ver
+  // respostasComDados.ts): cidade do produtor, listar/cancelar alertas, planos, conversão de unidade e
+  // opinião de investimento.
+  {
+    const pronta = (
+      r: { resposta: string; precisa_humano: boolean; convite_dispensado: boolean } | null,
+    ) =>
+      r
+        ? {
+            resposta: r.resposta,
+            precisa_humano: r.precisa_humano,
+            cadastro_criado: false,
+            convite_dispensado: r.convite_dispensado,
+          }
+        : null;
+    const porCodigo =
+      pronta(await responderCidadeDeclarada(supabase, texto, produtor)) ??
+      (produtor.id && ehPedidoDeListarAlertas(texto)
+        ? pronta(await responderListaDeAlertas(supabase, produtor))
+        : null) ??
+      (ehPedidoDeCancelarAlerta(texto) ? pronta(respostaDeCancelarAlerta(produtor)) : null) ??
+      (ehPerguntaDePlanos(texto) || (ehPerguntaVagaDePreco(texto) && conversaEraDePlanos(historico))
+        ? pronta(await responderPlanos(supabase, produtor))
+        : null) ??
+      (ehPerguntaVagaDePreco(texto) ? pronta(respostaDePrecoSemAssunto()) : null) ??
+      pronta(responderConversaoDeUnidade(texto)) ??
+      (ehPedidoDeOpiniaoDeInvestimento(texto) ? pronta(respostaDeInvestimento()) : null);
+    if (porCodigo) return porCodigo;
+  }
+
   // Quem representa uma cooperativa ou corretora: o cadastro dela é pelo site (painel da equipe),
   // nunca vira "produtor" por aqui. Vale em qualquer ponto da conversa, antes do cadastro por código.
   if (ehInteresseDeCooperativa(texto)) {
@@ -1532,6 +1581,7 @@ async function runAgentBase(input: {
   const messages: OpenAIMessage[] = [
     { role: "system", content: SYSTEM_PROMPT },
     { role: "system", content: buildContextoProdutor(produtor) },
+    { role: "system", content: buildContextoDeData() },
     ...(contextoMemoria ? [{ role: "system" as const, content: contextoMemoria }] : []),
     ...(produtor.id ? [] : [{ role: "system" as const, content: buildRegrasCadastroAnonimo() }]),
     ...(produtor.id && !produtor.user_id
@@ -1574,11 +1624,11 @@ async function runAgentBase(input: {
   // de ser criado, e barra valor em R$ que nenhuma fonte desta conversa
   // sustenta. Devolve null quando a resposta precisa de mais uma rodada
   // (pedido de correção de valor inventado).
-  const fechar = (
+  const fechar = async (
     parsed: { resposta: string; precisa_humano: boolean },
     conteudoBruto: string | null | undefined,
     podeCorrigir: boolean,
-  ): RespostaAgente | null => {
+  ): Promise<RespostaAgente | null> => {
     if (cadastroCriado && contaCriada) {
       return {
         resposta: respostaCadastroCriado({
@@ -1594,43 +1644,66 @@ async function runAgentBase(input: {
 
     const numerosPermitidos = coletarNumerosPermitidos(messages, texto, historico);
     const leite = extrairResultadoLeite(messages);
-    const resposta = garantirOpcaoDeCidadeNoAlertaDeClima(
-      tirarNegativaDeInsumoParaBronze(
-        garantirMencaoLeilao(
-          garantirMencaoPainel(
-            garantirCanalDeTexto(
-              garantirCotacaoLeite(
-                garantirRelacaoLeiteMilho(
-                  garantirMediaDasPracas(
-                    garantirReferenciaMercado(
-                      garantirParidade(
-                        garantirRotaFrete(
-                          garantirDataDoPreco(
-                            removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
-                            extrairDataDoPreco(messages),
+    const respostaBase = corrigirFimDeMes(
+      corrigirCalendario(
+        garantirOpcaoDeCidadeNoAlertaDeClima(
+          tirarNegativaDeInsumoParaBronze(
+            garantirMencaoLeilao(
+              garantirMencaoPainel(
+                garantirCanalDeTexto(
+                  garantirCotacaoLeite(
+                    garantirRelacaoLeiteMilho(
+                      garantirMediaDasPracas(
+                        garantirReferenciaMercado(
+                          garantirParidade(
+                            garantirRotaFrete(
+                              garantirDataDoPreco(
+                                removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
+                                extrairDataDoPreco(messages),
+                              ),
+                              extrairUltimoFreteCitado(messages),
+                            ),
+                            extrairParidade(messages),
                           ),
-                          extrairUltimoFreteCitado(messages),
+                          extrairReferenciaMercado(messages),
                         ),
-                        extrairParidade(messages),
+                        extrairMediaDasPracas(messages),
                       ),
-                      extrairReferenciaMercado(messages),
+                      leite.fraseRelacao,
+                      numerosPermitidos,
                     ),
-                    extrairMediaDasPracas(messages),
+                    leite.cotacao,
                   ),
-                  leite.fraseRelacao,
-                  numerosPermitidos,
                 ),
-                leite.cotacao,
+                temDetalheExtraParaPainel(messages),
+                !!produtor.user_id,
               ),
+              extrairResultadoLeilao(messages),
             ),
-            temDetalheExtraParaPainel(messages),
-            !!produtor.user_id,
+            insumoForaDoPlano(messages),
           ),
-          extrairResultadoLeilao(messages),
         ),
-        insumoForaDoPlano(messages),
       ),
     );
+
+    const chamadasDePreco = messages.flatMap((m) =>
+      m.role === "assistant" && m.tool_calls
+        ? m.tool_calls.filter((tc) => tc.function.name === "buscar_preco")
+        : [],
+    );
+    let ufDoPreco: string | null = produtor.uf;
+    for (const tc of chamadasDePreco) {
+      try {
+        const u = JSON.parse(tc.function.arguments)?.uf;
+        if (typeof u === "string" && u) ufDoPreco = u;
+      } catch {
+        /* argumento ilegível: fica com a UF do cadastro */
+      }
+    }
+    const resposta = await avisarCidadeSemCotacao(respostaBase, texto, {
+      uf: ufDoPreco,
+      chamouPreco: chamadasDePreco.length > 0,
+    });
 
     const naoAutorizados = valoresNaoAutorizados(resposta, numerosPermitidos);
     // Quantidades em kg/litros sem fonte (leite): sem frase pronta pra trocar,
@@ -1929,7 +2002,7 @@ async function runAgentBase(input: {
           }
         }
 
-        const fechada = fechar(parsed, mensagem.content, true);
+        const fechada = await fechar(parsed, mensagem.content, true);
         if (fechada) return fechada;
         continue;
       }
@@ -1943,7 +2016,7 @@ async function runAgentBase(input: {
     const conteudo = json.choices?.[0]?.message?.content;
     if (conteudo) {
       const parsed = JSON.parse(conteudo) as { resposta: string; precisa_humano: boolean };
-      const fechada = fechar(parsed, conteudo, false);
+      const fechada = await fechar(parsed, conteudo, false);
       if (fechada) return fechada;
     }
 

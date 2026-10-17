@@ -29,10 +29,16 @@ export async function atualizarLocalizacao(
 
   const { error } = await supabase
     .from("produtores")
-    .update({ municipio: municipio.nome, lat: municipio.lat, lon: municipio.lon })
+    .update({
+      municipio: municipio.nome,
+      lat: municipio.lat,
+      lon: municipio.lon,
+      uf: args.uf.toUpperCase(),
+    })
     .eq("id", ctx.produtor.id);
   if (error) return { sucesso: false, motivo: "erro_ao_salvar" };
 
+  ctx.produtor.uf = args.uf.toUpperCase();
   ctx.produtor.municipio = municipio.nome;
   ctx.produtor.lat = municipio.lat;
   ctx.produtor.lon = municipio.lon;

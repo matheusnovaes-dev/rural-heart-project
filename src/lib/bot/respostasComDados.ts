@@ -1,0 +1,420 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+import { pricingPlans } from "@/config/site";
+import { ufs } from "@/config/ufs";
+import type { HistoricoLinha } from "@/lib/bot/prompt";
+import { atualizarLocalizacao } from "@/lib/bot/tools/localizacao";
+import type { ProdutorContexto } from "@/lib/bot/types";
+
+/**
+ * Respostas por CÓDIGO para pedidos em que o modelo errou na auditoria de 2026-10-16 (bateria de ~50 mensagens
+ * contra o bot de produção): o gpt-4o-mini respondia outra coisa (ferrugem no lugar de "minha cidade é Sinop"),
+ * prometia o que o bot não faz ("cancela todos meus alertas" pedia confirmação para sempre, sem ferramenta
+ * nenhuma que cancele), não respondia ("quais alertas eu tenho"), dava opinião de investimento e mostrava o plano
+ * Bronze com teste grátis para quem já é Prata. Mesma regra de [[feedback_bot_conditional_rules_in_code]]:
+ * o que tem resposta certa e determinística sai daqui, não da boa vontade do modelo.
+ */
+export type RespostaComDados = {
+  resposta: string;
+  precisa_humano: boolean;
+  convite_dispensado: boolean;
+};
+
+const semAcento = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+
+const ehNome = (candidato: string) => {
+  const c = semAcento(candidato);
+  return ufs.some((u) => semAcento(u.label) === c || u.value.toLowerCase() === c);
+};
+
+// ---------------------------------------------------------------- cidade do produtor
+
+const PREFIXO_DE_CIDADE =
+  "(?:minha cidade (?:é|e|eh)|a minha cidade (?:é|e|eh)|moro (?:em|na cidade de|no município de|no municipio de)|sou (?:de|da cidade de)|agora (?:sou de|moro em)|mudei (?:de cidade )?(?:pra|para|pro)|me mudei (?:pra|para)|fico em|minha fazenda (?:fica )?(?:em|na cidade de))";
+const DECLARACAO_DE_CIDADE = new RegExp(`${PREFIXO_DE_CIDADE}\\s+(.{2,70})$`, "iu");
+const PERGUNTA_OU_DADO = /\?|pre[cç]o|quanto|cota[cç][aã]o|previs[aã]o|vai chover/i;
+
+export type CidadeDeclarada = { cidade: string; uf: string | null };
+
+/** "minha cidade é Sinop", "mudei pra Lucas do Rio Verde MT": a cidade (e a UF, se veio) que a pessoa disse ser dela. */
+export function lerCidadeDeclarada(texto: string): CidadeDeclarada | null {
+  const t = texto.trim().replace(/[.!]+$/, "");
+  if (t.length > 110 || PERGUNTA_OU_DADO.test(t)) return null;
+  const m = t.match(DECLARACAO_DE_CIDADE);
+  if (!m) return null;
+  let bruto = m[1]!.trim().replace(/\s+(?:mesmo|agora|hoje)$/i, "");
+
+  let uf: string | null = null;
+  const comSigla = bruto.match(/^(.*?)[\s,/-]+([A-Za-z]{2})$/);
+  if (comSigla && ufs.some((u) => u.value === comSigla[2]!.toUpperCase())) {
+    bruto = comSigla[1]!.trim();
+    uf = comSigla[2]!.toUpperCase();
+  } else {
+    for (const u of ufs) {
+      const nome = semAcento(u.label);
+      const b = semAcento(bruto);
+      if (b.endsWith(` ${nome}`) || b.endsWith(`, ${nome}`)) {
+        bruto = bruto.slice(0, bruto.length - nome.length).replace(/[\s,/-]+$/, "");
+        uf = u.value;
+        break;
+      }
+    }
+  }
+  const cidade = bruto.replace(/[,;]+$/, "").trim();
+  if (cidade.length < 2 || cidade.length > 50 || !/^[\p{L}][\p{L}\s'’.-]*$/u.test(cidade))
+    return null;
+  // "sou de Minas", "moro em Goiás": é estado, não cidade. Deixa o fluxo normal conduzir.
+  if (ehNome(cidade) || semAcento(cidade) === "minas") return null;
+  return { cidade, uf };
+}
+
+export async function responderCidadeDeclarada(
+  supabase: SupabaseClient,
+  texto: string,
+  produtor: ProdutorContexto,
+): Promise<RespostaComDados | null> {
+  if (!produtor.id) return null;
+  const dita = lerCidadeDeclarada(texto);
+  if (!dita) return null;
+  const uf = dita.uf ?? produtor.uf;
+  if (!uf) return null;
+  const nomeUf = ufs.find((u) => u.value === uf)?.label ?? uf;
+  const r = await atualizarLocalizacao(supabase, { municipio: dita.cidade, uf }, { produtor });
+  if (r.sucesso) {
+    return {
+      resposta: `Anotei: sua cidade agora é ${r.municipio}/${r.uf}. Passo a usar ela no frete e na previsão do tempo.`,
+      precisa_humano: false,
+      convite_dispensado: true,
+    };
+  }
+  if (r.motivo === "cidade_nao_encontrada") {
+    return {
+      resposta: `Não achei "${dita.cidade}" em ${nomeUf}. Confere pra mim o nome da cidade e o estado?`,
+      precisa_humano: false,
+      convite_dispensado: true,
+    };
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------- alertas: listar e cancelar
+
+const CRIAR_ALERTA = /\b(cri(?:a|ar|e)|quero (?:um|o|receber)|configur\w+|me avis\w+|nov[oa])\b/i;
+const LISTAR_ALERTAS =
+  /(?:\b(?:quais|que|meus|mostra\w*|ver|list\w+|me (?:mostra|fala|diz)|tenho)\b.{0,30}\balertas?\b|\balertas?\b.{0,25}\b(?:eu )?(?:tenho|ativos?|configurad\w+|criad\w+|cadastrad\w+)\b)/i;
+const CANCELAR_ALERTA =
+  /\b(?:cancel\w*|exclu\w*|apag\w*|remov\w*|delet\w*|desativ\w*|tira\w*|pa?rar (?:de )?(?:receber )?)\b.{0,35}\balertas?\b/i;
+
+export function ehPedidoDeListarAlertas(texto: string): boolean {
+  const t = texto.trim();
+  if (
+    /\b(existem|existe|posso|pode|podem|voc[eê]s?|vcs?|dispon[ií]ve\w*|ofere\w+|funcionam|tipos?)\b/i.test(
+      t,
+    )
+  )
+    return false;
+  return (
+    t.length <= 90 && !CRIAR_ALERTA.test(t) && !CANCELAR_ALERTA.test(t) && LISTAR_ALERTAS.test(t)
+  );
+}
+
+export function ehPedidoDeCancelarAlerta(texto: string): boolean {
+  const t = texto.trim();
+  return (
+    t.length <= 110 &&
+    CANCELAR_ALERTA.test(t) &&
+    !/resumo|novidades|mensagens?|avisos? (?:de )?marketing/i.test(t)
+  );
+}
+
+const brl = (n: number) =>
+  n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+const CLIMA_TEXTO: Record<string, (limite: number) => string> = {
+  chuva_forte: (l) => `chuva forte, chance acima de ${l}%`,
+  geada: (l) => `geada, mínima abaixo de ${l}°C`,
+  seca_prolongada: (l) => `seca prolongada, chance de chuva abaixo de ${l}% na semana`,
+  vento_forte: (l) => `vento forte, rajada acima de ${l} km/h`,
+};
+
+const ONDE_VER_ALERTAS = (produtor: ProdutorContexto) =>
+  produtor.user_id
+    ? "Pra cancelar ou editar, é pelo painel, na aba Alertas: https://safralume.com.br/dashboard/alertas"
+    : "Pra cancelar ou editar, é pelo painel, na aba Alertas. Se ainda não tem login, me peça o link de acesso que eu mando.";
+
+export async function responderListaDeAlertas(
+  supabase: SupabaseClient,
+  produtor: ProdutorContexto,
+): Promise<RespostaComDados | null> {
+  if (!produtor.id) return null;
+  const id = produtor.id;
+  const [preco, cambio, clima, leilao, resumo] = await Promise.all([
+    supabase
+      .from("alertas_preco")
+      .select("cultura, uf, limite, direcao")
+      .eq("produtor_id", id)
+      .eq("ativo", true),
+    supabase
+      .from("alertas_cambio")
+      .select("limite, direcao")
+      .eq("produtor_id", id)
+      .eq("ativo", true),
+    supabase
+      .from("alertas_clima")
+      .select("uf, cidade, condicao, limite")
+      .eq("produtor_id", id)
+      .eq("ativo", true),
+    supabase
+      .from("alertas_leilao")
+      .select("uf, tipo_preferido")
+      .eq("produtor_id", id)
+      .eq("ativo", true),
+    supabase
+      .from("produtores")
+      .select("resumo_diario_ativo, resumo_diario_hora")
+      .eq("id", id)
+      .maybeSingle(),
+  ]);
+  // Se alguma leitura falhar, é melhor não responder por código do que afirmar "você não tem alertas".
+  if (preco.error || cambio.error || clima.error || leilao.error) return null;
+
+  const linhas: string[] = [];
+  for (const a of preco.data ?? []) {
+    const sobe = a.direcao !== "abaixo";
+    linhas.push(
+      `• ${capitalizar(String(a.cultura))} em ${a.uf}: aviso quando ${sobe ? "passar de" : "ficar abaixo de"} R$${brl(Number(a.limite))}`,
+    );
+  }
+  for (const a of cambio.data ?? []) {
+    const sobe = a.direcao !== "abaixo";
+    linhas.push(
+      `• Dólar: aviso quando ${sobe ? "passar de" : "ficar abaixo de"} R$${brl(Number(a.limite))}`,
+    );
+  }
+  for (const a of clima.data ?? []) {
+    const descricao = (CLIMA_TEXTO[String(a.condicao)] ?? (() => String(a.condicao)))(
+      Number(a.limite),
+    );
+    const onde = a.cidade ? `${a.cidade}/${a.uf}` : `${a.uf} (previsão da capital)`;
+    linhas.push(`• Clima em ${onde}: ${descricao}`);
+  }
+  for (const a of leilao.data ?? []) {
+    const tipo =
+      a.tipo_preferido === "qualquer" || !a.tipo_preferido
+        ? "qualquer tipo"
+        : `${a.tipo_preferido}`;
+    linhas.push(
+      `• Leilão de gado (${tipo}${a.uf ? `, ${a.uf}` : ", qualquer estado"}): aviso quando entrar um novo na agenda`,
+    );
+  }
+  const resumoAtivo = resumo.data?.resumo_diario_ativo === true;
+
+  if (linhas.length === 0 && !resumoAtivo) {
+    return {
+      resposta:
+        'Você não tem alerta ativo agora. Pra criar um, é só me dizer, por exemplo: "me avisa quando a soja passar de R$140".',
+      precisa_humano: false,
+      convite_dispensado: true,
+    };
+  }
+  const partes = ["Seus alertas ativos:", ...linhas];
+  if (linhas.length === 0) partes.push("• Nenhum alerta de preço, câmbio, clima ou leilão.");
+  if (resumoAtivo)
+    partes.push(`• Resumo diário: todo dia às ${resumo.data?.resumo_diario_hora ?? "?"}h`);
+  partes.push("", ONDE_VER_ALERTAS(produtor));
+  return { resposta: partes.join("\n"), precisa_humano: false, convite_dispensado: true };
+}
+
+export function respostaDeCancelarAlerta(produtor: ProdutorContexto): RespostaComDados {
+  return {
+    resposta: `Por aqui eu não consigo cancelar alertas. ${ONDE_VER_ALERTAS(produtor)} Lá você cancela (fica no histórico) ou exclui de vez.`,
+    precisa_humano: false,
+    convite_dispensado: true,
+  };
+}
+
+// ---------------------------------------------------------------- planos
+
+const PERGUNTA_DE_PLANOS = new RegExp(
+  [
+    "quanto\\s+(?:custa|é|e|fica|sai)\\s+(?:o|os|a|as)?\\s*(?:plano|planos|assinatura|mensalidade)",
+    "(?:valor|valores|pre[cç]o|pre[cç]os|custo)\\s+(?:do|dos|da|das)\\s+(?:plano|planos|assinatura|mensalidade)",
+    "(?:qual|quais)\\s+(?:o|os|a|as)?\\s*(?:valor|valores|pre[cç]os?)\\s+(?:do|dos|da|das)\\s+planos?",
+    "mensalidade",
+    "quais\\s+(?:s[aã]o\\s+)?(?:os\\s+)?planos",
+  ].join("|"),
+  "iu",
+);
+const PERGUNTA_VAGA_DE_PRECO =
+  /^\s*(?:e\s+)?(?:quanto|qual)\s+(?:custa|é o valor|o valor|é o preço|o preço)\s*[?!.]*\s*$/iu;
+
+export function ehPerguntaDePlanos(texto: string): boolean {
+  const t = texto.trim();
+  return t.length <= 110 && PERGUNTA_DE_PLANOS.test(t);
+}
+
+export function ehPerguntaVagaDePreco(texto: string): boolean {
+  return PERGUNTA_VAGA_DE_PRECO.test(texto.trim());
+}
+
+const DESCRICAO_DO_PLANO: Record<string, string> = {
+  bronze:
+    "preço da sua região comparado com o porto, sinal de venda, calculadora de safra, estudo de proposta (3 por dia) e até 3 alertas",
+  prata:
+    "tudo do Bronze, mais alertas sem limite, estudo de proposta com ranking (15 por dia), leilões de gado, até 3 funcionários e preço de defensivos e fertilizantes",
+  ouro: "tudo do Prata, mais acompanhar outras culturas e estados, funcionários sem limite e suporte prioritário",
+};
+
+const NOME_DO_PLANO = (p: string) => capitalizar(p);
+
+export async function responderPlanos(
+  supabase: SupabaseClient,
+  produtor: ProdutorContexto,
+): Promise<RespostaComDados> {
+  let situacao = "";
+  if (produtor.id) {
+    const { data } = await supabase
+      .from("assinaturas")
+      .select("plano, status, trial_expira_em")
+      .eq("produtor_id", produtor.id)
+      .maybeSingle();
+    if (data?.plano) {
+      if (data.status === "ativa") {
+        situacao = `Seu plano hoje é o ${NOME_DO_PLANO(data.plano)}.`;
+      } else if (
+        data.status === "trial" &&
+        data.trial_expira_em &&
+        new Date(data.trial_expira_em) > new Date()
+      ) {
+        const ate = new Date(data.trial_expira_em).toLocaleDateString("pt-BR", {
+          timeZone: "America/Sao_Paulo",
+        });
+        situacao = `Você está no teste grátis (plano ${NOME_DO_PLANO(data.plano)}) até ${ate}.`;
+      }
+    }
+  }
+  const linhas = pricingPlans.map(
+    (p) => `• ${p.name}, R$${p.price} por mês: ${DESCRICAO_DO_PLANO[p.id] ?? p.audience}`,
+  );
+  const fecho = produtor.id
+    ? produtor.user_id
+      ? "Pra mudar de plano: https://safralume.com.br/dashboard/assinatura"
+      : 'Pra assinar ou mudar de plano, é só me responder "quero assinar" que eu mando o link.'
+    : "O teste grátis dura 7 dias e não pede cartão.";
+  return {
+    resposta: [
+      "Os planos do Safralume, por mês:",
+      ...linhas,
+      "",
+      [situacao, fecho].filter(Boolean).join(" "),
+    ].join("\n"),
+    precisa_humano: false,
+    convite_dispensado: !!produtor.id,
+  };
+}
+
+export function respostaDePrecoSemAssunto(): RespostaComDados {
+  return {
+    resposta:
+      "Quanto custa o quê? Posso te passar o preço de uma cultura (soja, milho, boi, café...) ou o valor dos planos do Safralume. É só me dizer qual.",
+    precisa_humano: false,
+    convite_dispensado: true,
+  };
+}
+
+/** A última fala do bot era sobre plano/assinatura: um "quanto custa?" solto é sobre isso. */
+export function conversaEraDePlanos(historico: HistoricoLinha[]): boolean {
+  const ultima = [...historico]
+    .sort((a, b) => b.ordem - a.ordem)
+    .find((h) => h.role === "assistant");
+  return !!ultima && /\b(plano|planos|assinatura|assinar)\b/i.test(ultima.conteudo);
+}
+
+// ---------------------------------------------------------------- conversão de unidades
+
+const KG = {
+  saca: 60,
+  sacas: 60,
+  arroba: 15,
+  arrobas: 15,
+  kg: 1,
+  quilo: 1,
+  quilos: 1,
+  tonelada: 1000,
+  toneladas: 1000,
+  t: 1000,
+} as const;
+type Unidade = keyof typeof KG;
+const NOME_UNIDADE: Record<string, string> = {
+  saca: "saca",
+  arroba: "arroba",
+  kg: "kg",
+  tonelada: "tonelada",
+};
+
+function normalizaUnidade(u: string): "saca" | "arroba" | "kg" | "tonelada" {
+  const x = u.toLowerCase() as Unidade;
+  const kg = KG[x];
+  if (kg === 60) return "saca";
+  if (kg === 15) return "arroba";
+  if (kg === 1000) return "tonelada";
+  return "kg";
+}
+
+const CONVERSAO = new RegExp(
+  "quant[oa]s?\\s+(arrobas?|sacas?|kg|quilos?|toneladas?)\\s+(?:tem|t[eê]m|vale|valem|s[aã]o|equivale|equivalem|d[aá]|d[aã]o)\\s+(?:em|numa?|uma?|de)?\\s*(\\d[\\d.,]*)\\s*(arrobas?|sacas?|kg|quilos?|toneladas?|t)\\b",
+  "iu",
+);
+
+function lerNumero(s: string): number | null {
+  let t = s.trim();
+  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(t)) t = t.replace(/\./g, "").replace(",", ".");
+  else t = t.replace(",", ".");
+  const n = Number(t);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+const fmt = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+const plural = (n: number, u: string) =>
+  u === "kg" ? "kg" : n === 1 ? u : u === "tonelada" ? "toneladas" : `${u}s`;
+
+/** "quantas arrobas tem em 100 sacas?": conta exata, por código (saca 60 kg, arroba 15 kg, tonelada 1.000 kg). */
+export function responderConversaoDeUnidade(texto: string): RespostaComDados | null {
+  const m = texto.trim().match(CONVERSAO);
+  if (!m) return null;
+  const alvo = normalizaUnidade(m[1]!);
+  const origem = normalizaUnidade(m[3]!);
+  const qtd = lerNumero(m[2]!);
+  if (qtd === null || alvo === origem) return null;
+  const totalKg = qtd * KG[origem];
+  const resultado = totalKg / KG[alvo];
+  const nomeOrigem = NOME_UNIDADE[origem]!;
+  const nomeAlvo = NOME_UNIDADE[alvo]!;
+  const detalhe =
+    origem === "saca" ? " (saca de 60 kg)" : origem === "arroba" ? " (arroba de 15 kg)" : "";
+  return {
+    resposta: `${fmt(qtd)} ${plural(qtd, nomeOrigem)}${detalhe} equivalem a ${fmt(resultado)} ${plural(resultado, nomeAlvo)}. Considerei saca de 60 kg, arroba de 15 kg e tonelada de 1.000 kg.`,
+    precisa_humano: false,
+    convite_dispensado: true,
+  };
+}
+
+// ---------------------------------------------------------------- opinião de investimento
+
+const DECISAO_DE_INVESTIMENTO =
+  /(?:\binvestir\b|\binvestimentos?\b|\b(?:comprar|vender|arrendar)\s+(?:uma?\s+|a\s+|minha\s+|nossa\s+)?(?:terras?|fazendas?|im[oó]ve(?:l|is)|a[cç][oõ]es|bitcoin|cripto\w*|apartamentos?|trator(?:es)?|m[aá]quinas?)\b)/i;
+
+export function ehPedidoDeOpiniaoDeInvestimento(texto: string): boolean {
+  const t = texto.trim();
+  return t.length <= 120 && DECISAO_DE_INVESTIMENTO.test(t);
+}
+
+export function respostaDeInvestimento(): RespostaComDados {
+  return {
+    resposta:
+      "Essa é uma decisão sua, e eu não faço recomendação de investimento. O que eu posso é trazer os dados pra você decidir: preço de hoje, sinal de venda, tendência da B3, clima e a comparação das propostas que você receber. Quer ver algum deles?",
+    precisa_humano: false,
+    convite_dispensado: true,
+  };
+}

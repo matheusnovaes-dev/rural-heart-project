@@ -808,3 +808,131 @@ export function garantirOpcaoDeCidadeNoAlertaDeClima(resposta: string): string {
   if (/\s+quando\b/i.test(resposta)) return resposta.replace(/\s+quando\b/i, ` ${aviso} quando`);
   return resposta.replace(/\s*\?/, ` ${aviso}?`);
 }
+
+// ---------------------------------------------------------------------------
+// Calendário: dia da semana, "hoje/amanhã" e fim de mês (auditoria 2026-10-16)
+// ---------------------------------------------------------------------------
+
+const DIAS_DA_SEMANA = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+
+/** Data de hoje em Brasília como {a, m, d} (o servidor roda em UTC: à noite o dia já virou lá). */
+function hojeEmBrasilia(agora: Date): { a: number; m: number; d: number } {
+  const [a, m, d] = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" })
+    .format(agora)
+    .split("-")
+    .map(Number) as [number, number, number];
+  return { a, m, d };
+}
+
+const utcDe = (a: number, m: number, d: number) => new Date(Date.UTC(a, m - 1, d));
+const diaDaSemanaDe = (dt: Date) => DIAS_DA_SEMANA[dt.getUTCDay()]!;
+
+/** Frase com o calendário certo pro modelo (ele não sabe a data e inventava "segunda (16)"). */
+export function buildContextoDeData(agora: Date = new Date()): string {
+  const { a, m, d } = hojeEmBrasilia(agora);
+  const base = utcDe(a, m, d);
+  const rotulo = (dt: Date, comAno: boolean) =>
+    `${diaDaSemanaDe(dt)} ${String(dt.getUTCDate()).padStart(2, "0")}/${String(dt.getUTCMonth() + 1).padStart(2, "0")}${comAno ? `/${dt.getUTCFullYear()}` : ""}`;
+  const seguintes = [1, 2, 3, 4, 5, 6].map((n) =>
+    rotulo(new Date(base.getTime() + n * 86400000), false),
+  );
+  return `CALENDÁRIO (horário de Brasília): hoje é ${rotulo(base, true)}. Os próximos dias são: ${seguintes.join(", ")}. Use SEMPRE este calendário pra dizer "hoje", "amanhã" e o dia da semana de qualquer data; nunca calcule dia da semana por conta própria. Na previsão do tempo, o primeiro dia da lista é HOJE, não amanhã.`;
+}
+
+/**
+ * Corrige dia da semana errado ao lado de uma data ("segunda (16)" quando 16 é sexta) e "hoje/amanhã" que não bate
+ * com a data. O modelo não tem calendário e errava os dois (visto ao vivo em 2026-10-16: "amanhã, dia 16" quando o
+ * dia 16 era hoje; "segunda (16), terça (17)" numa sexta, sábado).
+ */
+export function corrigirCalendario(resposta: string, agora: Date = new Date()): string {
+  const { a, m, d } = hojeEmBrasilia(agora);
+  const hoje = utcDe(a, m, d);
+  const achar = (dia: number, mes?: number): Date | null => {
+    for (let n = -10; n <= 40; n++) {
+      const dt = new Date(hoje.getTime() + n * 86400000);
+      if (dt.getUTCDate() === dia && (mes === undefined || dt.getUTCMonth() + 1 === mes)) return dt;
+    }
+    return null;
+  };
+  const SEM = "(segunda|ter[cç]a|quarta|quinta|sexta|s[aá]bado|domingo)(-feira)?";
+  const PREP = "(?:\\b(na|no|da|do|pela|pelo|numa|num)\\s+)?";
+  const FEM_MASC: Record<string, [string, string]> = {
+    na: ["na", "no"],
+    no: ["na", "no"],
+    da: ["da", "do"],
+    do: ["da", "do"],
+    pela: ["pela", "pelo"],
+    pelo: ["pela", "pelo"],
+    numa: ["numa", "num"],
+    num: ["numa", "num"],
+  };
+  const trocar = (original: string, sufixo: string | undefined, dt: Date, prep?: string) => {
+    const certo = diaDaSemanaDe(dt);
+    const feminino = ["segunda", "terça", "quarta", "quinta", "sexta"].includes(certo);
+    const ajustaPrep = (txt: string) => {
+      if (!prep) return txt;
+      const par = FEM_MASC[prep.toLowerCase()]!;
+      const nova = feminino ? par[0] : par[1];
+      return `${/^[A-Z]/.test(prep) ? nova.charAt(0).toUpperCase() + nova.slice(1) : nova} ${txt}`;
+    };
+    if (certo === original.toLowerCase().replace("terca", "terça").replace("sabado", "sábado"))
+      return null;
+    const feira = feminino && sufixo ? "-feira" : "";
+    const nome = /^[A-ZÁÉÍÓÚÂÊÔÃÕÇ]/.test(original)
+      ? certo.charAt(0).toUpperCase() + certo.slice(1)
+      : certo;
+    return ajustaPrep(nome + feira);
+  };
+  let saida = resposta.replace(
+    new RegExp(`${PREP}${SEM}\\s*\\((\\d{1,2})\\)`, "giu"),
+    (todo, prep, dia, suf, num) => {
+      const dt = achar(Number(num));
+      const novo = dt && trocar(dia, suf, dt, prep);
+      return novo ? `${novo} (${num})` : todo;
+    },
+  );
+  saida = saida.replace(
+    new RegExp(`${PREP}${SEM}(,?\\s+(?:dia\\s+)?)(\\d{1,2})\\/(\\d{1,2})\\b`, "giu"),
+    (todo, prep, dia, suf, meio, num, mes) => {
+      const dt = achar(Number(num), Number(mes));
+      const novo = dt && trocar(dia, suf, dt, prep);
+      return novo ? `${novo}${meio}${num}/${mes}` : todo;
+    },
+  );
+  const dias = [
+    { rotulo: "hoje", dia: hoje.getUTCDate() },
+    { rotulo: "amanhã", dia: new Date(hoje.getTime() + 86400000).getUTCDate() },
+    { rotulo: "depois de amanhã", dia: new Date(hoje.getTime() + 2 * 86400000).getUTCDate() },
+  ];
+  saida = saida.replace(
+    /\b(depois de amanhã|amanhã|hoje)(,?\s*\(?\s*(?:dia\s+)?)(\d{1,2})(?=\s*(?:de\s+[a-zç]+|\/\d{1,2}|\)))/giu,
+    (todo, rotulo: string, meio: string, num: string) => {
+      const certo = dias.find((x) => x.dia === Number(num));
+      if (!certo || certo.rotulo === rotulo.toLowerCase()) return todo;
+      const nome = /^[A-Z]/.test(rotulo)
+        ? certo.rotulo.charAt(0).toUpperCase() + certo.rotulo.slice(1)
+        : certo.rotulo;
+      return `${nome}${meio}${num}`;
+    },
+  );
+  return saida;
+}
+
+const FIM_DE_MES_30 = /\b(a|ao|até|ate|-)\s*31(\s+de\s+)(abril|junho|setembro|novembro)\b/giu;
+const FIM_DE_FEVEREIRO = /\b(a|ao|até|ate|-)\s*(29|30|31)(\s+de\s+)fevereiro\b/giu;
+
+/** "21 a 31 de novembro" não existe: a tabela diz "dia 21 ao fim do mês" e o modelo completava com 31. */
+export function corrigirFimDeMes(resposta: string, agora: Date = new Date()): string {
+  const { a } = hojeEmBrasilia(agora);
+  const bissexto = (a % 4 === 0 && a % 100 !== 0) || a % 400 === 0;
+  return resposta
+    .replace(
+      FIM_DE_MES_30,
+      (_t, ligacao: string, de: string, mes: string) => `${ligacao} 30${de}${mes}`,
+    )
+    .replace(
+      FIM_DE_FEVEREIRO,
+      (_t, ligacao: string, _n: string, de: string) =>
+        `${ligacao} ${bissexto ? 29 : 28}${de}fevereiro`,
+    );
+}
