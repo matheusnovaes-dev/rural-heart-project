@@ -1055,7 +1055,10 @@ export function suavizarConselhoDeEspera(resposta: string, texto: string): strin
   if (!PERGUNTA_DE_ESPERA.test(texto)) return resposta;
   const frases = resposta.split(/(?<=[.!?])\s+/);
   const sem = frases
-    .filter((f) => !(VERBO_DE_ESPERA.test(f) && VEREDITO.test(f)))
+    .filter(
+      (f) =>
+        !(VERBO_DE_ESPERA.test(f) && !/n[aã]o d[aá] pra garantir|decis[aã]o [ée] sua/i.test(f)),
+    )
     .join(" ")
     .trim();
   if (sem === resposta.trim()) return resposta;
