@@ -36,6 +36,35 @@ export function CookieConsent() {
     return () => clearTimeout(t);
   }, []);
 
+  // O aviso é só informativo, então some sozinho na primeira interação com a página (tocar fora dele, focar um campo ou
+  // rolar). Em celular de tela baixa (360x640, iPhone SE) ele cobria o botão "Testar grátis" do hero até a pessoa achar o OK;
+  // ao tocar no campo do WhatsApp o botão já aparece livre. Fica registrado como "visto" (não "aceito").
+  useEffect(() => {
+    if (!visivel || emPainel) return undefined;
+    const dispensar = () => {
+      try {
+        localStorage.setItem(CHAVE_LOCALSTORAGE, "visto");
+      } catch {
+        // sem localStorage: some só nesta visita.
+      }
+      setVisivel(false);
+    };
+    const aoTocar = (e: Event) => {
+      if (!cartaoRef.current?.contains(e.target as Node)) dispensar();
+    };
+    const aoRolar = () => {
+      if (window.scrollY > 24) dispensar();
+    };
+    document.addEventListener("pointerdown", aoTocar, true);
+    document.addEventListener("focusin", aoTocar, true);
+    window.addEventListener("scroll", aoRolar, { passive: true });
+    return () => {
+      document.removeEventListener("pointerdown", aoTocar, true);
+      document.removeEventListener("focusin", aoTocar, true);
+      window.removeEventListener("scroll", aoRolar);
+    };
+  }, [visivel, emPainel]);
+
   useEffect(() => {
     const raiz = document.documentElement;
     const el = cartaoRef.current;
