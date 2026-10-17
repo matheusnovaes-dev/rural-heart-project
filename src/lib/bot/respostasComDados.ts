@@ -106,7 +106,7 @@ export async function responderCidadeDeclarada(
 
 const CRIAR_ALERTA = /\b(cri(?:a|ar|e)|quero (?:um|o|receber)|configur\w+|me avis\w+|nov[oa])\b/i;
 const LISTAR_ALERTAS =
-  /(?:\b(?:quais|que|meus|mostra\w*|ver|list\w+|me (?:mostra|fala|diz)|tenho)\b.{0,30}\balertas?\b|\balertas?\b.{0,25}\b(?:eu )?(?:tenho|ativos?|configurad\w+|criad\w+|cadastrad\w+)\b)/i;
+  /(?:\b(?:quais|meus|mostra\w*|ver|list\w+|me (?:mostra|fala|diz)|tenho)\b.{0,30}\balertas?\b|\balertas?\b.{0,25}\b(?:eu )?(?:tenho|ativos?|configurad\w+|criad\w+|cadastrad\w+)\b)/i;
 const CANCELAR_ALERTA =
   /\b(?:cancel\w*|exclu\w*|apag\w*|remov\w*|delet\w*|desativ\w*|tira\w*|pa?rar (?:de )?(?:receber )?)\b.{0,35}\balertas?\b/i;
 

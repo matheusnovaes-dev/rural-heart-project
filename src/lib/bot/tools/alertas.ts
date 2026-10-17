@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { limiteAlertas, temAcessoPrata, type Plano } from "@/lib/planos.shared";
 import { ufs } from "@/config/ufs";
-import { buscarMunicipio } from "@/lib/clima";
+import { buscarMunicipio, buscarMunicipioEmQualquerUf } from "@/lib/clima";
 import { normalizarWhatsapp } from "@/lib/telefone";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
 
@@ -320,20 +320,41 @@ export async function criarAlertaClima(
   // Cidade (opcional). Só vale se o produtor escreveu esse nome (nunca uma cidade que o modelo escolheu) e
   // se ela existe dentro da UF: sem isso o alerta olharia a previsão de um lugar que ele não pediu.
   let local: { cidade: string; lat: number; lon: number } | null = null;
+  let ufDoAlerta = args.uf;
   const cidadePedida = args.cidade?.trim() || cidadeDaUltimaConfirmacao(ctx.historico);
   if (cidadePedida) {
-    if (!cidadeFoiDitaPeloProdutor(cidadePedida, ctx.texto, ctx.historico)) {
+    // Vale se o produtor escreveu o nome OU se a pergunta de confirmação que ele aceitou já mostrava a cidade
+    // ("para BH" virou "Belo Horizonte" na confirmação e o "Ok!" dele não repete o nome).
+    const ultimaConfirmacao = ultimaMensagemDoAssistente(ctx.historico) ?? "";
+    const mostradaNaConfirmacao = semAcentoMinusculo(ultimaConfirmacao).includes(
+      semAcentoMinusculo(cidadePedida),
+    );
+    if (
+      !mostradaNaConfirmacao &&
+      !cidadeFoiDitaPeloProdutor(cidadePedida, ctx.texto, ctx.historico)
+    ) {
       return { sucesso: false, motivo: "cidade_nao_confirmada" };
     }
     const nomeUf = ufs.find((u) => u.value === args.uf.toUpperCase())?.label;
-    const achada = nomeUf ? await buscarMunicipio(cidadePedida, nomeUf) : null;
+    let achada: { nome: string; lat: number; lon: number } | null = nomeUf
+      ? await buscarMunicipio(cidadePedida, nomeUf)
+      : null;
+    // A UF do cadastro pode não ser a da cidade (cadastro MT, alerta pra Belo Horizonte): procura no Brasil todo e
+    // só aceita se o nome existir numa UF só; a UF do alerta passa a ser a da cidade.
+    if (!achada) {
+      const alt = await buscarMunicipioEmQualquerUf(cidadePedida);
+      if (alt) {
+        achada = alt;
+        ufDoAlerta = alt.uf;
+      }
+    }
     if (!achada) return { sucesso: false, motivo: "cidade_nao_encontrada" };
     local = { cidade: achada.nome, lat: achada.lat, lon: achada.lon };
   }
   const { error } = await supabase.from("alertas_clima").insert({
     produtor_id: ctx.produtor.id,
     criado_por: ctx.produtor.user_id,
-    uf: args.uf,
+    uf: ufDoAlerta,
     ...(local ?? {}),
     condicao: args.condicao,
     limite: args.limite,
@@ -342,7 +363,7 @@ export async function criarAlertaClima(
   if (error) return { sucesso: false, motivo: "erro_ao_criar" };
   return {
     sucesso: true,
-    previsao_de: local ? `${local.cidade}/${args.uf}` : `${args.uf} (capital)`,
+    previsao_de: local ? `${local.cidade}/${ufDoAlerta}` : `${args.uf} (capital)`,
   };
 }
 

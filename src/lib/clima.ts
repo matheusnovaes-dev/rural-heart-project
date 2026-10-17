@@ -1,3 +1,4 @@
+import { ufs } from "@/config/ufs";
 // Coordenadas da capital de cada UF — usado só como fallback de coordenada
 // bruta quando o CPTEC (fonte oficial, ver abaixo) não responde.
 export const capitalPorUf: Record<string, [number, number]> = {
@@ -149,7 +150,10 @@ async function fetchComTimeout(url: string, timeoutMs = TIMEOUT_MS): Promise<Res
  * proxy aberto. Sem as env vars configuradas, cai pro fetch direto (dev
  * local sem esse workflow disponível).
  */
-async function fetchOpenMeteoComTimeout(url: string, timeoutMs = TIMEOUT_MS): Promise<Response | null> {
+async function fetchOpenMeteoComTimeout(
+  url: string,
+  timeoutMs = TIMEOUT_MS,
+): Promise<Response | null> {
   const proxyUrl = process.env["CLIMA_PROXY_URL"];
   const proxyToken = process.env["CLIMA_PROXY_TOKEN"];
   if (!proxyUrl || !proxyToken) return fetchComTimeout(url, timeoutMs);
@@ -332,6 +336,51 @@ export async function buscarMunicipio(
     const match = resultados.find((r) => r.admin1 === nomeCompletoUf);
     if (!match) return null;
     return { nome: match.name, lat: match.latitude, lon: match.longitude };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Cidade citada sem UF certa (o cadastro diz MT e o produtor pede o alerta de "Belo Horizonte"): procura em todo o Brasil e
+ * só devolve se o nome exato existir em UMA UF só. Com homônimos em vários estados, devolve null (melhor perguntar).
+ */
+export async function buscarMunicipioEmQualquerUf(
+  nome: string,
+): Promise<(MunicipioEncontrado & { uf: string }) | null> {
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(nome)}&count=20&language=pt&countryCode=BR`;
+  const res = await fetchOpenMeteoComTimeout(url);
+  if (!res) return null;
+  try {
+    const json = await res.json();
+    type Resultado = {
+      name: string;
+      latitude: number;
+      longitude: number;
+      admin1?: string;
+      population?: number;
+      feature_code?: string;
+    };
+    const resultados: Resultado[] = json.results ?? [];
+    const alvo = semAcento(nome).toLowerCase();
+    const exatos = resultados.filter((r) => semAcento(r.name).toLowerCase() === alvo);
+    // Vários povoados com o mesmo nome (há 20 "Belo Horizonte" no Brasil): vale a cidade de verdade (sede de município
+    // ou mais de 20 mil habitantes) quando só UMA UF tem uma assim; sem nenhuma cidade assim, só se o nome existir numa UF só.
+    const ehCidade = (r: Resultado) =>
+      (r.feature_code ?? "").startsWith("PPLA") || (r.population ?? 0) >= 20000;
+    const porUf = (lista: Resultado[]) => {
+      const m = new Map<string, Resultado>();
+      for (const r of lista) {
+        const uf = ufs.find((u) => u.label === r.admin1)?.value;
+        if (uf && !m.has(uf)) m.set(uf, r);
+      }
+      return m;
+    };
+    const cidades = porUf(exatos.filter(ehCidade));
+    const candidatas = cidades.size > 0 ? cidades : porUf(exatos);
+    if (candidatas.size !== 1) return null;
+    const [uf, r] = [...candidatas.entries()][0]!;
+    return { nome: r.name, lat: r.latitude, lon: r.longitude, uf };
   } catch {
     return null;
   }
