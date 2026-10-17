@@ -914,3 +914,22 @@ button[data-aguardando] {
   opacity: 0.7;
   cursor: progress;
 }
+
+/* Cabeçalho: no celular sai de cena ao rolar pra baixo e volta ao rolar pra cima (só transform, composto na GPU). */
+.cabecalho {
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+@media (max-width: 1023px) {
+  .cabecalho[data-oculto="1"] {
+    transform: translateY(-101%);
+  }
+}
+.cabecalho-progresso {
+  transform: scaleX(var(--progresso, 0));
+}
+@media (prefers-reduced-motion: reduce) {
+  .cabecalho {
+    transition: none;
+  }
+}

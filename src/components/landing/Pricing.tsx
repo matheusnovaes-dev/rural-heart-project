@@ -208,6 +208,7 @@ function CartaoPlano({ plan, semTrial }: { plan: PricingPlan; semTrial: boolean 
       >
         <Link
           to="/login"
+          data-cursor="Começar"
           search={{
             plano: plan.id as "bronze" | "prata" | "ouro",
             ...(semTrial ? { semTrial: "1" as const } : {}),

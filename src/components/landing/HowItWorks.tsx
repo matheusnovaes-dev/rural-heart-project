@@ -1,8 +1,9 @@
 import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
 import React, { useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { motion, useInView, useReducedMotion, useScroll, useTransform } from "framer-motion";
 
 import { PassosHorizontais } from "@/components/landing/PassosHorizontais";
+import { Conversa, Fontes, Resposta } from "@/components/landing/VisuaisDosPassos";
 import { Reveal } from "@/components/landing/Reveal";
 import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 import { MIDIA } from "@/assets/midia";
@@ -26,6 +27,32 @@ const steps = [
       "Preço da sua região, do porto e o frete, com fonte e data, pronto para decidir sem depender de planilha.",
   },
 ];
+
+const VISUAIS = [Conversa, Fontes, Resposta] as const;
+
+/** Um passo no celular: ícone, título, texto e a ilustração, que anima uma vez quando o cartão entra na tela. */
+function PassoEmpilhado({
+  step,
+  Visual,
+}: {
+  step: (typeof steps)[number];
+  Visual: (typeof VISUAIS)[number];
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const ativo = useInView(ref, { once: true, margin: "0px 0px -18% 0px" });
+  return (
+    <div ref={ref} data-ativo={ativo} className="group text-center">
+      <span className="mx-auto block w-fit">
+        <step.icon className="size-12" />
+      </span>
+      <h3 className="mt-3 font-display text-xl font-semibold text-foreground">{step.title}</h3>
+      <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">{step.description}</p>
+      <div className="mt-6 text-left">
+        <Visual />
+      </div>
+    </div>
+  );
+}
 
 /**
  * Vídeo 3D/cinematográfico (gerado por IA, pedido do Matheus 2026-10-12)
@@ -130,30 +157,10 @@ export function HowItWorks() {
         <VideoComoFunciona />
       </RevelarAoRolar>
 
-      <div className="relative mt-12 grid gap-8 sm:grid-cols-3 desk:hidden">
-        <div
-          aria-hidden
-          className="absolute top-7 left-[calc(16.66%+1.75rem)] right-[calc(16.66%+1.75rem)] hidden h-px bg-primary/15 sm:block"
-        >
-          {/* O traço se desenha da esquerda para a direita quando os passos entram na tela */}
-          <motion.div
-            className="h-full origin-left bg-primary/60"
-            initial={{ scaleX: 0 }}
-            whileInView={{ scaleX: 1 }}
-            viewport={{ once: true, margin: "-120px" }}
-            transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-          />
-        </div>
+      {/* Celular e tablet: os três passos empilhados, cada um com a mesma ilustração do desktop num cartão leve. */}
+      <div className="mx-auto mt-12 grid max-w-md gap-12 desk:hidden">
         {steps.map((step, index) => (
-          <Reveal key={step.title} delay={index * 0.1} className="relative text-center">
-            <span className="relative z-10 mx-auto block w-fit rounded-full ring-4 ring-background">
-              <step.icon className="size-14" />
-            </span>
-            <h3 className="mt-4 font-display text-lg font-semibold text-foreground">
-              {step.title}
-            </h3>
-            <p className="mt-2 text-sm text-muted-foreground">{step.description}</p>
-          </Reveal>
+          <PassoEmpilhado key={step.title} step={step} Visual={VISUAIS[index]!} />
         ))}
       </div>
       <PassosHorizontais />

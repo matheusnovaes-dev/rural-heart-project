@@ -1,14 +1,69 @@
+import { useEffect, useRef } from "react";
 import { Link } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 import { MenuTelaCheia } from "@/components/landing/MenuTelaCheia";
+import { useCadastro } from "@/components/landing/CadastroProvider";
 import { siteConfig, buildWhatsAppLink } from "@/config/site";
 import { trackLanding } from "@/lib/metaPixel";
 import { MIDIA } from "@/assets/midia";
 
+/**
+ * Cabeçalho que acompanha a rolagem sem pesar: um único listener passivo com rAF, que só troca atributos de dados e uma
+ * variável CSS (nada de estado do React, nenhum re-render). No celular ele some ao rolar pra baixo e volta ao rolar pra cima
+ * (mais tela pro conteúdo, como no site do Lando); no desktop mostra o CTA "Testar grátis" depois do hero e uma barra fina de
+ * progresso da página.
+ */
 export function Header() {
+  const ref = useRef<HTMLElement>(null);
+  const { abrirCadastro } = useCadastro();
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let ultimo = window.scrollY;
+    let acumulado = 0;
+    let quadro = 0;
+    const atualizar = () => {
+      quadro = 0;
+      const y = Math.max(0, window.scrollY);
+      const delta = y - ultimo;
+      ultimo = y;
+      // Soma o movimento na mesma direção: um tremor de 1-2px do dedo não esconde nem mostra nada.
+      acumulado = Math.sign(delta) === Math.sign(acumulado) ? acumulado + delta : delta;
+      const oculto = el.getAttribute("data-oculto") === "1";
+      if (y < 90 || acumulado < -10) {
+        if (oculto) el.setAttribute("data-oculto", "0");
+      } else if (acumulado > 10 && y > 140 && !oculto) {
+        el.setAttribute("data-oculto", "1");
+      }
+      const passou = y > window.innerHeight * 0.85 ? "1" : "0";
+      if (el.getAttribute("data-passou") !== passou) el.setAttribute("data-passou", passou);
+      const total = document.documentElement.scrollHeight - window.innerHeight;
+      el.style.setProperty("--progresso", total > 0 ? String(Math.min(1, y / total)) : "0");
+    };
+    const aoRolar = () => {
+      if (!quadro) quadro = requestAnimationFrame(atualizar);
+    };
+    atualizar();
+    window.addEventListener("scroll", aoRolar, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", aoRolar);
+      if (quadro) cancelAnimationFrame(quadro);
+    };
+  }, []);
+
   return (
-    <header className="sticky top-0 z-50 border-b border-border/60 bg-background/95">
+    <header
+      ref={ref}
+      data-oculto="0"
+      data-passou="0"
+      className="cabecalho group sticky top-0 z-50 border-b border-border/60 bg-background"
+    >
+      <span
+        aria-hidden="true"
+        className="cabecalho-progresso pointer-events-none absolute inset-x-0 bottom-[-1px] hidden h-0.5 origin-left bg-cta md:block"
+      />
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link to="/" className="flex items-center gap-2 py-2">
           <img src={MIDIA.logo} alt="" className="size-8 rounded-[0.6rem]" />
@@ -26,10 +81,17 @@ export function Header() {
             Entrar
           </Link>
           <Button
-            asChild
+            type="button"
             size="sm"
-            className="hidden bg-cta text-cta-foreground hover:bg-cta/90 md:inline-flex"
+            data-magnetico
+            data-rolar
+            tabIndex={-1}
+            onClick={() => abrirCadastro({ origem: "header" })}
+            className="pointer-events-none hidden bg-cta text-cta-foreground opacity-0 transition-opacity duration-300 group-data-[passou=1]:pointer-events-auto group-data-[passou=1]:opacity-100 hover:bg-cta/90 md:inline-flex motion-reduce:transition-none"
           >
+            Testar grátis por 7 dias
+          </Button>
+          <Button asChild size="sm" variant="outline" className="hidden md:inline-flex">
             <a
               href={buildWhatsAppLink()}
               target="_blank"

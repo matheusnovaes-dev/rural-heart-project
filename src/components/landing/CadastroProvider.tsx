@@ -21,7 +21,7 @@ import { trackLanding } from "@/lib/metaPixel";
 
 export type AbrirCadastroOpcoes = {
   /** Qual CTA abriu o cadastro (só pra medir qual converte). */
-  origem?: "hero" | "barra_fixa" | "calculadora";
+  origem?: "hero" | "barra_fixa" | "calculadora" | "header";
   /** WhatsApp já digitado em algum CTA: o cadastro abre direto na etapa 2. */
   whatsapp?: string;
   /** Cultura/UF já escolhidas na calculadora, pra não pedir de novo. */

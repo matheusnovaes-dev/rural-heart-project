@@ -70,7 +70,10 @@ export function Faq() {
                 className="group relative border-b border-border after:absolute after:bottom-[-1px] after:left-0 after:h-px after:w-0 after:bg-[color:var(--cta)] after:transition-[width] after:duration-500 after:ease-out data-[state=open]:after:w-full desk:hover:after:w-full"
               >
                 <AccordionPrimitive.Header>
-                  <AccordionPrimitive.Trigger className="flex w-full cursor-pointer items-start gap-4 py-5 text-left sm:gap-6 sm:py-7">
+                  <AccordionPrimitive.Trigger
+                    data-cursor="Abrir"
+                    className="flex w-full cursor-pointer items-start gap-4 py-5 text-left sm:gap-6 sm:py-7"
+                  >
                     <span
                       className="w-9 shrink-0 origin-left pt-1 text-2xl leading-none text-muted-foreground italic transition-[color,transform] duration-300 group-hover:text-[color:var(--cta)] group-data-[state=open]:text-[color:var(--cta)] desk:group-hover:scale-125 desk:group-data-[state=open]:scale-110 sm:w-12 sm:text-3xl"
                       style={SERIFA}
