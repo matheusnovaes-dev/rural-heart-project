@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 import { MenuTelaCheia } from "@/components/landing/MenuTelaCheia";
+import { NomeMarca } from "@/components/landing/NomeMarca";
 import { useCadastro } from "@/components/landing/CadastroProvider";
 import { siteConfig, buildWhatsAppLink } from "@/config/site";
 import { trackLanding } from "@/lib/metaPixel";
@@ -68,7 +69,7 @@ export function Header() {
         <Link to="/" className="flex items-center gap-2 py-2">
           <img src={MIDIA.logo} alt="" className="size-8 rounded-[0.6rem]" />
           <span className="text-lg font-bold tracking-tight text-foreground">
-            {siteConfig.name}
+            <NomeMarca />
           </span>
         </Link>
 

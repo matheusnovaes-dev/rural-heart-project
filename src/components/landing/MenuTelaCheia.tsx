@@ -5,6 +5,7 @@ import { ArrowUpRight, X } from "lucide-react";
 
 import { MIDIA } from "@/assets/midia";
 import { Grao } from "@/components/landing/Grao";
+import { NomeMarca } from "@/components/landing/NomeMarca";
 import { buildWhatsAppLink, siteConfig } from "@/config/site";
 import { trackLanding } from "@/lib/metaPixel";
 
@@ -62,7 +63,9 @@ export function MenuTelaCheia() {
           <div className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
             <span className="flex items-center gap-2">
               <img src={MIDIA.logo} alt="" className="size-8 rounded-[0.6rem]" />
-              <span className="text-lg font-bold tracking-tight">{siteConfig.name}</span>
+              <span className="text-lg font-bold tracking-tight">
+                <NomeMarca />
+              </span>
             </span>
             <Dialog.Close asChild>
               <button
