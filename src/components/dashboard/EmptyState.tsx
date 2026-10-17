@@ -19,7 +19,7 @@ export function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center gap-3 px-4 py-12 text-center">
+    <div className="flex flex-col items-center gap-3 px-4 py-8 text-center">
       {iconePersonalizado ? (
         <Icon className="size-12" />
       ) : (

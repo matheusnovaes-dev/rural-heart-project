@@ -322,7 +322,9 @@ function PrecosPage() {
                             ) : (
                               <Minus className="size-3" />
                             )}
-                            {Math.abs(s.variacao).toFixed(1)}% sem.
+                            {Math.abs(s.variacao) < 0.05
+                              ? "estável"
+                              : `${Math.abs(s.variacao).toFixed(1)}% sem.`}
                           </span>
                         ) : (
                           <span className="text-xs text-muted-foreground">Sem histórico</span>

@@ -494,7 +494,7 @@ function AlertasPage() {
       )}
       <p className="text-sm font-semibold text-foreground">Alertas de preço</p>
       <Card>
-        <CardContent className="flex flex-col gap-3 pt-6">
+        <CardContent className="flex flex-col gap-3 pt-6 min-h-[16rem]">
           {carregando ? (
             <div className="flex flex-col gap-2">
               {Array.from({ length: 3 }).map((_, i) => (
@@ -619,7 +619,7 @@ function AlertasPage() {
 
       <p className="text-sm font-semibold text-foreground">Alertas de câmbio</p>
       <Card>
-        <CardContent className="flex flex-col gap-3 pt-6">
+        <CardContent className="flex flex-col gap-3 pt-6 min-h-[11.5rem]">
           {carregando ? (
             <div className="flex flex-col gap-2">
               {Array.from({ length: 2 }).map((_, i) => (
@@ -743,7 +743,7 @@ function AlertasPage() {
 
       <p className="text-sm font-semibold text-foreground">Alertas de clima</p>
       <Card>
-        <CardContent className="flex flex-col gap-3 pt-6">
+        <CardContent className="flex flex-col gap-3 pt-6 min-h-[11.5rem]">
           {carregando ? (
             <div className="flex flex-col gap-2">
               {Array.from({ length: 2 }).map((_, i) => (
