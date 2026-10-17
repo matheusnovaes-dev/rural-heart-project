@@ -76,6 +76,7 @@ import {
   garantirCanalDeTexto,
   garantirMencaoPainel,
   garantirMencaoLeilao,
+  garantirOpcaoDeCidadeNoAlertaDeClima,
   tirarNegativaDeInsumoParaBronze,
   garantirCotacaoLeite,
   garantirRelacaoLeiteMilho,
@@ -1593,40 +1594,42 @@ async function runAgentBase(input: {
 
     const numerosPermitidos = coletarNumerosPermitidos(messages, texto, historico);
     const leite = extrairResultadoLeite(messages);
-    const resposta = tirarNegativaDeInsumoParaBronze(
-      garantirMencaoLeilao(
-        garantirMencaoPainel(
-          garantirCanalDeTexto(
-            garantirCotacaoLeite(
-              garantirRelacaoLeiteMilho(
-                garantirMediaDasPracas(
-                  garantirReferenciaMercado(
-                    garantirParidade(
-                      garantirRotaFrete(
-                        garantirDataDoPreco(
-                          removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
-                          extrairDataDoPreco(messages),
+    const resposta = garantirOpcaoDeCidadeNoAlertaDeClima(
+      tirarNegativaDeInsumoParaBronze(
+        garantirMencaoLeilao(
+          garantirMencaoPainel(
+            garantirCanalDeTexto(
+              garantirCotacaoLeite(
+                garantirRelacaoLeiteMilho(
+                  garantirMediaDasPracas(
+                    garantirReferenciaMercado(
+                      garantirParidade(
+                        garantirRotaFrete(
+                          garantirDataDoPreco(
+                            removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
+                            extrairDataDoPreco(messages),
+                          ),
+                          extrairUltimoFreteCitado(messages),
                         ),
-                        extrairUltimoFreteCitado(messages),
+                        extrairParidade(messages),
                       ),
-                      extrairParidade(messages),
+                      extrairReferenciaMercado(messages),
                     ),
-                    extrairReferenciaMercado(messages),
+                    extrairMediaDasPracas(messages),
                   ),
-                  extrairMediaDasPracas(messages),
+                  leite.fraseRelacao,
+                  numerosPermitidos,
                 ),
-                leite.fraseRelacao,
-                numerosPermitidos,
+                leite.cotacao,
               ),
-              leite.cotacao,
             ),
+            temDetalheExtraParaPainel(messages),
+            !!produtor.user_id,
           ),
-          temDetalheExtraParaPainel(messages),
-          !!produtor.user_id,
+          extrairResultadoLeilao(messages),
         ),
-        extrairResultadoLeilao(messages),
+        insumoForaDoPlano(messages),
       ),
-      insumoForaDoPlano(messages),
     );
 
     const naoAutorizados = valoresNaoAutorizados(resposta, numerosPermitidos);

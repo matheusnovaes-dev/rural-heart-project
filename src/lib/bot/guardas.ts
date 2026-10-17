@@ -793,3 +793,15 @@ export function tirarNegativaDeInsumoParaBronze(
   if (/prata/i.test(limpa)) return limpa;
   return `Preço de defensivo e fertilizante é do plano Prata, é só me pedir aqui que eu te explico. ${limpa}`.trim();
 }
+
+/**
+ * Alerta de clima pode ser por cidade ou pelo estado todo (previsão da capital). O prompt manda deixar isso
+ * claro na pergunta de confirmação, mas o modelo pulou a frase (visto ao vivo em 2026-10-16), então ela é
+ * acrescentada por código: só quando a resposta é a pergunta "Confirma: alerta de chuva/geada/seca/vento"
+ * e não cita cidade (formato "Nome/UF") nem a capital.
+ */
+export function garantirOpcaoDeCidadeNoAlertaDeClima(resposta: string): string {
+  if (!/Confirma:\s*alerta de (?:chuva|geada|seca|vento)/i.test(resposta)) return resposta;
+  if (/\p{L}\/[A-Z]{2}\b/u.test(resposta) || /capital/i.test(resposta)) return resposta;
+  return `${resposta.trim()} (Vale o estado todo, com a previsão da capital. Prefere a previsão de uma cidade? É só me dizer qual.)`;
+}
