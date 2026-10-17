@@ -87,7 +87,7 @@ export function Header() {
             data-rolar
             tabIndex={-1}
             onClick={() => abrirCadastro({ origem: "header" })}
-            className="pointer-events-none hidden bg-cta text-cta-foreground opacity-0 transition-opacity duration-300 group-data-[passou=1]:pointer-events-auto group-data-[passou=1]:opacity-100 hover:bg-cta/90 md:inline-flex motion-reduce:transition-none"
+            className="pointer-events-none -ml-3 hidden max-w-0 overflow-hidden bg-cta !px-0 whitespace-nowrap text-cta-foreground opacity-0 transition-[opacity,max-width,margin,padding] duration-300 group-data-[passou=1]:pointer-events-auto group-data-[passou=1]:ml-0 group-data-[passou=1]:max-w-[16rem] group-data-[passou=1]:!px-3 group-data-[passou=1]:opacity-100 hover:bg-cta/90 md:inline-flex motion-reduce:transition-none"
           >
             Testar grátis por 7 dias
           </Button>
