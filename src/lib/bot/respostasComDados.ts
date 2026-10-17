@@ -607,3 +607,59 @@ export function respostaDeAlertaSemTipo(): RespostaComDados {
     convite_dispensado: true,
   };
 }
+
+// ---------------------------------------------------------------- alerta de clima: pergunta de confirmação direta
+
+const PEDIDO_DE_ALERTA_DE_CLIMA =
+  /\b(?:alerta|avis\w+)\b[^.?!]{0,30}\b(chuva forte|geada|seca(?: prolongada)?|vento(?: forte)?)\b(?:\s+(?:em|no|na|para|pra|de)\s+([\p{L}][\p{L}'’ ]{1,40}?))?\s*[.!]?$/iu;
+const FRASE_DO_LIMITE: Record<string, string> = {
+  "chuva forte": "quando a chance de chuva passar de 70%",
+  geada: "quando a mínima prevista ficar abaixo de 3°C",
+  seca: "quando a chance de chuva ficar abaixo de 20% na semana toda",
+  vento: "quando a rajada prevista passar de 40 km/h",
+};
+
+/**
+ * "quero um alerta de chuva forte em Sorriso" sem número: o modelo perguntava "qual probabilidade?" e só na resposta
+ * seguinte fazia a confirmação, então o produtor confirmava duas vezes (visto em 2026-10-17). Aqui a confirmação já vem
+ * com o limite padrão (o mesmo do painel). A criação continua sendo do modelo, no turno seguinte, depois do "sim".
+ */
+export function perguntaDeConfirmarAlertaDeClima(
+  texto: string,
+  produtor: ProdutorContexto,
+  historico: HistoricoLinha[],
+): RespostaComDados | null {
+  const t = texto.trim();
+  if (!produtor.id || t.length > 100 || /\d|hora|amanh|depois|manh[aã]|noite|tarde/i.test(t))
+    return null;
+  const ultima = ultimaDoAssistente(historico);
+  if (ultima && /confirma/i.test(ultima)) return null;
+  const m = t.match(PEDIDO_DE_ALERTA_DE_CLIMA);
+  if (!m) return null;
+  const chave = m[1]!.toLowerCase().startsWith("seca")
+    ? "seca"
+    : m[1]!.toLowerCase().startsWith("vento")
+      ? "vento"
+      : m[1]!.toLowerCase();
+  const nomeCondicao =
+    chave === "seca" ? "seca prolongada" : chave === "vento" ? "vento forte" : chave;
+  let onde = (m[2] ?? "")
+    .trim()
+    .replace(/\s+(?:se|quando|caso)\b.*$/i, "")
+    .trim();
+  const ehEstadoOuSigla = ehNome(onde);
+  if (!onde) onde = produtor.uf ?? "";
+  if (!onde || (!ehEstadoOuSigla && /^(?:mim|mim mesmo|minha regi[aã]o|aqui)$/i.test(onde)))
+    onde = produtor.uf ?? "";
+  if (!onde) return null;
+  // Estado (nome ou sigla): vale a previsão da capital, e o produtor é avisado de que pode pedir a de uma cidade.
+  const siglaEncontrada = ufs.find((u) => u.value === onde.toUpperCase());
+  const ehEstado = ehNome(onde);
+  const ondeTexto = siglaEncontrada ? siglaEncontrada.label : onde;
+  const nota = ehEstado ? " (previsão da capital; pra usar a de uma cidade, é só dizer qual)" : "";
+  return {
+    resposta: `Confirma: alerta de ${nomeCondicao} em ${ondeTexto}${nota} ${FRASE_DO_LIMITE[chave]}?`,
+    precisa_humano: false,
+    convite_dispensado: true,
+  };
+}

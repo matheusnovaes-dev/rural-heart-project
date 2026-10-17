@@ -119,6 +119,7 @@ import {
   respostaDePagamento,
   responderAcenoSolto,
   ehPedidoDeAlertaSemTipo,
+  perguntaDeConfirmarAlertaDeClima,
   ehPedidoDeCancelarAlerta,
   respostaDeAlertaSemTipo,
   ehPedidoDeListarAlertas,
@@ -1376,6 +1377,7 @@ async function runAgentBase(input: {
         ? pronta(await responderListaDeAlertas(supabase, produtor))
         : null) ??
       (ehPedidoDeCancelarAlerta(texto) ? pronta(respostaDeCancelarAlerta(produtor)) : null) ??
+      pronta(perguntaDeConfirmarAlertaDeClima(texto, produtor, historico)) ??
       (produtor.id && ehPedidoDeAlertaSemTipo(texto, historico)
         ? pronta(respostaDeAlertaSemTipo())
         : null) ??
