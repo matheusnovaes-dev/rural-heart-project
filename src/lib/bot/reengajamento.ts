@@ -103,9 +103,9 @@ export async function montarResumoReengajamento(
   if (
     ferrugem?.encontrado &&
     !ferrugem.safra_encerrada &&
-    ferrugem.municipios_com_ocorrencia_confirmada.length > 0
+    (ferrugem.municipios_com_ocorrencia_confirmada?.length ?? 0) > 0
   ) {
-    const municipios = ferrugem.municipios_com_ocorrencia_confirmada
+    const municipios = (ferrugem.municipios_com_ocorrencia_confirmada ?? [])
       .slice(0, 3)
       .map((m) => m.municipio)
       .join(", ");
@@ -153,14 +153,14 @@ export async function montarResumoReengajamento(
   if (progresso?.disponivel) {
     // Mesmo achado do card do painel: 0% é "ainda não começou", não dado
     // útil pra citar — cai pro nacional se o estado dele estiver zerado.
-    const daUf = progresso.da_uf.find((l) => l.percentual > 0);
-    const linha = daUf ?? progresso.nacional.find((l) => l.percentual > 0);
+    const daUf = (progresso.da_uf ?? []).find((l) => l.percentual > 0);
+    const linha = daUf ?? (progresso.nacional ?? []).find((l) => l.percentual > 0);
     if (linha) {
       const escopo = daUf ? "no seu estado" : "no Brasil (seu estado ainda não começou)";
       partes.push(
         `${pct(linha.percentual)} da safra já foi ${linha.tipo === "semeadura" ? "semeada" : "colhida"} ${escopo} (média de 5 anos: ${
           linha.media_5_anos != null ? pct(linha.media_5_anos) : "sem histórico"
-        }), referência de ${mesAno(progresso.semana_referencia)}.`,
+        }), referência de ${mesAno(progresso.semana_referencia ?? "")}.`,
       );
     }
   }
@@ -331,7 +331,7 @@ export async function montarResumoReativacao(
   }
 
   if (leiloes && "encontrado" in leiloes && leiloes.encontrado) {
-    const proximo = leiloes.presenciais_na_regiao[0] ?? leiloes.virtuais_em_destaque[0];
+    const proximo = leiloes.presenciais_na_regiao?.[0] ?? leiloes.virtuais_em_destaque?.[0];
     if (proximo?.data_hora) {
       partes.push(
         `Tem leilão de gado "${proximo.titulo}" dia ${dataHoraBr(proximo.data_hora)}${
