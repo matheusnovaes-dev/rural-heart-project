@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { ProdutorContexto } from "@/lib/bot/types";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
+import { culturasNoTexto } from "@/lib/bot/produtoConsultado";
 import { buscarPreco } from "@/lib/bot/tools/preco";
 import {
   culturaMencionada,
@@ -742,6 +743,12 @@ export const TOOLS = [
 // como 3º critério. Cultura do cadastro é um dado real, determinístico,
 // não precisa confiar no modelo lembrar de usá-lo: agora é o código que
 // aplica esse 3º critério, não só o texto do prompt.
+const semAcentoSimples = (t: string) =>
+  t
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
 function resolverCultura(ctx: ToolContext, produtoDoModelo: string): string {
   const mencionada = culturaMencionada(ctx.texto);
   if (mencionada) {
@@ -758,6 +765,13 @@ function resolverCultura(ctx: ToolContext, produtoDoModelo: string): string {
     }
     return produtoDoModelo;
   }
+  // Cultura escrita com erro de digitação ("mio" = milho, "soj" = soja): o catálogo não reconhece a palavra, mas o
+  // modelo entendeu certo. Sem isto o código trocava pelo cadastro (soja) e o produtor recebia o preço de outra
+  // cultura escrito como se fosse do milho (achado na auditoria de 2026-10-16).
+  const comErro = culturasNoTexto(ctx.texto);
+  const produtoNormal = normalizarCultura(produtoDoModelo);
+  if (comErro.length === 1 && semAcentoSimples(produtoNormal).includes(comErro[0]!))
+    return produtoDoModelo;
   // Cultura que o catálogo não conhece (ex: "abacate") mas que a pessoa escreveu na mensagem: o
   // produto que o modelo mandou está no texto atual, então não é pergunta de acompanhamento.
   const dobra = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();

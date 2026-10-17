@@ -62,6 +62,18 @@ function culturaDaPalavra(w: string): string | null {
   return null;
 }
 
+/** Culturas citadas no texto, inclusive com erro de digitação ("mio" = milho), sem exigir pergunta de preço. */
+export function culturasNoTexto(texto: string): string[] {
+  const achadas = new Set<string>();
+  for (const w of semAcento(texto)
+    .split(/[^a-z]+/)
+    .filter(Boolean)) {
+    const c = culturaDaPalavra(w);
+    if (c) achadas.add(c);
+  }
+  return [...achadas];
+}
+
 /** Culturas que o produtor citou na mensagem (inclusive com erro de digitação), sem repetir. */
 export function culturasPerguntadas(texto: string): string[] {
   const t = semAcento(texto);

@@ -1005,5 +1005,59 @@ export function corrigirMediaAtribuidaACidade(
   saida = saida.replace(depois, (todo, v: string, meio: string, cidade: string) =>
     ehEstado(cidade) ? todo : `${v}${meio}em ${etiqueta}`,
   );
+  // etiqueta repetida na mesma frase (o modelo já tinha escrito "média das praças" perto)
+  saida = saida.replace(
+    /\(média das praças\)([^.!?\n]{0,80}?)\(média das praças\)/gu,
+    "(média das praças)$1",
+  );
   return saida;
+}
+
+/**
+ * A pergunta de confirmação do alerta de preço/câmbio precisa ter a MESMA direção que o produtor pediu: "cair de 50"
+ * saiu como "quando passar de R$ 50" (visto na bateria de 2026-10-16), o que criaria o alerta ao contrário.
+ */
+export function corrigirDirecaoDoAlerta(resposta: string, textoDoPedido: string): string {
+  if (!/Confirma\b[^?]*\balerta/i.test(resposta)) return resposta;
+  const abaixo =
+    /\b(?:cair|caia|cai|baixar|baixe|descer|desce|despencar|abaixo|menos de|menor que|menor de|queda)\b/i.test(
+      textoDoPedido,
+    );
+  const acima =
+    /\b(?:subir|suba|sobe|passar|passe|passa|ultrapassar|ultrapasse|acima|mais de|maior que|maior de|alta)\b/i.test(
+      textoDoPedido,
+    );
+  if (abaixo === acima) return resposta;
+  if (abaixo) {
+    return resposta.replace(
+      /\b(?:passar de|passar a|ultrapassar|ficar acima de|subir (?:a|para|acima de)|chegar acima de)\b/i,
+      "cair abaixo de",
+    );
+  }
+  return resposta.replace(
+    /\b(?:cair abaixo de|cair de|ficar abaixo de|baixar de|descer de)\b/i,
+    "passar de",
+  );
+}
+
+const PERGUNTA_DE_ESPERA =
+  /(?:compensa|vale a pena|devo|[ée] bom|melhor)[^.?!]{0,30}(?:segurar|esperar|guardar|armazenar|estocar|aguardar)/i;
+const VERBO_DE_ESPERA = /\b(?:segurar|esperar|aguardar|guardar|armazenar|estocar)\b/i;
+const VEREDITO =
+  /(?:boa (?:ideia|op[cç][aã]o)|vantajos[oa]|vale a pena|compensa|sugere|indica que|recomend)/i;
+
+/**
+ * "Compensa segurar o milho até janeiro?" não tem resposta que o Safralume possa garantir: o sinal de venda mostra preço,
+ * futuros e clima, e o futuro da B3 é preço de outra praça (e de outro mês: o contrato citado era de novembro). O modelo
+ * fechava com "pode ser vantajoso esperar até janeiro" (visto em 2026-10-16). A frase de veredito sai e entra o aviso.
+ */
+export function suavizarConselhoDeEspera(resposta: string, texto: string): string {
+  if (!PERGUNTA_DE_ESPERA.test(texto)) return resposta;
+  const frases = resposta.split(/(?<=[.!?])\s+/);
+  const sem = frases
+    .filter((f) => !(VERBO_DE_ESPERA.test(f) && VEREDITO.test(f)))
+    .join(" ")
+    .trim();
+  if (sem === resposta.trim()) return resposta;
+  return `${sem} Não dá pra garantir que vale esperar: o futuro da B3 é preço de outra praça e de um mês específico, então não compara direto com o preço do interior. A decisão é sua.`;
 }

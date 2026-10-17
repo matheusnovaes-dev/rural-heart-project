@@ -44,6 +44,12 @@ export async function consultarAssinatura(
     // só quem está em teste tem data de fim de teste: quem já assina (ativa) não "tem teste vencendo"
     ...(status === "trial" ? { trial_expira_em: data.trial_expira_em } : {}),
     ativo: status === "ativa" || trialValido,
+    situacao:
+      status === "ativa"
+        ? "assinante pagante (não está em teste grátis)"
+        : status === "trial"
+          ? "em teste grátis"
+          : status,
     limite_alertas: limiteAlertas(plano) === Infinity ? "sem limite" : limiteAlertas(plano),
     limite_funcionarios:
       limiteFuncionarios(plano) === Infinity ? "sem limite" : limiteFuncionarios(plano),

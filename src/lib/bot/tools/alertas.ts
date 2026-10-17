@@ -113,6 +113,34 @@ function cidadeFoiDitaPeloProdutor(
   return historico.some((h) => h.role === "user" && semAcentoMinusculo(h.conteudo).includes(alvo));
 }
 
+const PALAVRAS_ABAIXO =
+  /\b(?:cair|caia|cai|cairem|baixar|baixe|baixa|descer|desce|despencar|abaixo|menos de|menor que|menor de|queda)\b/i;
+const PALAVRAS_ACIMA =
+  /\b(?:subir|suba|sobe|passar|passe|passa|ultrapassar|ultrapasse|acima|mais de|maior que|maior de|alta)\b/i;
+
+/** Direção que o produtor pediu ("cair de 50" = abaixo, "passar de 140" = acima); null quando não deu pra saber. */
+export function direcaoPedida(texto: string): "acima" | "abaixo" | null {
+  const abaixo = PALAVRAS_ABAIXO.test(texto);
+  const acima = PALAVRAS_ACIMA.test(texto);
+  if (abaixo === acima) return null;
+  return abaixo ? "abaixo" : "acima";
+}
+
+/** A direção da ferramenta tem que bater com o que o produtor escreveu (mensagem atual ou a anterior mais recente que diga). */
+function direcaoDoPedido(texto: string, historico: HistoricoLinha[]): "acima" | "abaixo" | null {
+  const doTexto = direcaoPedida(texto);
+  if (doTexto) return doTexto;
+  const anteriores = [...historico]
+    .sort((a, b) => b.ordem - a.ordem)
+    .filter((h) => h.role === "user")
+    .slice(0, 4);
+  for (const h of anteriores) {
+    const d = direcaoPedida(h.conteudo);
+    if (d) return d;
+  }
+  return null;
+}
+
 /** Mesmo teto do plano usado no dashboard (alertas.tsx) — preço + clima
  * somados, contados por produtor_id. Consulta a assinatura por produtor_id
  * (não por cooperativa) de propósito: o bot sempre fala com um produtor
@@ -179,6 +207,10 @@ export async function criarAlertaPreco(
   if (aindaPrecisaConfirmar(ctx.historico)) {
     return { sucesso: false, motivo: "precisa_confirmar_primeiro" };
   }
+  const pedida = direcaoDoPedido(ctx.texto, ctx.historico);
+  if (pedida && pedida !== args.direcao) {
+    return { sucesso: false, motivo: "direcao_incoerente", direcao_pedida: pedida };
+  }
   if (!valorFoiDitoPeloProdutor(args.limite, ctx.texto, ctx.historico)) {
     return { sucesso: false, motivo: "valor_nao_confirmado" };
   }
@@ -220,6 +252,10 @@ export async function criarAlertaCambio(
   }
   if (aindaPrecisaConfirmar(ctx.historico)) {
     return { sucesso: false, motivo: "precisa_confirmar_primeiro" };
+  }
+  const pedida = direcaoDoPedido(ctx.texto, ctx.historico);
+  if (pedida && pedida !== args.direcao) {
+    return { sucesso: false, motivo: "direcao_incoerente", direcao_pedida: pedida };
   }
   if (!valorFoiDitoPeloProdutor(args.limite, ctx.texto, ctx.historico)) {
     return { sucesso: false, motivo: "valor_nao_confirmado" };

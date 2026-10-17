@@ -78,6 +78,8 @@ import {
   garantirMencaoLeilao,
   garantirOpcaoDeCidadeNoAlertaDeClima,
   corrigirCalendario,
+  corrigirDirecaoDoAlerta,
+  suavizarConselhoDeEspera,
   corrigirMediaAtribuidaACidade,
   corrigirFimDeMes,
   buildContextoDeData,
@@ -102,6 +104,10 @@ import { culturasNaoConsultadas, culturasPerguntadas } from "@/lib/bot/produtoCo
 import {
   conversaEraDePlanos,
   ehPedidoDeExcluirDados,
+  ehPedidoDeTrocarCultura,
+  ehPerguntaDeSituacaoDaConta,
+  responderSituacaoDaConta,
+  respostaDeTrocarCultura,
   ehPedidoDeLinkDoSite,
   ehPerguntaAgronomica,
   ehPerguntaDeChuvaEmMm,
@@ -1012,7 +1018,7 @@ const FALLBACK_DURO: RespostaAgente = {
 // que nenhuma fonte sustenta, é melhor dizer a verdade do que mandar um
 // preço falso pra um produtor tomar decisão em cima dele.
 const RESPOSTA_SEM_VALOR_CONFIAVEL =
-  "Não consegui confirmar esse valor com segurança agora. Me diz a cultura e o estado que eu busco de novo direto na fonte.";
+  "Não consegui confirmar esse dado com segurança agora, e prefiro não chutar. Pode me perguntar de outro jeito, ou me dizer a cultura e o estado que eu busco de novo na fonte?";
 
 // Mesma rede de segurança determinística de cima, agora pra escalada de
 // cobrança/reembolso — o prompt já pede pra escalar (precisa_humano=true)
@@ -1375,6 +1381,10 @@ async function runAgentBase(input: {
       (ehPedidoDeLinkDoSite(texto) ? pronta(respostaDeLinkDoSite(produtor)) : null) ??
       (ehPerguntaDeChuvaEmMm(texto) ? pronta(respostaDeChuvaEmMm()) : null) ??
       (ehPerguntaAgronomica(texto) ? pronta(respostaAgronomica()) : null) ??
+      (produtor.id && ehPerguntaDeSituacaoDaConta(texto)
+        ? pronta(await responderSituacaoDaConta(supabase, produtor))
+        : null) ??
+      (produtor.id && ehPedidoDeTrocarCultura(texto) ? pronta(respostaDeTrocarCultura()) : null) ??
       (produtor.id ? pronta(responderAcenoSolto(texto, historico)) : null);
     if (porCodigo) return porCodigo;
   }
@@ -1653,7 +1663,7 @@ async function runAgentBase(input: {
   // isso o convite aparecia de forma redundante/confusa após um cadastro OK.
   let cadastroCriado = false;
   let contaCriada: { uf: string; cultura: string } | null = null;
-  let jaTentouCorrigirValor = false;
+  let tentativasCorrigirValor = 0;
   let tentativasForcarIncentivo = 0;
   let tentativasForcarPrimeiraResposta = 0;
   let tentativasCorrigirAlertaCambio = 0;
@@ -1687,46 +1697,54 @@ async function runAgentBase(input: {
 
     const numerosPermitidos = coletarNumerosPermitidos(messages, texto, historico);
     const leite = extrairResultadoLeite(messages);
-    const respostaBase = corrigirFimDeMes(
-      corrigirCalendario(
-        garantirOpcaoDeCidadeNoAlertaDeClima(
-          tirarNegativaDeInsumoParaBronze(
-            garantirMencaoLeilao(
-              garantirMencaoPainel(
-                garantirCanalDeTexto(
-                  garantirCotacaoLeite(
-                    garantirRelacaoLeiteMilho(
-                      garantirMediaDasPracas(
-                        garantirReferenciaMercado(
-                          garantirParidade(
-                            garantirRotaFrete(
-                              garantirDataDoPreco(
-                                removerMarkdownProibido(removerFechamentoGenerico(parsed.resposta)),
-                                extrairDataDoPreco(messages),
+    const respostaBase = suavizarConselhoDeEspera(
+      corrigirDirecaoDoAlerta(
+        corrigirFimDeMes(
+          corrigirCalendario(
+            garantirOpcaoDeCidadeNoAlertaDeClima(
+              tirarNegativaDeInsumoParaBronze(
+                garantirMencaoLeilao(
+                  garantirMencaoPainel(
+                    garantirCanalDeTexto(
+                      garantirCotacaoLeite(
+                        garantirRelacaoLeiteMilho(
+                          garantirMediaDasPracas(
+                            garantirReferenciaMercado(
+                              garantirParidade(
+                                garantirRotaFrete(
+                                  garantirDataDoPreco(
+                                    removerMarkdownProibido(
+                                      removerFechamentoGenerico(parsed.resposta),
+                                    ),
+                                    extrairDataDoPreco(messages),
+                                  ),
+                                  extrairUltimoFreteCitado(messages),
+                                ),
+                                extrairParidade(messages),
                               ),
-                              extrairUltimoFreteCitado(messages),
+                              extrairReferenciaMercado(messages),
                             ),
-                            extrairParidade(messages),
+                            extrairMediaDasPracas(messages),
                           ),
-                          extrairReferenciaMercado(messages),
+                          leite.fraseRelacao,
+                          numerosPermitidos,
                         ),
-                        extrairMediaDasPracas(messages),
+                        leite.cotacao,
                       ),
-                      leite.fraseRelacao,
-                      numerosPermitidos,
                     ),
-                    leite.cotacao,
+                    temDetalheExtraParaPainel(messages),
+                    !!produtor.user_id,
                   ),
+                  extrairResultadoLeilao(messages),
                 ),
-                temDetalheExtraParaPainel(messages),
-                !!produtor.user_id,
+                insumoForaDoPlano(messages),
               ),
-              extrairResultadoLeilao(messages),
             ),
-            insumoForaDoPlano(messages),
           ),
         ),
+        texto,
       ),
+      texto,
     );
 
     const chamadasDePreco = messages.flatMap((m) =>
@@ -1777,8 +1795,17 @@ async function runAgentBase(input: {
     // — achado real testando buscar_producao_ibge, ver comentário da função.
     const areaInvalida = areaProducaoNaoAutorizada(resposta, numerosPermitidos);
     if (naoAutorizados.length > 0 || medidasInvalidas.length > 0 || areaInvalida.length > 0) {
-      if (podeCorrigir && !jaTentouCorrigirValor) {
-        jaTentouCorrigirValor = true;
+      if (process.env["BOT_DEBUG_TOOLS"])
+        console.error(
+          "[valor-nao-autorizado]",
+          naoAutorizados,
+          medidasInvalidas,
+          areaInvalida,
+          resposta.slice(0, 400),
+        );
+      // duas chances de se corrigir (a bateria de 2026-10-16 teve 2 respostas de 97 que caíram no recuo seguro)
+      if (podeCorrigir && tentativasCorrigirValor < 2) {
+        tentativasCorrigirValor++;
         const lista = [
           ...naoAutorizados.map((v) => `R$${v.toFixed(2).replace(".", ",")}`),
           ...medidasInvalidas.map((v) => String(v).replace(".", ",")),

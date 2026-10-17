@@ -477,7 +477,7 @@ export function respostaDeChuvaEmMm(): RespostaComDados {
 }
 
 const PERGUNTA_AGRONOMICA =
-  /\b(?:umidade ideal|ponto de colheita|aduba[cç][aã]o|dosagem|dose de|qual (?:a )?(?:melhor )?(?:cultivar|variedade)|espa[cç]amento|popula[cç][aã]o de plantas|como (?:controlar|combater|tratar)|pulveriz\w+|quanto de (?:adubo|calc[aá]rio|semente))\b/i;
+  /\b(?:umidade ideal|ponto de colheita|aduba[cç][aã]o|dosagem|dose de|qual (?:a )?(?:melhor )?(?:cultivar|variedade)|espa[cç]amento|popula[cç][aã]o de plantas|como (?:controlar|combater|tratar)|pulveriz\w+|quanto de (?:adubo|calc[aá]rio|semente)|(?:indica|recomenda\w*|qual (?:o )?melhor)[^.?!]{0,25}(?:adubo|fertilizante|defensivo|semente|herbicida|fungicida|inseticida|veneno))\b/i;
 export const ehPerguntaAgronomica = (t: string) => t.length <= 140 && PERGUNTA_AGRONOMICA.test(t);
 export function respostaAgronomica(): RespostaComDados {
   return {
@@ -522,4 +522,61 @@ export function responderAcenoSolto(
     };
   }
   return null;
+}
+
+const TROCAR_CULTURA =
+  /\b(?:mudar|trocar|alterar|mudei|troquei|passei|passar)\b.{0,25}\b(?:cultura|cadastro|lavoura)\b.{0,25}\b(?:pra|para|de|do|da)\b/i;
+export const ehPedidoDeTrocarCultura = (t: string) =>
+  t.length <= 110 && TROCAR_CULTURA.test(t) && !/\b(?:plano|cidade)\b/i.test(t);
+export function respostaDeTrocarCultura(): RespostaComDados {
+  return {
+    resposta:
+      'Por aqui eu não mudo a cultura do seu cadastro. Mas você pode me pedir o preço de qualquer cultura quando quiser, por exemplo: "quanto tá o milho?". Se quiser trocar a cultura principal do cadastro, abra um chamado em Suporte no painel que a equipe ajusta.',
+    precisa_humano: false,
+    convite_dispensado: true,
+  };
+}
+
+const SITUACAO_DA_CONTA =
+  /\b(?:quando (?:vence|acaba|termina|expira)|vencimento|meu teste|meu plano|minha assinatura|(?:qual|que) (?:[ée] )?(?:o )?(?:meu )?plano (?:eu )?(?:tenho|estou)|que plano (?:eu )?(?:tenho|estou))\b/i;
+export const ehPerguntaDeSituacaoDaConta = (t: string) =>
+  t.length <= 80 && SITUACAO_DA_CONTA.test(t);
+
+/** Plano e teste do produtor, direto do banco (o modelo inventava "seu teste acabou" para quem já assina). */
+export async function responderSituacaoDaConta(
+  supabase: SupabaseClient,
+  produtor: ProdutorContexto,
+): Promise<RespostaComDados | null> {
+  if (!produtor.id) return null;
+  const { data } = await supabase
+    .from("assinaturas")
+    .select("plano, status, trial_expira_em")
+    .eq("produtor_id", produtor.id)
+    .maybeSingle();
+  if (!data?.plano) return null;
+  const plano = NOME_DO_PLANO(data.plano);
+  if (data.status === "ativa") {
+    return {
+      resposta: `Você é assinante do plano ${plano}, com a assinatura ativa. Pra ver o plano e a cobrança: https://safralume.com.br/dashboard/assinatura`,
+      precisa_humano: false,
+      convite_dispensado: true,
+    };
+  }
+  if (data.status === "trial" && data.trial_expira_em) {
+    const fim = new Date(data.trial_expira_em);
+    const dia = fim.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+    if (fim > new Date()) {
+      return {
+        resposta: `Você está no teste grátis do plano ${plano}, que vai até ${dia}. Depois disso, pra continuar, é só escolher o plano.`,
+        precisa_humano: false,
+        convite_dispensado: true,
+      };
+    }
+    return {
+      resposta: `Seu teste grátis do plano ${plano} acabou em ${dia}. Pra continuar, é só responder "quero assinar" que eu mando o link.`,
+      precisa_humano: false,
+      convite_dispensado: true,
+    };
+  }
+  return null; // inadimplente, cancelada...: o fluxo de cobrança já cuida disso
 }
