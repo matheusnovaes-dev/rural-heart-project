@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { ArrowRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -26,10 +26,10 @@ export function CampoWhatsappCta({
   const erroId = `${id}-erro`;
   const [valor, setValor] = useState("");
   const [erro, setErro] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
 
-  function enviar(e: FormEvent) {
-    e.preventDefault();
-    if (!telefoneValido(valor)) {
+  function enviarValor(v: string) {
+    if (!telefoneValido(v)) {
       setErro("Digite seu WhatsApp com DDD.");
       return;
     }
@@ -37,13 +37,34 @@ export function CampoWhatsappCta({
     // iOS Safari não tira o foco do campo ao tocar num botão: sem isso o
     // teclado ficaria aberto por cima do cadastro que vai abrir.
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
-    aoEnviar(valor);
+    aoEnviar(v);
   }
+
+  function enviar(e: FormEvent) {
+    e.preventDefault();
+    enviarValor(valor);
+  }
+
+  // Número digitado (e envio pedido) antes de a página hidratar: ver o script `__pre` em routes/index.tsx.
+  // Roda uma vez; a ref do formulário é o mesmo nó do HTML do servidor, então identifica de qual campo veio.
+  useEffect(() => {
+    const pre = (window as unknown as { __pre?: { v?: string; f?: HTMLFormElement; s?: number } })
+      .__pre;
+    if (!pre || pre.f !== formRef.current) return;
+    const mascarado = mascararTelefone(pre.v ?? "");
+    setValor(mascarado);
+    formRef.current?.querySelector("button[type=submit]")?.removeAttribute("data-aguardando");
+    if (pre.s) {
+      pre.s = 0;
+      enviarValor(mascarado);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const escuro = variante === "escuro";
 
   return (
-    <form onSubmit={enviar} noValidate className={cn("w-full", className)}>
+    <form ref={formRef} onSubmit={enviar} noValidate className={cn("w-full", className)}>
       <label
         htmlFor={id}
         className={cn(

@@ -908,3 +908,9 @@ html.intro-ativa .intro-cobertura {
     animation: none;
   }
 }
+
+/* Toque no CTA do hero antes de a página hidratar (celular lento): o envio fica guardado e o botão avisa que está a caminho. */
+button[data-aguardando] {
+  opacity: 0.7;
+  cursor: progress;
+}

@@ -72,6 +72,12 @@ export const Route = createFileRoute("/")({
         children: `(function(){try{var h=document.documentElement,m=function(q){return matchMedia(q).matches},c=navigator.connection||{};if(innerWidth>=1024&&m("(hover:hover) and (pointer:fine)")&&!m("(prefers-reduced-motion: reduce)")&&!c.saveData&&!/(^|slow-)2g|3g/.test(c.effectiveType||"")&&(navigator.hardwareConcurrency||4)>=4&&(navigator.deviceMemory||8)>=4&&!localStorage.getItem("safralume_intro_visto")&&!location.hash&&!/[?&]sem_intro/.test(location.search))h.classList.add("intro-ativa")}catch(e){}})()`,
       },
       {
+        // Antes da página "acordar" (hidratar), o formulário do hero é HTML puro: em celular lento tocar no botão recarregava a
+        // página (GET /?whatsapp=...) e apagava o número digitado, sem abrir o cadastro. Aqui o envio fica guardado (campo
+        // + pedido de envio) e o CampoWhatsappCta o executa assim que hidrata; o botão mostra "aguardando" por atributo.
+        children: `(function(){var P=window.__pre={};document.addEventListener("input",function(e){var t=e.target;if(t&&t.name==="whatsapp"&&t.form){for(var k in t.form)if(k.indexOf("__reactProps")===0)return;P.v=t.value;P.f=t.form}},true);document.addEventListener("submit",function(e){var f=e.target;if(!f||!f.querySelector||!f.querySelector("input[name=whatsapp]"))return;for(var k in f)if(k.indexOf("__reactProps")===0)return;e.preventDefault();e.stopPropagation();var i=f.querySelector("input[name=whatsapp]");P.v=i.value;P.f=f;P.s=1;var b=f.querySelector("button[type=submit]");if(b)b.setAttribute("data-aguardando","1")},true)})()`,
+      },
+      {
         // FAQPage: as mesmas perguntas da seção "Perguntas frequentes".
         type: "application/ld+json",
         children: JSON.stringify({
