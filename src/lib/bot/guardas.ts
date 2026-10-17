@@ -803,6 +803,15 @@ export function tirarNegativaDeInsumoParaBronze(
 export function garantirOpcaoDeCidadeNoAlertaDeClima(resposta: string): string {
   if (!/Confirma:\s*alerta de (?:chuva|geada|seca|vento)/i.test(resposta)) return resposta;
   if (/\p{L}\/[A-Z]{2}\b/u.test(resposta) || /capital/i.test(resposta)) return resposta;
+  // "em Sorriso": cidade citada na confirmação (não é UF nem nome de estado): não diga que vale a capital
+  const citada = resposta.match(
+    /\bem\s+([\p{Lu}][\p{L}'’]+(?:\s+(?:d[aeo]s?\s+)?[\p{Lu}][\p{L}'’]+)*)/u,
+  )?.[1];
+  if (citada) {
+    const n = SEM_ACENTO(citada);
+    const ehEstado = ufs.some((u) => SEM_ACENTO(u.label) === n || u.value.toLowerCase() === n);
+    if (!ehEstado) return resposta;
+  }
   // Dentro da própria pergunta (antes do "?"): manterSoAConfirmacao corta tudo depois do primeiro "?".
   const aviso = "(previsão da capital; pra usar a de uma cidade, é só dizer qual)";
   if (/\s+quando\b/i.test(resposta)) return resposta.replace(/\s+quando\b/i, ` ${aviso} quando`);
@@ -973,11 +982,20 @@ export function corrigirMediaAtribuidaACidade(
   };
   // cidade antes do valor: "...em Sinop (MT) é de R$138,25"
   const antes = new RegExp(
-    `\\bem\\s+(${NOME_DE_CIDADE})(?![\\p{L}'’])((?:(?!R\\$)[^.!?\\n]){0,70}?)(${valor})`,
+    `\\b(?:em|na regi[aã]o de|na cidade de|no munic[ií]pio de|na pra[cç]a de)\\s+(${NOME_DE_CIDADE})(?![\\p{L}'’])((?:(?!R\\$)[^.!?\\n]){0,70}?)(${valor})`,
     "gu",
   );
-  let saida = resposta.replace(antes, (todo, cidade: string, meio: string, v: string) =>
-    ehEstado(cidade) ? todo : `em ${etiqueta}${meio}${v}`,
+  // Se a frase já diz "média das praças" logo antes, só troca a cidade pelo estado (sem repetir a etiqueta).
+  let saida = resposta.replace(
+    antes,
+    (todo, cidade: string, meio: string, v: string, ...resto: unknown[]) => {
+      if (ehEstado(cidade)) return todo;
+      const desloc = resto[0] as number;
+      const jaDisse = /m[eé]dia das pra[cç]as/i.test(
+        resposta.slice(Math.max(0, desloc - 40), desloc),
+      );
+      return `em ${jaDisse ? nomeUf : etiqueta}${meio}${v}`;
+    },
   );
   // cidade depois do valor: "...R$138,25 em Sorriso, conforme a BBM"
   const depois = new RegExp(

@@ -33,8 +33,11 @@ const PREFIXO_DE_CIDADE =
   "(?:minha cidade (?:é|e|eh)|a minha cidade (?:é|e|eh)|moro (?:em|na cidade de|no município de|no municipio de)|sou (?:de|da cidade de)|agora (?:sou de|moro em)|mudei (?:de cidade )?(?:pra|para|pro)|me mudei (?:pra|para)|fico em|minha fazenda (?:fica )?(?:em|na cidade de))";
 const DECLARACAO_DE_CIDADE = new RegExp(`${PREFIXO_DE_CIDADE}\\s+(.{2,70})$`, "iu");
 const PERGUNTA_OU_DADO = /\?|pre[cç]o|quanto|cota[cç][aã]o|previs[aã]o|vai chover/i;
+// "mudei pra cultura de milho", "mudei pro plano Prata": não é cidade (achado na bateria de 2026-10-16)
+const NAO_COMECA_CIDADE =
+  /^(?:a |o |um |uma |outr[ao]s? |cultura|culturas|plano|planos|lavoura|produ[cç][aã]o|plantar|plantio|cria[cç][aã]o|soja|milho|caf[eé]|boi|gado|trigo|arroz|feij[aã]o|algod[aã]o|cana|leite|bronze|prata|ouro)\b/i;
 
-export type CidadeDeclarada = { cidade: string; uf: string | null };
+export type CidadeDeclarada = { cidade: string; uf: string | null; explicita: boolean };
 
 /** "minha cidade é Sinop", "mudei pra Lucas do Rio Verde MT": a cidade (e a UF, se veio) que a pessoa disse ser dela. */
 export function lerCidadeDeclarada(texto: string): CidadeDeclarada | null {
@@ -61,11 +64,12 @@ export function lerCidadeDeclarada(texto: string): CidadeDeclarada | null {
     }
   }
   const cidade = bruto.replace(/[,;]+$/, "").trim();
+  if (NAO_COMECA_CIDADE.test(cidade)) return null;
   if (cidade.length < 2 || cidade.length > 50 || !/^[\p{L}][\p{L}\s'’.-]*$/u.test(cidade))
     return null;
   // "sou de Minas", "moro em Goiás": é estado, não cidade. Deixa o fluxo normal conduzir.
   if (ehNome(cidade) || semAcento(cidade) === "minas") return null;
-  return { cidade, uf };
+  return { cidade, uf, explicita: !/^(?:mudei|me mudei)/i.test(m[0]!) };
 }
 
 export async function responderCidadeDeclarada(
@@ -87,7 +91,8 @@ export async function responderCidadeDeclarada(
       convite_dispensado: true,
     };
   }
-  if (r.motivo === "cidade_nao_encontrada") {
+  // "mudei pra X" sem cidade reconhecível pode ser outra coisa: deixa o fluxo normal conduzir
+  if (r.motivo === "cidade_nao_encontrada" && dita.explicita) {
     return {
       resposta: `Não achei "${dita.cidade}" em ${nomeUf}. Confere pra mim o nome da cidade e o estado?`,
       precisa_humano: false,
@@ -417,4 +422,104 @@ export function respostaDeInvestimento(): RespostaComDados {
     precisa_humano: false,
     convite_dispensado: true,
   };
+}
+
+// ---------------------------------------------------------------- outras respostas fixas
+
+const PEDIDO_LGPD =
+  /\b(?:exclu\w+|apag\w+|delet\w+|remov\w+|elimin\w+)\b.{0,25}\b(?:minha conta|meus dados|meu cadastro|meus? informa[cç][oõ]es)\b|\blgpd\b|direito (?:ao|de) esquecimento/i;
+export const ehPedidoDeExcluirDados = (t: string) => t.length <= 140 && PEDIDO_LGPD.test(t);
+export function respostaDeExcluirDados(): RespostaComDados {
+  return {
+    resposta:
+      "Cancelar a assinatura não apaga seus dados. Pra excluir sua conta e seus dados, já avisei a nossa equipe, que confirma o pedido com você por aqui.",
+    precisa_humano: true,
+    convite_dispensado: true,
+  };
+}
+
+const PERGUNTA_DE_PAGAMENTO =
+  /(?:cobram|aceita\w*|pago|pagar|pagamento|formas? de pagamento).{0,35}\b(?:pix|boleto|cart[aã]o)\b|\b(?:pix|boleto|cart[aã]o)\b.{0,25}\b(?:aceit\w+|pode|posso|serve|tem)\b|\bformas? de pagamento\b/i;
+export const ehPerguntaDePagamento = (t: string) =>
+  t.length <= 110 && PERGUNTA_DE_PAGAMENTO.test(t);
+export function respostaDePagamento(): RespostaComDados {
+  return {
+    resposta:
+      "Aceitamos Pix, boleto e cartão de crédito, pela Asaas (plataforma de pagamentos). O teste de 7 dias é grátis e não pede cartão.",
+    precisa_humano: false,
+    convite_dispensado: true,
+  };
+}
+
+const PEDIDO_DE_LINK_DO_SITE =
+  /\b(?:link|endere[cç]o|url)\b.{0,15}\b(?:do )?(?:site|safralume)\b|\bqual (?:[ée] )?o site\b|\bme (?:manda|passa|envia) o site\b/i;
+export const ehPedidoDeLinkDoSite = (t: string) => t.length <= 80 && PEDIDO_DE_LINK_DO_SITE.test(t);
+export function respostaDeLinkDoSite(produtor: ProdutorContexto): RespostaComDados {
+  return {
+    resposta: produtor.user_id
+      ? "O site é https://safralume.com.br. Seu painel fica em https://safralume.com.br/login (e-mail e senha)."
+      : "O site é https://safralume.com.br. Pra entrar no painel, é só me pedir o link de acesso que eu mando.",
+    precisa_humano: false,
+    convite_dispensado: true,
+  };
+}
+
+const CHUVA_EM_MM =
+  /(?:chuva|chuvas|precipita\w+).{0,30}(?:acumulad\w+|milim\w+|\bmm\b|volume)|\b(?:quantos?)\s+(?:mm|milimetros|milímetros)\b|\bmil[ií]metros\b/i;
+export const ehPerguntaDeChuvaEmMm = (t: string) => t.length <= 120 && CHUVA_EM_MM.test(t);
+export function respostaDeChuvaEmMm(): RespostaComDados {
+  return {
+    resposta:
+      "Eu não tenho o volume de chuva em milímetros nem o acumulado do mês: só a chance de chuva (%) e as temperaturas dos próximos dias. Quer a previsão da sua cidade?",
+    precisa_humano: false,
+    convite_dispensado: true,
+  };
+}
+
+const PERGUNTA_AGRONOMICA =
+  /\b(?:umidade ideal|ponto de colheita|aduba[cç][aã]o|dosagem|dose de|qual (?:a )?(?:melhor )?(?:cultivar|variedade)|espa[cç]amento|popula[cç][aã]o de plantas|como (?:controlar|combater|tratar)|pulveriz\w+|quanto de (?:adubo|calc[aá]rio|semente))\b/i;
+export const ehPerguntaAgronomica = (t: string) => t.length <= 140 && PERGUNTA_AGRONOMICA.test(t);
+export function respostaAgronomica(): RespostaComDados {
+  return {
+    resposta:
+      "Isso é orientação agronômica e eu não tenho fonte segura pra te passar: o melhor é falar com o seu agrônomo ou a assistência técnica (Emater, Embrapa). Posso ajudar com preço, clima, janela de plantio oficial, sinal de venda e comparação de propostas.",
+    precisa_humano: false,
+    convite_dispensado: true,
+  };
+}
+
+const AGRADECIMENTO_OU_OK =
+  /^\s*(?:ok(?:ay)?|blz|beleza|valeu|vlw|show|top|certo|entendi|perfeito|massa|fechou|legal|j[oó]ia|t[aá] bom|tudo bem|obrigad[oa]s?|brigad[oa])?[\s!.,]*(?:[\u{1F44D}\u{1F64F}\u{1F44F}\u2705\u{1F60A}\u{1F91D}\u{1F44C}\u{1F33E}]\uFE0F?[\s!.,]*)*$/iu;
+const SIM_SOLTO = /^\s*(?:sim|s|isso|pode|claro|quero|confirmo|confirmar)[\s!.]*$/i;
+
+function ultimaDoAssistente(historico: HistoricoLinha[]): string | null {
+  const u = [...historico].sort((a, b) => b.ordem - a.ordem).find((h) => h.role === "assistant");
+  return u?.conteudo ?? null;
+}
+
+/** "👍", "ok", "valeu" depois de uma resposta sem pergunta pendente; "sim" solto sem conversa nenhuma antes. */
+export function responderAcenoSolto(
+  texto: string,
+  historico: HistoricoLinha[],
+): RespostaComDados | null {
+  const t = texto.trim();
+  if (!t || t.length > 40) return null;
+  const ultima = ultimaDoAssistente(historico);
+  if (AGRADECIMENTO_OU_OK.test(t) && /[\p{L}\p{Extended_Pictographic}]/u.test(t)) {
+    if (ultima && /\?|Confirma/i.test(ultima)) return null; // tem pergunta pendente: o fluxo normal entende o "ok"
+    return {
+      resposta: "Por nada! Qualquer coisa é só chamar aqui. 🌾",
+      precisa_humano: false,
+      convite_dispensado: true,
+    };
+  }
+  if (SIM_SOLTO.test(t) && !ultima) {
+    return {
+      resposta:
+        "Sim pra quê? 🙂 Me conta o que você precisa: o preço de uma cultura, a previsão do tempo, criar um alerta...",
+      precisa_humano: false,
+      convite_dispensado: true,
+    };
+  }
+  return null;
 }

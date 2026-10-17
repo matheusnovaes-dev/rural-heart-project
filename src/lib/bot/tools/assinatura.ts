@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { limiteAlertas, limiteFuncionarios, type Plano, type StatusAssinatura } from "@/lib/planos.shared";
+import {
+  limiteAlertas,
+  limiteFuncionarios,
+  type Plano,
+  type StatusAssinatura,
+} from "@/lib/planos.shared";
 
 /**
  * Achado real 2026-09-10: o produtor perguntou "qual o meu plano?" e o
@@ -36,9 +41,11 @@ export async function consultarAssinatura(
     encontrado: true,
     plano,
     status,
-    trial_expira_em: data.trial_expira_em,
+    // só quem está em teste tem data de fim de teste: quem já assina (ativa) não "tem teste vencendo"
+    ...(status === "trial" ? { trial_expira_em: data.trial_expira_em } : {}),
     ativo: status === "ativa" || trialValido,
     limite_alertas: limiteAlertas(plano) === Infinity ? "sem limite" : limiteAlertas(plano),
-    limite_funcionarios: limiteFuncionarios(plano) === Infinity ? "sem limite" : limiteFuncionarios(plano),
+    limite_funcionarios:
+      limiteFuncionarios(plano) === Infinity ? "sem limite" : limiteFuncionarios(plano),
   };
 }

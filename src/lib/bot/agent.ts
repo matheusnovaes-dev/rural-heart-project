@@ -98,8 +98,20 @@ import {
 import { respostaDeProduto } from "@/lib/bot/respostasDeProduto";
 import { ufs } from "@/config/ufs";
 import { avisarCidadeSemCotacao } from "@/lib/bot/cidadeSemCotacao";
+import { culturasNaoConsultadas, culturasPerguntadas } from "@/lib/bot/produtoConsultado";
 import {
   conversaEraDePlanos,
+  ehPedidoDeExcluirDados,
+  ehPedidoDeLinkDoSite,
+  ehPerguntaAgronomica,
+  ehPerguntaDeChuvaEmMm,
+  ehPerguntaDePagamento,
+  respostaAgronomica,
+  respostaDeChuvaEmMm,
+  respostaDeExcluirDados,
+  respostaDeLinkDoSite,
+  respostaDePagamento,
+  responderAcenoSolto,
   ehPedidoDeCancelarAlerta,
   ehPedidoDeListarAlertas,
   ehPedidoDeOpiniaoDeInvestimento,
@@ -731,6 +743,28 @@ function removerTracoDeListaInline(resposta: string): string {
 // Média das praças que buscar_preco devolveu, só quando a resposta é sobre UMA
 // consulta de preço (com duas culturas, não dá pra saber a qual a frase
 // acrescentada se refere).
+/** Todas as médias de praças devolvidas por buscar_preco neste turno (uma por produto consultado). */
+function extrairMediasDasPracas(messages: OpenAIMessage[]): number[] {
+  const nomePorToolCallId = new Map<string, string>();
+  for (const m of messages) {
+    if (m.role === "assistant" && m.tool_calls) {
+      for (const tc of m.tool_calls) nomePorToolCallId.set(tc.id, tc.function.name);
+    }
+  }
+  const medias: number[] = [];
+  for (const m of messages) {
+    if (m.role !== "tool" || !m.tool_call_id) continue;
+    if (nomePorToolCallId.get(m.tool_call_id) !== "buscar_preco") continue;
+    try {
+      const v = JSON.parse(m.content ?? "{}")?.preco_medio_regioes;
+      if (typeof v === "number") medias.push(v);
+    } catch {
+      /* ignora */
+    }
+  }
+  return medias;
+}
+
 function extrairMediaDasPracas(messages: OpenAIMessage[]): number | null {
   const nomePorToolCallId = new Map<string, string>();
   for (const m of messages) {
@@ -1335,7 +1369,13 @@ async function runAgentBase(input: {
         : null) ??
       (ehPerguntaVagaDePreco(texto) ? pronta(respostaDePrecoSemAssunto()) : null) ??
       pronta(responderConversaoDeUnidade(texto)) ??
-      (ehPedidoDeOpiniaoDeInvestimento(texto) ? pronta(respostaDeInvestimento()) : null);
+      (ehPedidoDeOpiniaoDeInvestimento(texto) ? pronta(respostaDeInvestimento()) : null) ??
+      (ehPedidoDeExcluirDados(texto) ? pronta(respostaDeExcluirDados()) : null) ??
+      (ehPerguntaDePagamento(texto) ? pronta(respostaDePagamento()) : null) ??
+      (ehPedidoDeLinkDoSite(texto) ? pronta(respostaDeLinkDoSite(produtor)) : null) ??
+      (ehPerguntaDeChuvaEmMm(texto) ? pronta(respostaDeChuvaEmMm()) : null) ??
+      (ehPerguntaAgronomica(texto) ? pronta(respostaAgronomica()) : null) ??
+      (produtor.id ? pronta(responderAcenoSolto(texto, historico)) : null);
     if (porCodigo) return porCodigo;
   }
 
@@ -1620,6 +1660,7 @@ async function runAgentBase(input: {
   let tentativasCorrigirValorCambio = 0;
   let tentativasCorrigirHoraResumo = 0;
   let tentativasCorrigirAlertaPraga = 0;
+  let tentativasCorrigirProdutoDoPreco = 0;
 
   // Fecha a resposta: aplica as redes de segurança de texto, troca a resposta
   // do modelo pela confirmação escrita por código quando o cadastro acabou
@@ -1705,7 +1746,10 @@ async function runAgentBase(input: {
     const nomeUfDoPreco =
       ufs.find((u) => u.value === (ufDoPreco ?? "").toUpperCase())?.label ?? null;
     const resposta = await avisarCidadeSemCotacao(
-      corrigirMediaAtribuidaACidade(respostaBase, extrairMediaDasPracas(messages), nomeUfDoPreco),
+      extrairMediasDasPracas(messages).reduce(
+        (txt, media) => corrigirMediaAtribuidaACidade(txt, media, nomeUfDoPreco),
+        respostaBase,
+      ),
       texto,
       {
         uf: ufDoPreco,
@@ -1853,6 +1897,36 @@ async function runAgentBase(input: {
           "Erro: sua pergunta de confirmação do resumo diário propôs um horário que o produtor nunca disse (ou que nem é válido). Responda de novo perguntando direto 'Que horário você prefere?', sem propor nenhum horário.",
       });
       return null;
+    }
+
+    const MAX_TENTATIVAS_CORRIGIR_PRODUTO_DO_PRECO = 2;
+    if (
+      podeCorrigir &&
+      tentativasCorrigirProdutoDoPreco < MAX_TENTATIVAS_CORRIGIR_PRODUTO_DO_PRECO
+    ) {
+      const consultados = messages.flatMap((m) =>
+        m.role === "assistant" && m.tool_calls
+          ? m.tool_calls
+              .filter((tc) => tc.function.name === "buscar_preco")
+              .map((tc) => {
+                try {
+                  return String(JSON.parse(tc.function.arguments)?.produto ?? "");
+                } catch {
+                  return "";
+                }
+              })
+          : [],
+      );
+      const faltam = culturasNaoConsultadas(culturasPerguntadas(texto), consultados);
+      if (consultados.length > 0 && faltam.length > 0 && /R\$/.test(resposta)) {
+        tentativasCorrigirProdutoDoPreco++;
+        messages.push({ role: "assistant", content: conteudoBruto ?? parsed.resposta });
+        messages.push({
+          role: "system",
+          content: `Erro: o produtor perguntou o preço de ${faltam.join(", ").toUpperCase()} (mesmo que tenha escrito com erro de digitação), mas buscar_preco só foi chamada com produto=${consultados.join(", ")}. O número que você escreveu é de OUTRA cultura. Chame buscar_preco de novo com o produto certo (e a UF dele) e responda só com esse resultado.`,
+        });
+        return null;
+      }
     }
 
     const MAX_TENTATIVAS_CORRIGIR_ALERTA_PRAGA = 2;

@@ -77,6 +77,25 @@ function padraoMostradoNaConfirmacao(
   return !!ultima && new RegExp(`(?<![\\d,.])${Math.trunc(valor)}(?![\\d])`).test(ultima);
 }
 
+/**
+ * A pergunta "Confirma: alerta de chuva forte em Sorriso quando..." já mostrou a cidade ao produtor, que aceitou.
+ * Se o modelo esquecer de passar `cidade` na criação, ela é recuperada daqui (e validada igual: precisa ter sido
+ * escrita pelo produtor e existir na UF), para o alerta criado ser o mesmo que foi confirmado.
+ */
+function cidadeDaUltimaConfirmacao(historico: HistoricoLinha[]): string | undefined {
+  const ultima = ultimaMensagemDoAssistente(historico);
+  if (!ultima || !/confirma/i.test(ultima)) return undefined;
+  const m = ultima.match(
+    /alerta de [^?]{0,30}?\s+em\s+([\p{Lu}][\p{L}'’]+(?:\s+(?:d[aeo]s?\s+)?[\p{Lu}][\p{L}'’]+)*)(?:\/[A-Z]{2})?(?=\s+(?:quando|\()|[?,.])/u,
+  );
+  const cidade = m?.[1]?.trim();
+  if (!cidade) return undefined;
+  const n = semAcentoMinusculo(cidade);
+  if (ufs.some((u) => semAcentoMinusculo(u.label) === n || u.value.toLowerCase() === n))
+    return undefined;
+  return cidade;
+}
+
 const semAcentoMinusculo = (t: string) =>
   t
     .normalize("NFD")
@@ -265,7 +284,7 @@ export async function criarAlertaClima(
   // Cidade (opcional). Só vale se o produtor escreveu esse nome (nunca uma cidade que o modelo escolheu) e
   // se ela existe dentro da UF: sem isso o alerta olharia a previsão de um lugar que ele não pediu.
   let local: { cidade: string; lat: number; lon: number } | null = null;
-  const cidadePedida = args.cidade?.trim();
+  const cidadePedida = args.cidade?.trim() || cidadeDaUltimaConfirmacao(ctx.historico);
   if (cidadePedida) {
     if (!cidadeFoiDitaPeloProdutor(cidadePedida, ctx.texto, ctx.historico)) {
       return { sucesso: false, motivo: "cidade_nao_confirmada" };
