@@ -183,7 +183,12 @@ function DashboardGuard() {
         >
           Pular para o conteúdo
         </a>
-        <AppSidebar headerTitle={headerTitle} headerSubtitle={headerSubtitle} items={items} />
+        <AppSidebar
+          headerTitle={headerTitle}
+          headerSubtitle={headerSubtitle}
+          avatarUrl={cooperativa ? null : (produtor?.foto_url ?? null)}
+          items={items}
+        />
         <SidebarInset>
           <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-border/80 bg-background/95 px-4 backdrop-blur-sm sm:px-6">
             {/* No celular o produtor entra com a sidebar fechada e o ícone
@@ -245,10 +250,12 @@ function AtalhoBusca() {
 function AppSidebar({
   headerTitle,
   headerSubtitle,
+  avatarUrl,
   items,
 }: {
   headerTitle: string;
   headerSubtitle: string;
+  avatarUrl: string | null;
   items: NavItem[];
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -265,7 +272,17 @@ function AppSidebar({
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border px-3 py-4">
         <div className="flex items-center gap-3 px-1">
-          <img src={MIDIA.logo} alt="" className="size-9 rounded-[0.65rem]" />
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt=""
+              width={36}
+              height={36}
+              className="size-9 shrink-0 rounded-full object-cover"
+            />
+          ) : (
+            <img src={MIDIA.logo} alt="" className="size-9 rounded-[0.65rem]" />
+          )}
           <div className="min-w-0">
             <span className="block truncate font-display text-sm font-semibold text-sidebar-foreground">
               {headerTitle}

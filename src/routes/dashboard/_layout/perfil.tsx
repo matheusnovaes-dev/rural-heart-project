@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { BrainCircuit, CreditCard, Loader2, MapPin, UserRound } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { BrainCircuit, Camera, CreditCard, Loader2, MapPin, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
+import { AvatarProdutor } from "@/components/dashboard/AvatarProdutor";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +23,7 @@ import { buscarMunicipio } from "@/lib/clima";
 import { esquecerMemoriaDoBot, listarMemoriaDoBot } from "@/lib/perfil.server";
 import { supabase } from "@/lib/supabase";
 import { useAuth, useRequireProdutor } from "@/lib/auth";
+import { reduzirParaQuadrado } from "@/lib/imagem";
 import { mascararTelefone } from "@/lib/telefone";
 
 export const Route = createFileRoute("/dashboard/_layout/perfil")({
@@ -54,6 +56,7 @@ function PerfilPage() {
         title="Meu perfil"
         description="Seus dados e preferências. O que você muda aqui vale também para o bot no WhatsApp."
       />
+      <FotoCard produtor={produtor} userId={session?.user.id ?? null} refresh={refresh} />
       <DadosCard produtor={produtor} refresh={refresh} />
       <PreferenciasCard produtorId={produtor.id} />
       <MemoriaCard accessToken={session?.access_token ?? null} />
@@ -73,6 +76,129 @@ function PerfilPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+const BUCKET_FOTOS = "avatares";
+
+/** Caminho do arquivo dentro do bucket, a partir do endereço público salvo em foto_url. */
+function caminhoDaFoto(url: string | null | undefined): string | null {
+  const marca = `/${BUCKET_FOTOS}/`;
+  const i = url?.indexOf(marca) ?? -1;
+  return url && i >= 0 ? decodeURIComponent(url.slice(i + marca.length).split("?")[0] ?? "") : null;
+}
+
+function FotoCard({
+  produtor,
+  userId,
+  refresh,
+}: {
+  produtor: NonNullable<ReturnType<typeof useRequireProdutor>>;
+  userId: string | null;
+  refresh: () => Promise<void> | void;
+}) {
+  const entrada = useRef<HTMLInputElement>(null);
+  const [ocupado, setOcupado] = useState(false);
+
+  async function escolher(e: React.ChangeEvent<HTMLInputElement>) {
+    const arquivo = e.target.files?.[0];
+    e.target.value = "";
+    if (!arquivo || !supabase || !userId) return;
+    if (!arquivo.type.startsWith("image/")) {
+      toast.error("Escolha uma imagem (JPG, PNG ou WebP).");
+      return;
+    }
+    setOcupado(true);
+    try {
+      const { blob, extensao } = await reduzirParaQuadrado(arquivo);
+      const caminho = `${userId}/avatar-${Date.now()}.${extensao}`;
+      const { error: erroEnvio } = await supabase.storage
+        .from(BUCKET_FOTOS)
+        .upload(caminho, blob, { contentType: blob.type, cacheControl: "31536000" });
+      if (erroEnvio) throw erroEnvio;
+      const { data } = supabase.storage.from(BUCKET_FOTOS).getPublicUrl(caminho);
+      const { error: erroSalvar } = await supabase
+        .from("produtores")
+        .update({ foto_url: data.publicUrl })
+        .eq("id", produtor.id);
+      if (erroSalvar) throw erroSalvar;
+      const antiga = caminhoDaFoto(produtor.foto_url);
+      if (antiga) await supabase.storage.from(BUCKET_FOTOS).remove([antiga]);
+      await refresh();
+      toast.success("Foto atualizada.");
+    } catch {
+      toast.error("Não consegui enviar a foto. Tente outra imagem.");
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  async function remover() {
+    if (!supabase) return;
+    setOcupado(true);
+    try {
+      const { error } = await supabase
+        .from("produtores")
+        .update({ foto_url: null })
+        .eq("id", produtor.id);
+      if (error) throw error;
+      const antiga = caminhoDaFoto(produtor.foto_url);
+      if (antiga) await supabase.storage.from(BUCKET_FOTOS).remove([antiga]);
+      await refresh();
+      toast.success("Foto removida.");
+    } catch {
+      toast.error("Não consegui remover agora. Tente de novo.");
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardContent className="flex flex-wrap items-center gap-5 pt-6">
+        <AvatarProdutor
+          nome={produtor.nome ?? ""}
+          fotoUrl={produtor.foto_url}
+          className="size-24 text-2xl"
+        />
+        <div className="grid gap-2">
+          <div>
+            <p className="font-medium">Sua foto</p>
+            <p className="text-sm text-muted-foreground">
+              Aparece no seu painel. A imagem é recortada em quadrado e reduzida antes de enviar.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={ocupado}
+              onClick={() => entrada.current?.click()}
+            >
+              {ocupado ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Camera className="size-4" />
+              )}
+              {produtor.foto_url ? "Trocar foto" : "Escolher foto"}
+            </Button>
+            {produtor.foto_url ? (
+              <Button variant="ghost" size="sm" disabled={ocupado} onClick={remover}>
+                Remover
+              </Button>
+            ) : null}
+          </div>
+          <input
+            ref={entrada}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="sr-only"
+            onChange={escolher}
+            aria-label="Escolher foto de perfil"
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

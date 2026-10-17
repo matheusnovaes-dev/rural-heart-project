@@ -15,6 +15,7 @@ export type Produtor = {
   municipio: string | null;
   lat: number | null;
   lon: number | null;
+  foto_url?: string | null;
 };
 
 export type Cooperativa = {
