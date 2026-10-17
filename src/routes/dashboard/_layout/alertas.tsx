@@ -21,6 +21,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ufs } from "@/config/ufs";
+import { buscarMunicipio } from "@/lib/clima";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -101,6 +103,10 @@ type AlertaClima = {
   ultimo_disparo_data: string | null;
   produtor_id: string;
   whatsapp_destino: string;
+  // Alerta por cidade (opcional): sem cidade, vale a previsão da capital do estado.
+  cidade: string | null;
+  lat: number | null;
+  lon: number | null;
 };
 
 const condicaoInfo: Record<
@@ -118,17 +124,17 @@ const condicaoInfo: Record<
 };
 
 function descreverCondicaoClima(a: AlertaClima) {
-  const info = condicaoInfo[a.condicao];
+  const local = a.cidade ? `${a.cidade}/${a.uf}` : `${a.uf} (previsão da capital)`;
   if (a.condicao === "seca_prolongada") {
-    return `${a.uf} · sem previsão de chuva relevante (abaixo de ${a.limite}%) nos próximos 7 dias`;
+    return `${local} · sem previsão de chuva relevante (abaixo de ${a.limite}%) nos próximos 7 dias`;
   }
   if (a.condicao === "geada") {
-    return `${a.uf} · mínima prevista abaixo de ${a.limite}°C`;
+    return `${local} · mínima prevista abaixo de ${a.limite}°C`;
   }
   if (a.condicao === "vento_forte") {
-    return `${a.uf} · rajada prevista acima de ${a.limite} km/h`;
+    return `${local} · rajada prevista acima de ${a.limite} km/h`;
   }
-  return `${a.uf} · probabilidade de chuva acima de ${a.limite}%`;
+  return `${local} · probabilidade de chuva acima de ${a.limite}%`;
 }
 
 function AlertasPage() {
@@ -172,7 +178,9 @@ function AlertasPage() {
 
     const { data: dataClima } = await supabase
       .from("alertas_clima")
-      .select("id, uf, condicao, limite, ativo, ultimo_disparo_data, produtor_id, whatsapp_destino")
+      .select(
+        "id, uf, cidade, lat, lon, condicao, limite, ativo, ultimo_disparo_data, produtor_id, whatsapp_destino",
+      )
       .order("created_at", { ascending: false });
     setAlertasClima(dataClima ?? []);
     setCarregando(false);
@@ -793,7 +801,7 @@ function AlertasPage() {
                             size="sm"
                             variant="ghost"
                             className="size-8 p-0 text-muted-foreground hover:text-foreground"
-                            aria-label={`Editar alerta de clima ${a.uf}`}
+                            aria-label={`Editar alerta de clima ${a.cidade ?? a.uf}`}
                             onClick={() => setEditandoClima(a)}
                           >
                             <Pencil className="size-3.5" />
@@ -804,7 +812,7 @@ function AlertasPage() {
                             className="size-8 p-0 text-muted-foreground hover:text-destructive"
                             disabled={cancelandoClimaId === a.id}
                             title="Cancelar (mantém no histórico)"
-                            aria-label={`Cancelar alerta de clima ${a.uf}`}
+                            aria-label={`Cancelar alerta de clima ${a.cidade ?? a.uf}`}
                             onClick={() => cancelarClima(a.id)}
                           >
                             {cancelandoClimaId === a.id ? (
@@ -823,7 +831,7 @@ function AlertasPage() {
                             className="size-8 p-0 text-muted-foreground hover:text-destructive"
                             disabled={excluindoClimaId === a.id}
                             title="Excluir (remove do histórico)"
-                            aria-label={`Excluir alerta de clima ${a.uf}`}
+                            aria-label={`Excluir alerta de clima ${a.cidade ?? a.uf}`}
                           >
                             {excluindoClimaId === a.id ? (
                               <Loader2 className="size-3.5 animate-spin" />
@@ -1144,6 +1152,7 @@ function AlertaClimaForm({
   const selecionado = destinatarios.find((d) => d.id === destinatarioId) ?? destinatarios[0];
 
   const [uf, setUf] = useState(alerta?.uf ?? selecionado?.uf ?? "");
+  const [cidade, setCidade] = useState(alerta?.cidade ?? "");
   const [condicao, setCondicao] = useState<CondicaoClima>(alerta?.condicao ?? "chuva_forte");
   const [limite, setLimite] = useState(
     alerta ? String(alerta.limite) : String(condicaoInfo.chuva_forte.limitePadrao),
@@ -1162,9 +1171,30 @@ function AlertaClimaForm({
     if (!destinatario) return;
 
     setLoading(true);
+    // Cidade preenchida: acha as coordenadas dentro do estado (o verificador usa elas). Em branco: alerta do
+    // estado inteiro, com a previsão da capital como referência (o jeito de sempre).
+    let local: { cidade: string | null; lat: number | null; lon: number | null } = {
+      cidade: null,
+      lat: null,
+      lon: null,
+    };
+    const nomeCidade = cidade.trim();
+    if (nomeCidade) {
+      const nomeUf = ufs.find((u) => u.value === uf.toUpperCase())?.label;
+      const achada = nomeUf ? await buscarMunicipio(nomeCidade, nomeUf) : null;
+      if (!achada) {
+        setLoading(false);
+        toast.error(
+          `Não encontrei "${nomeCidade}" em ${uf.toUpperCase()}. Confira o nome ou deixe a cidade em branco para usar o estado.`,
+        );
+        return;
+      }
+      local = { cidade: achada.nome, lat: achada.lat, lon: achada.lon };
+    }
     const payload = {
       produtor_id: destinatario.produtorId,
       uf: uf.toUpperCase(),
+      ...local,
       condicao,
       limite: parseFloat(limite.replace(",", ".")),
       whatsapp_destino: destinatario.whatsapp,
@@ -1233,6 +1263,23 @@ function AlertaClimaForm({
             onChange={(e) => setUf(e.target.value.toUpperCase())}
           />
         </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="ac-cidade">Cidade (opcional)</Label>
+          <Input
+            autoComplete="off"
+            id="ac-cidade"
+            maxLength={80}
+            placeholder="Ex: Fátima do Sul"
+            value={cidade}
+            onChange={(e) => setCidade(e.target.value)}
+          />
+        </div>
+      </div>
+      <p className="-mt-1 text-xs text-muted-foreground">
+        Com a cidade, o aviso usa a previsão dela. Em branco, vale o estado todo, com a previsão da
+        capital.
+      </p>
+      <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="ac-limite">Limite ({condicaoInfo[condicao].unidade})</Label>
           <Input

@@ -353,11 +353,16 @@ export const TOOLS = [
     function: {
       name: "criar_alerta_clima",
       description:
-        "Cria um alerta de clima: avisa quando uma condição for prevista numa UF, acima/abaixo de um limite. SÓ chame depois do produtor confirmar condição, UF e limite (ou aceitar o padrão sugerido).",
+        "Cria um alerta de clima: avisa quando uma condição for prevista, acima/abaixo de um limite. Com `cidade`, usa a previsão DAQUELA cidade; sem `cidade`, vale o estado todo e a previsão usada é a da capital. SÓ chame depois do produtor confirmar condição, UF e limite (ou aceitar o padrão sugerido).",
       parameters: {
         type: "object",
         properties: {
           uf: { type: "string" },
+          cidade: {
+            type: ["string", "null"],
+            description:
+              "Cidade que o PRODUTOR citou pro alerta (ex: 'Fátima do Sul'), pra usar a previsão dela. null quando ele não citou cidade (alerta do estado, previsão da capital). Nunca invente nem escolha cidade por ele.",
+          },
           condicao: {
             type: "string",
             enum: ["chuva_forte", "geada", "seca_prolongada", "vento_forte"],
@@ -368,7 +373,7 @@ export const TOOLS = [
               "% de probabilidade (chuva_forte/seca_prolongada), °C de mínima (geada), ou km/h de rajada (vento_forte). Se o produtor não informar, use o padrão: chuva_forte=70, geada=3, seca_prolongada=20, vento_forte=40.",
           },
         },
-        required: ["uf", "condicao", "limite"],
+        required: ["uf", "cidade", "condicao", "limite"],
         additionalProperties: false,
       },
     },

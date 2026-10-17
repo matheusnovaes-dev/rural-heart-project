@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { limiteAlertas, temAcessoPrata, type Plano } from "@/lib/planos.shared";
+import { ufs } from "@/config/ufs";
+import { buscarMunicipio } from "@/lib/clima";
 import { normalizarWhatsapp } from "@/lib/telefone";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
 
@@ -73,6 +75,23 @@ function padraoMostradoNaConfirmacao(
   if (LIMITE_PADRAO_CLIMA[condicao] !== valor) return false;
   const ultima = ultimaMensagemDoAssistente(historico);
   return !!ultima && new RegExp(`(?<![\\d,.])${Math.trunc(valor)}(?![\\d])`).test(ultima);
+}
+
+const semAcentoMinusculo = (t: string) =>
+  t
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+// Mesmo princípio do valor: a cidade do alerta precisa ter aparecido numa mensagem do PRODUTOR.
+function cidadeFoiDitaPeloProdutor(
+  cidade: string,
+  texto: string,
+  historico: HistoricoLinha[],
+): boolean {
+  const alvo = semAcentoMinusculo(cidade);
+  if (semAcentoMinusculo(texto).includes(alvo)) return true;
+  return historico.some((h) => h.role === "user" && semAcentoMinusculo(h.conteudo).includes(alvo));
 }
 
 /** Mesmo teto do plano usado no dashboard (alertas.tsx) — preço + clima
@@ -206,6 +225,8 @@ export async function criarAlertaClima(
     uf: string;
     condicao: "chuva_forte" | "geada" | "seca_prolongada" | "vento_forte";
     limite: number;
+    /** Opcional: com cidade, o verificador usa a previsão dela; sem, a da capital do estado. */
+    cidade?: string | null;
   },
   ctx: {
     produtor: ContextoProdutor;
@@ -241,16 +262,33 @@ export async function criarAlertaClima(
   if (await limiteDeAlertasAtingido(supabase, ctx.produtor.id)) {
     return { sucesso: false, motivo: "limite_atingido" };
   }
+  // Cidade (opcional). Só vale se o produtor escreveu esse nome (nunca uma cidade que o modelo escolheu) e
+  // se ela existe dentro da UF: sem isso o alerta olharia a previsão de um lugar que ele não pediu.
+  let local: { cidade: string; lat: number; lon: number } | null = null;
+  const cidadePedida = args.cidade?.trim();
+  if (cidadePedida) {
+    if (!cidadeFoiDitaPeloProdutor(cidadePedida, ctx.texto, ctx.historico)) {
+      return { sucesso: false, motivo: "cidade_nao_confirmada" };
+    }
+    const nomeUf = ufs.find((u) => u.value === args.uf.toUpperCase())?.label;
+    const achada = nomeUf ? await buscarMunicipio(cidadePedida, nomeUf) : null;
+    if (!achada) return { sucesso: false, motivo: "cidade_nao_encontrada" };
+    local = { cidade: achada.nome, lat: achada.lat, lon: achada.lon };
+  }
   const { error } = await supabase.from("alertas_clima").insert({
     produtor_id: ctx.produtor.id,
     criado_por: ctx.produtor.user_id,
     uf: args.uf,
+    ...(local ?? {}),
     condicao: args.condicao,
     limite: args.limite,
     whatsapp_destino: normalizarWhatsapp(ctx.telefone),
   });
   if (error) return { sucesso: false, motivo: "erro_ao_criar" };
-  return { sucesso: true };
+  return {
+    sucesso: true,
+    previsao_de: local ? `${local.cidade}/${args.uf}` : `${args.uf} (capital)`,
+  };
 }
 
 /** Confirmação determinística reaproveitada (mesmo padrão dos dois acima),
