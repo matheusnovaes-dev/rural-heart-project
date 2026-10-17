@@ -13,7 +13,6 @@ const CORES: Record<string, string> = {
   calculadora: "oklch(0.96 0.024 88)",
   "como-funciona": "oklch(0.96 0.02 62)",
   painel: "oklch(0.988 0.005 95.1)",
-  planos: "oklch(0.96 0.024 88)",
   duvidas: "oklch(0.96 0.02 62)",
 };
 

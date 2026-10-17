@@ -1,10 +1,11 @@
 import { ContaAte } from "@/components/landing/ContaAte";
 import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Check, ChevronDown, Leaf, Sprout, Wheat } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
+import { Grao } from "@/components/landing/Grao";
 import { Reveal } from "@/components/landing/Reveal";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -26,40 +27,92 @@ const porDia = (preco: number) =>
   (preco / 30).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export function Pricing({ semTrial = false }: { semTrial?: boolean }) {
-  return (
-    <section id="planos" className="mx-auto max-w-6xl scroll-mt-16 px-4 py-12 sm:py-20 sm:px-6">
-      <Reveal className="mx-auto max-w-2xl text-center">
-        <TituloDuasVozes
-          antes="Planos para cada tamanho de"
-          serifa="OPERAÇÃO"
-          className="text-foreground"
-        />
-        <p className="mt-3 text-muted-foreground">
-          {semTrial
-            ? "Escolha o plano e comece agora. Cancele quando quiser."
-            : "Todos começam com 7 dias grátis, sem cartão. Cancele quando quiser."}
-        </p>
-      </Reveal>
+  // Celular: os três planos viram uma fileira que desliza pro lado (scroll-snap), abrindo já no plano em destaque
+  // (Prata, o do meio) com os vizinhos aparecendo pela borda. Sem JavaScript a fileira abre no Bronze e desliza igual.
+  const faixa = useRef<HTMLDivElement>(null);
+  const [indice, setIndice] = useState(1);
+  useEffect(() => {
+    const el = faixa.current;
+    if (!el || !window.matchMedia("(max-width: 639px)").matches) return;
+    const destaque = Math.max(
+      0,
+      pricingPlans.findIndex((p) => p.highlighted),
+    );
+    const alvo = el.children[destaque] as HTMLElement | undefined;
+    if (alvo) el.scrollLeft = alvo.offsetLeft - (el.clientWidth - alvo.clientWidth) / 2;
+    const io = new IntersectionObserver(
+      (entradas) => {
+        for (const e of entradas)
+          if (e.isIntersecting) setIndice(Array.prototype.indexOf.call(el.children, e.target));
+      },
+      { root: el, threshold: 0.6 },
+    );
+    Array.from(el.children).forEach((c) => io.observe(c));
+    return () => io.disconnect();
+  }, []);
 
-      <div className="mt-12 grid items-stretch gap-6 sm:grid-cols-3">
-        {pricingPlans.map((plan, index) => (
-          // No celular o plano em destaque (Prata) sobe pro topo: antes ele só
-          // aparecia depois de rolar o card inteiro do Bronze.
-          <Reveal
-            key={plan.id}
-            delay={index * 0.1}
-            className={cn("h-full", plan.highlighted && "max-sm:order-first")}
-          >
-            {plan.highlighted ? (
-              // Plano em destaque: um fio de luz laranja dá a volta no cartão (só transform, ver .anel-destaque)
-              <div className="anel-destaque lg:-translate-y-3 lg:scale-[1.02]">
+  return (
+    // Capítulo escuro (verde da marca, como o rodapé): os cartões claros e o laranja dos botões saltam do fundo.
+    <section
+      id="planos"
+      className="relative isolate scroll-mt-16 overflow-hidden bg-[#0e1d15] text-[#f6f3ec]"
+    >
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10"
+        style={{
+          background:
+            "radial-gradient(900px 600px at 85% -10%, rgba(217,164,65,.22), transparent 65%), radial-gradient(800px 700px at -10% 110%, rgba(64,140,96,.34), transparent 62%), linear-gradient(180deg,#0e1d15,#12281c)",
+        }}
+      />
+      <Grao />
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-20">
+        <Reveal className="mx-auto max-w-2xl text-center">
+          <TituloDuasVozes
+            antes="Planos para cada tamanho de"
+            serifa="OPERAÇÃO"
+            className="text-[#f6f3ec]"
+            corSerifa="#e9b44c"
+          />
+          <p className="mt-3 text-[#f6f3ec]/75">
+            {semTrial
+              ? "Escolha o plano e comece agora. Cancele quando quiser."
+              : "Todos começam com 7 dias grátis, sem cartão. Cancele quando quiser."}
+          </p>
+        </Reveal>
+
+        <div
+          ref={faixa}
+          className="no-scrollbar -mx-4 mt-12 flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto px-[8vw] pb-4 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-3 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0"
+        >
+          {pricingPlans.map((plan, index) => (
+            <Reveal
+              key={plan.id}
+              delay={index * 0.1}
+              className="h-full max-sm:w-[84vw] max-sm:shrink-0 max-sm:snap-center max-sm:transform-none! max-sm:opacity-100!"
+            >
+              {plan.highlighted ? (
+                // Plano em destaque: um fio de luz laranja dá a volta no cartão (só transform, ver .anel-destaque)
+                <div className="anel-destaque h-full lg:-translate-y-3 lg:scale-[1.02]">
+                  <CartaoPlano plan={plan} semTrial={semTrial} />
+                </div>
+              ) : (
                 <CartaoPlano plan={plan} semTrial={semTrial} />
-              </div>
-            ) : (
-              <CartaoPlano plan={plan} semTrial={semTrial} />
-            )}
-          </Reveal>
-        ))}
+              )}
+            </Reveal>
+          ))}
+        </div>
+        <div aria-hidden="true" className="mt-3 flex justify-center gap-2 sm:hidden">
+          {pricingPlans.map((p, i) => (
+            <span
+              key={p.id}
+              className={cn(
+                "h-1.5 rounded-full transition-[width,background-color] duration-300",
+                i === indice ? "w-6 bg-[#ee942b]" : "w-1.5 bg-[#f6f3ec]/35",
+              )}
+            />
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -83,10 +136,14 @@ function CartaoPlano({ plan, semTrial }: { plan: PricingPlan; semTrial: boolean 
         plan.highlighted
           ? "border-transparent bg-card shadow-xl"
           : isOuro
-            ? "border-gold bg-gold-soft/40 ring-1 ring-gold/50"
+            ? "border-gold bg-card ring-1 ring-gold/50"
             : "border-border bg-card",
       )}
     >
+      {/* No Ouro o tom dourado vem por cima de uma base clara opaca (o fundo da seção é escuro) */}
+      {isOuro ? (
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gold-soft/40" />
+      ) : null}
       {/* brilho de fundo do plano (muda de cor com o nível) */}
       <div
         aria-hidden="true"

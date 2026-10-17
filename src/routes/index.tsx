@@ -14,6 +14,7 @@ import { Solution } from "@/components/landing/Solution";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { DashboardPreview } from "@/components/landing/DashboardPreview";
 import { TrustProof } from "@/components/landing/TrustProof";
+import { FaixaDeFotos } from "@/components/landing/FaixaDeFotos";
 import { Pricing } from "@/components/landing/Pricing";
 import { Faq } from "@/components/landing/Faq";
 import { RastreioScroll } from "@/components/landing/RastreioScroll";
@@ -112,6 +113,7 @@ function Index() {
           <FaixaGigante />
           <DashboardPreview />
           <TrustProof />
+          <FaixaDeFotos />
           <Pricing semTrial={semTrial === "1"} />
           <Faq />
           <FinalCta />
