@@ -1044,7 +1044,7 @@ const PERGUNTA_DE_ESPERA =
   /(?:compensa|vale a pena|devo|[ée] bom|melhor)[^.?!]{0,30}(?:segurar|esperar|guardar|armazenar|estocar|aguardar)/i;
 const VERBO_DE_ESPERA = /\b(?:segurar|esperar|aguardar|guardar|armazenar|estocar)\b/i;
 const VEREDITO =
-  /(?:boa (?:ideia|op[cç][aã]o)|vantajos[oa]|vale a pena|compensa|sugere|indica que|recomend)/i;
+  /(?:boa (?:ideia|op[cç][aã]o)|vantajos[oa]|interessante|vale a pena|vale (?:segurar|esperar|aguardar)|melhor (?:esperar|segurar|aguardar)|compensa|sugere|indica que|recomend|pode valer)/i;
 
 /**
  * "Compensa segurar o milho até janeiro?" não tem resposta que o Safralume possa garantir: o sinal de venda mostra preço,
