@@ -56,7 +56,7 @@ function usePrecosReaisSoja() {
     let cancelado = false;
     Promise.all(
       (["GO", "MT", "PR"] as const).map((uf) =>
-        buscarPrecosDaUf(supabase, "soja", uf)
+        buscarPrecosDaUf(supabase!, "soja", uf)
           .then((r) => r.serieEstado.at(-1)?.preco ?? null)
           .catch(() => null),
       ),

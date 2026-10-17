@@ -862,15 +862,15 @@ function extrairResultadoLeilao(messages: OpenAIMessage[]): ResultadoLeilao | nu
     if (nomePorToolCallId.get(m.tool_call_id) !== "buscar_leiloes_proximos") continue;
     try {
       const r = JSON.parse(m.content ?? "{}") as Record<string, unknown>;
-      if (r.disponivel_no_plano === false) return { disponivelNoPlano: false };
-      if (r.encontrado === true) {
+      if (r["disponivel_no_plano"] === false) return { disponivelNoPlano: false };
+      if (r["encontrado"] === true) {
         return {
           disponivelNoPlano: true,
           encontrado: true,
           totalPresenciais:
-            typeof r.total_presenciais_na_regiao === "number" ? r.total_presenciais_na_regiao : 0,
+            typeof r["total_presenciais_na_regiao"] === "number" ? r["total_presenciais_na_regiao"] : 0,
           totalVirtuais:
-            typeof r.total_virtuais_em_destaque === "number" ? r.total_virtuais_em_destaque : 0,
+            typeof r["total_virtuais_em_destaque"] === "number" ? r["total_virtuais_em_destaque"] : 0,
         };
       }
       return { disponivelNoPlano: true, encontrado: false };

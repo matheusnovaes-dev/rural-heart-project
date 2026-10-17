@@ -13,6 +13,27 @@ export const getRouter = () => {
   // só o router decide, sem a disputa entre os dois.
   if (typeof document !== "undefined") {
     window.history.scrollRestoration = "manual";
+
+    // Depois de publicar, abas abertas pedem pedaços de código antigos que
+    // não existem mais ("Failed to fetch dynamically imported module").
+    // Recarrega uma vez pra pegar a versão nova, sem loop infinito.
+    const CHAVE = "recarregou-por-chunk";
+    const recarregar = () => {
+      if (sessionStorage.getItem(CHAVE)) return;
+      sessionStorage.setItem(CHAVE, "1");
+      window.location.reload();
+    };
+    window.addEventListener("vite:preloadError", (e) => {
+      e.preventDefault();
+      recarregar();
+    });
+    window.addEventListener("unhandledrejection", (e) => {
+      const msg = String((e.reason as Error | undefined)?.message ?? e.reason ?? "");
+      if (/dynamically imported module|Importing a module script failed/i.test(msg)) {
+        recarregar();
+      }
+    });
+    window.setTimeout(() => sessionStorage.removeItem(CHAVE), 10000);
   }
 
   const router = createRouter({
