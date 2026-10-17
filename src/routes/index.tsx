@@ -1,3 +1,4 @@
+import { IntroAssinatura } from "@/components/landing/IntroAssinatura";
 import { FundoDosCapitulos } from "@/components/landing/FundoDosCapitulos";
 import { MapaBrasilFundo } from "@/components/landing/MapaBrasilFundo";
 import { DesktopFXLoader } from "@/components/landing/desktop/DesktopFXLoader";
@@ -36,6 +37,12 @@ export const Route = createFileRoute("/")({
   head: () => ({
     scripts: [
       {
+        // Decide, ANTES da primeira pintura, se a abertura com a assinatura roda: só desktop de verdade (tela larga, mouse,
+        // sem "reduzir movimento", rede e máquina boas), só na primeira visita, e nunca em link com #âncora ou ?sem_intro.
+        // Põe a classe `intro-ativa` no <html>; sem ela a cobertura é display:none (ver IntroAssinatura.tsx e styles.css).
+        children: `(function(){try{var h=document.documentElement,m=function(q){return matchMedia(q).matches},c=navigator.connection||{};if(innerWidth>=1024&&m("(hover:hover) and (pointer:fine)")&&!m("(prefers-reduced-motion: reduce)")&&!c.saveData&&!/(^|slow-)2g|3g/.test(c.effectiveType||"")&&(navigator.hardwareConcurrency||4)>=4&&(navigator.deviceMemory||8)>=4&&!localStorage.getItem("safralume_intro_visto")&&!location.hash&&!/[?&]sem_intro/.test(location.search))h.classList.add("intro-ativa")}catch(e){}})()`,
+      },
+      {
         // FAQPage: as mesmas perguntas da seção "Perguntas frequentes".
         type: "application/ld+json",
         children: JSON.stringify({
@@ -59,6 +66,7 @@ function Index() {
   return (
     <CadastroProvider>
       <div className="fundo-capitulos min-h-screen bg-background">
+        <IntroAssinatura />
         <Header />
         <main>
           <Hero />

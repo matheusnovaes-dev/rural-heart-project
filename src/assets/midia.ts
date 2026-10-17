@@ -4,6 +4,7 @@ import hero828 from "@/assets/hero-field-828.webp?url";
 import hero1000Webp from "@/assets/hero-field-1000.webp?url";
 import hero1920 from "@/assets/hero-field-1920.webp?url";
 import hero1000Jpg from "@/assets/hero-field-1000.jpg?url";
+import grao from "@/assets/grao.webp?url";
 import logo from "@/assets/logo-icon.webp?url";
 import posterComoFunciona from "@/assets/como-funciona-poster.webp?url";
 import soja640 from "@/assets/soybean-field-640.webp?url";
@@ -17,6 +18,8 @@ export const MIDIA = {
   hero1000Webp,
   hero1920,
   hero1000Jpg,
+  /** Textura de grão (144px, branco com transparência aleatória), repetida sobre as seções escuras */
+  grao,
   logo,
   posterComoFunciona,
   soja640,

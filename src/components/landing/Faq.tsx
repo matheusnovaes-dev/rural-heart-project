@@ -67,17 +67,17 @@ export function Faq() {
               <AccordionPrimitive.Item
                 key={item.pergunta}
                 value={String(i)}
-                className="group border-b border-border"
+                className="group relative border-b border-border after:absolute after:bottom-[-1px] after:left-0 after:h-px after:w-0 after:bg-[color:var(--cta)] after:transition-[width] after:duration-500 after:ease-out data-[state=open]:after:w-full desk:hover:after:w-full"
               >
                 <AccordionPrimitive.Header>
                   <AccordionPrimitive.Trigger className="flex w-full cursor-pointer items-start gap-4 py-5 text-left sm:gap-6 sm:py-7">
                     <span
-                      className="w-9 shrink-0 pt-1 text-2xl leading-none text-muted-foreground italic transition-colors duration-300 group-hover:text-[color:var(--cta)] group-data-[state=open]:text-[color:var(--cta)] sm:w-12 sm:text-3xl"
+                      className="w-9 shrink-0 origin-left pt-1 text-2xl leading-none text-muted-foreground italic transition-[color,transform] duration-300 group-hover:text-[color:var(--cta)] group-data-[state=open]:text-[color:var(--cta)] desk:group-hover:scale-125 desk:group-data-[state=open]:scale-110 sm:w-12 sm:text-3xl"
                       style={SERIFA}
                     >
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <span className="flex-1 font-display text-lg leading-snug font-bold tracking-tight text-foreground transition-transform duration-300 group-hover:translate-x-1 sm:text-2xl">
+                    <span className="flex-1 font-display text-lg leading-snug font-bold tracking-tight text-foreground transition-[transform,color] duration-300 group-hover:translate-x-1 group-hover:text-primary group-data-[state=open]:text-primary sm:text-2xl">
                       {item.pergunta}
                     </span>
                     <span className="mt-1 flex size-9 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-all duration-300 group-hover:border-[color:var(--cta)] group-data-[state=open]:rotate-45 group-data-[state=open]:border-[color:var(--cta)] group-data-[state=open]:bg-[color:var(--cta)] group-data-[state=open]:text-cta-foreground sm:size-11">

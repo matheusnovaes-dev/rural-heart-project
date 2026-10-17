@@ -71,7 +71,7 @@ export function BarraCtaFixa() {
             bottom: "var(--cookie-h, 0px)",
             paddingBottom: "calc(0.625rem + env(safe-area-inset-bottom, 0px))",
           }}
-          className="fixed inset-x-0 z-40 flex items-center gap-2.5 border-t border-border bg-background/95 px-3 pt-2.5 shadow-[0_-8px_24px_-12px_oklch(0.25_0.03_156/0.25)] backdrop-blur-md sm:hidden"
+          className="fixed inset-x-0 z-40 flex items-center gap-2.5 border-t border-border bg-background px-3 pt-2.5 shadow-[0_-8px_24px_-12px_oklch(0.25_0.03_156/0.25)] sm:hidden"
         >
           <button
             type="button"

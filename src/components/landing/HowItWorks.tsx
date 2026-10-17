@@ -2,6 +2,7 @@ import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
 import React, { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 
+import { PassosHorizontais } from "@/components/landing/PassosHorizontais";
 import { Reveal } from "@/components/landing/Reveal";
 import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 import { MIDIA } from "@/assets/midia";
@@ -129,7 +130,7 @@ export function HowItWorks() {
         <VideoComoFunciona />
       </RevelarAoRolar>
 
-      <div className="relative mt-12 grid gap-8 sm:grid-cols-3">
+      <div className="relative mt-12 grid gap-8 sm:grid-cols-3 desk:hidden">
         <div
           aria-hidden
           className="absolute top-7 left-[calc(16.66%+1.75rem)] right-[calc(16.66%+1.75rem)] hidden h-px bg-primary/15 sm:block"
@@ -155,6 +156,7 @@ export function HowItWorks() {
           </Reveal>
         ))}
       </div>
+      <PassosHorizontais />
     </section>
   );
 }

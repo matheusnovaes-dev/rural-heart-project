@@ -1,21 +1,17 @@
 import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
-import { motion } from "framer-motion";
 import { ShieldCheck } from "lucide-react";
 
 import { Reveal } from "@/components/landing/Reveal";
 import { MIDIA } from "@/assets/midia";
+import { Grao } from "@/components/landing/Grao";
+import { RevelarImagem } from "@/components/landing/RevelarImagem";
 
 export function TrustProof() {
   return (
-    <section data-cortina className="bg-primary py-12 sm:py-20 text-primary-foreground">
+    <section data-cortina className="relative bg-primary py-12 sm:py-20 text-primary-foreground">
+      <Grao />
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2">
-        <motion.div
-          initial={{ clipPath: "inset(14% 14% 14% 14% round 36px)", opacity: 0.4 }}
-          whileInView={{ clipPath: "inset(0% 0% 0% 0% round 16px)", opacity: 1 }}
-          viewport={{ once: true, margin: "-12%" }}
-          transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-          className="overflow-hidden rounded-2xl"
-        >
+        <RevelarImagem>
           <picture>
             <source
               srcSet={`${MIDIA.soja640} 640w, ${MIDIA.sojaWebp} 1000w`}
@@ -30,7 +26,7 @@ export function TrustProof() {
               loading="lazy"
             />
           </picture>
-        </motion.div>
+        </RevelarImagem>
 
         <Reveal delay={0.1}>
           <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-medium">

@@ -9,7 +9,7 @@ import { brl, diaMesCurto, type ItemDoMercado } from "@/lib/mercadoLanding";
 
 /**
  * Carrossel de preços REAIS do dia (BBM e Banco Central), no estilo da faixa de parceiros do site do Lando
- * Norris: título gigante em duas vozes (grotesca pesada + serifa fina), uma palavra de pincel atrás que anda
+ * Norris: título gigante em duas vozes (grotesca pesada + serifa fina), uma palavra de pincel atrás (em tom suave, para não competir com os números) que anda
  * devagar com o scroll e a faixa de itens rolando sem parar. Só transform e opacidade; sem dado a faixa fica
  * invisível (altura reservada, sem deslocar a página) em vez de mostrar número inventado. Quem prefere menos
  * movimento recebe a faixa parada e rolável com o dedo.
@@ -72,7 +72,7 @@ export function PrecosCarrossel() {
     >
       <Pincel
         palavra="hoje"
-        className="top-[-2%] left-[38%] text-[clamp(9rem,38vw,27rem)] text-[color:var(--cta)]/90 sm:top-[18%] sm:left-[30%]"
+        className="top-[-2%] left-[38%] text-[clamp(9rem,38vw,27rem)] text-[color:var(--cta)]/28 sm:top-[8%] sm:left-[34%]"
       />
 
       <div className="relative mx-auto grid max-w-6xl items-start gap-6 px-4 sm:px-6 lg:grid-cols-[1.25fr_1fr]">

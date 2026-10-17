@@ -15,6 +15,7 @@ import { BadgeCheck, ShieldCheck } from "lucide-react";
 import { CampoWhatsappCta } from "@/components/landing/CampoWhatsappCta";
 import { useCadastro } from "@/components/landing/CadastroProvider";
 import { MIDIA } from "@/assets/midia";
+import { Grao } from "@/components/landing/Grao";
 
 // Título em movimento: cada palavra entra sozinha (só transform e opacidade, nada que force recalcular
 // layout). O trecho em destaque ganha a cor do CTA e um traço que se desenha por baixo.
@@ -35,6 +36,12 @@ const A_PARTIR_DO_DESTAQUE = 8;
 
 export function Hero() {
   const { abrirCadastro } = useCadastro();
+  // Com a abertura (assinatura em tela escura) rodando, a entrada do hero espera ela terminar para ser vista.
+  // Só atrasa as animações (não muda o HTML): o servidor e o primeiro render do cliente geram o mesmo DOM.
+  const atrasoIntro =
+    typeof document !== "undefined" && document.documentElement.classList.contains("intro-ativa")
+      ? 1.2
+      : 0;
   const sectionRef = useRef<HTMLElement>(null);
   // Parallax de scroll e luz-no-cursor são exatamente os dois efeitos que os
   // guias de acessibilidade mais citam como gatilho de enjoo em
@@ -163,6 +170,7 @@ export function Hero() {
         </motion.svg>
       </div>
 
+      <Grao />
       <motion.div
         style={{ scale: conteudoEscala, y: conteudoY, opacity: conteudoOpacidade }}
         className="relative mx-auto flex max-w-4xl flex-col items-center px-4 pt-14 pb-24 text-center sm:px-6 sm:pt-24 sm:pb-32 motion-reduce:transform-none! motion-reduce:opacity-100!"
@@ -170,8 +178,8 @@ export function Hero() {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/30 px-4 py-1.5 text-xs font-medium text-white/95 backdrop-blur-sm"
+          transition={{ duration: 0.5, delay: atrasoIntro }}
+          className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/45 px-4 py-1.5 text-xs font-medium text-white/95"
         >
           <BadgeCheck className="size-3.5" />
           Fontes públicas: Conab, órgãos estaduais e bolsas
@@ -189,7 +197,11 @@ export function Hero() {
                 <motion.span
                   initial={{ opacity: 0, y: "0.55em" }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.55, delay: 0.1 + i * 0.055, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{
+                    duration: 0.55,
+                    delay: atrasoIntro + 0.1 + i * 0.055,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
                   className={`relative inline-block ${destaque ? "text-[color:var(--cta)]" : ""}`}
                 >
                   {palavra}
@@ -210,7 +222,7 @@ export function Hero() {
                         animate={{ pathLength: 1 }}
                         transition={{
                           duration: 0.7,
-                          delay: 0.1 + i * 0.055 + 0.45,
+                          delay: atrasoIntro + 0.1 + i * 0.055 + 0.45,
                           ease: "easeOut",
                         }}
                       />
@@ -226,7 +238,7 @@ export function Hero() {
         <motion.p
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
+          transition={{ duration: 0.5, delay: atrasoIntro + 0.2 }}
           data-profundidade="7"
           className="mt-4 max-w-2xl text-balance text-base text-white/85 sm:mt-5 sm:text-lg"
         >
@@ -238,7 +250,7 @@ export function Hero() {
           id="hero-cadastro"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
+          transition={{ duration: 0.5, delay: atrasoIntro + 0.3 }}
           className="mt-7 w-full max-w-xl sm:mt-8"
         >
           {/* O CTA virou o próprio campo de WhatsApp: antes era um botão que

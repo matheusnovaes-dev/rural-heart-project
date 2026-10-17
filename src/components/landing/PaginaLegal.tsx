@@ -78,7 +78,7 @@ export function PaginaLegal({
         {/* Atalhos no celular */}
         <nav
           aria-label="Nesta página"
-          className="sticky top-16 z-30 -mb-px overflow-x-auto border-b border-border/70 bg-background/90 backdrop-blur lg:hidden"
+          className="sticky top-16 z-30 -mb-px overflow-x-auto border-b border-border/70 bg-background/95 lg:hidden"
         >
           <ul className="flex w-max gap-2 px-4 py-2.5 sm:px-6">
             {secoes.map((s, i) => (

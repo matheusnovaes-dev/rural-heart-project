@@ -1,3 +1,4 @@
+import { Grao } from "@/components/landing/Grao";
 import { useRef } from "react";
 import { Link } from "@tanstack/react-router";
 import { useInView } from "framer-motion";
@@ -30,7 +31,8 @@ export function Footer() {
   const assinar = useInView(ref, { once: true, margin: "0px 0px -18% 0px" });
   return (
     <footer className="bg-[color:var(--cta)] px-2.5 pt-2.5 pb-5 text-[#0e3b2a] sm:px-4 sm:pt-4">
-      <div className="mx-auto max-w-[96rem] overflow-hidden rounded-[1.6rem] bg-primary text-primary-foreground sm:rounded-[2.2rem]">
+      <div className="relative mx-auto max-w-[96rem] overflow-hidden rounded-[1.6rem] bg-primary text-primary-foreground sm:rounded-[2.2rem]">
+        <Grao />
         <MarcasFontes />
 
         <div className="grid gap-10 px-5 py-9 sm:gap-12 sm:px-10 sm:py-14 lg:grid-cols-[1fr_1fr] lg:gap-14">

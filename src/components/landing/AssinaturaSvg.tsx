@@ -102,7 +102,8 @@ export function AssinaturaSvg({ ativo, className }: { ativo: boolean; className?
         </clipPath>
       </defs>
       <g clipPath={`url(#${id}c)`}>
-        <path d={d} fill={`url(#${id}g)`} />
+        {/* id fixo: a abertura da página (IntroAssinatura) reaproveita este mesmo contorno com <use>, sem repetir os 10KB */}
+        <path id="assinatura-d" d={d} fill={`url(#${id}g)`} />
       </g>
       <path
         ref={florioRef}

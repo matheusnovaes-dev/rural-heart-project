@@ -1,3 +1,4 @@
+import { Grao } from "@/components/landing/Grao";
 import { Marquee } from "@/components/landing/Marquee";
 
 // Mesmas culturas e fontes que a seção "Dado com origem clara" já cita no texto.
@@ -43,6 +44,7 @@ export function FaixaGigante() {
         <span className="faixa-brilho-a" />
         <span className="faixa-brilho-b" />
       </div>
+      <Grao />
       <Marquee velocidade={70} repeticoes={2}>
         {CULTURAS.map((nome, i) => (
           <span

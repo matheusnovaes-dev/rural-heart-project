@@ -715,3 +715,169 @@ html.lenis body {
     display: none;
   }
 }
+
+/* Grão sobre seções escuras (ver components/landing/Grao.tsx): tile de 144px repetido, estático. */
+.grao {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--grao-url, none);
+  background-size: 144px 144px;
+  background-repeat: repeat;
+  opacity: 0;
+  transition: opacity 1.4s ease;
+}
+html.grao-ok .grao {
+  opacity: 0.075;
+}
+
+/* Menu em tela cheia (components/landing/MenuTelaCheia.tsx): o painel desce abrindo por clip-path, os destinos sobem de
+   uma máscara em sequência. Fechar é um fade curto (o Radix espera o fim da animação para desmontar). */
+.menu-tela[data-state="open"] {
+  animation: menu-abre 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.menu-tela[data-state="closed"] {
+  animation: menu-fecha 0.3s ease both;
+}
+.menu-tela[data-state="open"] .menu-item {
+  animation: menu-sobe 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 70ms + 220ms);
+}
+.menu-tela[data-state="open"] .menu-lateral {
+  animation: menu-surge 0.8s ease both;
+  animation-delay: 0.55s;
+}
+@keyframes menu-abre {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes menu-fecha {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes menu-sobe {
+  from {
+    transform: translateY(105%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes menu-surge {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-tela[data-state="open"],
+  .menu-tela[data-state="open"] .menu-item,
+  .menu-tela[data-state="open"] .menu-lateral {
+    animation: none;
+  }
+}
+
+/* Entrada da página (components/landing/IntroAssinatura.tsx). Só aparece com a classe `intro-ativa` no <html>, posta por um
+   script no head da rota antes da primeira pintura. Linha do tempo (1,6s): assinatura se escreve 0,1 a 0,85s, floreio 0,7 a
+   1,05s, frase 0,8s, a cobertura some entre 1,15 e 1,6s. A animação de segurança esconde a cobertura mesmo sem JS. */
+.intro-cobertura {
+  display: none;
+}
+html.intro-ativa .intro-cobertura {
+  display: grid;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  place-items: center;
+  background: var(--primary);
+  animation: intro-saida 0.45s ease 1.15s forwards;
+}
+.intro-conteudo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+  width: min(34rem, 72vw);
+}
+.intro-escreve {
+  width: 100%;
+  animation: intro-escreve 0.75s cubic-bezier(0.65, 0, 0.35, 1) 0.1s both;
+}
+.intro-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 6px 22px rgba(232, 145, 42, 0.38));
+}
+.intro-florio {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: intro-florio 0.4s ease-out 0.7s forwards;
+}
+.intro-frase {
+  margin: 0;
+  font-family: var(--font-display, inherit);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--primary-foreground) 70%, transparent);
+  animation: menu-surge 0.5s ease 0.8s both;
+}
+@keyframes intro-escreve {
+  from {
+    clip-path: polygon(0 -10%, 0 -10%, -12% 110%, -12% 110%);
+  }
+  to {
+    clip-path: polygon(0 -10%, 118% -10%, 106% 110%, -12% 110%);
+  }
+}
+@keyframes intro-florio {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes intro-saida {
+  to {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
+/* Pontinhos de "digitando..." da ilustração do passo 1 (components/landing/PassosHorizontais.tsx). */
+.passos-ponto {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: #8a8f87;
+  animation: passos-ponto 1s ease-in-out infinite;
+}
+@keyframes passos-ponto {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .passos-ponto {
+    animation: none;
+  }
+}
