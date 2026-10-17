@@ -48,6 +48,22 @@ export const getRouter = () => {
     // mas cobre a demora real que motivou esse ajuste.
     defaultPendingMs: 150,
     defaultPendingMinMs: 300,
+    // Transição suave (fade nativo do navegador) entre páginas públicas, por exemplo landing -> login. Fica de fora: a
+    // primeira carga, mudança só de #âncora, qualquer tela do painel (/dashboard) e quem prefere menos movimento ou tem
+    // aparelho simples (a captura da tela custa nessas máquinas). Sem suporte no navegador, navega normal.
+    defaultViewTransition: {
+      types: ({ fromLocation, toLocation, pathChanged }) => {
+        if (!fromLocation || !pathChanged) return false;
+        if (
+          fromLocation.pathname.startsWith("/dashboard") ||
+          toLocation.pathname.startsWith("/dashboard")
+        )
+          return false;
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
+        if ((navigator.hardwareConcurrency || 4) < 4) return false;
+        return ["pagina"];
+      },
+    },
   });
 
   return router;

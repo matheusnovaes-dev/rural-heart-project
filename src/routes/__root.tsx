@@ -22,6 +22,7 @@ import { Toaster } from "../components/ui/sonner";
 import { CookieConsent } from "../components/CookieConsent";
 import { pricingPlans } from "../config/site";
 import { capturarOrigem } from "../lib/origem";
+import { BOTAO_PRINCIPAL, PaginaDeAviso } from "../components/PaginaDeAviso";
 import { FONTES_PAINEL_URL, carregarFontesDaLanding } from "../lib/fontes";
 
 // Fontes: as críticas da landing e do login (Bricolage Grotesque e IBM Plex Sans) são do próprio domínio, declaradas em
@@ -35,23 +36,17 @@ const FONTES_MONO_URL =
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Página não encontrada</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          A página que você procura não existe ou foi movida.
-        </p>
-        <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Voltar para o início
-          </Link>
-        </div>
-      </div>
-    </div>
+    <PaginaDeAviso
+      codigo="404"
+      antes="Esse caminho"
+      serifa="NÃO EXISTE."
+      texto="A página que você procura não existe ou foi movida. O preço de hoje, esse sim, continua aqui."
+      acaoPrincipal={
+        <Link to="/" className={BOTAO_PRINCIPAL}>
+          Voltar para o início
+        </Link>
+      }
+    />
   );
 }
 
@@ -63,34 +58,24 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          Esta página não carregou
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Algo deu errado do nosso lado. Tente atualizar a página ou volte para o início. Se
-          continuar, chame a gente no WhatsApp: +55 31 9004-0215.
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <button
-            onClick={() => {
-              router.invalidate();
-              reset();
-            }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Tentar de novo
-          </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            Ir para o início
-          </a>
-        </div>
-      </div>
-    </div>
+    <PaginaDeAviso
+      codigo="Ops"
+      antes="Essa página"
+      serifa="NÃO CARREGOU."
+      texto="Algo deu errado do nosso lado. Tente de novo; se continuar, chame a gente no WhatsApp: +55 31 9004-0215."
+      mostrarPrecos={false}
+      acaoPrincipal={
+        <button
+          onClick={() => {
+            router.invalidate();
+            reset();
+          }}
+          className={BOTAO_PRINCIPAL}
+        >
+          Tentar de novo
+        </button>
+      }
+    />
   );
 }
 

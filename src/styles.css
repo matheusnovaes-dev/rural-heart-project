@@ -933,3 +933,10 @@ button[data-aguardando] {
     transition: none;
   }
 }
+
+/* Transição entre páginas públicas (View Transitions): fade curto e suave; o roteador já a desliga no painel e com "reduzir movimento". */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.28s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
