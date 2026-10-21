@@ -352,7 +352,7 @@ function FazendaPage() {
             ))}
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <ResumoCard
               icone={Wallet}
               rotulo="Gastos"
@@ -590,24 +590,24 @@ function ResumoCard({
   carregando: boolean;
 }) {
   return (
-    <Card className="gap-2 py-4">
-      <CardContent className="space-y-1 px-4">
-        <p className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-          <Icone className="size-4" />
+    <Card className="gap-2 py-3 sm:py-4">
+      <CardContent className="space-y-1 px-3 sm:px-4">
+        <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground sm:gap-2 sm:text-sm">
+          <Icone className="size-3.5 sm:size-4" />
           {rotulo}
         </p>
         {carregando ? (
           <Skeleton className="h-8 w-32" />
         ) : (
           <p
-            className={`font-mono text-2xl font-semibold tabular-nums ${
+            className={`font-mono text-base font-semibold tabular-nums sm:text-2xl ${
               destaque === "ruim" ? "text-destructive" : destaque === "bom" ? "text-primary" : ""
             }`}
           >
             {formatarReais(valor)}
           </p>
         )}
-        <p className="text-xs text-muted-foreground">{nota}</p>
+        <p className="hidden text-xs text-muted-foreground sm:block">{nota}</p>
       </CardContent>
     </Card>
   );
@@ -633,11 +633,15 @@ function LinhaRegistro({
         <Icone className="size-4" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{r.descricao}</p>
+        <p className="truncate text-sm font-medium">
+          {(r.tipo === "plantio" || r.tipo === "colheita") && r.cultura
+            ? `${ROTULO_TIPO[r.tipo]} de ${r.cultura.toLowerCase()}`
+            : r.descricao}
+        </p>
         <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-          <span>{ROTULO_TIPO[r.tipo]}</span>
+          {r.tipo !== "gasto" && r.tipo !== "venda" && <span>{ROTULO_TIPO[r.tipo]}</span>}
           {r.categoria && <Badge variant="secondary">{r.categoria}</Badge>}
-          {r.cultura && <span>{r.cultura}</span>}
+          {r.cultura && r.tipo !== "plantio" && r.tipo !== "colheita" && <span>{r.cultura}</span>}
           {r.talhao && <span>{r.talhao}</span>}
           {qtd && (
             <span>
@@ -666,7 +670,7 @@ function LinhaRegistro({
         <Button
           variant="ghost"
           size="icon"
-          className="size-8"
+          className="size-7 sm:size-8"
           onClick={onEditar}
           aria-label="Editar lançamento"
         >
@@ -675,7 +679,7 @@ function LinhaRegistro({
         <Button
           variant="ghost"
           size="icon"
-          className="size-8"
+          className="size-7 sm:size-8"
           onClick={onApagar}
           aria-label="Apagar lançamento"
         >
