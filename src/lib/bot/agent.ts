@@ -1868,6 +1868,10 @@ async function runAgentBase(input: {
   let cadastroCriado = false;
   let contaCriada: { uf: string; cultura: string } | null = null;
   let tentativasCorrigirValor = 0;
+  // O modelo às vezes escreve "Anotei no caderno" sem chamar a ferramenta (visto ao vivo: ~metade das vezes em 'gastei dois mil de diesel').
+  // Em vez de desistir, tenta de novo uma vez, obrigando a chamada de registrar_na_fazenda.
+  let refezRegistro = false;
+  let forcarRegistroNaProximaRodada = false;
   let tentativasForcarIncentivo = 0;
   let tentativasForcarPrimeiraResposta = 0;
   let tentativasCorrigirAlertaCambio = 0;
@@ -1914,6 +1918,17 @@ async function runAgentBase(input: {
           nomePorId.get(m.tool_call_id) === "registrar_na_fazenda" &&
           /"sucesso":true/.test(m.content ?? ""),
       );
+      if (!gravou && podeCorrigir && !refezRegistro && ehLancamentoDoCaderno) {
+        refezRegistro = true;
+        forcarRegistroNaProximaRodada = true;
+        messages.push({ role: "assistant", content: conteudoBruto ?? parsed.resposta });
+        messages.push({
+          role: "system",
+          content:
+            "Você escreveu que anotou, mas NÃO chamou registrar_na_fazenda: nada foi gravado. Chame a ferramenta agora, só com o que a MENSAGEM ATUAL do produtor diz (valor, descrição e data dela), sem reaproveitar lançamentos de mensagens anteriores.",
+        });
+        return null;
+      }
       if (!gravou) {
         return {
           resposta:
@@ -2253,8 +2268,9 @@ async function runAgentBase(input: {
       const json = await chamarOpenAI(apiKey, messages, {
         comTools: true,
         signal,
-        forcarTool:
-          rodada === 0
+        forcarTool: forcarRegistroNaProximaRodada
+          ? ((forcarRegistroNaProximaRodada = false), "registrar_na_fazenda")
+          : rodada === 0
             ? forcarRefazerEstudo
               ? "refazer_estudo"
               : forcarEstudoDeProposta
