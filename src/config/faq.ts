@@ -36,7 +36,7 @@ export const perguntasFrequentes: PerguntaFrequente[] = [
   {
     pergunta: "O Safralume lê foto ou PDF de proposta de compra?",
     resposta:
-      "Sim. Mande no WhatsApp a foto, o print da conversa ou o PDF de uma proposta ou tabela de preços (ou conte por escrito). O Safralume lê, compara com o preço de mercado do dia, considera o prazo de pagamento, ranqueia os compradores e diz o que perguntar antes de fechar. Depois é só questionar, por exemplo: por que está abaixo, ou e se a Cargill topar 130, que ele refaz a conta. É uma comparação com preço público, não recomendação de investimento. No Bronze são 3 estudos por dia; no Prata e no Ouro, 15. A foto ou o PDF é lido na hora e não fica guardado.",
+      "Sim. Mande no WhatsApp a foto, o print da conversa ou o PDF de uma proposta ou tabela de preços (ou conte por escrito). O Safralume lê, compara com o preço de mercado do dia, considera o prazo de pagamento, ranqueia os compradores e diz o que perguntar antes de fechar. Depois é só questionar, por exemplo: por que está abaixo, ou e se o comprador topar 130, que ele refaz a conta. É uma comparação com preço público, não recomendação de investimento. No Bronze são 3 estudos por dia; no Prata e no Ouro, 15. A foto ou o PDF é lido na hora e não fica guardado.",
   },
   {
     pergunta: "Funciona com internet fraca?",
