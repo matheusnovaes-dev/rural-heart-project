@@ -37,6 +37,7 @@ import { useExemplosDoDia, useHoje } from "@/hooks/useExemplosDoDia";
 import { brl2, haDiasAtras, proximosDecendios } from "@/lib/exemplosLanding";
 import { MIDIA } from "@/assets/midia";
 import { IconesSafralume } from "@/components/icons/SafralumeIcon";
+import { GraficoPrecoReal } from "@/components/landing/GraficoPrecoReal";
 
 /**
  * Preço real de soja (GO/MT/PR) pra substituir o número ilustrativo no
@@ -306,6 +307,7 @@ export function DashboardPreview() {
             batesse. Pedido do Matheus 2026-10-12: "tem que ser FODA, o mais
             realista possível". */}
             <div
+              data-spotlight
               className="dashboard-shell overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
               onMouseEnter={() => setAutoplay(false)}
               onMouseLeave={() => setAutoplay(true)}
@@ -471,6 +473,7 @@ function PreviewPrecos({
 }: {
   precosReais: { GO: number; MT: number; PR: number } | null;
 }) {
+  const serieSoja = useExemplosDoDia()?.serieSoja ?? null;
   const ufs = [
     { uf: "MT", preco: precosReais?.MT ?? 129.8, variacao: 3.4, cor: "var(--chart-2)" },
     { uf: "PR", preco: precosReais?.PR ?? 130.8, variacao: -1.2, cor: "var(--chart-3)" },
@@ -543,6 +546,13 @@ function PreviewPrecos({
           </Card>
         ))}
       </div>
+      {/* Só desktop: o painel real tem um histórico, e esta janela grande ficava com a metade de baixo vazia. */}
+      {serieSoja && serieSoja.pontos.length >= 10 && (
+        <GraficoPrecoReal
+          serie={serieSoja.pontos}
+          titulo={`Soja · ${serieSoja.praca} · últimos 90 dias`}
+        />
+      )}
     </div>
   );
 }

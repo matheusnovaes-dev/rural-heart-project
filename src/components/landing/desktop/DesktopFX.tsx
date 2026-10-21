@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 
+import IndiceLateral from "@/components/landing/desktop/IndiceLateral";
 import { iniciarParticulas } from "@/components/landing/desktop/particulas";
 import { iniciarFluxo } from "@/components/landing/desktop/fluxo";
 import { iniciarVento } from "@/components/landing/desktop/vento";
@@ -46,5 +47,5 @@ export default function DesktopFX({ leve = false }: { leve?: boolean }) {
     if (faixa) seguro(() => iniciarFluxo(faixa));
     return () => limpezas.reverse().forEach((f) => f());
   }, []);
-  return null;
+  return leve ? null : <IndiceLateral />;
 }

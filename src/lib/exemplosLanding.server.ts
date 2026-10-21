@@ -23,7 +23,7 @@ export const exemplosDoDiaLanding = createServerFn({ method: "GET" }).handler(
 
     const supabase = supabaseServiceRole();
 
-    const [dolar, futuroSoja, plantio] = await Promise.all([
+    const [dolar, futuroSoja, serieSoja, plantio] = await Promise.all([
       (async (): Promise<ExemplosDoDia["dolar"]> => {
         const { data } = await supabase
           .from("cambio")
@@ -66,6 +66,26 @@ export const exemplosDoDiaLanding = createServerFn({ method: "GET" }).handler(
         };
       })().catch(() => null),
 
+      // Soja em Sorriso/Lucas do Rio Verde (MT), BBM, até 90 dias de pregões: um número por dia, sem linhas cruas.
+      (async (): Promise<ExemplosDoDia["serieSoja"]> => {
+        const desde = new Date();
+        desde.setDate(desde.getDate() - 90);
+        const { data } = await supabase
+          .from("precos")
+          .select("data_referencia, preco")
+          .eq("produto", "SOJA EM GRÃOS (60 kg)")
+          .eq("uf", "MT")
+          .eq("regiao", "Sorriso / Lucas do Rio Verde")
+          .gte("data_referencia", desde.toISOString().slice(0, 10))
+          .order("data_referencia", { ascending: true })
+          .returns<{ data_referencia: string; preco: number }[]>();
+        const pontos = (data ?? []).map((r) => ({
+          data: r.data_referencia,
+          preco: Number(r.preco),
+        }));
+        return pontos.length >= 10 ? { praca: "Sorriso e Lucas do Rio Verde (MT)", pontos } : null;
+      })().catch(() => null),
+
       (async (): Promise<ExemplosDoDia["plantio"]> => {
         const r = await consultarJanelaPlantio(supabase, {
           produto: "soja",
@@ -84,10 +104,10 @@ export const exemplosDoDiaLanding = createServerFn({ method: "GET" }).handler(
       })().catch(() => null),
     ]);
 
-    const dados: ExemplosDoDia = { dolar, futuroSoja, plantio };
+    const dados: ExemplosDoDia = { dolar, futuroSoja, serieSoja, plantio };
     // Se as três fontes falharem juntas (ex: banco fora do ar), não congela o
     // vazio por 30 minutos: a próxima visita tenta de novo.
-    if (dolar || futuroSoja || plantio) cache = { em: Date.now(), dados };
+    if (dolar || futuroSoja || serieSoja || plantio) cache = { em: Date.now(), dados };
     return dados;
   },
 );

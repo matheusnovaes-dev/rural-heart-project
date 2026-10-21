@@ -12,6 +12,8 @@ export type ExemplosDoDia = {
     unidade: string;
     contratos: { vencimento: string; valor: number }[];
   } | null;
+  /** Histórico real de uma praça de soja (últimos 90 dias), para o gráfico da prévia do painel no desktop. */
+  serieSoja: { praca: string; pontos: { data: string; preco: number }[] } | null;
   plantio: {
     periodoAtual: string;
     riscoHoje: number | null;

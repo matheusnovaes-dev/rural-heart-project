@@ -940,3 +940,17 @@ button[data-aguardando] {
   animation-duration: 0.28s;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+/* Gráfico de preço da prévia do painel (desktop): a linha se desenha uma vez ao aparecer. */
+@keyframes grafico-desenha {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .grafico-linha {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: grafico-desenha 1.2s ease-out 0.15s forwards;
+  }
+}

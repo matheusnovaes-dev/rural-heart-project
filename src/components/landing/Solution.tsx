@@ -75,7 +75,11 @@ function PhoneMockup() {
   const futuro = exemplos?.futuroSoja;
   const plantio = exemplos?.plantio;
   return (
-    <div className="w-full max-w-sm rounded-[2.25rem] border-8 border-[oklch(0.244_0.026_155.8)] bg-[oklch(0.244_0.026_155.8)] shadow-2xl">
+    <div
+      data-tilt
+      data-spotlight
+      className="w-full max-w-sm rounded-[2.25rem] border-8 border-[oklch(0.244_0.026_155.8)] bg-[oklch(0.244_0.026_155.8)] shadow-2xl"
+    >
       <div className="overflow-hidden rounded-[1.75rem] bg-[#e5ded4]">
         <div className="flex items-center gap-3 bg-[oklch(0.331_0.049_156.2)] px-4 py-3">
           <span className="flex size-9 items-center justify-center rounded-full bg-white/15 text-white">
