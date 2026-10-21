@@ -136,7 +136,8 @@ const legendas: Record<AbaId, string> = {
   precos: "O preço da sua praça, com histórico e a variação da semana.",
   sinal: "Preço, futuros da B3 e clima juntos dizem se é hora de vender ou esperar.",
   alertas: "Avisos de preço, clima e dólar, e lembretes da lavoura direto no WhatsApp.",
-  fazenda: "Gastos, vendas e plantios anotados por mensagem ou no painel, com o resultado do mês.",
+  fazenda:
+    "Gastos, vendas e plantios por mensagem, áudio ou foto da nota, com a pagar, a receber e custo por saca.",
   clima: "Previsão de chuva e temperatura pra sua cidade, pelos próximos dias.",
   plantio: "A janela de plantio oficial (ZARC) pra sua cultura e região.",
   ferrugem: "O risco de ferrugem da soja na sua região, pra se antecipar.",
@@ -679,9 +680,14 @@ function PreviewFazenda() {
   ];
   const lancamentos = [
     { quando: "Hoje", texto: "Adubo, talhão 3", valor: "− R$ 12.000", via: "WhatsApp" },
-    { quando: "Ontem", texto: "Soja, 500 sacas a R$ 135", valor: "+ R$ 67.500", via: "WhatsApp" },
+    { quando: "Ontem", texto: "Nota do posto (foto)", valor: "− R$ 2.970", via: "WhatsApp" },
     { quando: "15/out", texto: "Plantio de milho", valor: "", via: "Painel" },
   ];
+  const aReceber = {
+    texto: "Soja, 500 sacas a R$ 135",
+    venc: "vence em 9 dias, 30/10",
+    valor: "R$ 67.500",
+  };
   return (
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-3 gap-2">
@@ -693,6 +699,16 @@ function PreviewFazenda() {
             </p>
           </div>
         ))}
+      </div>
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
+        <div className="min-w-0">
+          <p className="text-[11px] font-medium text-primary">A receber · te lembro às 8h</p>
+          <p className="truncate text-sm text-foreground">{aReceber.texto}</p>
+          <p className="text-[11px] text-muted-foreground">{aReceber.venc}</p>
+        </div>
+        <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-foreground">
+          {aReceber.valor}
+        </span>
       </div>
       <p className="mt-1 text-sm font-semibold text-foreground">Últimos lançamentos</p>
       <div className="flex flex-col gap-2">
@@ -716,7 +732,8 @@ function PreviewFazenda() {
         ))}
       </div>
       <p className="rounded-lg bg-secondary px-3 py-2 text-xs text-muted-foreground">
-        No WhatsApp é só escrever ou mandar áudio: “gastei 12 mil de adubo no talhão 3”.
+        No WhatsApp é só escrever, mandar áudio ou a foto da nota. Diga “custo por saca” e veja a
+        sua margem.
       </p>
     </div>
   );
