@@ -24,6 +24,26 @@ export function Solution() {
             Pergunte no WhatsApp e receba o preço da sua região, o do porto com frete e um sinal de
             que é hora de vender ou esperar, sempre com fonte e data.
           </p>
+          {/* Só desktop (tela larga com mouse): a promessa "você não precisa abrir todo dia", que no celular segue só como item
+              da lista abaixo. Feedback real de cliente que cancelou em 2026-10-20: "não é algo que uso todo dia". */}
+          <div className="mt-6 hidden max-w-md items-start gap-3 rounded-2xl border border-primary/15 bg-background/70 p-4 shadow-sm desk:flex">
+            <span
+              aria-hidden="true"
+              className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-base"
+            >
+              🔔
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-foreground">
+                Você não precisa abrir todo dia.
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Depois do seu primeiro contato, o Safralume te avisa no WhatsApp quando o preço da
+                sua cultura mexer 3% ou mais, ou quando vier geada ou chuva forte no seu estado.
+                Você decide na hora certa, sem vigiar planilha.
+              </p>
+            </div>
+          </div>
           <ul className="mt-6 space-y-3">
             {[
               "Fonte e data em toda resposta",
