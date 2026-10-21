@@ -1993,6 +1993,32 @@ async function runAgentBase(input: {
       return { ...correcaoPainel, cadastro_criado: cadastroCriado, convite_dispensado: true };
     }
 
+    // Conta técnica (criada pelo formulário da landing, e-mail lead-...@safralume.app, senha que
+    // ninguém sabe): tem user_id, então a guarda acima não vale, mas /dashboard também cai numa
+    // tela de login que ela não passa. Visto ao vivo em 2026-10-20: "pôde mandar link" virou
+    // https://safralume.com.br/dashboard e "Cancelar" virou .../dashboard/assinatura. Troca por
+    // um link de acesso de uso único. Quem tem login próprio continua com a resposta do modelo.
+    if (!semLogin && produtor.id && /safralume\.com\.br\/dashboard/i.test(resposta)) {
+      try {
+        if ((await tipoDeAcesso(supabase, produtor.id)) === "tecnica") {
+          const r = await gerarLinkDeAcesso(supabase, produtor.id);
+          if (r.sucesso) {
+            const dica = /cancel/i.test(texto)
+              ? "\n\nLá dentro, em Assinatura, você encontra o botão de cancelar."
+              : "";
+            return {
+              resposta: respostaLinkDeAcesso(r.link) + dica,
+              precisa_humano: false,
+              cadastro_criado: cadastroCriado,
+              convite_dispensado: true,
+            };
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao trocar link de painel por link de acesso:", err);
+      }
+    }
+
     return {
       resposta,
       precisa_humano:
