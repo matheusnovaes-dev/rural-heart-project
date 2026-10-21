@@ -31,6 +31,16 @@ import {
 import type { ResultadoBuscarLeite } from "@/lib/bot/tools/leite";
 import { buscarMemoriasProdutor } from "@/lib/bot/tools/memoria";
 import {
+  afirmaTerAnotadoNoCaderno,
+  desfazerUltimoRegistro,
+  ehContinuacaoDeLancamento,
+  ehPedidoDeDesfazerRegistro,
+  pareceLancamentoNoCaderno,
+  pedidoDeGastoPorCategoria,
+  periodoDoPedidoDeResumo,
+  resumoDaFazenda,
+} from "@/lib/bot/tools/fazenda";
+import {
   ehPedidoDePararAvisos,
   ehPedidoDeSair,
   RESPOSTA_PAROU_AVISOS,
@@ -1551,6 +1561,49 @@ async function runAgentBase(input: {
     };
   }
 
+  // Caderno da fazenda: "resumo da fazenda" e "desfazer" são respondidos por código, com os números do banco
+  // (ver tools/fazenda.ts). Lançar gasto, venda ou plantio passa pelo modelo, que só preenche os campos.
+  if (produtor.id) {
+    const periodoDoResumo = periodoDoPedidoDeResumo(texto);
+    const gastoPorCategoria = pedidoDeGastoPorCategoria(texto);
+    if (gastoPorCategoria) {
+      const r = await resumoDaFazenda(
+        supabase,
+        {
+          periodo: gastoPorCategoria.periodo,
+          categoria: gastoPorCategoria.categoria ?? gastoPorCategoria.busca,
+        },
+        produtor,
+      );
+      if ("texto" in r) {
+        return {
+          resposta: r.texto,
+          precisa_humano: false,
+          cadastro_criado: false,
+          convite_dispensado: true,
+        };
+      }
+    } else if (periodoDoResumo) {
+      const r = await resumoDaFazenda(supabase, { periodo: periodoDoResumo }, produtor);
+      if ("texto" in r) {
+        return {
+          resposta: r.texto,
+          precisa_humano: false,
+          cadastro_criado: false,
+          convite_dispensado: true,
+        };
+      }
+    } else if (ehPedidoDeDesfazerRegistro(texto, historico)) {
+      const r = await desfazerUltimoRegistro(supabase, produtor);
+      return {
+        resposta: r.texto,
+        precisa_humano: false,
+        cadastro_criado: false,
+        convite_dispensado: true,
+      };
+    }
+  }
+
   // Botão "Quero ver meu preço agora" do modelo de boas-vindas do cadastro pelo site: test drive por
   // código (preço, porto, sinal de venda e clima de hoje) em vez de deixar o modelo improvisar.
   if (produtor.id && ehPedidoDeTesteDrive(texto)) {
@@ -1673,6 +1726,16 @@ async function runAgentBase(input: {
   const notaIncentivoAtivacao = incentivoEscolhido?.nota ?? null;
   const sugestoesEscolhidas = incentivoEscolhido?.escolhidas ?? [];
   const notaMemoriaPotencial = notaDeMemoriaPotencial(produtor, texto);
+  // Caderno da fazenda: sem esta nota o modelo tratava "plantei milho dia 15" como pergunta de mercado e
+  // respondia com preço (achado do teste de 2026-10-21). A decisão de que é um lançamento é por código.
+  const notaCaderno: OpenAIMessage | null =
+    produtor.id && (pareceLancamentoNoCaderno(texto) || ehContinuacaoDeLancamento(texto, historico))
+      ? {
+          role: "system",
+          content:
+            "Nota: essa mensagem é o produtor LANÇANDO no caderno da fazenda algo que JÁ aconteceu (gasto, venda, plantio ou colheita), ou respondendo o valor que você perguntou. Chame registrar_na_fazenda agora com o que ele disse e responda só com a confirmação da ferramenta. Se for gasto ou venda e NÃO tiver o valor, não chame: pergunte apenas 'Quanto foi?'. Não responda com preço de mercado nem com outros assuntos.",
+        }
+      : null;
   // Memória entre conversas (não confundir com `historico`, que é só desta
   // conversa) — ver tools/memoria.ts. Só existe pra quem já tem cadastro.
   const memorias = produtor.id ? await buscarMemoriasProdutor(supabase, produtor.id) : [];
@@ -1700,6 +1763,7 @@ async function runAgentBase(input: {
     ...(notaPrimeiraResposta ? [notaPrimeiraResposta] : []),
     ...(notaIncentivoAtivacao ? [notaIncentivoAtivacao] : []),
     ...(notaMemoriaPotencial ? [notaMemoriaPotencial] : []),
+    ...(notaCaderno ? [notaCaderno] : []),
     { role: "user", content: texto },
   ];
 
@@ -1740,6 +1804,32 @@ async function runAgentBase(input: {
         cadastro_criado: true,
         convite_dispensado: true,
       };
+    }
+
+    // "Anotei no caderno" sem nenhum lançamento gravado nesta rodada: promessa vazia. Troca pela instrução de como lançar.
+    if (afirmaTerAnotadoNoCaderno(parsed.resposta)) {
+      const nomePorId = new Map<string, string>();
+      for (const m of messages) {
+        if (m.role === "assistant" && m.tool_calls) {
+          for (const tc of m.tool_calls) nomePorId.set(tc.id, tc.function.name);
+        }
+      }
+      const gravou = messages.some(
+        (m) =>
+          m.role === "tool" &&
+          !!m.tool_call_id &&
+          nomePorId.get(m.tool_call_id) === "registrar_na_fazenda" &&
+          /"sucesso":true/.test(m.content ?? ""),
+      );
+      if (!gravou) {
+        return {
+          resposta:
+            'Ainda não consegui anotar isso no caderno. Me diga o que foi e quanto, por exemplo: "gastei 3 mil de diesel" ou "vendi 200 sacas a 135".',
+          precisa_humano: false,
+          cadastro_criado: false,
+          convite_dispensado: true,
+        };
+      }
     }
 
     const numerosPermitidos = coletarNumerosPermitidos(messages, texto, historico);
@@ -2135,6 +2225,64 @@ async function runAgentBase(input: {
               cadastro_criado: cadastroCriado,
               convite_dispensado: true,
             };
+          }
+        }
+        // Caderno da fazenda: a confirmação do lançamento sai pronta da ferramenta (valores gravados de
+        // verdade), sem o modelo reescrever número. Se só parte dos lançamentos gravou, o modelo
+        // responde, mas é obrigado a confirmar apenas os que gravaram.
+        {
+          const nomePorId = new Map<string, string>(
+            (mensagem.tool_calls as ToolCall[]).map((tc) => [tc.id, tc.function.name]),
+          );
+          const doCaderno = resultados.filter(
+            (r) => nomePorId.get(r.tool_call_id) === "registrar_na_fazenda",
+          );
+          if (doCaderno.length > 0) {
+            const lidos = doCaderno.map((r) => {
+              try {
+                return JSON.parse(r.content) as { sucesso?: boolean; confirmacao?: string };
+              } catch {
+                return {} as { sucesso?: boolean; confirmacao?: string };
+              }
+            });
+            const gravados = lidos.filter(
+              (o) => o.sucesso === true && typeof o.confirmacao === "string",
+            );
+            if (gravados.length === doCaderno.length && doCaderno.length === resultados.length) {
+              return {
+                resposta: gravados.map((o) => o.confirmacao).join("\n"),
+                precisa_humano: false,
+                cadastro_criado: cadastroCriado,
+                convite_dispensado: true,
+              };
+            }
+            if (gravados.length > 0 && gravados.length < doCaderno.length) {
+              messages.push({
+                role: "system",
+                content:
+                  "Só alguns lançamentos do caderno foram gravados. Confirme APENAS os que vieram com sucesso=true (use o texto de 'confirmacao' deles) e, para os que falharam, explique o motivo em uma frase e peça o que falta. Nunca diga que anotou o que falhou.",
+              });
+            }
+          }
+          for (const r of resultados) {
+            if (
+              nomePorId.get(r.tool_call_id) !== "resumo_da_fazenda" &&
+              nomePorId.get(r.tool_call_id) !== "desfazer_ultimo_registro_fazenda"
+            )
+              continue;
+            try {
+              const o = JSON.parse(r.content) as { texto?: string; sucesso?: boolean };
+              if (typeof o.texto === "string" && resultados.length === 1) {
+                return {
+                  resposta: o.texto,
+                  precisa_humano: false,
+                  cadastro_criado: cadastroCriado,
+                  convite_dispensado: true,
+                };
+              }
+            } catch {
+              /* resultado ilegível: o modelo segue */
+            }
           }
         }
         // Achado real testando ao vivo (bateria adversarial 2026-10-12): ao

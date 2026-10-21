@@ -23,6 +23,7 @@ type Destino = {
 
 const DESTINOS_PRODUTOR: Destino[] = [
   { to: "/dashboard", label: "Início", icon: IconesSafralume["inicio"] },
+  { to: "/dashboard/fazenda", label: "Caderno da fazenda", icon: IconesSafralume["safra"] },
   {
     to: "/dashboard/calculadora",
     label: "Calculadora de safra",

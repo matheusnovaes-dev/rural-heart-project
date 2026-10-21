@@ -41,6 +41,7 @@ export const pricingPlans: PricingPlan[] = [
       "Cotações de soja, milho, café, boi, leite, feijão, trigo, arroz e mais de 70 produtos (Conab, BBM, Imea e órgãos estaduais, semanal ou mais rápido conforme a fonte)",
       "Resumo diário no horário que você escolher e aviso automático quando o preço mexe, no WhatsApp (dá pra desligar)",
       "Boletim Semanal e indicadores do Imea de Mato Grosso (escala de abate, vaca gorda, prêmio no porto)",
+      "Caderno da fazenda: anote gastos, vendas, plantio e colheita por mensagem ou áudio e veja o resultado do mês no painel",
       "Lembretes automáticos, recorrentes ou avulsos",
       "Contexto de mercado: câmbio, diesel, safra (USDA), futuros da B3 e produção do IBGE",
       "Suporte por chamado, direto no painel",

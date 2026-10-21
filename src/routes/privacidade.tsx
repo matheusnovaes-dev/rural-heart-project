@@ -41,7 +41,10 @@ const secoes: SecaoLegal[] = [
         armazenamos número de cartão). Fotos e PDFs de propostas ou tabelas de preços que você
         enviar pelo WhatsApp são lidos na hora para montar o estudo e não ficam guardados por nós:
         guardamos só o texto da conversa e um resumo do estudo (comprador, preço e condições) para
-        você poder questionar ou refazer a conta.
+        você poder questionar ou refazer a conta. Se você usar o Caderno da fazenda, guardamos
+        também o que você lançar (gastos, vendas, plantios e colheitas, com valores e datas). Só
+        você vê esses lançamentos, e dá para apagar cada um no painel ou pedir ao suporte para
+        apagar tudo.
       </p>
     ),
   },

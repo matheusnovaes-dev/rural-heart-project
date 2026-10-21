@@ -90,6 +90,7 @@ type AbaId =
   | "precos"
   | "sinal"
   | "alertas"
+  | "fazenda"
   | "clima"
   | "plantio"
   | "ferrugem"
@@ -107,6 +108,7 @@ const abas: {
   { id: "precos", label: "Preços", icon: IconesSafralume["preco"], plano: "bronze" },
   { id: "sinal", label: "Sinal de venda", icon: IconesSafralume["sinal-venda"], plano: "bronze" },
   { id: "alertas", label: "Alertas & lembretes", icon: IconesSafralume["alerta"], plano: "bronze" },
+  { id: "fazenda", label: "Caderno da fazenda", icon: IconesSafralume["safra"], plano: "bronze" },
   { id: "clima", label: "Clima", icon: IconesSafralume["clima-sol"], plano: "bronze" },
   { id: "plantio", label: "Plantio", icon: IconesSafralume["janela-plantio"], plano: "bronze" },
   {
@@ -134,6 +136,7 @@ const legendas: Record<AbaId, string> = {
   precos: "O preço da sua praça, com histórico e a variação da semana.",
   sinal: "Preço, futuros da B3 e clima juntos dizem se é hora de vender ou esperar.",
   alertas: "Avisos de preço, clima e dólar, e lembretes da lavoura direto no WhatsApp.",
+  fazenda: "Gastos, vendas e plantios anotados por mensagem ou no painel, com o resultado do mês.",
   clima: "Previsão de chuva e temperatura pra sua cidade, pelos próximos dias.",
   plantio: "A janela de plantio oficial (ZARC) pra sua cultura e região.",
   ferrugem: "O risco de ferrugem da soja na sua região, pra se antecipar.",
@@ -410,6 +413,7 @@ export function DashboardPreview() {
                       {aba === "precos" && <PreviewPrecos precosReais={precosReais} />}
                       {aba === "sinal" && <PreviewSinalVenda />}
                       {aba === "alertas" && <PreviewAlertas />}
+                      {aba === "fazenda" && <PreviewFazenda />}
                       {aba === "clima" && <PreviewClima />}
                       {aba === "plantio" && <PreviewPlantio />}
                       {aba === "ferrugem" && <PreviewFerrugem />}
@@ -663,6 +667,57 @@ function PreviewAlertas() {
           Boletim Imea + USDA: <span className="font-semibold">atualizado essa semana</span>
         </div>
       </div>
+    </div>
+  );
+}
+
+function PreviewFazenda() {
+  const resumo = [
+    { rotulo: "Gastos", valor: "R$ 18.400", cor: "text-foreground" },
+    { rotulo: "Vendas", valor: "R$ 67.500", cor: "text-foreground" },
+    { rotulo: "Resultado", valor: "R$ 49.100", cor: "text-primary" },
+  ];
+  const lancamentos = [
+    { quando: "Hoje", texto: "Adubo, talhão 3", valor: "− R$ 12.000", via: "WhatsApp" },
+    { quando: "Ontem", texto: "Soja, 500 sacas a R$ 135", valor: "+ R$ 67.500", via: "WhatsApp" },
+    { quando: "15/out", texto: "Plantio de milho", valor: "", via: "Painel" },
+  ];
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-3 gap-2">
+        {resumo.map((r) => (
+          <div key={r.rotulo} className="rounded-lg border border-border p-3">
+            <p className="text-[11px] text-muted-foreground">{r.rotulo}</p>
+            <p className={`font-mono text-sm font-semibold tabular-nums sm:text-base ${r.cor}`}>
+              {r.valor}
+            </p>
+          </div>
+        ))}
+      </div>
+      <p className="mt-1 text-sm font-semibold text-foreground">Últimos lançamentos</p>
+      <div className="flex flex-col gap-2">
+        {lancamentos.map((l) => (
+          <div
+            key={l.texto}
+            className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"
+          >
+            <div className="min-w-0">
+              <p className="truncate text-sm text-foreground">{l.texto}</p>
+              <p className="text-[11px] text-muted-foreground">
+                {l.quando} · {l.via}
+              </p>
+            </div>
+            {l.valor && (
+              <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-foreground">
+                {l.valor}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+      <p className="rounded-lg bg-secondary px-3 py-2 text-xs text-muted-foreground">
+        No WhatsApp é só escrever ou mandar áudio: “gastei 12 mil de adubo no talhão 3”.
+      </p>
     </div>
   );
 }

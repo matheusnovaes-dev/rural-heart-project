@@ -27,6 +27,18 @@ export const DIAS_DE_NOVIDADE = 30;
 
 export const funcionalidades: Funcionalidade[] = [
   {
+    id: "caderno_fazenda",
+    titulo: "Caderno da fazenda",
+    descricao:
+      'Anote o que acontece na fazenda só escrevendo ou mandando áudio: gasto ("gastei 12 mil de adubo no talhão 3"), venda ("vendi 500 sacas a 135"), plantio e colheita. O resumo mostra gastos por categoria, vendas, resultado do mês, o que vem pela frente e compara sua venda com o preço de hoje. Tudo aparece também na tela Fazenda do painel, onde dá para lançar, editar e baixar em planilha. Dá para desfazer o último lançamento.',
+    comoPedir: "Gastei 3 mil de diesel hoje, ou: resumo da fazenda",
+    onde: "WhatsApp e painel",
+    novidadeDesde: "2026-10-21",
+    destaque: 0,
+    fraseDeUso:
+      'Para lançar, é só escrever, por exemplo: "gastei 12 mil de adubo no talhão 3" ou "vendi 500 sacas de soja a 135". Para ver tudo, mande: "resumo da fazenda".',
+  },
+  {
     id: "resumo_diario",
     titulo: "Resumo diário",
     descricao:
@@ -252,6 +264,7 @@ export const naoFazHoje: string[] = [
   "não intermedeia compra ou venda e não fecha negócio por você",
   "não dá recomendação de investimento: mostra cenários de mercado com dado público",
   "não tem aplicativo para instalar: funciona no WhatsApp e no painel pelo navegador",
+  "o caderno da fazenda guarda só o que você lança (gasto, venda, plantio, colheita); não emite nota fiscal, não faz contabilidade nem controla estoque",
 ];
 
 const DIA = 86_400_000;

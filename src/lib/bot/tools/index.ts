@@ -46,6 +46,12 @@ import type { EstudoSalvo } from "@/lib/bot/propostas/tipos";
 import { esquecerMemoriaProdutor, salvarMemoriaProdutor } from "@/lib/bot/tools/memoria";
 import { configurarResumoDiario } from "@/lib/bot/tools/resumoDiario";
 import { configurarMensagemProativa } from "@/lib/bot/tools/mensagemProativa";
+import {
+  CATEGORIAS_PARA_O_MODELO,
+  desfazerUltimoRegistro,
+  registrarNaFazenda,
+  resumoDaFazenda,
+} from "@/lib/bot/tools/fazenda";
 
 export type ToolContext = {
   supabase: SupabaseClient;
@@ -722,6 +728,98 @@ export const TOOLS = [
       parameters: { type: "object", properties: {}, additionalProperties: false },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "registrar_na_fazenda",
+      description:
+        "Lança no CADERNO DA FAZENDA do produtor (o que ele anota por aqui e vê no painel): um gasto, uma venda, um plantio, uma colheita ou uma anotação. Chame quando o produtor DISSE que gastou, pagou, comprou, vendeu, plantou ou colheu algo (ex: 'gastei 12 mil de adubo no talhão 3', 'vendi 500 sacas a 135', 'plantei soja dia 20', 'colhi 3.000 sacas'). NÃO chame para pergunta de preço, simulação ('e se eu vendesse a 140?'), plano futuro ('vou comprar adubo') nem quando ele só está contando algo sem querer anotar. Preencha SÓ o que ele disse: valor em reais como NÚMERO TOTAL (12 mil = 12000; 'vendi 500 sacas a 135' = valor 67500, quantidade 500, preco_unitario 135). Se faltar o valor de um gasto ou venda, NÃO chame: pergunte quanto foi. A data é a de HOJE a não ser que ele diga outra ('ontem', 'dia 15', 'semana passada'), e nesse caso calcule a data AAAA-MM-DD a partir da data de hoje que está no contexto. A resposta traz 'confirmacao': mande EXATAMENTE esse texto (pode acrescentar uma frase curta de acompanhamento, nunca troque os números). Se a chamada falhar (sucesso=false), NUNCA diga que anotou: explique o motivo em uma frase e peça o que falta (motivo sem_cadastro = quem ainda não tem cadastro não tem caderno, convide a criar o cadastro grátis; motivo faltou_valor = pergunte o valor; numero_nao_confere ou conta_nao_fecha = confirme o número com ele; data_invalida = pergunte a data).",
+      parameters: {
+        type: "object",
+        properties: {
+          tipo: { type: "string", enum: ["gasto", "venda", "plantio", "colheita", "nota"] },
+          descricao: {
+            type: ["string", "null"],
+            description:
+              "O que foi, curto e nas palavras dele (ex: 'adubo NPK', 'diesel', 'soja safra 2026'). Em plantio e colheita pode ser null.",
+          },
+          valor: {
+            type: ["number", "null"],
+            description: "Valor TOTAL em reais (gasto ou venda). null em plantio, colheita e nota.",
+          },
+          cultura: {
+            type: ["string", "null"],
+            description: "Cultura envolvida (soja, milho, café, boi...), se disse.",
+          },
+          talhao: {
+            type: ["string", "null"],
+            description: "Talhão, gleba, pasto ou área, se disse (ex: 'talhão 3').",
+          },
+          categoria: {
+            type: ["string", "null"],
+            enum: [...CATEGORIAS_PARA_O_MODELO, null],
+            description:
+              "Só para gasto: a categoria que melhor descreve. null se não tiver certeza.",
+          },
+          quantidade: {
+            type: ["number", "null"],
+            description:
+              "Quantidade (sacas vendidas, hectares plantados, sacas colhidas...), se disse.",
+          },
+          unidade: {
+            type: ["string", "null"],
+            description:
+              "Unidade da quantidade, SEMPRE que houver quantidade: sacas, ha, kg, t, arrobas, cabeças, L.",
+          },
+          preco_unitario: {
+            type: ["number", "null"],
+            description: "Preço por unidade (ex: 135 por saca), se disse.",
+          },
+          data: {
+            type: ["string", "null"],
+            description: "AAAA-MM-DD, só se ele disse uma data diferente de hoje. null = hoje.",
+          },
+        },
+        required: ["tipo"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "resumo_da_fazenda",
+      description:
+        "Resumo do CADERNO DA FAZENDA do produtor: gastos por categoria, vendas, resultado, plantios, últimos lançamentos e lembretes que vêm pela frente. Chame quando ele pedir resumo/balanço/situação da fazenda, quanto gastou ou vendeu, ou quiser ver o que anotou. A resposta tem 'texto': mande esse texto como está (não reescreva os números). Use categoria ou cultura só quando ele pedir um recorte ('quanto gastei de adubo', 'quanto vendi de soja').",
+      parameters: {
+        type: "object",
+        properties: {
+          periodo: {
+            type: ["string", "null"],
+            enum: ["mes", "mes_passado", "safra", "ano", "tudo", null],
+            description: "Padrão: mes (mês corrente).",
+          },
+          categoria: {
+            type: ["string", "null"],
+            enum: [...CATEGORIAS_PARA_O_MODELO, null],
+            description:
+              "SEMPRE passe quando ele nomear o tipo de gasto (adubo, diesel, mão de obra...).",
+          },
+          cultura: { type: ["string", "null"] },
+        },
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "desfazer_ultimo_registro_fazenda",
+      description:
+        "Apaga o ÚLTIMO lançamento que o produtor fez por aqui no caderno da fazenda. Chame SÓ quando ele pedir pra desfazer/apagar o último lançamento (ou 'desfazer' logo depois de uma confirmação do caderno). Nunca para cancelar assinatura.",
+      parameters: { type: "object", properties: {}, additionalProperties: false },
+    },
+  },
 ] as const;
 
 // Achado real em produção (2026-10-04): "Como tá o mercado da soja?" ->
@@ -979,6 +1077,20 @@ async function executarToolSemLog(
       );
     case "esquecer_memoria_produtor":
       return esquecerMemoriaProdutor(ctx.supabase, ctx.produtor.id);
+    case "registrar_na_fazenda":
+      return registrarNaFazenda(ctx.supabase, args as Parameters<typeof registrarNaFazenda>[1], {
+        produtor: ctx.produtor,
+        texto: ctx.texto,
+        historico: ctx.historico,
+      });
+    case "resumo_da_fazenda":
+      return resumoDaFazenda(
+        ctx.supabase,
+        args as Parameters<typeof resumoDaFazenda>[1],
+        ctx.produtor,
+      );
+    case "desfazer_ultimo_registro_fazenda":
+      return desfazerUltimoRegistro(ctx.supabase, ctx.produtor);
     case "consultar_janela_plantio":
       return consultarJanelaPlantio(
         ctx.supabase,

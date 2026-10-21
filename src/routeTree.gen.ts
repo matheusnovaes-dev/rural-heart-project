@@ -36,6 +36,7 @@ import { Route as DashboardLayoutAssinaturaRouteImport } from './routes/dashboar
 import { Route as DashboardLayoutCalculadoraRouteImport } from './routes/dashboard/_layout/calculadora'
 import { Route as DashboardLayoutClimaRouteImport } from './routes/dashboard/_layout/clima'
 import { Route as DashboardLayoutEquipeRouteImport } from './routes/dashboard/_layout/equipe'
+import { Route as DashboardLayoutFazendaRouteImport } from './routes/dashboard/_layout/fazenda'
 import { Route as DashboardLayoutFuncionariosRouteImport } from './routes/dashboard/_layout/funcionarios'
 import { Route as DashboardLayoutLeadsRouteImport } from './routes/dashboard/_layout/leads'
 import { Route as DashboardLayoutLeiloesRouteImport } from './routes/dashboard/_layout/leiloes'
@@ -186,6 +187,11 @@ const DashboardLayoutEquipeRoute = DashboardLayoutEquipeRouteImport.update({
   path: '/equipe',
   getParentRoute: () => DashboardLayoutRoute,
 } as any)
+const DashboardLayoutFazendaRoute = DashboardLayoutFazendaRouteImport.update({
+  id: '/fazenda',
+  path: '/fazenda',
+  getParentRoute: () => DashboardLayoutRoute,
+} as any)
 const DashboardLayoutFuncionariosRoute =
   DashboardLayoutFuncionariosRouteImport.update({
     id: '/funcionarios',
@@ -268,6 +274,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/calculadora': typeof DashboardLayoutCalculadoraRoute
   '/dashboard/clima': typeof DashboardLayoutClimaRoute
   '/dashboard/equipe': typeof DashboardLayoutEquipeRoute
+  '/dashboard/fazenda': typeof DashboardLayoutFazendaRoute
   '/dashboard/funcionarios': typeof DashboardLayoutFuncionariosRoute
   '/dashboard/leads': typeof DashboardLayoutLeadsRoute
   '/dashboard/leiloes': typeof DashboardLayoutLeiloesRoute
@@ -306,6 +313,7 @@ export interface FileRoutesByTo {
   '/dashboard/calculadora': typeof DashboardLayoutCalculadoraRoute
   '/dashboard/clima': typeof DashboardLayoutClimaRoute
   '/dashboard/equipe': typeof DashboardLayoutEquipeRoute
+  '/dashboard/fazenda': typeof DashboardLayoutFazendaRoute
   '/dashboard/funcionarios': typeof DashboardLayoutFuncionariosRoute
   '/dashboard/leads': typeof DashboardLayoutLeadsRoute
   '/dashboard/leiloes': typeof DashboardLayoutLeiloesRoute
@@ -346,6 +354,7 @@ export interface FileRoutesById {
   '/dashboard/_layout/calculadora': typeof DashboardLayoutCalculadoraRoute
   '/dashboard/_layout/clima': typeof DashboardLayoutClimaRoute
   '/dashboard/_layout/equipe': typeof DashboardLayoutEquipeRoute
+  '/dashboard/_layout/fazenda': typeof DashboardLayoutFazendaRoute
   '/dashboard/_layout/funcionarios': typeof DashboardLayoutFuncionariosRoute
   '/dashboard/_layout/leads': typeof DashboardLayoutLeadsRoute
   '/dashboard/_layout/leiloes': typeof DashboardLayoutLeiloesRoute
@@ -387,6 +396,7 @@ export interface FileRouteTypes {
     | '/dashboard/calculadora'
     | '/dashboard/clima'
     | '/dashboard/equipe'
+    | '/dashboard/fazenda'
     | '/dashboard/funcionarios'
     | '/dashboard/leads'
     | '/dashboard/leiloes'
@@ -425,6 +435,7 @@ export interface FileRouteTypes {
     | '/dashboard/calculadora'
     | '/dashboard/clima'
     | '/dashboard/equipe'
+    | '/dashboard/fazenda'
     | '/dashboard/funcionarios'
     | '/dashboard/leads'
     | '/dashboard/leiloes'
@@ -464,6 +475,7 @@ export interface FileRouteTypes {
     | '/dashboard/_layout/calculadora'
     | '/dashboard/_layout/clima'
     | '/dashboard/_layout/equipe'
+    | '/dashboard/_layout/fazenda'
     | '/dashboard/_layout/funcionarios'
     | '/dashboard/_layout/leads'
     | '/dashboard/_layout/leiloes'
@@ -692,6 +704,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLayoutEquipeRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
+    '/dashboard/_layout/fazenda': {
+      id: '/dashboard/_layout/fazenda'
+      path: '/fazenda'
+      fullPath: '/dashboard/fazenda'
+      preLoaderRoute: typeof DashboardLayoutFazendaRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
     '/dashboard/_layout/funcionarios': {
       id: '/dashboard/_layout/funcionarios'
       path: '/funcionarios'
@@ -771,6 +790,7 @@ interface DashboardLayoutRouteChildren {
   DashboardLayoutCalculadoraRoute: typeof DashboardLayoutCalculadoraRoute
   DashboardLayoutClimaRoute: typeof DashboardLayoutClimaRoute
   DashboardLayoutEquipeRoute: typeof DashboardLayoutEquipeRoute
+  DashboardLayoutFazendaRoute: typeof DashboardLayoutFazendaRoute
   DashboardLayoutFuncionariosRoute: typeof DashboardLayoutFuncionariosRoute
   DashboardLayoutLeadsRoute: typeof DashboardLayoutLeadsRoute
   DashboardLayoutLeiloesRoute: typeof DashboardLayoutLeiloesRoute
@@ -790,6 +810,7 @@ const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
   DashboardLayoutCalculadoraRoute: DashboardLayoutCalculadoraRoute,
   DashboardLayoutClimaRoute: DashboardLayoutClimaRoute,
   DashboardLayoutEquipeRoute: DashboardLayoutEquipeRoute,
+  DashboardLayoutFazendaRoute: DashboardLayoutFazendaRoute,
   DashboardLayoutFuncionariosRoute: DashboardLayoutFuncionariosRoute,
   DashboardLayoutLeadsRoute: DashboardLayoutLeadsRoute,
   DashboardLayoutLeiloesRoute: DashboardLayoutLeiloesRoute,

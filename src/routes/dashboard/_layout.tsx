@@ -54,6 +54,7 @@ type NavItem = {
 const produtorNavItemsBase: NavItem[] = [
   { to: "/dashboard", label: "Início", icon: IconesSafralume["inicio"] },
   { to: "/dashboard/precos", label: "Preços", icon: IconesSafralume["preco"] },
+  { to: "/dashboard/fazenda", label: "Fazenda", icon: IconesSafralume["safra"] },
   {
     to: "/dashboard/calculadora",
     label: "Calculadora",
