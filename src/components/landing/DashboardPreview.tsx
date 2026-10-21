@@ -442,11 +442,15 @@ export function DashboardPreview() {
               {precosReais || exemplosDoDia?.comparativoSoja
                 ? ", os preços da soja e o gráfico são reais (BBM), o resto é exemplo"
                 : ", dados de exemplo"}
-              . Recurso com selo{" "}
+              . Recursos com selo{" "}
+              <span className="rounded-full bg-zinc-200 px-1.5 py-0.5 font-semibold text-zinc-700">
+                Prata
+              </span>{" "}
+              ou{" "}
               <span className="rounded-full bg-gold px-1.5 py-0.5 font-semibold text-gold-foreground">
                 Ouro
               </span>{" "}
-              faz parte desse plano,{" "}
+              fazem parte desses planos,{" "}
               <a href="#planos" className="font-medium text-primary underline underline-offset-2">
                 veja a comparação completa
               </a>
