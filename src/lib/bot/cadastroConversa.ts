@@ -12,6 +12,7 @@
  */
 import { culturaMencionada } from "@/config/culturas";
 import { ufs } from "@/config/ufs";
+import { PALAVRAS_DE_MUNICIPIOS } from "@/lib/bot/municipiosPalavras";
 import { MARCADOR_DE_CONTATO } from "@/lib/bot/contatoHumano";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
 
@@ -544,7 +545,7 @@ export function estadoComErroDeDigitacao(
   nomes.push({ uf: "MG", alvo: "minas" });
   const exatas = new Set(nomes.map((n) => n.alvo));
   for (const p of palavras) {
-    if (p.length < 5 || exatas.has(p)) continue;
+    if (p.length < 5 || exatas.has(p) || PALAVRAS_DE_MUNICIPIOS.has(p)) continue;
     const achadas = new Map<string, number>();
     for (const { uf, alvo } of nomes) {
       const d = distanciaDeEdicao(p, alvo);

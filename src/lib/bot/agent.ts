@@ -1540,7 +1540,9 @@ async function runAgentBase(input: {
   }
 
   // Objeção "não uso todo dia" de cliente cadastrado: resposta fixa (ver avisoAutomatico.ts).
-  if (produtor.id && ehObjecaoDePoucoUso(texto)) {
+  // Quem pede para CANCELAR ("quero cancelar, não uso muito") segue o fluxo de cancelamento: a resposta fixa não traz o
+  // caminho para cancelar e ninguém pode ficar sem ele.
+  if (produtor.id && ehObjecaoDePoucoUso(texto) && !/cancel/i.test(texto)) {
     return {
       resposta: RESPOSTA_POUCO_USO,
       precisa_humano: false,

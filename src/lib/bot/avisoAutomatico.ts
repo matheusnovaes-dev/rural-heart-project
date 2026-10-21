@@ -18,6 +18,24 @@ type Linha = { role: "user" | "assistant"; conteudo: string };
 export function deveAvisarAutomatico(resposta: string, historico: Linha[] = []): boolean {
   if (resposta.includes(MARCA_AVISO_AUTOMATICO)) return false;
   if (!/R\$\s?\d/.test(resposta)) return false;
+  // Só resposta de PREÇO DE MERCADO com dado (unidade de mercado ou fonte). Achados de 2026-10-21: "Ainda não temos preço de
+  // cana em SP" (referências de outros estados) prometeria um aviso que não existe, e o preço de um plano ("R$ 39/mês")
+  // ou o estudo de uma proposta não são o preço da cultura dele.
+  if (/ainda n[ãa]o temos|n[ãa]o temos (o )?pre[çc]o|n[ãa]o encontrei/i.test(resposta))
+    return false;
+  if (
+    /\b(proposta|estudo|plano|assinatura|cobran[çc]a|cancel\w*|mensalidade)\b|\/m[êe]s/i.test(
+      resposta,
+    )
+  )
+    return false;
+  if (
+    !/\b(BBM|Conab|IEA|DERAL|Emater|Epagri|Imea|Conseleite)\b|(por|\/)\s*(saca|sc\b|arroba|@|tonelada|60 kg|50 kg|litro)/i.test(
+      resposta,
+    )
+  ) {
+    return false;
+  }
   if (
     historico.some((h) => h.role === "assistant" && h.conteudo.includes(MARCA_AVISO_AUTOMATICO))
   ) {
