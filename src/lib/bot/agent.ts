@@ -23,6 +23,11 @@ import {
   verificarAcessoWhatsapp,
 } from "@/lib/bot/tools/acesso";
 import { gerarLinkDeAcesso, tipoDeAcesso } from "@/lib/bot/tools/linkAcesso";
+import {
+  avisoAutomaticoSeCabe,
+  ehObjecaoDePoucoUso,
+  RESPOSTA_POUCO_USO,
+} from "@/lib/bot/avisoAutomatico";
 import type { ResultadoBuscarLeite } from "@/lib/bot/tools/leite";
 import { buscarMemoriasProdutor } from "@/lib/bot/tools/memoria";
 import {
@@ -1515,6 +1520,16 @@ async function runAgentBase(input: {
     }
   }
 
+  // Objeção "não uso todo dia" de cliente cadastrado: resposta fixa (ver avisoAutomatico.ts).
+  if (produtor.id && ehObjecaoDePoucoUso(texto)) {
+    return {
+      resposta: RESPOSTA_POUCO_USO,
+      precisa_humano: false,
+      cadastro_criado: false,
+      convite_dispensado: true,
+    };
+  }
+
   // Botão "Quero ver meu preço agora" do modelo de boas-vindas do cadastro pelo site: test drive por
   // código (preço, porto, sinal de venda e clima de hoje) em vez de deixar o modelo improvisar.
   if (produtor.id && ehPedidoDeTesteDrive(texto)) {
@@ -2004,7 +2019,7 @@ async function runAgentBase(input: {
           const r = await gerarLinkDeAcesso(supabase, produtor.id);
           if (r.sucesso) {
             const dica = /cancel/i.test(texto)
-              ? "\n\nLá dentro, em Assinatura, você encontra o botão de cancelar."
+              ? "\n\nLá dentro, em Assinatura, você encontra o botão de cancelar. Se o motivo for pouco uso, dá para pausar a cobrança ali mesmo, sem perder o acesso."
               : "";
             return {
               resposta: respostaLinkDeAcesso(r.link) + dica,
@@ -2019,8 +2034,9 @@ async function runAgentBase(input: {
       }
     }
 
+    const avisoAutomatico = await avisoAutomaticoSeCabe(supabase, produtor.id, resposta, historico);
     return {
-      resposta,
+      resposta: avisoAutomatico ? `${resposta}\n\n${avisoAutomatico}` : resposta,
       precisa_humano:
         parsed.precisa_humano || precisaEscalarPorCobranca(texto) || !!notaAflicaoPessoal,
       cadastro_criado: cadastroCriado,

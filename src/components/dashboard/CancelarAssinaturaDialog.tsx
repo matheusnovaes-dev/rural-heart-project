@@ -17,7 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/auth";
-import { cancelarAssinaturaAsaas } from "@/lib/asaas.server";
+import { cancelarAssinaturaAsaas, pausarAssinatura } from "@/lib/asaas.server";
 
 const motivos = [
   { value: "muito_caro", label: "Achei muito caro" },
@@ -31,12 +31,16 @@ const motivos = [
   { value: "outro", label: "Outro motivo" },
 ] as const;
 
+const formatarData = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
+
 export function CancelarAssinaturaDialog({
   assinaturaId,
   asaasSubscriptionId,
+  status,
 }: {
   assinaturaId: string;
   asaasSubscriptionId: string | null;
+  status?: "trial" | "ativa" | "inadimplente" | "cancelada" | null;
 }) {
   const { session, refresh } = useAuth();
   const navigate = useNavigate();
@@ -44,6 +48,38 @@ export function CancelarAssinaturaDialog({
   const [motivo, setMotivo] = useState<(typeof motivos)[number]["value"] | "">("");
   const [detalhe, setDetalhe] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [pausando, setPausando] = useState<30 | 60 | null>(null);
+  const [pausaIndisponivel, setPausaIndisponivel] = useState(false);
+
+  // Quem sente que "não usa o suficiente" (o feedback real que mais pesa) recebe a opção de pausar antes de cancelar. Em
+  // inadimplência há cobrança vencida a resolver, então não há pausa.
+  const podePausar =
+    motivo === "nao_uso_o_suficiente" &&
+    !pausaIndisponivel &&
+    (status === "ativa" || status === "trial");
+  const comCobranca = !!asaasSubscriptionId;
+
+  async function handlePausar(dias: 30 | 60) {
+    if (!session) return;
+    setPausando(dias);
+    try {
+      const r = await pausarAssinatura({
+        data: { accessToken: session.access_token, assinaturaId, dias },
+      });
+      toast.success(
+        comCobranca
+          ? `Cobrança pausada. A próxima fica para ${formatarData(r.ate)}.`
+          : `Teste estendido até ${formatarData(r.ate)}.`,
+      );
+      await refresh();
+      setOpen(false);
+    } catch (err) {
+      setPausaIndisponivel(true);
+      toast.error(err instanceof Error ? err.message : "Não foi possível pausar agora.");
+    } finally {
+      setPausando(null);
+    }
+  }
 
   async function handleConfirmar() {
     if (!session || !motivo) return;
@@ -99,6 +135,43 @@ export function CancelarAssinaturaDialog({
           </div>
         </RadioGroup>
 
+        {podePausar && (
+          <div className="border-border bg-muted/40 space-y-3 rounded-lg border p-4">
+            <div>
+              <p className="text-foreground text-sm font-semibold">
+                {comCobranca
+                  ? "Em vez de cancelar, que tal pausar?"
+                  : "Que tal mais um tempo de teste?"}
+              </p>
+              <p className="text-muted-foreground mt-1 text-sm">
+                {comCobranca
+                  ? "A cobrança fica pausada e seu acesso continua."
+                  : "Nada é cobrado e seu acesso continua."}{" "}
+                Se você já conversou com o Safralume no WhatsApp, ele te avisa lá quando o preço da
+                sua cultura mexer 3% ou mais, sem você precisar abrir nada.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(comCobranca ? ([30, 60] as const) : ([30] as const)).map((d) => (
+                <Button
+                  key={d}
+                  size="sm"
+                  disabled={pausando !== null || enviando}
+                  onClick={() => handlePausar(d)}
+                >
+                  {pausando === d ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : comCobranca ? (
+                    `Pausar por ${d} dias`
+                  ) : (
+                    `Ganhar mais ${d} dias de teste`
+                  )}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="space-y-1.5">
           <Label htmlFor="motivo-detalhe">Quer contar mais? (opcional)</Label>
           <Textarea
@@ -114,7 +187,11 @@ export function CancelarAssinaturaDialog({
           <Button variant="outline" onClick={() => setOpen(false)} disabled={enviando}>
             Voltar
           </Button>
-          <Button variant="destructive" onClick={handleConfirmar} disabled={!motivo || enviando}>
+          <Button
+            variant="destructive"
+            onClick={handleConfirmar}
+            disabled={!motivo || enviando || pausando !== null}
+          >
             {enviando ? <Loader2 className="size-4 animate-spin" /> : "Confirmar cancelamento"}
           </Button>
         </DialogFooter>

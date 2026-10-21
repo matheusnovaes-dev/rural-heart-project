@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { pricingPlans } from "@/config/site";
+import { novoVencimentoDaPausa } from "@/lib/pausa.shared";
 import { supabaseServiceRole } from "@/lib/supabase.server";
 
 /**
@@ -434,6 +435,100 @@ export const cancelarAssinaturaAsaas = createServerFn({ method: "POST" })
       .eq("id", data.assinaturaId);
 
     return { ok: true as const };
+  });
+
+/** A Asaas devolveu erro 500 passageiro ao mexer numa cobrança recém-criada; uma segunda tentativa resolve. */
+async function atualizarComUmaRepeticao(fn: () => Promise<unknown>) {
+  try {
+    return await fn();
+  } catch {
+    await new Promise((r) => setTimeout(r, 1500));
+    return await fn();
+  }
+}
+
+const pausarAssinaturaSchema = z.object({
+  accessToken: z.string().min(1),
+  assinaturaId: z.string().uuid(),
+  dias: z.union([z.literal(30), z.literal(60)]),
+});
+
+/**
+ * Alternativa ao cancelamento para quem sente que "não usa o suficiente" (feedback real de 2026-10-20): empurra a
+ * cobrança por 30 ou 60 dias e mantém o acesso e os avisos automáticos. Uma vez por assinatura.
+ * - Com assinatura na Asaas: lê a assinatura, exige que esteja ativa e move `nextDueDate` (e a cobrança pendente).
+ *   O id da assinatura vem do NOSSO banco, nunca do cliente.
+ * - Sem assinatura na Asaas (teste sem cartão, nada foi cobrado): só estende o fim do teste, e só por 30 dias.
+ * Em `inadimplente` ou `cancelada` não há pausa (existe cobrança vencida a resolver).
+ */
+export const pausarAssinatura = createServerFn({ method: "POST" })
+  .validator(pausarAssinaturaSchema)
+  .handler(async ({ data }) => {
+    const userId = await usuarioAutenticado(data.accessToken);
+    await confirmarDonoDaAssinatura(userId, { assinaturaId: data.assinaturaId });
+    const supabase = supabaseServiceRole();
+
+    const { data: a, error } = await supabase
+      .from("assinaturas")
+      .select("status, trial_expira_em, asaas_subscription_id, pausa_usada_em")
+      .eq("id", data.assinaturaId)
+      .maybeSingle();
+    if (error || !a) throw new Error("Não foi possível pausar agora. Tente de novo em instantes.");
+    if (a.pausa_usada_em) throw new Error("Essa assinatura já usou a pausa uma vez.");
+    if (a.status !== "ativa" && a.status !== "trial") {
+      throw new Error("A pausa só vale para assinatura ativa ou em teste.");
+    }
+
+    const agora = new Date();
+    let ate: string;
+    if (a.asaas_subscription_id) {
+      const apiKey = process.env["ASAAS_API_KEY"];
+      if (!apiKey) throw new Error("ASAAS_API_KEY não configurada.");
+      const subId = a.asaas_subscription_id;
+      const sub = (await asaasFetch(apiKey, `/subscriptions/${subId}`)) as {
+        status?: string;
+        nextDueDate?: string;
+      };
+      if (sub.status !== "ACTIVE") throw new Error("A assinatura não está ativa na Asaas.");
+      // Testado na Asaas em 2026-10-21: mudar só o `nextDueDate` da assinatura NÃO move a cobrança que já está pendente
+      // (a do fim do teste), então cada cobrança pendente é empurrada uma a uma e depois o ciclo seguinte da assinatura.
+      const pendentes = (await asaasFetch(
+        apiKey,
+        `/payments?subscription=${encodeURIComponent(subId)}&status=PENDING&limit=20`,
+      )) as { data?: { id: string; dueDate: string }[] };
+      const novosVencimentos: string[] = [];
+      for (const c of pendentes.data ?? []) {
+        const novo = novoVencimentoDaPausa(c.dueDate, data.dias, agora);
+        await atualizarComUmaRepeticao(() =>
+          asaasFetch(apiKey, `/payments/${c.id}`, {
+            method: "PUT",
+            body: JSON.stringify({ dueDate: novo }),
+          }),
+        );
+        novosVencimentos.push(novo);
+      }
+      const proximoCiclo = novoVencimentoDaPausa(sub.nextDueDate ?? null, data.dias, agora);
+      await asaasFetch(apiKey, `/subscriptions/${subId}`, {
+        method: "PUT",
+        body: JSON.stringify({ nextDueDate: proximoCiclo }),
+      });
+      ate = novosVencimentos.length ? novosVencimentos.sort()[0]! : proximoCiclo;
+    } else {
+      if (data.dias !== 30) throw new Error("No teste sem cartão a extensão é de 30 dias.");
+      ate = novoVencimentoDaPausa(a.trial_expira_em ?? null, data.dias, agora);
+    }
+
+    // O acesso de quem está em teste vale até `trial_expira_em`: acompanha o novo vencimento.
+    await supabase
+      .from("assinaturas")
+      .update({
+        pausa_usada_em: agora.toISOString(),
+        pausada_ate: `${ate}T12:00:00Z`,
+        ...(a.status === "trial" ? { trial_expira_em: `${ate}T12:00:00Z` } : {}),
+      })
+      .eq("id", data.assinaturaId);
+
+    return { ok: true as const, ate };
   });
 
 const listarCobrancasSchema = z.object({

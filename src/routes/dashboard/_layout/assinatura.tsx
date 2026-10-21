@@ -154,6 +154,7 @@ function AssinaturaPage() {
                   <CancelarAssinaturaDialog
                     assinaturaId={assinaturaId}
                     asaasSubscriptionId={asaasSubscriptionId}
+                    status={status}
                   />
                 )}
             </div>
