@@ -19,13 +19,15 @@ export const getRouter = () => {
     // Recarrega uma vez pra pegar a versão nova, sem loop infinito.
     const CHAVE = "recarregou-por-chunk";
     const recarregar = () => {
-      if (sessionStorage.getItem(CHAVE)) return;
+      if (sessionStorage.getItem(CHAVE)) return false;
       sessionStorage.setItem(CHAVE, "1");
       window.location.reload();
+      return true;
     };
+    // Só engole o erro quando vai recarregar; senão o import "resolve" vazio
+    // e o router quebra com "reading 'component'" (tela branca).
     window.addEventListener("vite:preloadError", (e) => {
-      e.preventDefault();
-      recarregar();
+      if (recarregar()) e.preventDefault();
     });
     window.addEventListener("unhandledrejection", (e) => {
       const msg = String((e.reason as Error | undefined)?.message ?? e.reason ?? "");
