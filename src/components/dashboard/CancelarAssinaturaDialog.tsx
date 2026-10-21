@@ -71,8 +71,9 @@ export function CancelarAssinaturaDialog({
           ? `Cobrança pausada. A próxima fica para ${formatarData(r.ate)}.`
           : `Teste estendido até ${formatarData(r.ate)}.`,
       );
-      await refresh();
       setOpen(false);
+      // useAssinatura não refaz a leitura sozinho: recarrega para a tela mostrar o novo vencimento.
+      window.setTimeout(() => window.location.reload(), 1800);
     } catch (err) {
       setPausaIndisponivel(true);
       toast.error(err instanceof Error ? err.message : "Não foi possível pausar agora.");
