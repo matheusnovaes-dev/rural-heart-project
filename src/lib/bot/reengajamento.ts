@@ -1,3 +1,4 @@
+import { trechoDoCadernoParaResumo } from "@/lib/bot/tools/fazendaPendencias";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { ehBoi, normalizarCultura } from "@/config/culturas";
@@ -313,6 +314,9 @@ export async function montarResumoReativacao(
 
   const partes: string[] = [];
   if (base) partes.push(base);
+  // vencimentos do caderno da fazenda (e o resumo da semana às segundas), quando o produtor usa o caderno
+  const doCaderno = produtorId ? await trechoDoCadernoParaResumo(supabase, produtorId) : null;
+  if (doCaderno) partes.push(doCaderno);
   if (sinal?.disponivel && sinal.texto) partes.push(sinal.texto);
 
   if (previsao && previsao.dias.length > 0) {

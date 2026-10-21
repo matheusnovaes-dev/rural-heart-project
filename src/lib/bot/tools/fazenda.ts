@@ -1,7 +1,7 @@
 /**
  * Caderno da fazenda no WhatsApp: lançar gasto, venda, plantio e colheita por mensagem (ou áudio, que
- * o n8n já transcreve), pedir o resumo e desfazer o último lançamento. O painel lê a mesma tabela
- * (`fazenda_registros`).
+ * o n8n já transcreve), a pagar e a receber com lembrete, resumo com custo por saca e desfazer. O painel
+ * lê a mesma tabela (`fazenda_registros`).
  *
  * Regra de ouro: o modelo só ENTENDE a frase e preenche os campos. O que vai para o caderno é
  * conferido por código (o valor tem que estar escrito na conversa), e a confirmação que o produtor lê
@@ -11,18 +11,22 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
   CATEGORIAS_GASTO,
+  COLUNAS_REGISTRO,
   TIPOS_REGISTRO,
   categoriaDeTexto,
   categoriaValida,
   dataCurta,
+  dataLonga,
   descreverRegistro,
   formatarQuantidade,
   formatarReais,
+  fraseDeVencimento,
   hojeBrasilia,
-  intervaloDoPeriodo,
   numerosDoTexto,
+  resumirPendencias,
   resumir,
   somarDias,
+  talhaoChave,
   valorConfere,
   type PeriodoCaderno,
   type RegistroFazenda,
@@ -30,13 +34,31 @@ import {
 } from "@/lib/fazenda.shared";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
 import type { ProdutorContexto } from "@/lib/bot/types";
-import { buscarPreco } from "@/lib/bot/tools/preco";
+import {
+  MARCA_DE_PLANO_OU_DUVIDA,
+  SEM_ACENTO,
+  VERBOS_DE_LANCAMENTO,
+  dataDoTexto,
+  indicaPendencia,
+  lerPendentes,
+  lerRegistros,
+  numeroOuNull,
+  numerosDaConversa,
+  precoDeHoje,
+  textoOuNull,
+  ultimaDoBot,
+  unidadeDoTexto,
+  unidadePadrao,
+  vencimentoDoTexto,
+} from "@/lib/bot/tools/fazendaBase";
+import { cancelarLembrete, criarLembreteDoVencimento } from "@/lib/bot/tools/fazendaPendencias";
+import { custoDaCultura, lerAreas, linhaCurtaDoCusto } from "@/lib/bot/tools/fazendaCusto";
+import type { EstudoSalvo } from "@/lib/bot/propostas/tipos";
+
+export { dataDoTexto, unidadeDoTexto, vencimentoDoTexto };
 
 /** Marca que aparece em toda confirmação, para o "desfazer" saber de que se trata. */
 export const MARCA_CONFIRMACAO_CADERNO = "Anotei no caderno";
-
-const COLUNAS =
-  "id, tipo, ocorrido_em, valor, descricao, categoria, cultura, talhao, quantidade, unidade, preco_unitario, origem, criado_em";
 
 type ArgsRegistro = {
   tipo: string;
@@ -49,6 +71,8 @@ type ArgsRegistro = {
   unidade?: string | null;
   preco_unitario?: number | null;
   data?: string | null;
+  /** AAAA-MM-DD, só para a pagar ou a receber */
+  vence_em?: string | null;
 };
 
 export type ResultadoRegistro =
@@ -60,6 +84,8 @@ export type ResultadoRegistro =
         | "tipo_invalido"
         | "faltou_valor"
         | "faltou_descricao"
+        | "faltou_vencimento"
+        | "vencimento_invalido"
         | "parece_plano_ou_pergunta"
         | "numero_nao_confere"
         | "conta_nao_fecha"
@@ -68,66 +94,43 @@ export type ResultadoRegistro =
       detalhe?: string;
     };
 
-const numeroOuNull = (v: unknown): number | null =>
-  typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : null;
-
-const textoOuNull = (v: unknown, max: number): string | null => {
-  if (typeof v !== "string") return null;
-  const t = v
-    .replace(/\p{Cc}+/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  return t ? t.slice(0, max) : null;
-};
-
-const UNIDADES: Record<string, string> = {
-  saca: "sacas",
-  sacas: "sacas",
-  sc: "sacas",
-  sacos: "sacas",
-  arroba: "arrobas",
-  arrobas: "arrobas",
-  "@": "arrobas",
-  ha: "ha",
-  hectare: "ha",
-  hectares: "ha",
-  alqueire: "alqueires",
-  alqueires: "alqueires",
-  kg: "kg",
-  quilo: "kg",
-  quilos: "kg",
-  tonelada: "t",
-  toneladas: "t",
-  t: "t",
-  litro: "L",
-  litros: "L",
-  l: "L",
-  cabeca: "cabeças",
-  cabecas: "cabeças",
-  cabeça: "cabeças",
-  cabeças: "cabeças",
-};
-
-function unidadePadrao(u: string | null): string | null {
-  if (!u) return null;
-  const k = u.trim().toLowerCase();
-  return UNIDADES[k] ?? textoOuNull(k, 20);
+/** "vou receber/pagar" é pendência (vale lançar); o resto de "vou/quero/preciso" é plano. */
+function temMarcaDePlano(t: string): boolean {
+  const semPendencia = t.replace(
+    /\b(vou|vai|vao|irei|irao|tenho que|tenho de|devo) (receber|pagar)\b/g,
+    " ",
+  );
+  return MARCA_DE_PLANO_OU_DUVIDA.test(semPendencia);
 }
 
-/** Números que a pessoa escreveu nesta mensagem e nas últimas dela (o valor pode ter vindo antes). */
-function numerosDaConversa(texto: string, historico: HistoricoLinha[]): number[] {
-  const recentes = [...historico]
-    .filter((h) => h.role === "user")
-    .sort((a, b) => b.ordem - a.ordem)
-    .slice(0, 4)
-    .map((h) => h.conteudo);
-  return numerosDoTexto([texto, ...recentes].join(" \n "));
+/** Quando o bot perguntou "pra quando vence?" e a pessoa responde só a data. */
+export function ehRespostaDeVencimento(texto: string, historico: HistoricoLinha[]): boolean {
+  const anterior = ultimaDoBot(historico);
+  if (!anterior) return false;
+  if (
+    !/\b(pra quando vence|qual (o )?vencimento|que dia (vence|voce recebe|você recebe|voce paga|você paga)|quando (vence|vai vencer))\b/i.test(
+      SEM_ACENTO(anterior),
+    )
+  ) {
+    return false;
+  }
+  const t = SEM_ACENTO(texto)
+    .replace(/[?!.,]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return t.split(" ").length <= 8 && vencimentoDoTexto(texto, hojeBrasilia()) !== null;
 }
 
 export async function registrarNaFazenda(
   supabase: SupabaseClient,
   args: ArgsRegistro,
-  ctx: { produtor: ProdutorContexto; texto: string; historico: HistoricoLinha[] },
+  ctx: {
+    produtor: ProdutorContexto;
+    texto: string;
+    historico: HistoricoLinha[];
+    telefone?: string;
+    estudo?: EstudoSalvo | null;
+  },
 ): Promise<ResultadoRegistro> {
   const { produtor } = ctx;
   if (!produtor.id) return { sucesso: false, motivo: "sem_cadastro" };
@@ -136,20 +139,80 @@ export async function registrarNaFazenda(
   }
   const tipo = args.tipo as TipoRegistro;
   const hoje = hojeBrasilia();
+  const tNorm = SEM_ACENTO(ctx.texto);
 
-  // Plano ("vou comprar adubo semana que vem") e pergunta ("e se eu vendesse a 140?") não são
-  // lançamentos. Quando a pessoa só está respondendo "quanto foi?", a mensagem de agora é só o número.
-  if (ehPlanoOuHipotese(ctx.texto) && !ehContinuacaoDeLancamento(ctx.texto, ctx.historico)) {
+  // "vou receber 10 mil do milho" lançado como anotação: é a receber (venda) ou a pagar (gasto), com vencimento.
+  if (
+    tipo !== "gasto" &&
+    tipo !== "venda" &&
+    (indicaPendencia(ctx.texto) || ehRespostaDeVencimento(ctx.texto, ctx.historico)) &&
+    /\d/.test(ctx.texto)
+  ) {
     return {
       sucesso: false,
-      motivo: "parece_plano_ou_pergunta",
+      motivo: "faltou_vencimento",
       detalhe:
-        "isso soa como plano ou pergunta, não como algo que já aconteceu; não anote. Diga que quando acontecer é só avisar",
+        'isso é dinheiro a receber ou a pagar: refaça a chamada com tipo "venda" (a receber) ou "gasto" (a pagar), nunca "nota"; se a data de vencimento não foi dita, pergunte "Pra quando vence?"',
     };
   }
 
-  // A data escrita pela pessoa ("ontem", "dia 15") vale mais que a que o modelo calculou.
-  const data = dataDoTexto(ctx.texto, hoje) ?? textoOuNull(args.data, 10) ?? hoje;
+  // A pagar ou a receber: a mensagem fala de dinheiro que ainda vai sair ou entrar, com data.
+  const querPendente =
+    (tipo === "gasto" || tipo === "venda") &&
+    (indicaPendencia(ctx.texto) || ehRespostaDeVencimento(ctx.texto, ctx.historico));
+
+  // Plano ("vou comprar adubo semana que vem") e pergunta ("e se eu vendesse a 140?") não são
+  // lançamentos. Quando a pessoa só está respondendo "quanto foi?", a mensagem de agora é só o número.
+  const ehPergunta = tNorm.includes("?");
+  const ehPlano = temMarcaDePlano(tNorm) && !VERBOS_DE_LANCAMENTO.test(tNorm);
+  if (
+    ehPergunta ||
+    (ehPlano && !querPendente && !ehContinuacaoDeLancamento(ctx.texto, ctx.historico))
+  ) {
+    if (!(querPendente && !ehPergunta)) {
+      return {
+        sucesso: false,
+        motivo: "parece_plano_ou_pergunta",
+        detalhe:
+          "isso soa como plano ou pergunta, não como algo que já aconteceu; não anote. Diga que quando acontecer é só avisar",
+      };
+    }
+  }
+
+  let situacao: "realizado" | "pendente" = "realizado";
+  let venceEm: string | null = null;
+  if (querPendente) {
+    venceEm = vencimentoDoTexto(ctx.texto, hoje);
+    if (!venceEm) {
+      const doModelo = textoOuNull(args.vence_em, 10);
+      if (doModelo && /^\d{4}-\d{2}-\d{2}$/.test(doModelo)) venceEm = doModelo;
+    }
+    if (!venceEm) {
+      return {
+        sucesso: false,
+        motivo: "faltou_vencimento",
+        detalhe: 'pergunte "Pra quando vence?" (uma pergunta só) e espere a data',
+      };
+    }
+    if (venceEm < hoje || venceEm > somarDias(hoje, 900)) {
+      return {
+        sucesso: false,
+        motivo: "vencimento_invalido",
+        detalhe: `o vencimento ${venceEm} não é uma data futura razoável; hoje é ${hoje}; confirme a data com o produtor`,
+      };
+    }
+    situacao = "pendente";
+  }
+
+  // A data escrita pela pessoa ("ontem", "dia 15") vale mais que a que o modelo calculou. Em a pagar e
+  // a receber o "dia 30" é o vencimento, não o dia em que aconteceu.
+  const dataEscrita =
+    situacao === "pendente"
+      ? /\b(ontem|anteontem|hoje)\b/.test(tNorm)
+        ? dataDoTexto(ctx.texto, hoje)
+        : null
+      : dataDoTexto(ctx.texto, hoje);
+  const data = dataEscrita ?? (situacao === "pendente" ? null : textoOuNull(args.data, 10)) ?? hoje;
   if (
     !/^\d{4}-\d{2}-\d{2}$/.test(data) ||
     data > somarDias(hoje, 1) ||
@@ -161,13 +224,27 @@ export async function registrarNaFazenda(
   let valor = numeroOuNull(args.valor);
   const quantidade = numeroOuNull(args.quantidade);
   const precoUnitario = numeroOuNull(args.preco_unitario);
-  const conversa = numerosDaConversa(ctx.texto, ctx.historico);
+  // Números do estudo de proposta recente também valem (o produtor fechou "a proposta do comprador B").
+  const doEstudo = (ctx.estudo?.propostas ?? []).flatMap((p) =>
+    [p.preco, p.quantidade].filter((n): n is number => typeof n === "number"),
+  );
+  const conversa = [
+    ...numerosDaConversa(ctx.texto, ctx.historico),
+    ...(ctx.estudo ? [...doEstudo, ctx.estudo.quantidadeInformada ?? 0] : []),
+  ];
 
   if (tipo === "gasto" || tipo === "venda") {
     if (valor === null && quantidade !== null && precoUnitario !== null) {
       valor = Math.round(quantidade * precoUnitario * 100) / 100;
     }
     if (valor === null || valor <= 0) return { sucesso: false, motivo: "faltou_valor" };
+    if (valor > 50_000_000) {
+      return {
+        sucesso: false,
+        motivo: "numero_nao_confere",
+        detalhe: `o valor ${valor} é muito alto (acima de R$ 50 milhões); confirme o valor com o produtor`,
+      };
+    }
     // Valor, quantidade e preço têm que estar escritos na conversa. Quando o valor é a conta
     // quantidade x preço, basta os dois fatores estarem escritos.
     const contaDosFatores =
@@ -229,20 +306,22 @@ export async function registrarNaFazenda(
     unidadePadrao(args.unidade ?? null) ?? (quantidade !== null ? unidadeDoTexto(ctx.texto) : null);
 
   // Mensagem repetida em segundos (o WhatsApp reenvia, o produtor toca duas vezes): não lança em dobro.
-  const dezMinutos = new Date(Date.now() - 3 * 60_000).toISOString();
+  const tresMinutos = new Date(Date.now() - 3 * 60_000).toISOString();
   const { data: recentes } = await supabase
     .from("fazenda_registros")
-    .select(COLUNAS)
+    .select(COLUNAS_REGISTRO)
     .eq("produtor_id", produtor.id)
     .eq("tipo", tipo)
     .eq("ocorrido_em", data)
     .is("apagado_em", null)
-    .gte("criado_em", dezMinutos);
+    .neq("situacao", "rascunho")
+    .gte("criado_em", tresMinutos);
   const repetido = ((recentes ?? []) as RegistroFazenda[]).find(
     (r) =>
       (r.valor ?? null) === (valor ?? null) &&
       r.descricao.toLowerCase() === descricao!.toLowerCase() &&
-      (r.cultura ?? null) === (cultura ?? null),
+      (r.cultura ?? null) === (cultura ?? null) &&
+      r.situacao === situacao,
   );
   if (repetido) {
     return {
@@ -272,61 +351,72 @@ export async function registrarNaFazenda(
           ? Math.round((valor / quantidade) * 100) / 100
           : null),
       origem: "whatsapp",
+      situacao,
+      vence_em: venceEm,
     })
-    .select(COLUNAS)
+    .select(COLUNAS_REGISTRO)
     .single();
   if (error || !gravado) {
     console.error("Erro ao gravar no caderno da fazenda:", error);
     return { sucesso: false, motivo: "erro_ao_gravar" };
   }
-  const registro = gravado as RegistroFazenda;
+  let registro = gravado as RegistroFazenda;
+
+  if (situacao === "pendente") {
+    const lembreteId = await criarLembreteDoVencimento(
+      supabase,
+      produtor,
+      ctx.telefone ?? "",
+      registro,
+    );
+    if (lembreteId) {
+      await supabase
+        .from("fazenda_registros")
+        .update({ lembrete_id: lembreteId })
+        .eq("id", registro.id);
+      registro = { ...registro, lembrete_id: lembreteId };
+    }
+    return {
+      sucesso: true,
+      duplicado: false,
+      registro,
+      confirmacao: confirmacaoDePendencia(registro),
+    };
+  }
   const confirmacao = await montarConfirmacao(supabase, produtor, registro);
   return { sucesso: true, duplicado: false, registro, confirmacao };
 }
 
-// ---------------------------------------------------------------------------------------------
-// Leitura
-// ---------------------------------------------------------------------------------------------
-
-async function lerRegistros(
-  supabase: SupabaseClient,
-  produtorId: string,
-  periodo: PeriodoCaderno,
-): Promise<{ registros: RegistroFazenda[]; rotulo: string; erro: boolean }> {
-  const { desde, ate, rotulo } = intervaloDoPeriodo(periodo);
-  const { data, error } = await supabase
-    .from("fazenda_registros")
-    .select(COLUNAS)
-    .eq("produtor_id", produtorId)
-    .is("apagado_em", null)
-    .gte("ocorrido_em", desde)
-    .lte("ocorrido_em", ate)
-    .order("ocorrido_em", { ascending: false })
-    .limit(3000);
-  if (error) console.error("Erro ao ler o caderno da fazenda:", error);
-  return { registros: (data ?? []) as RegistroFazenda[], rotulo, erro: !!error };
-}
-
-/** Preço de mercado hoje da cultura vendida, só para colocar ao lado do que o produtor recebeu. */
-async function precoDeHoje(
-  supabase: SupabaseClient,
-  produtor: ProdutorContexto,
-  cultura: string | null,
-): Promise<{ preco: number; uf: string } | null> {
-  if (!cultura || !produtor.uf) return null;
-  try {
-    const r = await buscarPreco(
-      supabase,
-      { produto: cultura.toUpperCase(), uf: produtor.uf, incluir_frete: false },
-      { lat: produtor.lat, lon: produtor.lon, culturaCadastrada: produtor.cultura_principal },
-    );
-    if (!r.encontrado || !r.precos?.length) return null;
-    const saca = r.precos.filter((p) => /sc|saca/i.test(p.unidade ?? ""));
-    const base = r.preco_medio_regioes ?? saca[0]?.preco ?? null;
-    return typeof base === "number" && base > 0 ? { preco: base, uf: produtor.uf } : null;
-  } catch {
-    return null;
-  }
+function confirmacaoDePendencia(r: RegistroFazenda): string {
+  const dias = r.vence_em
+    ? Math.round(
+        (Date.parse(`${r.vence_em}T12:00:00Z`) - Date.parse(`${hojeBrasilia()}T12:00:00Z`)) /
+          86_400_000,
+      )
+    : 0;
+  const venc = r.vence_em ? fraseDeVencimento(dias, r.vence_em) : "";
+  const qtd =
+    r.quantidade !== null && r.unidade
+      ? `, ${formatarQuantidade(r.quantidade)} ${r.unidade}${r.preco_unitario ? ` a ${formatarReais(r.preco_unitario)}` : ""}`
+      : "";
+  const o = r.tipo === "venda" ? "A receber" : "A pagar";
+  const oque =
+    r.tipo === "venda"
+      ? `venda${r.cultura ? ` de ${r.cultura.toLowerCase()}` : ""}${qtd}`
+      : r.descricao;
+  const lembrete = r.lembrete_id
+    ? "Eu te lembro no dia, às 8h."
+    : dias <= 0
+      ? "Como é pra hoje, não vou criar lembrete."
+      : "";
+  const baixa =
+    r.tipo === "venda"
+      ? 'Quando receber, é só dizer "recebi".'
+      : 'Quando pagar, é só dizer "paguei".';
+  const oQue = r.tipo === "venda" ? `(${oque})` : `: ${oque}`;
+  return `${MARCA_CONFIRMACAO_CADERNO}: ${o} ${formatarReais(r.valor ?? 0)}${r.tipo === "venda" ? ` ${oQue}` : oQue}, ${venc}. ${lembrete} ${baixa} Se algo ficou errado, diga "desfazer".`
+    .replace(/\s{2,}/g, " ")
+    .replace(/ \./g, ".");
 }
 
 async function montarConfirmacao(
@@ -359,6 +449,17 @@ async function montarConfirmacao(
   return `${MARCA_CONFIRMACAO_CADERNO}: ${linha}.${extra} Se algo ficou errado, diga "desfazer".`;
 }
 
+/** A confirmação certa para o lançamento (a pagar ou realizado). */
+export async function confirmacaoDoRegistro(
+  supabase: SupabaseClient,
+  produtor: ProdutorContexto,
+  r: RegistroFazenda,
+): Promise<string> {
+  return r.situacao === "pendente"
+    ? confirmacaoDePendencia(r)
+    : montarConfirmacao(supabase, produtor, r);
+}
+
 export type ResultadoResumo = {
   vazio: boolean;
   texto: string;
@@ -367,7 +468,12 @@ export type ResultadoResumo = {
 /** Resumo pronto para mandar (texto montado por código, números todos do banco). */
 export async function resumoDaFazenda(
   supabase: SupabaseClient,
-  args: { periodo?: string | null; categoria?: string | null; cultura?: string | null },
+  args: {
+    periodo?: string | null;
+    categoria?: string | null;
+    cultura?: string | null;
+    talhao?: string | null;
+  },
   produtor: ProdutorContexto,
 ): Promise<ResultadoResumo | { erro: "sem_cadastro" | "erro_ao_ler" }> {
   if (!produtor.id) return { erro: "sem_cadastro" };
@@ -383,6 +489,7 @@ export async function resumoDaFazenda(
   const catMapeada = catBruta ? categoriaDeTexto(catBruta) : null;
   const filtroCat = (catMapeada && catMapeada !== "Outros" ? catMapeada : catBruta)?.toLowerCase();
   const filtroCult = textoOuNull(args.cultura, 40)?.toLowerCase();
+  const filtroTal = textoOuNull(args.talhao, 60);
   if (filtroCat) {
     registros = registros.filter(
       (r) => r.tipo === "gasto" && (r.categoria ?? "").toLowerCase().includes(filtroCat),
@@ -390,15 +497,21 @@ export async function resumoDaFazenda(
   }
   if (filtroCult)
     registros = registros.filter((r) => (r.cultura ?? "").toLowerCase().includes(filtroCult));
+  if (filtroTal) {
+    const chave = talhaoChave(filtroTal);
+    registros = registros.filter((r) => !!r.talhao && talhaoChave(r.talhao).includes(chave));
+  }
+  const filtrado = !!(filtroCat || filtroCult || filtroTal);
 
-  if (registros.length === 0 && !filtroCat && !filtroCult && periodo === "mes") {
+  const pendentes = await lerPendentes(supabase, produtor.id);
+  if (registros.length === 0 && !filtrado && periodo === "mes" && pendentes.length === 0) {
     const todos = await lerRegistros(supabase, produtor.id, "tudo");
     if (todos.registros.length === 0) return { vazio: true, texto: textoCadernoVazio() };
   }
   const r = resumir(registros);
   const linhas: string[] = [];
-  const titulo =
-    filtroCat || filtroCult ? `${lido.rotulo}, só ${filtroCat ?? filtroCult}` : lido.rotulo;
+  const nomeDoFiltro = filtroTal ? (registros[0]?.talhao ?? filtroTal) : (filtroCat ?? filtroCult);
+  const titulo = filtrado ? `${lido.rotulo}, só ${nomeDoFiltro}` : lido.rotulo;
   linhas.push(`Caderno da fazenda, ${titulo}`);
   linhas.push("");
   if (registros.length === 0) {
@@ -428,11 +541,16 @@ export async function resumoDaFazenda(
         linhas.push(`  • ${c.cultura}: ${formatarReais(c.venda)}${qtd ? ` (${qtd}${preco})` : ""}`);
       }
     }
-    if (!filtroCat && !filtroCult && (r.nGastos > 0 || r.nVendas > 0)) {
+    if (!filtrado && (r.nGastos > 0 || r.nVendas > 0)) {
       const sinal = r.resultado >= 0 ? "a favor" : "no vermelho";
       linhas.push(`Resultado do que foi lançado: ${formatarReais(Math.abs(r.resultado))} ${sinal}`);
     }
-    if (r.plantios.length > 0 || r.colheitas.length > 0) {
+    if (!filtrado && r.porTalhao.length >= 2) {
+      linhas.push("Por talhão:");
+      for (const t of r.porTalhao.slice(0, 3))
+        linhas.push(`  • ${t.talhao}: ${formatarReais(t.gasto)}`);
+    }
+    if (!filtrado && (r.plantios.length > 0 || r.colheitas.length > 0)) {
       linhas.push("Plantio e colheita:");
       for (const x of [...r.plantios.slice(0, 3), ...r.colheitas.slice(0, 3)]) {
         linhas.push(`  • ${descreverRegistro(x)}`);
@@ -445,8 +563,57 @@ export async function resumoDaFazenda(
     }
   }
 
+  // A pagar e a receber (de qualquer data).
+  if (!filtrado && pendentes.length > 0) {
+    const p = resumirPendencias(pendentes);
+    linhas.push("");
+    if (p.aReceber.length)
+      linhas.push(
+        `A receber: ${formatarReais(p.totalAReceber)} (${p.aReceber.length}), o próximo ${fraseDeVencimento(p.aReceber[0]!.dias, p.aReceber[0]!.vencimento)}`,
+      );
+    if (p.aPagar.length)
+      linhas.push(
+        `A pagar: ${formatarReais(p.totalAPagar)} (${p.aPagar.length}), o próximo ${fraseDeVencimento(p.aPagar[0]!.dias, p.aPagar[0]!.vencimento)}`,
+      );
+    if (p.vencidas > 0)
+      linhas.push(`Atenção: ${p.vencidas} já ${p.vencidas === 1 ? "venceu" : "venceram"}.`);
+  }
+
+  // Custo por saca, quando a área da cultura já foi informada.
+  if (!filtrado && periodo !== "tudo") {
+    try {
+      const areas = await lerAreas(supabase, produtor.id);
+      if (areas.length > 0) {
+        const safra = await lerRegistros(supabase, produtor.id, "safra");
+        const linhasDeCusto: string[] = [];
+        for (const a of areas.slice(0, 3)) {
+          const c = await custoDaCultura(
+            supabase,
+            produtor,
+            a,
+            areas,
+            safra.registros,
+            safra.rotulo,
+          );
+          const l = linhaCurtaDoCusto(c);
+          if (l) linhasDeCusto.push(`  • ${l}`);
+        }
+        if (linhasDeCusto.length) {
+          linhas.push("");
+          linhas.push(`Custo e margem (${safra.rotulo}):`);
+          linhas.push(...linhasDeCusto);
+        }
+      } else if (r.nGastos > 0) {
+        linhas.push("");
+        linhas.push('Quer saber seu custo por saca e sua margem? Diga "custo por saca".');
+      }
+    } catch {
+      /* sem custo, segue */
+    }
+  }
+
   // Mercado de hoje ao lado da venda média (só quando dá pra comparar de verdade).
-  if (!filtroCat && periodo !== "tudo") {
+  if (!filtrado && periodo !== "tudo") {
     const principal = r.porCultura.find(
       (c) => c.precoMedioVenda && /saca/i.test(c.unidadeVenda ?? ""),
     );
@@ -459,28 +626,6 @@ export async function resumoDaFazenda(
         );
       }
     }
-  }
-
-  // O que vem pela frente (lembretes já criados).
-  try {
-    const { data: lembretes } = await supabase
-      .from("lembretes")
-      .select("titulo, enviar_em")
-      .eq("produtor_id", produtor.id)
-      .eq("status", "pendente")
-      .gte("enviar_em", new Date().toISOString())
-      .order("enviar_em", { ascending: true })
-      .limit(3);
-    if (lembretes && lembretes.length) {
-      linhas.push("");
-      linhas.push("Pra frente:");
-      for (const l of lembretes as { titulo: string; enviar_em: string }[]) {
-        const dia = hojeBrasilia(new Date(l.enviar_em));
-        linhas.push(`  • ${dataCurta(dia)}  ${l.titulo}`);
-      }
-    }
-  } catch {
-    /* sem lembretes, segue */
   }
 
   linhas.push("");
@@ -515,10 +660,11 @@ export async function desfazerUltimoRegistro(
   if (!produtor.id) return { sucesso: false, texto: "" };
   const { data } = await supabase
     .from("fazenda_registros")
-    .select(COLUNAS)
+    .select(COLUNAS_REGISTRO)
     .eq("produtor_id", produtor.id)
     .eq("origem", "whatsapp")
     .is("apagado_em", null)
+    .neq("situacao", "rascunho")
     .order("criado_em", { ascending: false })
     .limit(1);
   const ultimo = (data ?? [])[0] as RegistroFazenda | undefined;
@@ -541,23 +687,29 @@ export async function desfazerUltimoRegistro(
       texto: "Não consegui desfazer agora. Tenta de novo em instantes, ou apaga pelo painel.",
     };
   }
-  return { sucesso: true, texto: `Pronto, apaguei: ${descreverRegistro(ultimo).slice(7).trim()}.` };
+  await cancelarLembrete(supabase, ultimo.lembrete_id);
+  const quando =
+    ultimo.situacao === "pendente" && ultimo.vence_em
+      ? ` (vencia em ${dataLonga(ultimo.vence_em)})`
+      : "";
+  const texto =
+    ultimo.situacao === "pendente"
+      ? `${ultimo.tipo === "venda" ? "A receber" : "A pagar"} ${formatarReais(ultimo.valor ?? 0)}: ${ultimo.tipo === "venda" ? `venda${ultimo.cultura ? ` de ${ultimo.cultura.toLowerCase()}` : ""}` : ultimo.descricao}${quando}`
+      : descreverRegistro(ultimo).slice(7).trim();
+  return { sucesso: true, texto: `Pronto, apaguei: ${texto}.` };
 }
 
 // ---------------------------------------------------------------------------------------------
-// Ler o que a pessoa escreveu: data, unidade, plano futuro e "isto é um lançamento"
+// Ler o que a pessoa escreveu: plano futuro e "isto é um lançamento"
 // ---------------------------------------------------------------------------------------------
 
-const VERBOS_DE_LANCAMENTO =
-  /\b(gastei|gastamos|paguei|pagamos|comprei|compramos|vendi|vendemos|plantei|plantamos|semeei|semeamos|colhi|colhemos|apliquei|aplicamos|pulverizei|abasteci|contratei|investi|desembolsei)\b/;
-const MARCA_DE_PLANO_OU_DUVIDA =
-  /\b(vou|vamos|pretendo|pretendemos|quero|queria|queremos|preciso|precisamos|devo|devia|planejo|planejamos|pensando em|se eu|e se|ser[aá] que|talvez|ia )\b/;
-
-/** O produtor está contando algo que JÁ aconteceu (gastei, vendi, plantei...), sem ser pergunta nem plano. */
+/** O produtor está contando algo que JÁ aconteceu (gastei, vendi, plantei...) ou a pagar/receber, sem ser pergunta nem plano. */
 export function pareceLancamentoNoCaderno(texto: string): boolean {
   const t = SEM_ACENTO(texto);
   if (t.includes("?")) return false;
-  return VERBOS_DE_LANCAMENTO.test(t) && !MARCA_DE_PLANO_OU_DUVIDA.test(t);
+  if (VERBOS_DE_LANCAMENTO.test(t) && !temMarcaDePlano(t)) return true;
+  // a pagar ou a receber: "tenho que pagar 5 mil de arrendamento dia 10", "vou receber 60 mil dia 30"
+  return indicaPendencia(t) && /\d/.test(t) && !temMarcaDePlano(t);
 }
 
 /** "Quanto foi?" respondido só com o número: continua um lançamento começado na mensagem anterior. */
@@ -566,13 +718,11 @@ export function ehContinuacaoDeLancamento(texto: string, historico: HistoricoLin
     .replace(/[?!.,]/g, " ")
     .trim();
   if (!t || t.split(/\s+/).length > 6 || !/\d/.test(t)) return false;
-  const ultima = [...historico]
-    .filter((h) => h.role === "assistant")
-    .sort((a, b) => b.ordem - a.ordem)[0];
+  const ultima = ultimaDoBot(historico);
   return (
     !!ultima &&
     /\b(quanto (foi|custou|deu|pagou|gastou)|qual (foi )?o valor|valor total|quanto ficou)\b/i.test(
-      SEM_ACENTO(ultima.conteudo),
+      SEM_ACENTO(ultima),
     )
   );
 }
@@ -581,70 +731,7 @@ export function ehContinuacaoDeLancamento(texto: string, historico: HistoricoLin
 export function ehPlanoOuHipotese(texto: string): boolean {
   const t = SEM_ACENTO(texto);
   if (t.includes("?")) return true;
-  return MARCA_DE_PLANO_OU_DUVIDA.test(t) && !VERBOS_DE_LANCAMENTO.test(t);
-}
-
-const MESES_ABREV: Record<string, number> = {
-  janeiro: 1,
-  fevereiro: 2,
-  marco: 3,
-  abril: 4,
-  maio: 5,
-  junho: 6,
-  julho: 7,
-  agosto: 8,
-  setembro: 9,
-  outubro: 10,
-  novembro: 11,
-  dezembro: 12,
-};
-
-/** Data dita com todas as letras ("ontem", "dia 15", "15/10", "dia 3 de setembro"), em AAAA-MM-DD. */
-export function dataDoTexto(texto: string, hoje: string): string | null {
-  const t = SEM_ACENTO(texto);
-  if (/\banteontem\b/.test(t)) return somarDias(hoje, -2);
-  if (/\bontem\b/.test(t)) return somarDias(hoje, -1);
-  if (/\bhoje\b/.test(t)) return hoje;
-  const [ano, mes, dia] = hoje.split("-").map(Number) as [number, number, number];
-  const monta = (a: number, m: number, d: number): string | null => {
-    if (m < 1 || m > 12 || d < 1 || d > 31) return null;
-    const iso = `${a}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-    // 31 de fevereiro e afins: a data não existe
-    return new Date(`${iso}T12:00:00Z`).getUTCDate() === d ? iso : null;
-  };
-  const barra = t.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
-  if (barra) {
-    const a = barra[3] ? (barra[3].length === 2 ? 2000 + Number(barra[3]) : Number(barra[3])) : ano;
-    let iso = monta(a, Number(barra[2]), Number(barra[1]));
-    if (iso && !barra[3] && iso > hoje) iso = monta(ano - 1, Number(barra[2]), Number(barra[1]));
-    return iso;
-  }
-  const porExtenso = t.match(
-    /\bdia (\d{1,2}) de (janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\b/,
-  );
-  if (porExtenso) {
-    const m = MESES_ABREV[porExtenso[2]!]!;
-    let iso = monta(ano, m, Number(porExtenso[1]));
-    if (iso && iso > hoje) iso = monta(ano - 1, m, Number(porExtenso[1]));
-    return iso;
-  }
-  const soDia = t.match(/\bdia (\d{1,2})\b/);
-  if (soDia) {
-    const d = Number(soDia[1]);
-    if (d <= dia) return monta(ano, mes, d);
-    // dia que ainda não chegou neste mês: é do mês passado
-    return mes === 1 ? monta(ano - 1, 12, d) : monta(ano, mes - 1, d);
-  }
-  return null;
-}
-
-/** Unidade escrita junto de um número ("500 sacas", "50 hectares", "30 arrobas"). */
-export function unidadeDoTexto(texto: string): string | null {
-  const t = SEM_ACENTO(texto);
-  const m = t.match(
-    /\d[\d.,]*\s*(?:mil\s*)?(sacas?|sacos?|sc|arrobas?|@|toneladas?|kg|quilos?|litros?|cabecas?|hectares?|ha|alqueires?)\b/,
-  );
-  return m ? unidadePadrao(m[1]!) : null;
+  return temMarcaDePlano(t) && !VERBOS_DE_LANCAMENTO.test(t);
 }
 
 /** "quanto gastei de adubo (esse mês)": o recorte pedido, para responder só o que foi perguntado. */
@@ -662,16 +749,32 @@ export function pedidoDeGastoPorCategoria(
   const busca = m[1]!.trim();
   if (!busca || busca.split(" ").length > 4 || /^(ano|mes|safra|total|tudo|geral)$/.test(busca))
     return null;
+  // talhão é outro recorte (pedidoDeGastoPorTalhao)
+  if (/^(o |a )?(talhao|gleba|piquete|pasto|lote)\b/.test(busca)) return null;
   const cat = categoriaDeTexto(busca);
   const periodo: PeriodoCaderno = m[2] === "ano" ? "ano" : m[2] === "safra" ? "safra" : "mes";
   return { categoria: cat === "Outros" ? null : cat, busca, periodo };
 }
 
+/** "quanto gastei no talhão 3 (essa safra)". */
+export function pedidoDeGastoPorTalhao(
+  texto: string,
+): { talhao: string; periodo: PeriodoCaderno } | null {
+  const t = SEM_ACENTO(texto)
+    .replace(/[?!.,]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const m = t.match(
+    /^(?:quanto|qual (?:o )?(?:gasto|custo)) (?:eu )?(?:gastei|paguei|gastamos|foi gasto|deu|custou)?\s*(?:no|na|em|do|da|de|com o|com a)\s*((?:talhao|gleba|piquete|pasto|lote|area)\s*[a-z0-9]{1,12}(?: [a-z0-9]{1,12})?)(?: (?:esse|este|neste|nesse|nesta|nessa|na|no) (mes|ano|safra))?(?: ate agora| ate hoje)?$/,
+  );
+  if (!m) return null;
+  const periodo: PeriodoCaderno = m[2] === "mes" ? "mes" : m[2] === "ano" ? "ano" : "safra";
+  return { talhao: m[1]!.trim(), periodo };
+}
+
 // ---------------------------------------------------------------------------------------------
 // Reconhecer o pedido por código (não depende do modelo)
 // ---------------------------------------------------------------------------------------------
-
-const SEM_ACENTO = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 /** "resumo da fazenda", "meu caderno", "quanto gastei esse mês"... sem filtro de categoria. */
 export function periodoDoPedidoDeResumo(texto: string): PeriodoCaderno | null {
@@ -716,10 +819,8 @@ export function ehPedidoDeDesfazerRegistro(texto: string, historico: HistoricoLi
   if (/\b(ultimo|ultima|registro|lancamento|anotacao|anotei|lancei)\b/.test(t)) {
     return !/\b(conta|assinatura|plano|alerta|lembrete|cadastro|dados)\b/.test(t);
   }
-  const ultimaDoBot = [...historico]
-    .filter((h) => h.role === "assistant")
-    .sort((a, b) => b.ordem - a.ordem)[0];
-  return !!ultimaDoBot && ultimaDoBot.conteudo.includes(MARCA_CONFIRMACAO_CADERNO);
+  const ultima = ultimaDoBot(historico);
+  return !!ultima && ultima.includes(MARCA_CONFIRMACAO_CADERNO);
 }
 
 /** A resposta afirma que anotou, mas nenhuma anotação foi gravada nesta rodada. */
@@ -731,3 +832,5 @@ export function afirmaTerAnotadoNoCaderno(resposta: string): boolean {
 }
 
 export const CATEGORIAS_PARA_O_MODELO = CATEGORIAS_GASTO;
+
+export { dataCurta };

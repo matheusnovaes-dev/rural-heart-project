@@ -9,6 +9,12 @@ import {
   TAXA_MENSAL_PADRAO,
 } from "@/lib/bot/propostas/avaliar";
 import { lerMidia } from "@/lib/bot/propostas/lerMidia";
+import {
+  MENSAGEM_RECIBO_ILEGIVEL,
+  MENSAGEM_RECIBO_SEM_VALOR,
+  ehPedidoDeRecibo,
+  rascunharRecibo,
+} from "@/lib/bot/recibo";
 import { obterReferencia } from "@/lib/bot/propostas/referencia";
 import { mensagemDeLimite, verificarLimiteDeEstudos } from "@/lib/bot/propostas/limite";
 import { referenciaDoEstudo } from "@/lib/bot/propostas/acompanhamento";
@@ -381,7 +387,7 @@ export async function montarRespostaDeEstudo(args: {
 }
 
 const MENSAGEM_NAO_E_PROPOSTA =
-  "Recebi sua imagem, mas ela não parece uma proposta de compra nem uma tabela de preços. Eu leio proposta (foto ou PDF), tabela de cooperativa ou comprador, print de conversa com oferta e bilhete com cotações. Se for outra coisa, me conta por texto o que você precisa.";
+  "Recebi sua imagem, mas ela não parece uma proposta de compra nem uma tabela de preços. Eu leio proposta (foto ou PDF), tabela de cooperativa ou comprador, print de conversa com oferta e bilhete com cotações, e também nota, recibo, cupom e boleto para anotar no seu caderno da fazenda. Se for outra coisa, me conta por texto o que você precisa.";
 const MENSAGEM_ILEGIVEL =
   "Não consegui ler essa imagem direito. Tenta de novo com mais luz, de frente e sem cortar as bordas do papel. Se tiver o PDF, pode mandar o PDF.";
 const MENSAGEM_SEM_PRECO =
@@ -420,10 +426,6 @@ export async function responderMidia(input: {
   const bytes = Math.floor((midia.base64.length * 3) / 4);
   if (bytes > TAMANHO_MAXIMO_BYTES) return pronta(MENSAGEM_GRANDE);
 
-  // A trava por plano: Bronze 3 estudos por dia, Prata e Ouro 15. Só estudos entregues contam.
-  const situacao = await verificarLimiteDeEstudos(supabase, { telefone, produtorId: produtor.id });
-  if (!situacao.permitido) return pronta(mensagemDeLimite(situacao));
-
   const desde = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
   const { count } = await supabase
     .from("bot_conversas")
@@ -433,6 +435,27 @@ export async function responderMidia(input: {
     .or("conteudo.like.[Imagem enviada]%,conteudo.like.[PDF enviado%")
     .gte("created_at", desde);
   if ((count ?? 0) > LIMITE_DE_LEITURAS_POR_DIA) return pronta(MENSAGEM_LIMITE_DE_LEITURAS);
+
+  // Foto de nota, recibo ou boleto (pela legenda): vira rascunho no caderno da fazenda. Não conta nos estudos
+  // de proposta por plano, só na trava de leituras por dia acima.
+  const tentarRecibo = async (): Promise<Resposta | null> => {
+    const r = await rascunharRecibo({ supabase, produtor, midia, apiKey, signal });
+    if ("texto" in r) return pronta(r.texto);
+    if ("erro" in r) {
+      if (r.erro === "ilegivel") return pronta(MENSAGEM_RECIBO_ILEGIVEL);
+      if (r.erro === "sem_valor") return pronta(MENSAGEM_RECIBO_SEM_VALOR);
+    }
+    return null; // não é comprovante (ou a leitura falhou): segue o fluxo de proposta
+  };
+  const reciboPelaLegenda = ehPedidoDeRecibo(midia.legenda ?? texto);
+  if (reciboPelaLegenda) {
+    const doRecibo = await tentarRecibo();
+    if (doRecibo) return doRecibo;
+  }
+
+  // A trava por plano: Bronze 3 estudos por dia, Prata e Ouro 15. Só estudos entregues contam.
+  const situacao = await verificarLimiteDeEstudos(supabase, { telefone, produtorId: produtor.id });
+  if (!situacao.permitido) return pronta(mensagemDeLimite(situacao));
 
   const leitura = await lerMidia(apiKey, midia, signal);
   if (!leitura.ok) {
@@ -446,8 +469,14 @@ export async function responderMidia(input: {
   if (idade != null && idade > LIMITE_DE_IDADE_DO_DOCUMENTO_DIAS && l.propostas.length > 0) {
     return pronta(textoDeDocumentoAntigo(l, idade));
   }
-  if (l.tipo_documento === "outro" || l.propostas.length === 0)
+  if (l.tipo_documento === "outro" || l.propostas.length === 0) {
+    // não é proposta: pode ser uma nota ou um boleto sem legenda
+    if (!reciboPelaLegenda) {
+      const doRecibo = await tentarRecibo();
+      if (doRecibo) return doRecibo;
+    }
     return pronta(MENSAGEM_NAO_E_PROPOSTA);
+  }
 
   const comPreco = l.propostas.filter((p) => p.preco != null && p.preco > 0);
   if (comPreco.length === 0) return pronta(MENSAGEM_SEM_PRECO);

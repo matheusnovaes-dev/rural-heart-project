@@ -45,6 +45,7 @@ import { Route as DashboardLayoutMarcaRouteImport } from './routes/dashboard/_la
 import { Route as DashboardLayoutPerfilRouteImport } from './routes/dashboard/_layout/perfil'
 import { Route as DashboardLayoutPrecosRouteImport } from './routes/dashboard/_layout/precos'
 import { Route as DashboardLayoutProdutoresRouteImport } from './routes/dashboard/_layout/produtores'
+import { Route as DashboardLayoutRelatorioFazendaRouteImport } from './routes/dashboard/_layout/relatorio-fazenda'
 import { Route as DashboardLayoutRelatoriosRouteImport } from './routes/dashboard/_layout/relatorios'
 import { Route as DashboardLayoutSuporteRouteImport } from './routes/dashboard/_layout/suporte'
 
@@ -235,6 +236,12 @@ const DashboardLayoutProdutoresRoute =
     path: '/produtores',
     getParentRoute: () => DashboardLayoutRoute,
   } as any)
+const DashboardLayoutRelatorioFazendaRoute =
+  DashboardLayoutRelatorioFazendaRouteImport.update({
+    id: '/relatorio-fazenda',
+    path: '/relatorio-fazenda',
+    getParentRoute: () => DashboardLayoutRoute,
+  } as any)
 const DashboardLayoutRelatoriosRoute =
   DashboardLayoutRelatoriosRouteImport.update({
     id: '/relatorios',
@@ -283,6 +290,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/perfil': typeof DashboardLayoutPerfilRoute
   '/dashboard/precos': typeof DashboardLayoutPrecosRoute
   '/dashboard/produtores': typeof DashboardLayoutProdutoresRoute
+  '/dashboard/relatorio-fazenda': typeof DashboardLayoutRelatorioFazendaRoute
   '/dashboard/relatorios': typeof DashboardLayoutRelatoriosRoute
   '/dashboard/suporte': typeof DashboardLayoutSuporteRoute
   '/dashboard/': typeof DashboardLayoutIndexRoute
@@ -322,6 +330,7 @@ export interface FileRoutesByTo {
   '/dashboard/perfil': typeof DashboardLayoutPerfilRoute
   '/dashboard/precos': typeof DashboardLayoutPrecosRoute
   '/dashboard/produtores': typeof DashboardLayoutProdutoresRoute
+  '/dashboard/relatorio-fazenda': typeof DashboardLayoutRelatorioFazendaRoute
   '/dashboard/relatorios': typeof DashboardLayoutRelatoriosRoute
   '/dashboard/suporte': typeof DashboardLayoutSuporteRoute
   '/dashboard': typeof DashboardLayoutIndexRoute
@@ -363,6 +372,7 @@ export interface FileRoutesById {
   '/dashboard/_layout/perfil': typeof DashboardLayoutPerfilRoute
   '/dashboard/_layout/precos': typeof DashboardLayoutPrecosRoute
   '/dashboard/_layout/produtores': typeof DashboardLayoutProdutoresRoute
+  '/dashboard/_layout/relatorio-fazenda': typeof DashboardLayoutRelatorioFazendaRoute
   '/dashboard/_layout/relatorios': typeof DashboardLayoutRelatoriosRoute
   '/dashboard/_layout/suporte': typeof DashboardLayoutSuporteRoute
   '/dashboard/_layout/': typeof DashboardLayoutIndexRoute
@@ -405,6 +415,7 @@ export interface FileRouteTypes {
     | '/dashboard/perfil'
     | '/dashboard/precos'
     | '/dashboard/produtores'
+    | '/dashboard/relatorio-fazenda'
     | '/dashboard/relatorios'
     | '/dashboard/suporte'
     | '/dashboard/'
@@ -444,6 +455,7 @@ export interface FileRouteTypes {
     | '/dashboard/perfil'
     | '/dashboard/precos'
     | '/dashboard/produtores'
+    | '/dashboard/relatorio-fazenda'
     | '/dashboard/relatorios'
     | '/dashboard/suporte'
     | '/dashboard'
@@ -484,6 +496,7 @@ export interface FileRouteTypes {
     | '/dashboard/_layout/perfil'
     | '/dashboard/_layout/precos'
     | '/dashboard/_layout/produtores'
+    | '/dashboard/_layout/relatorio-fazenda'
     | '/dashboard/_layout/relatorios'
     | '/dashboard/_layout/suporte'
     | '/dashboard/_layout/'
@@ -767,6 +780,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLayoutProdutoresRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
+    '/dashboard/_layout/relatorio-fazenda': {
+      id: '/dashboard/_layout/relatorio-fazenda'
+      path: '/relatorio-fazenda'
+      fullPath: '/dashboard/relatorio-fazenda'
+      preLoaderRoute: typeof DashboardLayoutRelatorioFazendaRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
     '/dashboard/_layout/relatorios': {
       id: '/dashboard/_layout/relatorios'
       path: '/relatorios'
@@ -799,6 +819,7 @@ interface DashboardLayoutRouteChildren {
   DashboardLayoutPerfilRoute: typeof DashboardLayoutPerfilRoute
   DashboardLayoutPrecosRoute: typeof DashboardLayoutPrecosRoute
   DashboardLayoutProdutoresRoute: typeof DashboardLayoutProdutoresRoute
+  DashboardLayoutRelatorioFazendaRoute: typeof DashboardLayoutRelatorioFazendaRoute
   DashboardLayoutRelatoriosRoute: typeof DashboardLayoutRelatoriosRoute
   DashboardLayoutSuporteRoute: typeof DashboardLayoutSuporteRoute
   DashboardLayoutIndexRoute: typeof DashboardLayoutIndexRoute
@@ -819,6 +840,7 @@ const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
   DashboardLayoutPerfilRoute: DashboardLayoutPerfilRoute,
   DashboardLayoutPrecosRoute: DashboardLayoutPrecosRoute,
   DashboardLayoutProdutoresRoute: DashboardLayoutProdutoresRoute,
+  DashboardLayoutRelatorioFazendaRoute: DashboardLayoutRelatorioFazendaRoute,
   DashboardLayoutRelatoriosRoute: DashboardLayoutRelatoriosRoute,
   DashboardLayoutSuporteRoute: DashboardLayoutSuporteRoute,
   DashboardLayoutIndexRoute: DashboardLayoutIndexRoute,

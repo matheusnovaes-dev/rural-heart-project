@@ -35,11 +35,27 @@ import {
   desfazerUltimoRegistro,
   ehContinuacaoDeLancamento,
   ehPedidoDeDesfazerRegistro,
+  ehRespostaDeVencimento,
   pareceLancamentoNoCaderno,
   pedidoDeGastoPorCategoria,
+  pedidoDeGastoPorTalhao,
   periodoDoPedidoDeResumo,
   resumoDaFazenda,
 } from "@/lib/bot/tools/fazenda";
+import {
+  ehPedidoDeCusto,
+  tratarAreaDeFrase,
+  tratarPedidoDeCusto,
+  tratarRespostaDeArea,
+} from "@/lib/bot/tools/fazendaCusto";
+import {
+  ehPedidoDePendencias,
+  textoDePendencias,
+  tratarBaixa,
+} from "@/lib/bot/tools/fazendaPendencias";
+import { lerPendentes } from "@/lib/bot/tools/fazendaBase";
+import { tratarFechamentoDeProposta } from "@/lib/bot/tools/fazendaProposta";
+import { tratarRespostaAoRascunho } from "@/lib/bot/recibo";
 import {
   ehPedidoDePararAvisos,
   ehPedidoDeSair,
@@ -1561,12 +1577,58 @@ async function runAgentBase(input: {
     };
   }
 
-  // Caderno da fazenda: "resumo da fazenda" e "desfazer" são respondidos por código, com os números do banco
-  // (ver tools/fazenda.ts). Lançar gasto, venda ou plantio passa pelo modelo, que só preenche os campos.
+  // Caderno da fazenda: tudo que tem resposta certa por código é respondido ANTES do modelo, com os números do
+  // banco (resumo, desfazer, a pagar e a receber, baixa de "recebi/paguei", custo por saca, área, talhão, resposta
+  // à nota lida da foto e fechamento de proposta). Lançar gasto, venda ou plantio passa pelo modelo, que só
+  // preenche os campos (ver tools/fazenda.ts).
   if (produtor.id) {
-    const periodoDoResumo = periodoDoPedidoDeResumo(texto);
-    const gastoPorCategoria = pedidoDeGastoPorCategoria(texto);
-    if (gastoPorCategoria) {
+    const pronta = (resposta: string): RespostaAgente => ({
+      resposta,
+      precisa_humano: false,
+      cadastro_criado: false,
+      convite_dispensado: true,
+    });
+    // 1) resposta ao rascunho de nota lida por foto ("sim", "não", "o valor é 12.000")
+    const doRascunho = await tratarRespostaAoRascunho(supabase, produtor, texto, telefone);
+    if (doRascunho) return pronta(doRascunho);
+    // 2) "fechei com o comprador B" depois de um estudo de proposta
+    const fechamento = await tratarFechamentoDeProposta(
+      supabase,
+      produtor,
+      texto,
+      historico,
+      estudoRecente,
+      telefone,
+    );
+    if (fechamento) return pronta(fechamento);
+    // 3) resposta à pergunta "Quantos hectares de soja você planta?"
+    const daArea = await tratarRespostaDeArea(supabase, produtor, texto, historico);
+    if (daArea) return pronta(daArea);
+    // 4) "recebi" / "paguei" dá baixa no que estava a receber / a pagar
+    const baixa = await tratarBaixa(supabase, produtor, texto, historico);
+    if (baixa) return pronta(baixa);
+    // 5) pedidos de leitura
+    if (ehPedidoDePendencias(texto)) {
+      return pronta(textoDePendencias(await lerPendentes(supabase, produtor.id)));
+    }
+    if (ehPedidoDeCusto(texto)) {
+      const c = await tratarPedidoDeCusto(supabase, produtor, texto);
+      if (c) return pronta(c);
+    }
+    const daFrase = await tratarAreaDeFrase(supabase, produtor, texto);
+    if (daFrase) return pronta(daFrase);
+    const gastoPorTalhao = pedidoDeGastoPorTalhao(texto);
+    const gastoPorCategoria = gastoPorTalhao ? null : pedidoDeGastoPorCategoria(texto);
+    const periodoDoResumo =
+      gastoPorTalhao || gastoPorCategoria ? null : periodoDoPedidoDeResumo(texto);
+    if (gastoPorTalhao) {
+      const r = await resumoDaFazenda(
+        supabase,
+        { periodo: gastoPorTalhao.periodo, talhao: gastoPorTalhao.talhao },
+        produtor,
+      );
+      if ("texto" in r) return pronta(r.texto);
+    } else if (gastoPorCategoria) {
       const r = await resumoDaFazenda(
         supabase,
         {
@@ -1575,32 +1637,13 @@ async function runAgentBase(input: {
         },
         produtor,
       );
-      if ("texto" in r) {
-        return {
-          resposta: r.texto,
-          precisa_humano: false,
-          cadastro_criado: false,
-          convite_dispensado: true,
-        };
-      }
+      if ("texto" in r) return pronta(r.texto);
     } else if (periodoDoResumo) {
       const r = await resumoDaFazenda(supabase, { periodo: periodoDoResumo }, produtor);
-      if ("texto" in r) {
-        return {
-          resposta: r.texto,
-          precisa_humano: false,
-          cadastro_criado: false,
-          convite_dispensado: true,
-        };
-      }
+      if ("texto" in r) return pronta(r.texto);
     } else if (ehPedidoDeDesfazerRegistro(texto, historico)) {
       const r = await desfazerUltimoRegistro(supabase, produtor);
-      return {
-        resposta: r.texto,
-        precisa_humano: false,
-        cadastro_criado: false,
-        convite_dispensado: true,
-      };
+      return pronta(r.texto);
     }
   }
 
@@ -1720,22 +1763,29 @@ async function runAgentBase(input: {
   // valor" com mais força (2 funcionalidades, não 1) — não empilha com o
   // incentivo normal na mesma mensagem, senão vira uma lista grande demais
   // logo na primeira troca.
-  const incentivoEscolhido = notaPrimeiraResposta
-    ? null
-    : notaDeIncentivoAtivacao(produtor, historico, texto);
+  // Lançamento no caderno da fazenda também não leva o convite "olha o que mais eu faço" na mesma mensagem: a
+  // resposta é só a confirmação do que foi anotado (sem isso saía preço de soja colado na confirmação).
+  const ehLancamentoDoCaderno =
+    !!produtor.id &&
+    (pareceLancamentoNoCaderno(texto) ||
+      ehContinuacaoDeLancamento(texto, historico) ||
+      ehRespostaDeVencimento(texto, historico));
+  const incentivoEscolhido =
+    notaPrimeiraResposta || ehLancamentoDoCaderno
+      ? null
+      : notaDeIncentivoAtivacao(produtor, historico, texto);
   const notaIncentivoAtivacao = incentivoEscolhido?.nota ?? null;
   const sugestoesEscolhidas = incentivoEscolhido?.escolhidas ?? [];
   const notaMemoriaPotencial = notaDeMemoriaPotencial(produtor, texto);
   // Caderno da fazenda: sem esta nota o modelo tratava "plantei milho dia 15" como pergunta de mercado e
   // respondia com preço (achado do teste de 2026-10-21). A decisão de que é um lançamento é por código.
-  const notaCaderno: OpenAIMessage | null =
-    produtor.id && (pareceLancamentoNoCaderno(texto) || ehContinuacaoDeLancamento(texto, historico))
-      ? {
-          role: "system",
-          content:
-            "Nota: essa mensagem é o produtor LANÇANDO no caderno da fazenda algo que JÁ aconteceu (gasto, venda, plantio ou colheita), ou respondendo o valor que você perguntou. Chame registrar_na_fazenda agora com o que ele disse e responda só com a confirmação da ferramenta. Se for gasto ou venda e NÃO tiver o valor, não chame: pergunte apenas 'Quanto foi?'. Não responda com preço de mercado nem com outros assuntos.",
-        }
-      : null;
+  const notaCaderno: OpenAIMessage | null = ehLancamentoDoCaderno
+    ? {
+        role: "system",
+        content:
+          "Nota: essa mensagem é o produtor LANÇANDO no caderno da fazenda algo que JÁ aconteceu (gasto, venda, plantio ou colheita), ou respondendo o valor que você perguntou. Chame registrar_na_fazenda agora com o que ele disse e responda só com a confirmação da ferramenta. Se for gasto ou venda e NÃO tiver o valor, não chame: pergunte apenas 'Quanto foi?'. Se for dinheiro a pagar ou a receber, use tipo venda (a receber) ou gasto (a pagar), NUNCA nota; se NÃO tiver a data de vencimento, não chame: pergunte apenas 'Pra quando vence?'. Não responda com preço de mercado nem com outros assuntos.",
+      }
+    : null;
   // Memória entre conversas (não confundir com `historico`, que é só desta
   // conversa) — ver tools/memoria.ts. Só existe pra quem já tem cadastro.
   const memorias = produtor.id ? await buscarMemoriasProdutor(supabase, produtor.id) : [];
@@ -2248,7 +2298,10 @@ async function runAgentBase(input: {
             const gravados = lidos.filter(
               (o) => o.sucesso === true && typeof o.confirmacao === "string",
             );
-            if (gravados.length === doCaderno.length && doCaderno.length === resultados.length) {
+            if (
+              gravados.length === doCaderno.length &&
+              (doCaderno.length === resultados.length || ehLancamentoDoCaderno)
+            ) {
               return {
                 resposta: gravados.map((o) => o.confirmacao).join("\n"),
                 precisa_humano: false,

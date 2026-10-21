@@ -44,7 +44,9 @@ const secoes: SecaoLegal[] = [
         você poder questionar ou refazer a conta. Se você usar o Caderno da fazenda, guardamos
         também o que você lançar (gastos, vendas, plantios e colheitas, com valores e datas). Só
         você vê esses lançamentos, e dá para apagar cada um no painel ou pedir ao suporte para
-        apagar tudo.
+        apagar tudo. Fotos de notas, recibos e boletos que você mandar para anotar no caderno também
+        são lidas na hora e não ficam guardadas: só o que foi lido (fornecedor, itens, valor e data)
+        é guardado, e só depois do seu "sim".
       </p>
     ),
   },

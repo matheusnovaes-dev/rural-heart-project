@@ -1,7 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Download,
+  FileText,
   Loader2,
   MessageCircle,
   Pencil,
@@ -51,10 +52,19 @@ import {
 } from "@/components/ui/alert-dialog";
 import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 import { supabase } from "@/lib/supabase";
-import { useRequireProdutor } from "@/lib/auth";
+import { useAuth, useRequireProdutor } from "@/lib/auth";
+import { CustoMargemCard } from "@/components/fazenda/CustoMargemCard";
+import { PendenciasCard } from "@/components/fazenda/PendenciasCard";
+import { PorTalhaoCard } from "@/components/fazenda/PorTalhaoCard";
+import {
+  cancelarLembrete,
+  criarLembreteDoVencimento,
+  darBaixaNoPainel,
+} from "@/components/fazenda/acoes";
 import { buildWhatsAppLink } from "@/config/site";
 import {
   CATEGORIAS_GASTO,
+  COLUNAS_REGISTRO,
   ROTULO_TIPO,
   TIPOS_REGISTRO,
   categoriaDeTexto,
@@ -75,9 +85,6 @@ export const Route = createFileRoute("/dashboard/_layout/fazenda")({
   head: () => ({ meta: [{ title: "Caderno da fazenda | Safralume" }] }),
   component: FazendaPage,
 });
-
-const COLUNAS =
-  "id, tipo, ocorrido_em, valor, descricao, categoria, cultura, talhao, quantidade, unidade, preco_unitario, origem, criado_em";
 
 const PERIODOS: { id: PeriodoCaderno; rotulo: string }[] = [
   { id: "mes", rotulo: "Este mês" },
@@ -127,25 +134,42 @@ function FazendaPage() {
   const [editando, setEditando] = useState<RegistroFazenda | "novo" | null>(null);
   const [apagando, setApagando] = useState<RegistroFazenda | null>(null);
   const [temQualquerCoisa, setTemQualquerCoisa] = useState<boolean | null>(null);
+  const [pendentes, setPendentes] = useState<RegistroFazenda[]>([]);
+  const [versao, setVersao] = useState(0);
 
   const carregar = useCallback(async () => {
     if (!supabase || !produtor) return;
     setCarregando(true);
     const { desde, ate } = intervaloDoPeriodo(periodo);
-    const { data, error } = await supabase
-      .from("fazenda_registros")
-      .select(COLUNAS)
-      .eq("produtor_id", produtor.id)
-      .is("apagado_em", null)
-      .gte("ocorrido_em", desde)
-      .lte("ocorrido_em", ate)
-      .order("ocorrido_em", { ascending: false })
-      .order("criado_em", { ascending: false })
-      .limit(2000);
+    const [principal, aPagarReceber] = await Promise.all([
+      supabase
+        .from("fazenda_registros")
+        .select(COLUNAS_REGISTRO)
+        .eq("produtor_id", produtor.id)
+        .is("apagado_em", null)
+        .eq("situacao", "realizado")
+        .gte("ocorrido_em", desde)
+        .lte("ocorrido_em", ate)
+        .order("ocorrido_em", { ascending: false })
+        .order("criado_em", { ascending: false })
+        .limit(2000),
+      supabase
+        .from("fazenda_registros")
+        .select(COLUNAS_REGISTRO)
+        .eq("produtor_id", produtor.id)
+        .is("apagado_em", null)
+        .eq("situacao", "pendente")
+        .order("vence_em", { ascending: true })
+        .limit(500),
+    ]);
+    const { data, error } = principal;
     setErro(!!error);
     const lista = (data ?? []) as unknown as RegistroFazenda[];
+    const doPendente = (aPagarReceber.data ?? []) as unknown as RegistroFazenda[];
     setRegistros(lista);
-    if (lista.length > 0) setTemQualquerCoisa(true);
+    setPendentes(doPendente);
+    setVersao((v) => v + 1);
+    if (lista.length > 0 || doPendente.length > 0) setTemQualquerCoisa(true);
     else if (periodo === "tudo" || temQualquerCoisa === null) {
       if (periodo === "tudo") setTemQualquerCoisa(false);
       else {
@@ -153,7 +177,8 @@ function FazendaPage() {
           .from("fazenda_registros")
           .select("id", { count: "exact", head: true })
           .eq("produtor_id", produtor.id)
-          .is("apagado_em", null);
+          .is("apagado_em", null)
+          .neq("situacao", "rascunho");
         setTemQualquerCoisa((count ?? 0) > 0);
       }
     }
@@ -209,8 +234,20 @@ function FazendaPage() {
       toast.error("Não foi possível apagar o lançamento.");
       return;
     }
+    await cancelarLembrete(supabase, r.lembrete_id);
     toast.success("Lançamento apagado.");
     setApagando(null);
+    carregar();
+  }
+
+  async function darBaixa(r: RegistroFazenda) {
+    if (!supabase) return;
+    const ok = await darBaixaNoPainel(supabase, r);
+    if (!ok) {
+      toast.error("Não foi possível dar baixa agora.");
+      return;
+    }
+    toast.success(r.tipo === "venda" ? "Recebimento anotado." : "Pagamento anotado.");
     carregar();
   }
 
@@ -267,6 +304,13 @@ function FazendaPage() {
   const maiorMes = Math.max(1, ...porMes.map(([, v]) => Math.max(v.gasto, v.venda)));
   const maiorCategoria = Math.max(1, ...resumo.porCategoria.map((c) => c.total));
   const vazioGeral = temQualquerCoisa === false && !carregando;
+  const culturasSugeridas = [
+    ...new Set(
+      [produtor.cultura_principal, ...registros.map((r) => r.cultura)]
+        .filter((c): c is string => !!c)
+        .map((c) => c.toLowerCase()),
+    ),
+  ];
 
   return (
     <div className="flex flex-col gap-5">
@@ -286,6 +330,12 @@ function FazendaPage() {
                 <MessageCircle className="size-4" />
                 Lançar pelo WhatsApp
               </a>
+            </Button>
+            <Button size="sm" variant="outline" asChild>
+              <Link to="/dashboard/relatorio-fazenda" search={{ periodo }}>
+                <FileText className="size-4" />
+                Relatório (PDF)
+              </Link>
             </Button>
             <Button size="sm" onClick={() => setEditando("novo")}>
               <Plus className="size-4" />
@@ -381,6 +431,23 @@ function FazendaPage() {
             <p className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
               Não consegui carregar o caderno agora. Tente de novo em instantes.
             </p>
+          )}
+
+          <PendenciasCard
+            pendentes={pendentes}
+            onBaixa={darBaixa}
+            onEditar={(r) => setEditando(r)}
+            onApagar={(r) => setApagando(r)}
+          />
+
+          <CustoMargemCard
+            produtor={{ id: produtor.id, uf: produtor.uf }}
+            culturasSugeridas={culturasSugeridas}
+            versao={versao}
+          />
+
+          {!carregando && resumo.porTalhao.length > 0 && (
+            <PorTalhaoCard porTalhao={resumo.porTalhao} onFiltrar={(t) => setBusca(t)} />
           )}
 
           {!carregando && (resumo.porCategoria.length > 0 || porMes.length > 1) && (
@@ -542,6 +609,7 @@ function FazendaPage() {
         aberto={editando !== null}
         registro={editando === "novo" ? null : editando}
         produtorId={produtor.id}
+        produtorWhatsapp={produtor.whatsapp}
         culturaPadrao={produtor.cultura_principal ?? ""}
         onFechar={() => setEditando(null)}
         onSalvo={() => {
@@ -694,6 +762,7 @@ function FormularioRegistro({
   aberto,
   registro,
   produtorId,
+  produtorWhatsapp,
   culturaPadrao,
   onFechar,
   onSalvo,
@@ -701,6 +770,7 @@ function FormularioRegistro({
   aberto: boolean;
   registro: RegistroFazenda | null;
   produtorId: string;
+  produtorWhatsapp: string;
   culturaPadrao: string;
   onFechar: () => void;
   onSalvo: () => void;
@@ -716,6 +786,9 @@ function FormularioRegistro({
   const [unidade, setUnidade] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [aviso, setAviso] = useState("");
+  const [pendente, setPendente] = useState(false);
+  const [venceEm, setVenceEm] = useState("");
+  const { session } = useAuth();
 
   useEffect(() => {
     if (!aberto) return;
@@ -732,6 +805,8 @@ function FormularioRegistro({
         registro.quantidade === null ? "" : String(registro.quantidade).replace(".", ","),
       );
       setUnidade(registro.unidade ?? "");
+      setPendente(registro.situacao === "pendente");
+      setVenceEm(registro.vence_em ?? "");
     } else {
       setTipo("gasto");
       setData(hojeBrasilia());
@@ -742,10 +817,13 @@ function FormularioRegistro({
       setTalhao("");
       setQuantidade("");
       setUnidade("");
+      setPendente(false);
+      setVenceEm("");
     }
   }, [aberto, registro, culturaPadrao]);
 
   const temValor = tipo === "gasto" || tipo === "venda";
+  const podePendente = temValor;
   const temQuantidade = tipo === "venda" || tipo === "plantio" || tipo === "colheita";
 
   async function salvar(e: React.FormEvent) {
@@ -767,13 +845,21 @@ function FormularioRegistro({
       setAviso("Diga do que se trata, por exemplo: adubo, diesel, diária.");
       return;
     }
-    if (data > somarDias(hojeBrasilia(), 1)) {
+    const ehPendente = pendente && podePendente;
+    if (ehPendente) {
+      if (!venceEm || venceEm < hojeBrasilia()) {
+        setAviso("Informe a data de vencimento (de hoje em diante).");
+        return;
+      }
+    } else if (data > somarDias(hojeBrasilia(), 1)) {
       setAviso("A data não pode ser no futuro.");
       return;
     }
     const linha = {
       tipo,
-      ocorrido_em: data,
+      ocorrido_em: ehPendente ? (registro?.ocorrido_em ?? hojeBrasilia()) : data,
+      situacao: ehPendente ? "pendente" : "realizado",
+      vence_em: ehPendente ? venceEm : null,
       valor: total,
       descricao: desc.slice(0, 200),
       categoria: tipo === "gasto" ? categoria || categoriaDeTexto(desc) : null,
@@ -785,11 +871,41 @@ function FormularioRegistro({
         tipo === "venda" && total && qtd ? Math.round((total / qtd) * 100) / 100 : null,
     };
     setSalvando(true);
-    const { error } = registro
-      ? await supabase.from("fazenda_registros").update(linha).eq("id", registro.id)
+    // o lembrete do vencimento acompanha o lançamento: sai o antigo e entra o novo
+    if (registro?.lembrete_id) await cancelarLembrete(supabase, registro.lembrete_id);
+    const resposta = registro
+      ? await supabase
+          .from("fazenda_registros")
+          .update({ ...linha, lembrete_id: null })
+          .eq("id", registro.id)
+          .select("id")
+          .single()
       : await supabase
           .from("fazenda_registros")
-          .insert({ ...linha, produtor_id: produtorId, origem: "painel" });
+          .insert({ ...linha, produtor_id: produtorId, origem: "painel" })
+          .select("id")
+          .single();
+    const error = resposta.error;
+    if (!error && ehPendente && session) {
+      const lembreteId = await criarLembreteDoVencimento(
+        supabase,
+        { id: produtorId, whatsapp: produtorWhatsapp },
+        session.user.id,
+        {
+          tipo: linha.tipo,
+          valor: linha.valor,
+          descricao: linha.descricao,
+          cultura: linha.cultura,
+          vence_em: venceEm,
+        },
+      );
+      if (lembreteId) {
+        await supabase
+          .from("fazenda_registros")
+          .update({ lembrete_id: lembreteId })
+          .eq("id", (resposta.data as { id: string }).id);
+      }
+    }
     setSalvando(false);
     if (error) {
       setAviso("Não foi possível salvar agora. Tente de novo em instantes.");
@@ -831,6 +947,27 @@ function FormularioRegistro({
               );
             })}
           </div>
+
+          {podePendente && (
+            <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-sm">
+              <input
+                type="checkbox"
+                className="mt-0.5 size-4 accent-[var(--color-primary)]"
+                checked={pendente}
+                onChange={(e) => setPendente(e.target.checked)}
+                data-testid="fz-pendente"
+              />
+              <span>
+                <span className="font-medium">
+                  {tipo === "venda" ? "Ainda não recebi (a receber)" : "Ainda não paguei (a pagar)"}
+                </span>
+                <span className="block text-xs text-muted-foreground">
+                  Eu te lembro no dia do vencimento e o valor só entra nas contas quando você der
+                  baixa.
+                </span>
+              </span>
+            </label>
+          )}
 
           {temValor && (
             <div className="space-y-1.5">
@@ -940,17 +1077,31 @@ function FormularioRegistro({
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="fz-data">Data</Label>
-            <Input
-              id="fz-data"
-              type="date"
-              value={data}
-              max={somarDias(hojeBrasilia(), 1)}
-              onChange={(e) => setData(e.target.value)}
-              required
-            />
-          </div>
+          {pendente && podePendente ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="fz-vence">Vence em</Label>
+              <Input
+                id="fz-vence"
+                type="date"
+                value={venceEm}
+                min={hojeBrasilia()}
+                onChange={(e) => setVenceEm(e.target.value)}
+                required
+              />
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <Label htmlFor="fz-data">Data</Label>
+              <Input
+                id="fz-data"
+                type="date"
+                value={data}
+                max={somarDias(hojeBrasilia(), 1)}
+                onChange={(e) => setData(e.target.value)}
+                required
+              />
+            </div>
+          )}
 
           {aviso && (
             <p role="alert" className="text-sm text-destructive">

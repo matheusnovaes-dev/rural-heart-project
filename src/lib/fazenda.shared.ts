@@ -1,3 +1,5 @@
+import { normalizarCultura } from "@/config/culturas";
+
 /**
  * Caderno da fazenda: tipos, categorias, leitura de números escritos à mão e contas do resumo.
  * Fica fora do bot e do painel porque os dois usam exatamente as mesmas regras (o que é gasto,
@@ -15,6 +17,9 @@ export const ROTULO_TIPO: Record<TipoRegistro, string> = {
   nota: "Anotação",
 };
 
+/** realizado = já aconteceu; pendente = a pagar ou a receber (tem vencimento); rascunho = nota lida da foto, esperando o "sim". */
+export type Situacao = "realizado" | "pendente" | "rascunho";
+
 export type RegistroFazenda = {
   id: string;
   tipo: TipoRegistro;
@@ -30,7 +35,17 @@ export type RegistroFazenda = {
   preco_unitario: number | null;
   origem: "whatsapp" | "painel";
   criado_em: string;
+  situacao: Situacao;
+  /** AAAA-MM-DD, só em pendente */
+  vence_em: string | null;
+  lembrete_id: string | null;
+  /** dia em que foi pago ou recebido */
+  realizado_em: string | null;
 };
+
+/** Colunas lidas do banco (a mesma lista no bot e no painel). */
+export const COLUNAS_REGISTRO =
+  "id, tipo, ocorrido_em, valor, descricao, categoria, cultura, talhao, quantidade, unidade, preco_unitario, origem, criado_em, situacao, vence_em, lembrete_id, realizado_em";
 
 /** Categorias de gasto (a lista que o painel oferece e que o bot escolhe sozinho pelo texto). */
 export const CATEGORIAS_GASTO = [
@@ -209,6 +224,8 @@ export function intervaloDoPeriodo(
 }
 
 export function formatarReais(n: number): string {
+  // negativo com o sinal na frente do R$ ("−R$ 187.000"), não "R$ -187.000"
+  if (n < -0.004) return `−${formatarReais(-n)}`;
   const inteiro = Math.abs(n - Math.round(n)) < 0.005;
   return `R$ ${n.toLocaleString("pt-BR", {
     minimumFractionDigits: inteiro ? 0 : 2,
@@ -242,16 +259,46 @@ export type ResumoCaderno = {
   }[];
   plantios: RegistroFazenda[];
   colheitas: RegistroFazenda[];
+  /** sacas (ou outra unidade) colhidas por cultura, somando os lançamentos de colheita */
+  colhidoPorCultura: { cultura: string; quantidade: number; unidade: string | null }[];
+  porTalhao: {
+    chave: string;
+    talhao: string;
+    gasto: number;
+    nGastos: number;
+    culturas: string[];
+  }[];
   nNotas: number;
   /** mais recentes primeiro */
   ultimos: RegistroFazenda[];
 };
 
+const ehRealizado = (r: RegistroFazenda) => (r.situacao ?? "realizado") === "realizado";
+
+/** "Talhão 3", "talhao 3" e "TALHÃO  3" são o mesmo talhão. */
+export function talhaoChave(t: string): string {
+  return t
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[º°.]/g, "")
+    .replace(/\bn\s*(\d)/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 const porRecencia = (a: RegistroFazenda, b: RegistroFazenda) =>
   b.ocorrido_em.localeCompare(a.ocorrido_em) || b.criado_em.localeCompare(a.criado_em);
 
-export function resumir(registros: RegistroFazenda[]): ResumoCaderno {
+export function resumir(registrosBrutos: RegistroFazenda[]): ResumoCaderno {
+  // pendente (a pagar, a receber) e rascunho (nota esperando o "sim") não entram em nenhuma conta
+  const registros = registrosBrutos.filter(ehRealizado);
   const ordenados = [...registros].sort(porRecencia);
+  const tal = new Map<
+    string,
+    { talhao: string; gasto: number; nGastos: number; culturas: Set<string> }
+  >();
+  const colhido = new Map<string, { quantidade: number; unidade: string | null }>();
   let gastos = 0;
   let vendas = 0;
   let nGastos = 0;
@@ -262,6 +309,25 @@ export function resumir(registros: RegistroFazenda[]): ResumoCaderno {
     { gasto: number; venda: number; qtd: number; valorComQtd: number; unidade: string | null }
   >();
   for (const r of ordenados) {
+    if (r.tipo === "gasto" && r.valor !== null && r.talhao) {
+      const k = talhaoChave(r.talhao);
+      const t = tal.get(k) ?? {
+        talhao: r.talhao,
+        gasto: 0,
+        nGastos: 0,
+        culturas: new Set<string>(),
+      };
+      t.gasto += r.valor;
+      t.nGastos++;
+      if (r.cultura) t.culturas.add(r.cultura);
+      tal.set(k, t);
+    }
+    if (r.tipo === "colheita" && r.quantidade && r.cultura) {
+      const k = r.cultura.toLowerCase();
+      const c = colhido.get(k) ?? { quantidade: 0, unidade: r.unidade };
+      c.quantidade += r.quantidade;
+      colhido.set(k, c);
+    }
     const chave = r.cultura ?? "Geral";
     const c = cult.get(chave) ?? { gasto: 0, venda: 0, qtd: 0, valorComQtd: 0, unidade: null };
     if (r.tipo === "gasto" && r.valor !== null) {
@@ -307,6 +373,16 @@ export function resumir(registros: RegistroFazenda[]): ResumoCaderno {
       .sort((a, b) => b.gasto + b.venda - (a.gasto + a.venda)),
     plantios: ordenados.filter((r) => r.tipo === "plantio"),
     colheitas: ordenados.filter((r) => r.tipo === "colheita"),
+    colhidoPorCultura: [...colhido.entries()].map(([cultura, v]) => ({ cultura, ...v })),
+    porTalhao: [...tal.entries()]
+      .map(([chave, v]) => ({
+        chave,
+        talhao: v.talhao,
+        gasto: v.gasto,
+        nGastos: v.nGastos,
+        culturas: [...v.culturas],
+      }))
+      .sort((a, b) => b.gasto - a.gasto),
     nNotas: ordenados.filter((r) => r.tipo === "nota").length,
     ultimos: ordenados.slice(0, 5),
   };
@@ -334,4 +410,179 @@ export function descreverRegistro(r: RegistroFazenda): string {
     default:
       return `${dataCurta(r.ocorrido_em)}  ${r.descricao}`;
   }
+}
+
+// ---------------------------------------------------------------------------------------------
+// A pagar e a receber
+// ---------------------------------------------------------------------------------------------
+
+export type Pendencia = {
+  registro: RegistroFazenda;
+  tipo: "a_pagar" | "a_receber";
+  vencimento: string;
+  /** dias até vencer (negativo = vencido) */
+  dias: number;
+};
+
+export function diasEntre(deIso: string, ateIso: string): number {
+  return Math.round(
+    (Date.parse(`${ateIso}T12:00:00Z`) - Date.parse(`${deIso}T12:00:00Z`)) / 86_400_000,
+  );
+}
+
+export type ResumoPendencias = {
+  aPagar: Pendencia[];
+  aReceber: Pendencia[];
+  totalAPagar: number;
+  totalAReceber: number;
+  vencidas: number;
+};
+
+/** Lançamentos pendentes separados em a pagar (gasto) e a receber (venda), mais próximos primeiro. */
+export function resumirPendencias(
+  registros: RegistroFazenda[],
+  hoje: string = hojeBrasilia(),
+): ResumoPendencias {
+  const todas: Pendencia[] = registros
+    .filter(
+      (r) =>
+        r.situacao === "pendente" && r.valor !== null && (r.tipo === "gasto" || r.tipo === "venda"),
+    )
+    .map((r) => {
+      const vencimento = r.vence_em ?? r.ocorrido_em;
+      return {
+        registro: r,
+        tipo: r.tipo === "gasto" ? ("a_pagar" as const) : ("a_receber" as const),
+        vencimento,
+        dias: diasEntre(hoje, vencimento),
+      };
+    })
+    .sort((a, b) => a.vencimento.localeCompare(b.vencimento));
+  const aPagar = todas.filter((p) => p.tipo === "a_pagar");
+  const aReceber = todas.filter((p) => p.tipo === "a_receber");
+  const soma = (l: Pendencia[]) => l.reduce((s, p) => s + (p.registro.valor ?? 0), 0);
+  return {
+    aPagar,
+    aReceber,
+    totalAPagar: soma(aPagar),
+    totalAReceber: soma(aReceber),
+    vencidas: todas.filter((p) => p.dias < 0).length,
+  };
+}
+
+export function fraseDeVencimento(dias: number, vencimento: string): string {
+  if (dias < 0)
+    return `venceu há ${-dias} ${-dias === 1 ? "dia" : "dias"} (${dataCurta(vencimento)})`;
+  if (dias === 0) return "vence hoje";
+  if (dias === 1) return "vence amanhã";
+  return `vence em ${dias} dias (${dataCurta(vencimento)})`;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Custo por saca e margem
+// ---------------------------------------------------------------------------------------------
+
+/** Peso da saca usado para converter produtividade da Conab (kg por hectare) em sacas por hectare. */
+export function kgPorSaca(cultura: string): number {
+  const c = cultura
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  return /arroz/.test(c) ? 50 : 60;
+}
+
+export type EntradaCusto = {
+  /** gastos lançados dessa cultura (e os sem cultura que couberem a ela) no período */
+  gastos: number;
+  area_ha: number;
+  /** sacas por hectare que o produtor informou */
+  produtividade_sc_ha: number | null;
+  /** sacas por hectare da média do estado (Conab), quando ele não informou */
+  produtividadeConab: number | null;
+  /** sacas já colhidas e lançadas */
+  sacasColhidas: number | null;
+  precoHoje: number | null;
+};
+
+export type ResultadoCusto = {
+  gastos: number;
+  custoPorHa: number;
+  sacas: number | null;
+  sacasOrigem: "colhido" | "informada" | "conab" | null;
+  custoPorSaca: number | null;
+  margemPorSaca: number | null;
+  margemPct: number | null;
+  /** margem por saca vezes as sacas da base (estimativa do resultado da safra) */
+  resultadoEstimado: number | null;
+};
+
+const arred = (n: number) => Math.round(n * 100) / 100;
+
+export function calcularCustoEMargem(e: EntradaCusto): ResultadoCusto {
+  const custoPorHa = e.area_ha > 0 ? e.gastos / e.area_ha : 0;
+  let sacas: number | null = null;
+  let sacasOrigem: ResultadoCusto["sacasOrigem"] = null;
+  if (e.sacasColhidas && e.sacasColhidas > 0) {
+    sacas = e.sacasColhidas;
+    sacasOrigem = "colhido";
+  } else if (e.produtividade_sc_ha && e.produtividade_sc_ha > 0) {
+    sacas = e.area_ha * e.produtividade_sc_ha;
+    sacasOrigem = "informada";
+  } else if (e.produtividadeConab && e.produtividadeConab > 0) {
+    sacas = e.area_ha * e.produtividadeConab;
+    sacasOrigem = "conab";
+  }
+  const custoPorSaca = sacas && sacas > 0 && e.gastos > 0 ? e.gastos / sacas : null;
+  const margemPorSaca =
+    custoPorSaca !== null && e.precoHoje !== null ? e.precoHoje - custoPorSaca : null;
+  const margemPct =
+    margemPorSaca !== null && e.precoHoje && e.precoHoje > 0
+      ? (margemPorSaca / e.precoHoje) * 100
+      : null;
+  return {
+    gastos: arred(e.gastos),
+    custoPorHa: arred(custoPorHa),
+    sacas: sacas === null ? null : Math.round(sacas),
+    sacasOrigem,
+    custoPorSaca: custoPorSaca === null ? null : arred(custoPorSaca),
+    margemPorSaca: margemPorSaca === null ? null : arred(margemPorSaca),
+    margemPct: margemPct === null ? null : Math.round(margemPct * 10) / 10,
+    resultadoEstimado:
+      margemPorSaca !== null && sacas !== null ? Math.round(margemPorSaca * sacas) : null,
+  };
+}
+
+/** Mesma cultura, ignorando acento, caixa e apelidos ("carne bovina" é boi). */
+export function mesmaCultura(a: string | null | undefined, b: string | null | undefined): boolean {
+  if (!a || !b) return false;
+  const n = (x: string) =>
+    normalizarCultura(x)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+  return n(a) === n(b);
+}
+
+/**
+ * Gastos que contam para o custo de uma cultura: os lançados com a cultura e, quando ela é a única com área
+ * cadastrada, também os lançados sem cultura (que de outro jeito ficariam sem dono). O mesmo cálculo no bot e no painel.
+ */
+export function somarGastosDaCultura(
+  registros: RegistroFazenda[],
+  cultura: string,
+  totalDeCulturasComArea: number,
+): { daCultura: number; semCulturaIncluidos: number; semCulturaFora: number } {
+  const gastos = registros.filter(
+    (r) => r.tipo === "gasto" && r.valor !== null && (r.situacao ?? "realizado") === "realizado",
+  );
+  const daCultura = gastos
+    .filter((r) => mesmaCultura(r.cultura, cultura))
+    .reduce((t, r) => t + (r.valor ?? 0), 0);
+  const semCultura = gastos.filter((r) => !r.cultura).reduce((t, r) => t + (r.valor ?? 0), 0);
+  const incluir = totalDeCulturasComArea === 1;
+  return {
+    daCultura,
+    semCulturaIncluidos: incluir ? semCultura : 0,
+    semCulturaFora: incluir ? 0 : semCultura,
+  };
 }

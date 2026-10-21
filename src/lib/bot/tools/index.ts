@@ -733,7 +733,7 @@ export const TOOLS = [
     function: {
       name: "registrar_na_fazenda",
       description:
-        "Lança no CADERNO DA FAZENDA do produtor (o que ele anota por aqui e vê no painel): um gasto, uma venda, um plantio, uma colheita ou uma anotação. Chame quando o produtor DISSE que gastou, pagou, comprou, vendeu, plantou ou colheu algo (ex: 'gastei 12 mil de adubo no talhão 3', 'vendi 500 sacas a 135', 'plantei soja dia 20', 'colhi 3.000 sacas'). NÃO chame para pergunta de preço, simulação ('e se eu vendesse a 140?'), plano futuro ('vou comprar adubo') nem quando ele só está contando algo sem querer anotar. Preencha SÓ o que ele disse: valor em reais como NÚMERO TOTAL (12 mil = 12000; 'vendi 500 sacas a 135' = valor 67500, quantidade 500, preco_unitario 135). Se faltar o valor de um gasto ou venda, NÃO chame: pergunte quanto foi. A data é a de HOJE a não ser que ele diga outra ('ontem', 'dia 15', 'semana passada'), e nesse caso calcule a data AAAA-MM-DD a partir da data de hoje que está no contexto. A resposta traz 'confirmacao': mande EXATAMENTE esse texto (pode acrescentar uma frase curta de acompanhamento, nunca troque os números). Se a chamada falhar (sucesso=false), NUNCA diga que anotou: explique o motivo em uma frase e peça o que falta (motivo sem_cadastro = quem ainda não tem cadastro não tem caderno, convide a criar o cadastro grátis; motivo faltou_valor = pergunte o valor; numero_nao_confere ou conta_nao_fecha = confirme o número com ele; data_invalida = pergunte a data).",
+        "Lança no CADERNO DA FAZENDA do produtor (o que ele anota por aqui e vê no painel): um gasto, uma venda, um plantio, uma colheita ou uma anotação. Chame quando o produtor DISSE que gastou, pagou, comprou, vendeu, plantou ou colheu algo (ex: 'gastei 12 mil de adubo no talhão 3', 'vendi 500 sacas a 135', 'plantei soja dia 20', 'colhi 3.000 sacas'), OU quando falou de dinheiro a pagar ou a receber com data (ex: 'vendi 500 sacas a 135 e recebo dia 30', 'tenho que pagar 5 mil de arrendamento dia 10'): nesses casos preencha vence_em (AAAA-MM-DD) e, se ele não disse a data, NÃO chame: pergunte 'Pra quando vence?'. NÃO chame para pergunta de preço, simulação ('e se eu vendesse a 140?'), plano futuro sem valor a pagar/receber ('vou comprar adubo') nem quando ele só está contando algo sem querer anotar. Preencha SÓ o que ele disse: valor em reais como NÚMERO TOTAL (12 mil = 12000; 'vendi 500 sacas a 135' = valor 67500, quantidade 500, preco_unitario 135). Se faltar o valor de um gasto ou venda, NÃO chame: pergunte quanto foi. A data é a de HOJE a não ser que ele diga outra ('ontem', 'dia 15', 'semana passada'), e nesse caso calcule a data AAAA-MM-DD a partir da data de hoje que está no contexto. A resposta traz 'confirmacao': mande EXATAMENTE esse texto (pode acrescentar uma frase curta de acompanhamento, nunca troque os números). Se a chamada falhar (sucesso=false), NUNCA diga que anotou: explique o motivo em uma frase e peça o que falta (motivo sem_cadastro = quem ainda não tem cadastro não tem caderno, convide a criar o cadastro grátis; motivo faltou_valor = pergunte o valor; faltou_vencimento = pergunte 'Pra quando vence?'; vencimento_invalido, numero_nao_confere ou conta_nao_fecha = confirme o número ou a data com ele; data_invalida = pergunte a data).",
       parameters: {
         type: "object",
         properties: {
@@ -779,6 +779,11 @@ export const TOOLS = [
             type: ["string", "null"],
             description: "AAAA-MM-DD, só se ele disse uma data diferente de hoje. null = hoje.",
           },
+          vence_em: {
+            type: ["string", "null"],
+            description:
+              "AAAA-MM-DD do vencimento, SÓ para dinheiro a pagar ou a receber mais tarde. null nos demais.",
+          },
         },
         required: ["tipo"],
         additionalProperties: false,
@@ -806,6 +811,10 @@ export const TOOLS = [
               "SEMPRE passe quando ele nomear o tipo de gasto (adubo, diesel, mão de obra...).",
           },
           cultura: { type: ["string", "null"] },
+          talhao: {
+            type: ["string", "null"],
+            description: "Só quando ele pedir um talhão ou área específica (ex: talhão 3).",
+          },
         },
         additionalProperties: false,
       },
@@ -1082,6 +1091,8 @@ async function executarToolSemLog(
         produtor: ctx.produtor,
         texto: ctx.texto,
         historico: ctx.historico,
+        telefone: ctx.telefone,
+        estudo: ctx.estudoSalvo ?? null,
       });
     case "resumo_da_fazenda":
       return resumoDaFazenda(

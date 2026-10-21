@@ -30,13 +30,13 @@ export const funcionalidades: Funcionalidade[] = [
     id: "caderno_fazenda",
     titulo: "Caderno da fazenda",
     descricao:
-      'Anote o que acontece na fazenda só escrevendo ou mandando áudio: gasto ("gastei 12 mil de adubo no talhão 3"), venda ("vendi 500 sacas a 135"), plantio e colheita. O resumo mostra gastos por categoria, vendas, resultado do mês, o que vem pela frente e compara sua venda com o preço de hoje. Tudo aparece também na tela Fazenda do painel, onde dá para lançar, editar e baixar em planilha. Dá para desfazer o último lançamento.',
+      'Anote o que acontece na fazenda só escrevendo ou mandando áudio: gasto ("gastei 12 mil de adubo no talhão 3"), venda ("vendi 500 sacas a 135"), plantio e colheita. Mande a foto de uma nota, recibo ou boleto que ele lê e anota depois do seu "sim". Anote o que vai pagar ou receber ("vendi e recebo dia 30") e ele te lembra no dia; quando acontecer, diga "recebi" ou "paguei". Diga "custo por saca" e ele calcula sua margem com o preço de hoje (depois de você informar a área). Fechou uma proposta do estudo? Diga "fechei com o comprador B" e a venda entra no caderno. O resumo mostra gastos por categoria e por talhão, vendas, o que vence e o resultado. Tudo aparece na tela Fazenda do painel, com relatório em PDF e planilha. Dá para desfazer o último lançamento.',
     comoPedir: "Gastei 3 mil de diesel hoje, ou: resumo da fazenda",
     onde: "WhatsApp e painel",
     novidadeDesde: "2026-10-21",
     destaque: 0,
     fraseDeUso:
-      'Para lançar, é só escrever, por exemplo: "gastei 12 mil de adubo no talhão 3" ou "vendi 500 sacas de soja a 135". Para ver tudo, mande: "resumo da fazenda".',
+      'Para lançar, é só escrever, por exemplo: "gastei 12 mil de adubo no talhão 3" ou "vendi 500 sacas de soja a 135 e recebo dia 30". Também dá pra mandar a foto da nota. Para ver tudo, mande: "resumo da fazenda"; para a margem, "custo por saca".',
   },
   {
     id: "resumo_diario",
