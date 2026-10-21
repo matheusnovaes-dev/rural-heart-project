@@ -152,7 +152,73 @@ export function numerosDoTexto(texto: string): number[] {
     if (m[3] && mult > 1) n += m[3] === "meio" ? mult / 2 : Number(m[3]);
     achados.add(Math.round(n * 100) / 100);
   }
+  // Número por extenso: quem manda áudio recebe a transcrição do Whisper, que às vezes escreve "doze mil" em vez de 12 mil
+  for (const n of numerosPorExtenso(t)) achados.add(n);
   return [...achados];
+}
+
+const EXT_UNIDADES: Record<string, number> = {
+  zero: 0, um: 1, uma: 1, dois: 2, duas: 2, tres: 3, quatro: 4, cinco: 5, seis: 6, sete: 7, oito: 8, nove: 9,
+  dez: 10, onze: 11, doze: 12, treze: 13, catorze: 14, quatorze: 14, quinze: 15, dezesseis: 16, dezessete: 17,
+  dezoito: 18, dezenove: 19, vinte: 20, trinta: 30, quarenta: 40, cinquenta: 50, sessenta: 60, setenta: 70,
+  oitenta: 80, noventa: 90, cem: 100, cento: 100, duzentos: 200, duzentas: 200, trezentos: 300, trezentas: 300,
+  quatrocentos: 400, quatrocentas: 400, quinhentos: 500, quinhentas: 500, seiscentos: 600, seiscentas: 600,
+  setecentos: 700, setecentas: 700, oitocentos: 800, oitocentas: 800, novecentos: 900, novecentas: 900,
+};
+
+/** "doze mil e quinhentos" -> 12500, "cento e trinta e cinco" -> 135, "um milhao e oitocentos mil" -> 1800000. Texto já sem acento. */
+function numerosPorExtenso(t: string): number[] {
+  // dígitos viram "#": "12 mil" já é lido pela regra numérica, o "mil" solto depois de um dígito não pode virar 1000
+  const palavras = t.replace(/\d[\d.,]*/g, " # ").split(/[^a-z#]+/).filter(Boolean);
+  const saida: number[] = [];
+  let i = 0;
+  const ehNum = (w: string | undefined) =>
+    w !== undefined && (w in EXT_UNIDADES || w === "mil" || w === "milhao" || w === "milhoes");
+  while (i < palavras.length) {
+    const ant = palavras[i - 1];
+    const w0 = palavras[i];
+    if (!ehNum(w0) || (ant === "#" && (w0 === "mil" || w0 === "milhao" || w0 === "milhoes")) || (ant === "por" && w0 === "cento")) {
+      i++;
+      continue;
+    }
+    let total = 0;
+    let atual = 0;
+    let ultimoMult = 0;
+    let usadas = 0;
+    let soArtigo = true;
+    while (i < palavras.length) {
+      const w = palavras[i]!;
+      if (w === "e" && usadas > 0 && (ehNum(palavras[i + 1]) || (ultimoMult && palavras[i + 1] === "meio"))) {
+        i++;
+        continue;
+      }
+      if (w === "meio" && ultimoMult) {
+        total += ultimoMult / 2;
+        ultimoMult = 0;
+        usadas++;
+        i++;
+        continue;
+      }
+      if (!ehNum(w)) break;
+      if (w in EXT_UNIDADES) {
+        atual += EXT_UNIDADES[w]!;
+        if (w !== "um" && w !== "uma") soArtigo = false;
+        ultimoMult = 0;
+      } else {
+        const mult = w === "mil" ? 1000 : 1_000_000;
+        total += (atual || 1) * mult;
+        atual = 0;
+        ultimoMult = mult;
+        soArtigo = false;
+      }
+      usadas++;
+      i++;
+    }
+    const n = total + atual;
+    // "um"/"uma" sozinho quase sempre é artigo ("um gasto"), não valor
+    if (!soArtigo && n > 0) saida.push(Math.round(n * 100) / 100);
+  }
+  return saida;
 }
 
 export function valorConfere(valor: number, numeros: number[]): boolean {
