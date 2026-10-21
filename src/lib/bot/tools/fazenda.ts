@@ -23,6 +23,7 @@ import {
   fraseDeVencimento,
   hojeBrasilia,
   numerosDoTexto,
+  extensoParaDigitos,
   resumirPendencias,
   resumir,
   somarDias,
@@ -831,7 +832,7 @@ export async function desfazerUltimoRegistro(
 
 /** O produtor está contando algo que JÁ aconteceu (gastei, vendi, plantei...) ou a pagar/receber, sem ser pergunta nem plano. */
 export function pareceLancamentoNoCaderno(texto: string): boolean {
-  const t = SEM_ACENTO(texto);
+  const t = extensoParaDigitos(texto);
   if (t.includes("?")) return false;
   if (
     /\d/.test(t) &&
@@ -848,7 +849,7 @@ export function pareceLancamentoNoCaderno(texto: string): boolean {
 
 /** "Quanto foi?" respondido só com o número: continua um lançamento começado na mensagem anterior. */
 export function ehContinuacaoDeLancamento(texto: string, historico: HistoricoLinha[]): boolean {
-  const t = SEM_ACENTO(texto)
+  const t = extensoParaDigitos(texto)
     .replace(/[?!.,]/g, " ")
     .trim();
   if (!t || t.split(/\s+/).length > 6 || !/\d/.test(t)) return false;

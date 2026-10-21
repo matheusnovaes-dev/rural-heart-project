@@ -11,6 +11,7 @@ import { culturaMencionada, normalizarCultura } from "@/config/culturas";
 import {
   calcularEstoque,
   dataLonga,
+  extensoParaDigitos,
   formatarQuantidade,
   formatarReais,
   margemPctNoPreco,
@@ -41,7 +42,7 @@ import {
 
 /** "meta de margem 25%", "me avisa quando a margem da soja chegar a 30%", "quero vender com margem de 25%". */
 export function margemAlvoDoTexto(texto: string): number | null {
-  const t = SEM_ACENTO(texto).replace(/\s+/g, " ");
+  const t = extensoParaDigitos(texto).replace(/\s+/g, " ");
   if (!/\bmargem\b/.test(t) && !/\bmeta\b/.test(t)) return null;
   const m = t.match(/(\d{1,2}(?:[.,]\d+)?)\s*(?:%|por ?cento)/);
   if (!m) return null;

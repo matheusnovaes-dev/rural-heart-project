@@ -166,29 +166,38 @@ const EXT_UNIDADES: Record<string, number> = {
   setecentos: 700, setecentas: 700, oitocentos: 800, oitocentas: 800, novecentos: 900, novecentas: 900,
 };
 
+interface TrechoExtenso {
+  ini: number;
+  fim: number;
+  valor: number;
+}
+
 /** "doze mil e quinhentos" -> 12500, "cento e trinta e cinco" -> 135, "um milhao e oitocentos mil" -> 1800000. Texto já sem acento. */
-function numerosPorExtenso(t: string): number[] {
+function trechosPorExtenso(t: string): TrechoExtenso[] {
   // dígitos viram "#": "12 mil" já é lido pela regra numérica, o "mil" solto depois de um dígito não pode virar 1000
-  const palavras = t.replace(/\d[\d.,]*/g, " # ").split(/[^a-z#]+/).filter(Boolean);
-  const saida: number[] = [];
-  let i = 0;
+  const base = t.replace(/\d[\d.,]*/g, (d) => "#".repeat(d.length));
+  const toks = [...base.matchAll(/[a-z#]+/g)].map((m) => ({ w: m[0].startsWith("#") ? "#" : m[0], ini: m.index!, fim: m.index! + m[0].length }));
+  const saida: TrechoExtenso[] = [];
   const ehNum = (w: string | undefined) =>
     w !== undefined && (w in EXT_UNIDADES || w === "mil" || w === "milhao" || w === "milhoes");
-  while (i < palavras.length) {
-    const ant = palavras[i - 1];
-    const w0 = palavras[i];
+  let i = 0;
+  while (i < toks.length) {
+    const ant = toks[i - 1]?.w;
+    const w0 = toks[i]!.w;
     if (!ehNum(w0) || (ant === "#" && (w0 === "mil" || w0 === "milhao" || w0 === "milhoes")) || (ant === "por" && w0 === "cento")) {
       i++;
       continue;
     }
+    const ini = toks[i]!.ini;
+    let fim = toks[i]!.fim;
     let total = 0;
     let atual = 0;
     let ultimoMult = 0;
     let usadas = 0;
     let soArtigo = true;
-    while (i < palavras.length) {
-      const w = palavras[i]!;
-      if (w === "e" && usadas > 0 && (ehNum(palavras[i + 1]) || (ultimoMult && palavras[i + 1] === "meio"))) {
+    while (i < toks.length) {
+      const w = toks[i]!.w;
+      if (w === "e" && usadas > 0 && (ehNum(toks[i + 1]?.w) || (ultimoMult && toks[i + 1]?.w === "meio"))) {
         i++;
         continue;
       }
@@ -196,6 +205,7 @@ function numerosPorExtenso(t: string): number[] {
         total += ultimoMult / 2;
         ultimoMult = 0;
         usadas++;
+        fim = toks[i]!.fim;
         i++;
         continue;
       }
@@ -212,13 +222,29 @@ function numerosPorExtenso(t: string): number[] {
         soArtigo = false;
       }
       usadas++;
+      fim = toks[i]!.fim;
       i++;
     }
     const n = total + atual;
     // "um"/"uma" sozinho quase sempre é artigo ("um gasto"), não valor
-    if (!soArtigo && n > 0) saida.push(Math.round(n * 100) / 100);
+    if (!soArtigo && n > 0) saida.push({ ini, fim, valor: Math.round(n * 100) / 100 });
   }
   return saida;
+}
+
+function numerosPorExtenso(t: string): number[] {
+  return trechosPorExtenso(t).map((x) => x.valor);
+}
+
+/**
+ * Troca número por extenso por dígitos ("dia vinte e cinco" -> "dia 25", "em trinta dias" -> "em 30 dias"), para os leitores de
+ * data e de meta, que olham dígitos. Quem manda áudio recebe a transcrição do Whisper, que às vezes escreve por extenso.
+ * Devolve o texto sem acento e em minúsculas.
+ */
+export function extensoParaDigitos(texto: string): string {
+  let t = SEM_ACENTO(texto);
+  for (const x of trechosPorExtenso(t).reverse()) t = t.slice(0, x.ini) + String(x.valor) + t.slice(x.fim);
+  return t.replace(/\bdia primeiro\b/g, "dia 1");
 }
 
 export function valorConfere(valor: number, numeros: number[]): boolean {

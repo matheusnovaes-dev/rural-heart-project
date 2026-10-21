@@ -7,6 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
   COLUNAS_REGISTRO,
+  extensoParaDigitos,
   hojeBrasilia,
   intervaloDoPeriodo,
   numerosDoTexto,
@@ -194,7 +195,7 @@ const NOMES_DE_MES =
 
 /** Data dita com todas as letras ("ontem", "dia 15", "15/10", "dia 3 de setembro"), em AAAA-MM-DD, no passado. */
 export function dataDoTexto(texto: string, hoje: string): string | null {
-  const t = SEM_ACENTO(texto);
+  const t = extensoParaDigitos(texto);
   if (/\banteontem\b/.test(t)) return somarDias(hoje, -2);
   if (/\bontem\b/.test(t)) return somarDias(hoje, -1);
   if (/\bhoje\b/.test(t)) return hoje;
@@ -226,7 +227,7 @@ export function dataDoTexto(texto: string, hoje: string): string | null {
 
 /** Data de vencimento escrita ("dia 30", "30/11", "em 30 dias", "amanhã", "dia 10 do mês que vem"), no futuro. */
 export function vencimentoDoTexto(texto: string, hoje: string): string | null {
-  const t = SEM_ACENTO(texto);
+  const t = extensoParaDigitos(texto);
   const [ano, mes, dia] = hoje.split("-").map(Number) as [number, number, number];
   const proxMes = (d: number) =>
     mes === 12 ? montaData(ano + 1, 1, d) : montaData(ano, mes + 1, d);
