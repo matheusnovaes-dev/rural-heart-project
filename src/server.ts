@@ -48,7 +48,7 @@ function isH3SwallowedErrorBody(body: string): boolean {
 // 28KB, só chegava depois dos ~340KB de JS. Marcados como prioridade baixa, a foto vai primeiro e os scripts chegam logo
 // em seguida (a página já está desenhada: o JS só serve para a hidratação). Streaming com HTMLRewriter (Cloudflare e Bun);
 // se não existir ou falhar, a resposta segue intocada.
-const APLICAR_PRIORIDADE_BAIXA = false;
+const APLICAR_PRIORIDADE_BAIXA = true;
 
 function baixarPrioridadeDosScripts(request: Request, response: Response): Response {
   try {
@@ -76,8 +76,9 @@ export default {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       const normalizada = await normalizeCatastrophicSsrResponse(response);
-      // EXPERIMENTO 2026-10-21: a prioridade baixa dos scripts (foto do hero primeiro) está DESLIGADA enquanto medimos se a
-      // conversão da landing (leads por visualização de página: 33% até 16/10, 17% de 17 a 20/10) volta sem ela.
+      // 2026-10-21: testado em Moto G4 emulado (CPU 4x, 1,6 Mbps): com prioridade baixa o primeiro conteúdo aparece em ~2,2 s
+      // contra 2,5 a 3,0 s sem ela, e o campo hidrata no mesmo tempo. Por isso voltou; o experimento de conversão segue só
+      // com o formulário sem carregamento sob demanda (LeadFormCarregavel).
       return APLICAR_PRIORIDADE_BAIXA
         ? baixarPrioridadeDosScripts(request, normalizada)
         : normalizada;

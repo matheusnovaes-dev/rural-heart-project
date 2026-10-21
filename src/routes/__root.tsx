@@ -9,7 +9,7 @@ import {
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, useState, type ReactNode } from "react";
 import { MotionConfig } from "framer-motion";
 
 import appCss from "../styles.css?url";
@@ -18,8 +18,39 @@ import plexSansUrl from "../assets/fontes/plexsans-latin.woff2?url";
 
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "../lib/auth";
-import { Toaster } from "../components/ui/sonner";
 import { CookieConsent } from "../components/CookieConsent";
+
+// O sonner (~32 KB) ficava no pacote inicial de toda página, mas a landing não mostra aviso nenhum. Carrega separado:
+// na área logada logo após a hidratação (os avisos de salvar/erro aparecem depois de uma ação), e na landing só
+// quando o navegador estiver ocioso.
+const ToasterSobDemanda = lazy(() =>
+  import("../components/ui/sonner").then((m) => ({ default: m.Toaster })),
+);
+function ToasterTardio() {
+  const [ligado, setLigado] = useState(false);
+  useEffect(() => {
+    if (window.location.pathname !== "/") {
+      setLigado(true);
+      return;
+    }
+    const ocioso = (
+      window as unknown as {
+        requestIdleCallback?: (f: () => void, o?: { timeout: number }) => number;
+      }
+    ).requestIdleCallback;
+    const id = ocioso
+      ? ocioso(() => setLigado(true), { timeout: 4000 })
+      : window.setTimeout(() => setLigado(true), 3000);
+    return () => {
+      if (!ocioso) window.clearTimeout(id);
+    };
+  }, []);
+  return ligado ? (
+    <Suspense fallback={null}>
+      <ToasterSobDemanda />
+    </Suspense>
+  ) : null;
+}
 import { pricingPlans } from "../config/site";
 import { capturarOrigem } from "../lib/origem";
 import { BOTAO_PRINCIPAL, PaginaDeAviso } from "../components/PaginaDeAviso";
@@ -312,7 +343,7 @@ function RootComponent() {
         <AuthProvider>
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
-          <Toaster />
+          <ToasterTardio />
           <CookieConsent />
         </AuthProvider>
       </QueryClientProvider>
