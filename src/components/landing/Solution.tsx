@@ -136,7 +136,7 @@ function PhoneMockup() {
             transition={{ delay: 0.05, duration: 0.35 }}
             className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-[#d9fdd3] px-3 py-2 text-sm text-[#111b21]"
           >
-            📷 Foto da proposta da Cargill
+            📷 Foto da proposta do comprador
           </motion.div>
 
           <motion.div
@@ -147,7 +147,7 @@ function PhoneMockup() {
             className="mr-auto max-w-[88%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-sm text-[#111b21] shadow-sm"
           >
             <p>
-              📄 Estudo da proposta: Cargill paga <strong>R$ 126,00/saca</strong> em 30 dias (R$
+              📄 Estudo da proposta: o comprador paga <strong>R$ 126,00/saca</strong> em 30 dias (R$
               124,75 à vista).
             </p>
             <p className="mt-1">

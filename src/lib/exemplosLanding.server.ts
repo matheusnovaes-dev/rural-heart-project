@@ -23,7 +23,7 @@ export const exemplosDoDiaLanding = createServerFn({ method: "GET" }).handler(
 
     const supabase = supabaseServiceRole();
 
-    const [dolar, futuroSoja, serieSoja, plantio] = await Promise.all([
+    const [dolar, futuroSoja, serieSoja, comparativoSoja, plantio] = await Promise.all([
       (async (): Promise<ExemplosDoDia["dolar"]> => {
         const { data } = await supabase
           .from("cambio")
@@ -86,6 +86,53 @@ export const exemplosDoDiaLanding = createServerFn({ method: "GET" }).handler(
         return pontos.length >= 10 ? { praca: "Sorriso e Lucas do Rio Verde (MT)", pontos } : null;
       })().catch(() => null),
 
+      // Último preço e variação semanal de 3 praças de soja (BBM). Só valores agregados por praça.
+      (async (): Promise<ExemplosDoDia["comparativoSoja"]> => {
+        const PRACAS = [
+          {
+            uf: "MT",
+            regiao: "Sorriso / Lucas do Rio Verde",
+            rotulo: "Sorriso e Lucas do Rio Verde",
+          },
+          { uf: "GO", regiao: "Rio Verde", rotulo: "Rio Verde" },
+          { uf: "PR", regiao: "Cascavel", rotulo: "Cascavel" },
+        ];
+        const desde = new Date();
+        desde.setDate(desde.getDate() - 14);
+        const { data } = await supabase
+          .from("precos")
+          .select("uf, regiao, data_referencia, preco")
+          .eq("produto", "SOJA EM GRÃOS (60 kg)")
+          .in(
+            "regiao",
+            PRACAS.map((p) => p.regiao),
+          )
+          .gte("data_referencia", desde.toISOString().slice(0, 10))
+          .order("data_referencia", { ascending: true })
+          .returns<{ uf: string; regiao: string; data_referencia: string; preco: number }[]>();
+        const saida: NonNullable<ExemplosDoDia["comparativoSoja"]> = [];
+        for (const p of PRACAS) {
+          const linhas = (data ?? []).filter((l) => l.uf === p.uf && l.regiao === p.regiao);
+          const ultima = linhas.at(-1);
+          if (!ultima) return null;
+          // contra o último dia com pelo menos 5 dias de distância, ou nada se a série for curta
+          const corte = new Date(`${ultima.data_referencia}T12:00:00Z`).getTime() - 5 * 86_400_000;
+          const base = [...linhas]
+            .reverse()
+            .find((l) => new Date(`${l.data_referencia}T12:00:00Z`).getTime() <= corte);
+          saida.push({
+            uf: p.uf,
+            praca: p.rotulo,
+            preco: Number(ultima.preco),
+            data: ultima.data_referencia,
+            variacaoSemana: base
+              ? ((Number(ultima.preco) - Number(base.preco)) / Number(base.preco)) * 100
+              : null,
+          });
+        }
+        return saida;
+      })().catch(() => null),
+
       (async (): Promise<ExemplosDoDia["plantio"]> => {
         const r = await consultarJanelaPlantio(supabase, {
           produto: "soja",
@@ -104,10 +151,11 @@ export const exemplosDoDiaLanding = createServerFn({ method: "GET" }).handler(
       })().catch(() => null),
     ]);
 
-    const dados: ExemplosDoDia = { dolar, futuroSoja, serieSoja, plantio };
+    const dados: ExemplosDoDia = { dolar, futuroSoja, serieSoja, comparativoSoja, plantio };
     // Se as três fontes falharem juntas (ex: banco fora do ar), não congela o
     // vazio por 30 minutos: a próxima visita tenta de novo.
-    if (dolar || futuroSoja || serieSoja || plantio) cache = { em: Date.now(), dados };
+    if (dolar || futuroSoja || serieSoja || comparativoSoja || plantio)
+      cache = { em: Date.now(), dados };
     return dados;
   },
 );

@@ -188,6 +188,7 @@ export function DashboardPreview() {
   const [autoplay, setAutoplay] = useState(true);
   const retomarTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const precosReais = usePrecosReaisSoja(perto);
+  const exemplosDoDia = useExemplosDoDia();
 
   // Cursor fantasma: mede a posição real do botão ativo (getBoundingClientRect,
   // não um cálculo de índice × altura fixa, que quebraria se o texto quebrasse
@@ -423,8 +424,8 @@ export function DashboardPreview() {
             </div>
             <p className="mt-3 text-center text-xs text-muted-foreground">
               Prévia ilustrativa do painel
-              {precosReais
-                ? ", preço da soja é o real de hoje, o resto é exemplo"
+              {precosReais || exemplosDoDia?.comparativoSoja
+                ? ", os preços da soja e o gráfico são reais (BBM), o resto é exemplo"
                 : ", dados de exemplo"}
               . Recurso com selo{" "}
               <span className="rounded-full bg-gold px-1.5 py-0.5 font-semibold text-gold-foreground">
@@ -473,12 +474,31 @@ function PreviewPrecos({
 }: {
   precosReais: { GO: number; MT: number; PR: number } | null;
 }) {
-  const serieSoja = useExemplosDoDia()?.serieSoja ?? null;
-  const ufs = [
-    { uf: "MT", preco: precosReais?.MT ?? 129.8, variacao: 3.4, cor: "var(--chart-2)" },
-    { uf: "PR", preco: precosReais?.PR ?? 130.8, variacao: -1.2, cor: "var(--chart-3)" },
+  const exemplos = useExemplosDoDia();
+  const serieSoja = exemplos?.serieSoja ?? null;
+  // Preço REAL (BBM) das três praças, quando o servidor devolveu; senão os números ilustrativos de sempre.
+  const [principal, segunda, terceira] = exemplos?.comparativoSoja ?? [];
+  const real = !!(principal && segunda && terceira);
+  const ufs: { uf: string; preco: number; variacao: number | null; cor: string }[] = [
+    {
+      uf: segunda?.uf ?? "MT",
+      preco: segunda?.preco ?? precosReais?.MT ?? 129.8,
+      variacao: real ? (segunda?.variacaoSemana ?? null) : 3.4,
+      cor: "var(--chart-2)",
+    },
+    {
+      uf: terceira?.uf ?? "PR",
+      preco: terceira?.preco ?? precosReais?.PR ?? 130.8,
+      variacao: real ? (terceira?.variacaoSemana ?? null) : -1.2,
+      cor: "var(--chart-3)",
+    },
   ];
-  const sparklineDados = [118, 120, 119, 122, 124, 123, 126, 125, 127, 127];
+  const sparklineDados =
+    serieSoja && serieSoja.pontos.length >= 10
+      ? serieSoja.pontos.slice(-24).map((p) => p.preco)
+      : [118, 120, 119, 122, 124, 123, 126, 125, 127, 127];
+  const precoHoje = principal?.preco ?? precosReais?.GO ?? 127;
+  const variacaoHoje = real ? (principal?.variacaoSemana ?? null) : 0.8;
   return (
     <div className="flex flex-col gap-3">
       {/* cartão principal — o mesmo "Seu preço hoje" que abre o painel de
@@ -499,14 +519,24 @@ function PreviewPrecos({
                 <span className="mr-0.5 align-top text-sm font-sans font-semibold opacity-70">
                   R$
                 </span>
-                <AnimatedNumber value={precosReais?.GO ?? 127} />
+                <AnimatedNumber value={precoHoje} />
               </p>
-              <span className="mb-1 inline-flex items-center gap-0.5 rounded-full bg-primary-foreground/15 px-1.5 py-0.5 text-[10px] font-semibold">
-                <ArrowUp className="size-2.5" />
-                0.8%
-              </span>
+              {variacaoHoje != null && (
+                <span className="mb-1 inline-flex items-center gap-0.5 rounded-full bg-primary-foreground/15 px-1.5 py-0.5 text-[10px] font-semibold">
+                  {variacaoHoje >= 0 ? (
+                    <ArrowUp className="size-2.5" />
+                  ) : (
+                    <ArrowDown className="size-2.5" />
+                  )}
+                  {Math.abs(variacaoHoje).toFixed(1).replace(".", ",")}%
+                </span>
+              )}
             </div>
-            <p className="mt-1 text-xs opacity-80">Soja · GO · preço na sua região</p>
+            <p className="mt-1 text-xs opacity-80">
+              {real
+                ? `Soja · ${principal.praca} (${principal.uf})`
+                : "Soja · GO · preço na sua região"}
+            </p>
           </div>
           <div className="w-24">
             <Sparkline data={sparklineDados} color="currentColor" className="h-9 w-full" />
@@ -527,21 +557,23 @@ function PreviewPrecos({
                 <span className="mr-0.5 align-top text-xs font-sans text-muted-foreground">R$</span>
                 <AnimatedNumber value={item.preco} />
               </p>
-              <span
-                className={cn(
-                  "mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
-                  item.variacao > 0
-                    ? "bg-primary/10 text-primary"
-                    : "bg-destructive/10 text-red-800",
-                )}
-              >
-                {item.variacao > 0 ? (
-                  <ArrowUp className="size-2.5" />
-                ) : (
-                  <ArrowDown className="size-2.5" />
-                )}
-                {Math.abs(item.variacao)}% sem.
-              </span>
+              {item.variacao != null && (
+                <span
+                  className={cn(
+                    "mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+                    item.variacao >= 0
+                      ? "bg-primary/10 text-primary"
+                      : "bg-destructive/10 text-red-800",
+                  )}
+                >
+                  {item.variacao >= 0 ? (
+                    <ArrowUp className="size-2.5" />
+                  ) : (
+                    <ArrowDown className="size-2.5" />
+                  )}
+                  {Math.abs(item.variacao).toFixed(1).replace(".", ",")}% sem.
+                </span>
+              )}
             </CardContent>
           </Card>
         ))}
