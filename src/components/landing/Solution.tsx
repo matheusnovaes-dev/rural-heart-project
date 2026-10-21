@@ -14,7 +14,7 @@ export function Solution() {
         <Reveal>
           {/* A antiga seção "O problema não é falta de dado" (3 cards) repetia
               o que o H1 do hero já diz: virou o título desta, que mostra a
-              solução logo em seguida. Menos uma tela inteira no celular. */}
+              solução logo em seguida. Menos uma tela inteira no celular (toque). */}
           <TituloDuasVozes
             antes="O problema não é falta de dado. É não saber"
             serifa="A HORA CERTA."
