@@ -95,21 +95,28 @@ const TOKENS_SIM = new Set(
   (
     "sim ss s simm simmm isso mesmo pode ser criar quero eu vou claro que ok okay bora vamos vamo com certeza confirmo " +
     "uhum aham positivo certo exato senhor sr beleza blz fechado demorou manda mandar vai la fazer favor por gostaria " +
-    "tambem testar cadastrar cadastro me comecar tudo bem ta ata sim pode"
+    "tambem testar cadastrar cadastro me comecar tudo bem ta ata sim pode certinho show top perfeito combinado dale yes yep okei okey fechou topo bom"
   ).split(" "),
 );
 const TOKENS_SIM_FORTES = new Set(
-  "sim ss s simm simmm isso pode quero claro ok okay bora vamos vamo confirmo uhum aham positivo certo exato beleza blz fechado demorou manda".split(
-    " ",
-  ),
+  (
+    "sim ss s simm simmm isso pode quero claro ok okay bora vamos vamo confirmo uhum aham positivo certo exato beleza blz fechado demorou manda " +
+    // Variações reais de "sim" no WhatsApp (achado 2026-10-21: "Okk" ficou sem resposta certa).
+    "certinho show top perfeito combinado dale yes yep okei okey fechou topo"
+  ).split(" "),
 );
 
 /** "Sim", "Ss", "Pode criar", "Quero sim", "Sim eu", "Eu vou sim", 👍. */
 export function ehAfirmacao(texto: string): boolean {
-  if (/^[\s👍✅🙏👌]+$/u.test(texto) && /[👍✅🙏👌]/u.test(texto)) return true;
+  // Emoji de positivo, com ou sem tom de pele (👍🏻).
+  if (/^[\s👍✅🙏👌\u{1F3FB}-\u{1F3FF}]+$/u.test(texto) && /[👍✅🙏👌]/u.test(texto)) return true;
   const tokens = norm(texto).split(" ").filter(Boolean);
   if (tokens.length === 0 || tokens.length > 5) return false;
-  return tokens.every((t) => TOKENS_SIM.has(t)) && tokens.some((t) => TOKENS_SIM_FORTES.has(t));
+  // Letra esticada ("okkk", "simmmm", "certooo") vale como a palavra normal.
+  const base = (t: string) => (TOKENS_SIM.has(t) ? t : t.replace(/(.)\1+/g, "$1"));
+  const forte = (t: string) => TOKENS_SIM_FORTES.has(t) || TOKENS_SIM_FORTES.has(base(t));
+  const geral = (t: string) => TOKENS_SIM.has(t) || TOKENS_SIM.has(base(t));
+  return tokens.every(geral) && tokens.some(forte);
 }
 
 export function ehNegacao(texto: string): boolean {
@@ -311,6 +318,15 @@ export function decidirCadastro(params: {
       }
       if (ehNegacao(texto)) {
         return { tipo: "responder", resposta: PEDIR_CORRECAO, precisa_humano: false };
+      }
+      // Não é sim, não é "não" e não traz nada novo: pede de novo, em vez de deixar o modelo inventar uma resposta
+      // (achado 2026-10-21: "Okk" fez o bot dizer "houve um erro ao criar seu cadastro", que nunca aconteceu).
+      if (base.cultura && base.uf) {
+        return {
+          tipo: "responder",
+          resposta: `Não entendi bem 😅 Pra eu criar seu cadastro grátis de 7 dias como produtor de ${base.cultura} em ${nomeDoEstado(base.uf)}, responda *sim*. Se algo estiver errado, é só me dizer o certo.`,
+          precisa_humano: false,
+        };
       }
       return null;
     }
