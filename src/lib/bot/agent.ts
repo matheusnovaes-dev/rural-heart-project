@@ -2335,19 +2335,29 @@ async function runAgentBase(input: {
             (r) => nomePorId.get(r.tool_call_id) === "registrar_na_fazenda",
           );
           if (doCaderno.length > 0) {
-            const lidos = doCaderno.map((r) => {
+            const lidosTodos = doCaderno.map((r) => {
               try {
-                return JSON.parse(r.content) as { sucesso?: boolean; confirmacao?: string };
+                return JSON.parse(r.content) as {
+                  sucesso?: boolean;
+                  confirmacao?: string;
+                  ignorar?: boolean;
+                };
               } catch {
-                return {} as { sucesso?: boolean; confirmacao?: string };
+                return {} as { sucesso?: boolean; confirmacao?: string; ignorar?: boolean };
               }
             });
+            // chamadas que o código descartou em silêncio (valor repetido de mensagem anterior) não contam nem são confirmadas
+            const lidos = lidosTodos.filter((o) => o.ignorar !== true);
+            const descartadas = lidosTodos.length - lidos.length;
             const gravados = lidos.filter(
               (o) => o.sucesso === true && typeof o.confirmacao === "string",
             );
             if (
-              gravados.length === doCaderno.length &&
-              (doCaderno.length === resultados.length || ehLancamentoDoCaderno)
+              lidos.length > 0 &&
+              gravados.length === lidos.length &&
+              (doCaderno.length === resultados.length ||
+                lidos.length === resultados.length - descartadas ||
+                ehLancamentoDoCaderno)
             ) {
               return {
                 resposta: [...new Set(gravados.map((o) => o.confirmacao))].join("\n"),
@@ -2356,7 +2366,7 @@ async function runAgentBase(input: {
                 convite_dispensado: true,
               };
             }
-            if (gravados.length > 0 && gravados.length < doCaderno.length) {
+            if (gravados.length > 0 && gravados.length < lidos.length) {
               messages.push({
                 role: "system",
                 content:

@@ -11,6 +11,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { culturaMencionada, normalizarCultura } from "@/config/culturas";
 import {
   calcularCustoEMargem,
+  extensoParaDigitos,
   formatarQuantidade,
   formatarReais,
   intervaloDoPeriodo,
@@ -376,9 +377,9 @@ export async function tratarRespostaDeArea(
   const m = anterior.match(/Quantos hectares de ([^\s?]+(?: [^\s?]+)?) você planta/);
   const cultura = m ? (culturaMencionada(m[1]!) ?? normalizarCultura(m[1]!)) : null;
   if (!cultura) return null;
-  const { area_ha, produtividade } = areaEProdutividadeDoTexto(texto);
-  // resposta só com o número ("500") vale como hectares
-  const solto = SEM_ACENTO(texto)
+  const { area_ha, produtividade } = areaEProdutividadeDoTexto(extensoParaDigitos(texto));
+  // resposta só com o número ("500", "quinhentos") vale como hectares
+  const solto = extensoParaDigitos(texto)
     .trim()
     .match(/^(\d[\d.,]*)$/);
   const area = area_ha ?? (solto ? numeroDe(solto[1]!) : null);

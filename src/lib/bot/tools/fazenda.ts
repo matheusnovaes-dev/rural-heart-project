@@ -99,8 +99,11 @@ export type ResultadoRegistro =
         | "numero_nao_confere"
         | "conta_nao_fecha"
         | "data_invalida"
-        | "erro_ao_gravar";
+        | "erro_ao_gravar"
+        | "repetiu_valor_anterior";
       detalhe?: string;
+      /** chamada descartada em silêncio (o modelo repetiu um valor já lançado); o agente não a conta nem a confirma */
+      ignorar?: boolean;
     };
 
 /** "vou receber/pagar" é pendência (vale lançar); o resto de "vou/quero/preciso" é plano. */
@@ -396,6 +399,27 @@ export async function registrarNaFazenda(
     unidadePadrao(args.unidade ?? null) ??
     (quantidade !== null ? unidadeDoTexto(ctx.texto) : null) ??
     (tipo === "estoque" ? "sacas" : null);
+
+  // Lançamento fantasma: a mensagem de agora traz outros números, mas o modelo manda gravar de novo um valor que só aparece
+  // numa mensagem anterior e que já está no caderno (ao dizer "pagar 5 mil de arrendamento dia 10" apareceu também
+  // "pagar 2.500 de adubo", copiado do gasto lançado antes). Descarta a chamada sem avisar o produtor.
+  if ((tipo === "gasto" || tipo === "venda") && valor !== null && !ctx.estudo) {
+    const atuais = numerosDoTexto(ctx.texto);
+    const naMensagem = (n: number | null) => n !== null && valorConfere(n, atuais);
+    if (atuais.length > 0 && !naMensagem(valor) && !naMensagem(quantidade) && !naMensagem(precoUnitario)) {
+      const dezMinutos = new Date(Date.now() - 10 * 60_000).toISOString();
+      const { data: jaLancado } = await supabase
+        .from("fazenda_registros")
+        .select("id")
+        .eq("produtor_id", produtor.id)
+        .eq("tipo", tipo)
+        .eq("valor", valor)
+        .is("apagado_em", null)
+        .gte("criado_em", dezMinutos)
+        .limit(1);
+      if ((jaLancado ?? []).length > 0) return { sucesso: false, motivo: "repetiu_valor_anterior", ignorar: true };
+    }
+  }
 
   // Mensagem repetida em segundos (o WhatsApp reenvia, o produtor toca duas vezes): não lança em dobro.
   const tresMinutos = new Date(Date.now() - 3 * 60_000).toISOString();
