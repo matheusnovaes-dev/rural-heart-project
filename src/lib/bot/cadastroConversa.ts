@@ -62,6 +62,32 @@ function perguntaCafe(tentativa = 0): string {
   return `Seu café é arábica ou conillon? ${MARC_MENU}:\n1 Arábica\n2 Conillon`;
 }
 
+/**
+ * Estados mais comuns de cada cultura, na ordem do menu numerado da re-pergunta de estado. Achado real de
+ * 2026-10-21: uma produtora de café escreveu "Mamosso" e depois "Gongais" (provavelmente "Minas Gerais"), o bot
+ * pediu a sigla de novo e já chamou a equipe. Com os estados mais prováveis em números, quem escreve errado
+ * responde "1" em vez de empacar.
+ */
+export function ufsMaisComuns(cultura: string | null): string[] {
+  const c = norm(cultura ?? "");
+  if (c.startsWith("cafe"))
+    return c.includes("conil") ? ["ES", "RO", "BA", "MT", "MG"] : ["MG", "SP", "ES", "BA", "PR"];
+  if (c === "soja") return ["MT", "PR", "RS", "GO", "MS"];
+  if (c === "milho") return ["MT", "PR", "GO", "MS", "RS"];
+  if (c === "boi" || c.startsWith("bezerr") || c.startsWith("garrote") || c.startsWith("novilha"))
+    return ["MT", "GO", "MS", "MG", "SP"];
+  if (c.startsWith("leite")) return ["MG", "RS", "PR", "GO", "SC"];
+  return ["MG", "SP", "GO", "MT", "PR"];
+}
+
+function menuDeUfs(cultura: string | null): string {
+  const lista = ufsMaisComuns(cultura);
+  return [
+    ...lista.map((u, i) => `${i + 1} ${nomeDoEstado(u)} (${u})`),
+    `${lista.length + 1} Outro estado`,
+  ].join("\n");
+}
+
 function perguntaUf(cultura: string | null, tentativa: number): string {
   // O reconhecimento no começo ("Soja, certo!") é também como o código lembra a cultura escolhida
   // no menu numérico: a resposta "3" não diz "boi" em lugar nenhum do histórico.
@@ -69,8 +95,10 @@ function perguntaUf(cultura: string | null, tentativa: number): string {
   if (tentativa <= 0) {
     return `${ack}${MARC_UF}? Pode escrever a sigla ou o nome do estado (ex: MG ou Goiás).`;
   }
-  return `${ack}Só falta o estado. ${MARC_UF}? Escreva a sigla, tipo MG, GO ou MT.`;
+  return `${ack}Só falta o estado. ${MARC_UF}? ${MARC_MENU}:\n${menuDeUfs(cultura)}`;
 }
+
+const SO_NUMERO = /^\s*(\d)\s*[.)]?\s*$/;
 
 const maiuscula = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -281,7 +309,8 @@ export function decidirCadastro(params: {
   const menuAtivo = !!ultimaBot && ultimaBot.includes(MARC_MENU);
 
   // Leitura da mensagem atual.
-  let lida = culturaDoTexto(texto, menuAtivo && passo !== "cafe");
+  // No menu de estados o número NÃO escolhe cultura ("1" = primeiro estado da lista).
+  let lida = culturaDoTexto(texto, menuAtivo && passo !== "cafe" && passo !== "uf");
   const ufAtual = ufDoTexto(texto);
   if (passo === "cafe") {
     const tipo = tipoDeCafe(texto);
@@ -347,6 +376,20 @@ export function decidirCadastro(params: {
     if (!cultura && !cafeSemTipo && passo === "uf" && ultimaBot) {
       const ack = ultimaBot.match(/^(.+?), certo!/);
       if (ack) cultura = culturaDoTexto(ack[1]!, false).cultura;
+    }
+    // Número escolhido no menu de estados ("1" = primeiro estado da lista dessa cultura).
+    if (!uf && passo === "uf" && menuAtivo && cultura) {
+      const n = Number(texto.match(SO_NUMERO)?.[1] ?? 0);
+      const lista = ufsMaisComuns(cultura);
+      if (n >= 1 && n <= lista.length) uf = lista[n - 1]!;
+      else if (n === lista.length + 1) {
+        // "Outro estado": pede a sigla, ainda como re-pergunta (a próxima falha chama a equipe).
+        return {
+          tipo: "responder",
+          resposta: `${maiuscula(cultura)}, certo! Só falta o estado. ${MARC_UF}? Escreva a sigla, por exemplo PB, BA ou SC.`,
+          precisa_humano: false,
+        };
+      }
     }
     for (const fala of falasDesc) {
       if (fala === texto) continue;
