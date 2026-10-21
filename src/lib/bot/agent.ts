@@ -37,7 +37,12 @@ import {
   RESPOSTA_SAIDA_DE_MENSAGENS,
 } from "@/lib/recuperacaoCadastro";
 import { resolverNome } from "@/lib/nomes";
-import { decidirCadastro, PERGUNTA_CULTURA } from "@/lib/bot/cadastroConversa";
+import {
+  decidirCadastro,
+  estadoComErroDeDigitacao,
+  PERGUNTA_CULTURA,
+  respostaEstadoComErro,
+} from "@/lib/bot/cadastroConversa";
 import {
   escolherSugestoes,
   notaDeSugestoes,
@@ -1516,6 +1521,20 @@ async function runAgentBase(input: {
         precisa_humano: false,
         cadastro_criado: false,
         convite_dispensado: false,
+      };
+    }
+  }
+
+  // Estado escrito errado ("como ta gogoias?") por cliente cadastrado: o bot explica que não reconheceu e pergunta
+  // "você quis dizer?" em vez de assumir cultura e estado (achado de 2026-10-21; ver cadastroConversa.ts).
+  if (produtor.id) {
+    const erroDeEstado = estadoComErroDeDigitacao(texto);
+    if (erroDeEstado) {
+      return {
+        resposta: respostaEstadoComErro(texto, erroDeEstado.escrito, erroDeEstado.sugeridas),
+        precisa_humano: false,
+        cadastro_criado: false,
+        convite_dispensado: true,
       };
     }
   }

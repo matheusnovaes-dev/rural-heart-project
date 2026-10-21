@@ -89,6 +89,7 @@ function menuDeUfs(cultura: string | null): string {
 }
 
 function distanciaDeEdicao(a: string, b: string): number {
+  // Damerau-Levenshtein: trocar duas letras vizinhas ("goais" por "goias") conta como 1 erro de digitação.
   const d: number[][] = Array.from({ length: a.length + 1 }, (_, i) => [
     i,
     ...Array(b.length).fill(0),
@@ -101,6 +102,9 @@ function distanciaDeEdicao(a: string, b: string): number {
         d[i]![j - 1]! + 1,
         d[i - 1]![j - 1]! + (a[i - 1] === b[j - 1] ? 0 : 1),
       );
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        d[i]![j] = Math.min(d[i]![j]!, d[i - 2]![j - 2]! + 1);
+      }
     }
   }
   return d[a.length]![b.length]!;
@@ -507,4 +511,65 @@ export function decidirCadastro(params: {
     };
   }
   return { tipo: "responder", resposta: perguntaCultura(tentativas), precisa_humano: false };
+}
+
+/**
+ * Erro de digitação no estado numa pergunta de cliente cadastrado ("como ta gogoias?"). Achado real de 2026-10-21: o
+ * bot não reconheceu "gogoias", assumiu o feijão da conversa anterior e respondeu "Ainda não temos preço de feijão em
+ * Goiás" sem avisar que tinha adivinhado. Aqui só entra quando é bem provável que seja um estado escrito errado: mensagem
+ * curta, nenhuma cultura nem estado reconhecidos, e uma palavra de 5+ letras a 1 ou 2 letras de distância do nome de um
+ * estado (nunca a palavra exata, para não confundir "norte" ou "grande" com um erro). O bot só PERGUNTA, nunca adivinha.
+ */
+export function estadoComErroDeDigitacao(
+  texto: string,
+): { escrito: string; sugeridas: string[] } | null {
+  const palavras = norm(texto).split(" ").filter(Boolean);
+  if (palavras.length === 0 || palavras.length > 6) return null;
+  if (ufDoTexto(texto)) return null;
+  if (culturaDoTexto(texto, false).cultura) return null;
+  // Só quando a mensagem parece uma pergunta sobre um lugar (preço, tempo, "em/no/na"); evita pegar nomes de pessoa
+  // ("Werick Santos da Cruz" lembra "Espírito Santo").
+  if (
+    !/\b(como (ta|esta)|quanto|preco|cotacao|valor|previsao|tempo|clima|chuva|em|no|na)\b/.test(
+      norm(texto),
+    )
+  )
+    return null;
+  const nomes: { uf: string; alvo: string }[] = [];
+  for (const u of ufs) {
+    const n = norm(u.label);
+    nomes.push({ uf: u.value as string, alvo: n });
+    for (const t of n.split(" ")) if (t.length >= 5) nomes.push({ uf: u.value as string, alvo: t });
+  }
+  nomes.push({ uf: "MG", alvo: "minas" });
+  const exatas = new Set(nomes.map((n) => n.alvo));
+  for (const p of palavras) {
+    if (p.length < 5 || exatas.has(p)) continue;
+    const achadas = new Map<string, number>();
+    for (const { uf, alvo } of nomes) {
+      const d = distanciaDeEdicao(p, alvo);
+      if (d >= 1 && d <= 2 && d / Math.max(p.length, alvo.length) <= 0.3) {
+        achadas.set(uf, Math.min(achadas.get(uf) ?? 99, d));
+      }
+    }
+    if (achadas.size) {
+      const sugeridas = [...achadas.entries()]
+        .sort((a, b) => a[1] - b[1])
+        .slice(0, 2)
+        .map(([uf]) => uf);
+      return { escrito: p, sugeridas };
+    }
+  }
+  return null;
+}
+
+export function respostaEstadoComErro(texto: string, escrito: string, sugeridas: string[]): string {
+  // Mostra a palavra como a pessoa escreveu (com a mesma grafia), não a versão normalizada.
+  const original =
+    texto
+      .split(/\s+/)
+      .map((t) => t.replace(/[^\p{L}]/gu, ""))
+      .find((t) => norm(t) === escrito) ?? escrito;
+  const quis = sugeridas.map((u) => `${nomeDoEstado(u)} (${u})`).join(" ou ");
+  return `Não reconheci “${original}” como um estado. Você quis dizer ${quis}? Me diga o estado e a cultura (por exemplo: feijão em ${nomeDoEstado(sugeridas[0]!)}) que eu busco o preço.`;
 }
