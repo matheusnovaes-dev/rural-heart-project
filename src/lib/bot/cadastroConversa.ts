@@ -88,14 +88,77 @@ function menuDeUfs(cultura: string | null): string {
   ].join("\n");
 }
 
-function perguntaUf(cultura: string | null, tentativa: number): string {
+function distanciaDeEdicao(a: string, b: string): number {
+  const d: number[][] = Array.from({ length: a.length + 1 }, (_, i) => [
+    i,
+    ...Array(b.length).fill(0),
+  ]);
+  for (let j = 1; j <= b.length; j++) d[0]![j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      d[i]![j] = Math.min(
+        d[i - 1]![j]! + 1,
+        d[i]![j - 1]! + 1,
+        d[i - 1]![j - 1]! + (a[i - 1] === b[j - 1] ? 0 : 1),
+      );
+    }
+  }
+  return d[a.length]![b.length]!;
+}
+
+/**
+ * Até 2 estados com nome parecido com o que a pessoa escreveu ("Gongais" lembra Minas Gerais e Goiás), só para o
+ * bot PERGUNTAR "você quis dizer?". Nunca escolhe sozinho. Compara cada palavra digitada com o nome inteiro e com as
+ * palavras do nome do estado; só vale distância pequena em relação ao tamanho.
+ */
+export function ufsParecidas(texto: string): string[] {
+  const palavras = norm(texto)
+    .split(" ")
+    .filter((t) => t.length >= 4);
+  if (palavras.length === 0) return [];
+  const pontos = new Map<string, number>();
+  const nomes = ufs.map((u) => ({ uf: u.value as string, nome: norm(u.label) }));
+  nomes.push({ uf: "MG", nome: "minas" });
+  for (const { uf, nome } of nomes) {
+    const alvos = [nome, ...nome.split(" ").filter((t) => t.length >= 4)];
+    for (const p of palavras) {
+      for (const a of alvos) {
+        const d = distanciaDeEdicao(p, a);
+        if (d / Math.max(p.length, a.length) <= 0.45 && d <= 3) {
+          pontos.set(uf, Math.min(pontos.get(uf) ?? 99, d));
+        }
+      }
+    }
+  }
+  return [...pontos.entries()]
+    .sort((a, b) => a[1] - b[1])
+    .slice(0, 2)
+    .map(([uf]) => uf);
+}
+
+/** O que a pessoa escreveu, repetido na explicação ("Não reconheci “X”"): só mensagens curtas e sem aspas. */
+function ecoCurto(texto: string): string | null {
+  const t = texto.replace(/["“”]/g, "").replace(/\s+/g, " ").trim();
+  return t.length >= 2 && t.length <= 30 ? t : null;
+}
+
+function perguntaUf(cultura: string | null, tentativa: number, recusado?: string): string {
   // O reconhecimento no começo ("Soja, certo!") é também como o código lembra a cultura escolhida
   // no menu numérico: a resposta "3" não diz "boi" em lugar nenhum do histórico.
   const ack = cultura ? `${maiuscula(cultura)}, certo! ` : "";
   if (tentativa <= 0) {
     return `${ack}${MARC_UF}? Pode escrever a sigla ou o nome do estado (ex: MG ou Goiás).`;
   }
-  return `${ack}Só falta o estado. ${MARC_UF}? ${MARC_MENU}:\n${menuDeUfs(cultura)}`;
+  const eco = recusado ? ecoCurto(recusado) : null;
+  const sugeridas = recusado ? ufsParecidas(recusado) : [];
+  const explicacao = eco
+    ? `Não reconheci “${eco}” como um estado${
+        sugeridas.length
+          ? `. Você quis dizer ${sugeridas.map((u) => `${nomeDoEstado(u)} (${u})`).join(" ou ")}? Se for, responda a sigla. `
+          : ". "
+      }`
+    : "";
+  return `${ack}${explicacao}Só falta o estado. ${MARC_UF}? ${MARC_MENU}:\n${menuDeUfs(cultura)}`;
 }
 
 const SO_NUMERO = /^\s*(\d)\s*[.)]?\s*$/;
@@ -430,7 +493,11 @@ export function decidirCadastro(params: {
   if (alvo === "cafe")
     return { tipo: "responder", resposta: perguntaCafe(tentativas), precisa_humano: false };
   if (alvo === "uf") {
-    return { tipo: "responder", resposta: perguntaUf(cultura, tentativas), precisa_humano: false };
+    return {
+      tipo: "responder",
+      resposta: perguntaUf(cultura, tentativas, trouxeAlgo ? undefined : texto),
+      precisa_humano: false,
+    };
   }
   if (lida.outro) {
     return {
