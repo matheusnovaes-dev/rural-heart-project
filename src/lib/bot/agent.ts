@@ -2230,6 +2230,9 @@ async function runAgentBase(input: {
           tool_calls: mensagem.tool_calls,
         });
 
+        // O modelo às vezes manda a MESMA chamada duas vezes no mesmo lote (visto ao vivo: "tenho que pagar 5 mil de
+        // arrendamento" gravou duas vezes). Chamadas idênticas do mesmo lote rodam uma só vez e dividem o resultado.
+        const emAndamento = new Map<string, Promise<unknown>>();
         const resultados = await Promise.all(
           (mensagem.tool_calls as ToolCall[]).map(async (tc) => {
             let args: Record<string, unknown> = {};
@@ -2238,7 +2241,13 @@ async function runAgentBase(input: {
             } catch {
               args = {};
             }
-            const resultado = await executarTool(tc.function.name, args, ctx);
+            const chave = `${tc.function.name}|${JSON.stringify(args)}`;
+            let execucao = emAndamento.get(chave);
+            if (!execucao) {
+              execucao = executarTool(tc.function.name, args, ctx);
+              emAndamento.set(chave, execucao);
+            }
+            const resultado = await execucao;
             if (
               tc.function.name === "criar_conta_teste" &&
               (resultado as { sucesso?: boolean })?.sucesso === true
@@ -2303,7 +2312,7 @@ async function runAgentBase(input: {
               (doCaderno.length === resultados.length || ehLancamentoDoCaderno)
             ) {
               return {
-                resposta: gravados.map((o) => o.confirmacao).join("\n"),
+                resposta: [...new Set(gravados.map((o) => o.confirmacao))].join("\n"),
                 precisa_humano: false,
                 cadastro_criado: cadastroCriado,
                 convite_dispensado: true,

@@ -32,6 +32,7 @@ import {
   type RegistroFazenda,
   type TipoRegistro,
 } from "@/lib/fazenda.shared";
+import { culturaMencionada } from "@/config/culturas";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
 import type { ProdutorContexto } from "@/lib/bot/types";
 import {
@@ -121,6 +122,32 @@ export function ehRespostaDeVencimento(texto: string, historico: HistoricoLinha[
   return t.split(" ").length <= 8 && vencimentoDoTexto(texto, hojeBrasilia()) !== null;
 }
 
+/**
+ * Se a conversa fala de dinheiro a RECEBER ou a PAGAR, devolve o tipo certo (venda ou gasto). A resposta "dia 25" a "Pra
+ * quando vence?" não repete o verbo, e o modelo já trocou "vou receber" por "a pagar" (visto ao vivo).
+ */
+export function direcaoDaPendencia(
+  texto: string,
+  historico: HistoricoLinha[],
+): "venda" | "gasto" | null {
+  const mensagens = [
+    texto,
+    ...[...historico]
+      .filter((h) => h.role === "user")
+      .sort((a, b) => b.ordem - a.ordem)
+      .slice(0, 3)
+      .map((h) => h.conteudo),
+  ];
+  for (const m of mensagens) {
+    const t = SEM_ACENTO(m);
+    const recebe = /\b(receb\w*|a receber)\b/.test(t);
+    const paga = /\b(pag\w*|a pagar|devo|dever)\b/.test(t);
+    if (recebe && !paga) return "venda";
+    if (paga && !recebe) return "gasto";
+  }
+  return null;
+}
+
 export async function registrarNaFazenda(
   supabase: SupabaseClient,
   args: ArgsRegistro,
@@ -137,9 +164,17 @@ export async function registrarNaFazenda(
   if (!TIPOS_REGISTRO.includes(args.tipo as TipoRegistro)) {
     return { sucesso: false, motivo: "tipo_invalido" };
   }
-  const tipo = args.tipo as TipoRegistro;
+  let tipo = args.tipo as TipoRegistro;
   const hoje = hojeBrasilia();
   const tNorm = SEM_ACENTO(ctx.texto);
+  // a pagar ou a receber: o tipo vem do verbo escrito (receber = venda, pagar = gasto), não da escolha do modelo
+  if (
+    (tipo === "gasto" || tipo === "venda") &&
+    (indicaPendencia(ctx.texto) || ehRespostaDeVencimento(ctx.texto, ctx.historico))
+  ) {
+    const dir = direcaoDaPendencia(ctx.texto, ctx.historico);
+    if (dir) tipo = dir;
+  }
 
   // "vou receber 10 mil do milho" lançado como anotação: é a receber (venda) ou a pagar (gasto), com vencimento.
   if (
@@ -286,6 +321,15 @@ export async function registrarNaFazenda(
   }
 
   let cultura = textoOuNull(args.cultura, 40);
+  if (!cultura && tipo === "venda") {
+    const mencionada = [
+      ctx.texto,
+      ...ctx.historico.filter((h) => h.role === "user").map((h) => h.conteudo),
+    ]
+      .map((m) => culturaMencionada(m))
+      .find((c) => !!c);
+    if (mencionada) cultura = mencionada;
+  }
   // "plantei milho": o modelo às vezes põe o milho só na descrição
   if (!cultura && (tipo === "plantio" || tipo === "colheita")) {
     const d = textoOuNull(args.descricao, 40);
