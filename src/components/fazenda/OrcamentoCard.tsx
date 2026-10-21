@@ -125,12 +125,13 @@ export function OrcamentoCard({
         ) : (
           <ul className="space-y-3">
             {situacao.map((s) => {
-              const cor = s.pct > 100 ? "bg-red-500" : s.pct >= 80 ? "bg-amber-500" : "bg-emerald-500";
+              const cor =
+                s.pct > 100 ? "bg-red-500" : s.pct >= 80 ? "bg-amber-500" : "bg-emerald-500";
               return (
                 <li key={s.categoria} data-testid={`orcamento-${slug(s.categoria)}`}>
-                  <div className="flex items-baseline justify-between gap-2 text-sm">
+                  <div className="flex flex-col gap-0.5 text-sm sm:flex-row sm:items-baseline sm:justify-between sm:gap-2">
                     <span className="font-medium">{s.categoria}</span>
-                    <span className="flex items-center gap-1 font-mono tabular-nums">
+                    <span className="flex items-center justify-between gap-1 font-mono tabular-nums sm:justify-end">
                       {formatarReais(s.gasto)} de {formatarReais(s.orcado)} (
                       {formatarQuantidade(Math.round(s.pct))}%)
                       <button
@@ -193,8 +194,8 @@ export function OrcamentoCard({
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Conta só o gasto já pago na safra (1/set a 31/ago); o que está a pagar entra quando você dá
-          baixa. O aviso de 80% e de 100% vem na confirmação do gasto, no WhatsApp.
+          Conta só o gasto já pago na safra (1/set a 31/ago); o que está a pagar entra quando você
+          dá baixa. O aviso de 80% e de 100% vem na confirmação do gasto, no WhatsApp.
         </p>
       </CardContent>
     </Card>

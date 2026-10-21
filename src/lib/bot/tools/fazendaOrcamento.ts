@@ -23,8 +23,7 @@ import { lerRegistros, planoDoProdutor, TEXTO_RECURSO_PRATA } from "@/lib/bot/to
 
 export type AcaoDeOrcamento = "definir" | "ver" | "remover";
 
-const PALAVRA_DE_ORCAMENTO =
-  /\b(orcament\w*|limite de gastos?|teto de gastos?|gastar no maximo)\b/;
+const PALAVRA_DE_ORCAMENTO = /\b(orcament\w*|limite de gastos?|teto de gastos?|gastar no maximo)\b/;
 
 /** O que a mensagem pede sobre orçamento, ou null quando não é disso. */
 export function acaoDeOrcamento(texto: string): AcaoDeOrcamento | null {
@@ -34,18 +33,31 @@ export function acaoDeOrcamento(texto: string): AcaoDeOrcamento | null {
     .trim();
   if (!PALAVRA_DE_ORCAMENTO.test(t)) return null;
   const palavras = t.split(" ");
-  if (/\b(tira|tirar|tire|remove|remover|apaga|apagar|exclui|excluir|cancela|cancelar|zera|zerar)\b/.test(t))
+  if (
+    /\b(tira|tirar|tire|remove|remover|apaga|apagar|exclui|excluir|cancela|cancelar|zera|zerar)\b/.test(
+      t,
+    )
+  )
     return palavras.length <= 12 ? "remover" : null;
   const temNumero = numerosDoTexto(texto).some((n) => n >= 1 && n < 1_000_000_000);
   if (temNumero) {
     // "como faço um orçamento de 3 talhões?" e perguntas soltas não definem nada
-    if (/\b(como|qual|quanto|quais)\b/.test(t) && !/\b(quero|define|definir|coloca|colocar|fica|ficar|seja|e de|eh de)\b/.test(t)) return null;
+    if (
+      /\b(como|qual|quanto|quais)\b/.test(t) &&
+      !/\b(quero|define|definir|coloca|colocar|fica|ficar|seja|e de|eh de)\b/.test(t)
+    )
+      return null;
     return palavras.length <= 16 ? "definir" : null;
   }
   if (palavras.length > 9) return null;
-  if (/^(meu |meus |ver |mostra\w* |me mostra |como (esta|estao|anda|andam) (o |os )?(meu |meus )?|situacao do |quanto (ja )?(gastei|usei) d\w+ )?(o )?orcament\w*( da safra| da fazenda| por categoria| de \w+( \w+)?)?$/.test(t))
+  if (
+    /^(meu |meus |ver |mostra\w* |me mostra |como (esta|estao|anda|andam) (o |os )?(meu |meus )?|situacao do |quanto (ja )?(gastei|usei) d\w+ )?(o )?orcament\w*( da safra| da fazenda| por categoria| de \w+( \w+)?)?$/.test(
+      t,
+    )
+  )
     return "ver";
-  if (/\b(meu|meus)\b.*\borcament\w*|\borcament\w*.*\b(como esta|como anda|estao|esta)\b/.test(t)) return "ver";
+  if (/\b(meu|meus)\b.*\borcament\w*|\borcament\w*.*\b(como esta|como anda|estao|esta)\b/.test(t))
+    return "ver";
   return null;
 }
 
@@ -103,11 +115,13 @@ export async function tratarOrcamento(
   const safra = await lerRegistros(supabase, produtor.id, "safra");
 
   if (acao === "ver") {
-    if (erro) return "Não consegui ler os orçamentos agora. Tente de novo em instantes, ou veja na tela Fazenda do painel.";
+    if (erro)
+      return "Não consegui ler os orçamentos agora. Tente de novo em instantes, ou veja na tela Fazenda do painel.";
     if (lista.length === 0) return `Você ainda não definiu orçamento. ${EXEMPLO}`;
     const todas = situacaoDosOrcamentos(lista, safra.registros);
     const sit = categoria ? todas.filter((s) => s.categoria === categoria) : todas;
-    if (sit.length === 0) return `Você não tem orçamento de ${categoria!.toLowerCase()}. ${EXEMPLO}`;
+    if (sit.length === 0)
+      return `Você não tem orçamento de ${categoria!.toLowerCase()}. ${EXEMPLO}`;
     return [
       `Orçamento por categoria, ${safra.rotulo}`,
       "",
@@ -165,7 +179,13 @@ export async function avisoDeOrcamentoDoGasto(
   produtor: ProdutorContexto,
   r: RegistroFazenda,
 ): Promise<string | null> {
-  if (!produtor.id || r.tipo !== "gasto" || r.situacao !== "realizado" || !r.categoria || !(r.valor && r.valor > 0))
+  if (
+    !produtor.id ||
+    r.tipo !== "gasto" ||
+    r.situacao !== "realizado" ||
+    !r.categoria ||
+    !(r.valor && r.valor > 0)
+  )
     return null;
   const { data, error } = await supabase
     .from("fazenda_orcamentos")
@@ -177,6 +197,9 @@ export async function avisoDeOrcamentoDoGasto(
   const orc = data[0] as { categoria: string; valor: number | string };
   if (!temAcessoPrata(await planoDoProdutor(supabase, produtor.id))) return null;
   const safra = await lerRegistros(supabase, produtor.id, "safra");
-  const sit = situacaoDosOrcamentos([{ categoria: orc.categoria, valor: Number(orc.valor) }], safra.registros)[0]!;
+  const sit = situacaoDosOrcamentos(
+    [{ categoria: orc.categoria, valor: Number(orc.valor) }],
+    safra.registros,
+  )[0]!;
   return avisoDeOrcamento(sit, r.valor);
 }

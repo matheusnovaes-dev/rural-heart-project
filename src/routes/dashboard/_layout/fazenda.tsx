@@ -362,51 +362,57 @@ function FazendaPage() {
       />
 
       {vazioGeral ? (
-        <Card>
-          <CardContent className="pt-6">
-            <EmptyState
-              icon={Sprout}
-              title="Seu caderno ainda está vazio"
-              description="Escreva ou mande um áudio no WhatsApp do Safralume, do jeito que você fala, e o lançamento aparece aqui. Ou use o botão Novo lançamento."
-              action={
-                <div className="flex flex-col items-center gap-3">
-                  <ul className="space-y-1.5 text-sm text-muted-foreground">
-                    {(temPrata
-                      ? [...EXEMPLOS, "tenho 5.000 sacas de soja no armazém"]
-                      : EXEMPLOS
-                    ).map((e) => (
-                      <li key={e} className="rounded-full bg-secondary px-3 py-1">
-                        “{e}”
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="flex flex-wrap justify-center gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        setTipoInicial("gasto");
-                        setEditando("novo");
-                      }}
-                    >
-                      <Plus className="size-4" />
-                      Novo lançamento
-                    </Button>
-                    <Button size="sm" variant="outline" asChild>
-                      <a
-                        href={buildWhatsAppLink("Gastei 3 mil de diesel hoje")}
-                        target="_blank"
-                        rel="noreferrer noopener"
+        <>
+          <Card>
+            <CardContent className="pt-6">
+              <EmptyState
+                icon={Sprout}
+                title="Seu caderno ainda está vazio"
+                description="Escreva ou mande um áudio no WhatsApp do Safralume, do jeito que você fala, e o lançamento aparece aqui. Ou use o botão Novo lançamento."
+                action={
+                  <div className="flex flex-col items-center gap-3">
+                    <ul className="space-y-1.5 text-sm text-muted-foreground">
+                      {(temPrata
+                        ? [...EXEMPLOS, "tenho 5.000 sacas de soja no armazém"]
+                        : EXEMPLOS
+                      ).map((e) => (
+                        <li key={e} className="rounded-full bg-secondary px-3 py-1">
+                          “{e}”
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setTipoInicial("gasto");
+                          setEditando("novo");
+                        }}
                       >
-                        <MessageCircle className="size-4" />
-                        Abrir o WhatsApp
-                      </a>
-                    </Button>
+                        <Plus className="size-4" />
+                        Novo lançamento
+                      </Button>
+                      <Button size="sm" variant="outline" asChild>
+                        <a
+                          href={buildWhatsAppLink("Gastei 3 mil de diesel hoje")}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                        >
+                          <MessageCircle className="size-4" />
+                          Abrir o WhatsApp
+                        </a>
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              }
-            />
-          </CardContent>
-        </Card>
+                }
+              />
+            </CardContent>
+          </Card>
+          {/* quem está começando a safra define o orçamento antes do primeiro gasto */}
+          {temPrata && (
+            <OrcamentoCard produtor={{ id: produtor.id, uf: produtor.uf }} versao={versao} />
+          )}
+        </>
       ) : (
         <>
           <div role="tablist" aria-label="Período" className="flex flex-wrap gap-1.5">
@@ -986,214 +992,223 @@ function FormularioRegistro({
 
   return (
     <Dialog open={aberto} onOpenChange={(o) => !o && onFechar()}>
-      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-md">
-        <DialogHeader>
+      {/* Modal fixo: cabeçalho e botões ficam sempre à vista e só o meio rola (altura em dvh, que acompanha as barras do
+          navegador do celular; w-[calc(100vw-1rem)] evita que um campo largo, como a data no iPhone, estoure a tela) */}
+      <DialogContent className="flex max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-md">
+        <DialogHeader className="shrink-0 space-y-1 border-b px-5 pb-3 pr-12 pt-5 text-left">
           <DialogTitle>{registro ? "Editar lançamento" : "Novo lançamento"}</DialogTitle>
           <DialogDescription>
             O que aconteceu na fazenda? Preencha só o que souber.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={salvar} className="flex flex-col gap-3.5">
-          <div
-            role="radiogroup"
-            aria-label="Tipo"
-            className={`grid gap-1.5 ${temPrata || tipo === "estoque" ? "grid-cols-6" : "grid-cols-5"}`}
-          >
-            {TIPOS_REGISTRO.filter((t) => t !== "estoque" || temPrata || tipo === "estoque").map(
-              (t) => {
-                const Icone = ICONE_TIPO[t];
-                return (
-                  <button
-                    type="button"
-                    key={t}
-                    role="radio"
-                    aria-checked={tipo === t}
-                    onClick={() => setTipo(t)}
-                    className={`flex flex-col items-center gap-1 rounded-lg border px-1 py-2 text-[11px] transition-colors ${
-                      tipo === t
-                        ? "border-primary bg-primary/10 font-medium text-primary"
-                        : "border-border text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <Icone className="size-4" />
-                    {ROTULO_TIPO[t]}
-                  </button>
-                );
-              },
+        <form onSubmit={salvar} className="flex min-h-0 flex-1 flex-col">
+          <div className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto overscroll-contain px-5 py-4">
+            <div
+              role="radiogroup"
+              aria-label="Tipo"
+              className={`grid gap-1.5 ${temPrata || tipo === "estoque" ? "grid-cols-6" : "grid-cols-5"}`}
+            >
+              {TIPOS_REGISTRO.filter((t) => t !== "estoque" || temPrata || tipo === "estoque").map(
+                (t) => {
+                  const Icone = ICONE_TIPO[t];
+                  return (
+                    <button
+                      type="button"
+                      key={t}
+                      role="radio"
+                      aria-checked={tipo === t}
+                      onClick={() => setTipo(t)}
+                      className={`flex flex-col items-center gap-1 rounded-lg border px-1 py-2 text-[11px] transition-colors ${
+                        tipo === t
+                          ? "border-primary bg-primary/10 font-medium text-primary"
+                          : "border-border text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Icone className="size-4" />
+                      {ROTULO_TIPO[t]}
+                    </button>
+                  );
+                },
+              )}
+            </div>
+
+            {podePendente && (
+              <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 size-4 accent-[var(--color-primary)]"
+                  checked={pendente}
+                  onChange={(e) => setPendente(e.target.checked)}
+                  data-testid="fz-pendente"
+                />
+                <span>
+                  <span className="font-medium">
+                    {tipo === "venda"
+                      ? "Ainda não recebi (a receber)"
+                      : "Ainda não paguei (a pagar)"}
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    Eu te lembro no dia do vencimento e o valor só entra nas contas quando você der
+                    baixa.
+                  </span>
+                </span>
+              </label>
+            )}
+
+            {temValor && (
+              <div className="space-y-1.5">
+                <Label htmlFor="fz-valor">Valor total (R$)</Label>
+                <Input
+                  id="fz-valor"
+                  inputMode="decimal"
+                  value={valor}
+                  onChange={(e) => setValor(e.target.value)}
+                  placeholder="Ex: 12000 ou 12 mil"
+                  autoComplete="off"
+                />
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label htmlFor="fz-desc">{tipo === "nota" ? "Anotação" : "Descrição"}</Label>
+              <Input
+                id="fz-desc"
+                value={descricao}
+                onChange={(e) => setDescricao(e.target.value)}
+                placeholder={
+                  tipo === "gasto"
+                    ? "Ex: adubo NPK, diesel, diária do Jorge"
+                    : tipo === "venda"
+                      ? "Ex: soja para a cooperativa"
+                      : tipo === "nota"
+                        ? "Ex: revisar a bomba do poço"
+                        : "Opcional"
+                }
+                maxLength={200}
+                autoComplete="off"
+              />
+            </div>
+
+            {tipo === "gasto" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="fz-cat">Categoria</Label>
+                <Select
+                  value={categoria || "auto"}
+                  onValueChange={(v) => setCategoria(v === "auto" ? "" : v)}
+                >
+                  <SelectTrigger id="fz-cat">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Escolher pelo que escrevi</SelectItem>
+                    {CATEGORIAS_GASTO.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {temQuantidade && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="fz-qtd">Quantidade</Label>
+                  <Input
+                    id="fz-qtd"
+                    inputMode="decimal"
+                    value={quantidade}
+                    onChange={(e) => setQuantidade(e.target.value)}
+                    placeholder={tipo === "venda" || tipo === "estoque" ? "500" : "50"}
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="fz-un">Unidade</Label>
+                  <Input
+                    id="fz-un"
+                    value={unidade}
+                    onChange={(e) => setUnidade(e.target.value)}
+                    placeholder={
+                      tipo === "venda" || tipo === "colheita" || tipo === "estoque" ? "sacas" : "ha"
+                    }
+                    maxLength={20}
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="fz-cultura">Cultura</Label>
+                <Input
+                  id="fz-cultura"
+                  value={cultura}
+                  onChange={(e) => setCultura(e.target.value)}
+                  placeholder="Soja, milho, boi..."
+                  maxLength={40}
+                  autoComplete="off"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="fz-talhao">Talhão ou área</Label>
+                <Input
+                  id="fz-talhao"
+                  value={talhao}
+                  onChange={(e) => setTalhao(e.target.value)}
+                  placeholder="Talhão 3"
+                  maxLength={60}
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+
+            {pendente && podePendente ? (
+              <div className="space-y-1.5">
+                <Label htmlFor="fz-vence">Vence em</Label>
+                <Input
+                  id="fz-vence"
+                  type="date"
+                  className="block w-full min-w-0 max-w-full"
+                  value={venceEm}
+                  min={hojeBrasilia()}
+                  onChange={(e) => setVenceEm(e.target.value)}
+                  required
+                />
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label htmlFor="fz-data">Data</Label>
+                <Input
+                  id="fz-data"
+                  type="date"
+                  className="block w-full min-w-0 max-w-full"
+                  value={data}
+                  max={somarDias(hojeBrasilia(), 1)}
+                  onChange={(e) => setData(e.target.value)}
+                  required
+                />
+              </div>
             )}
           </div>
 
-          {podePendente && (
-            <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-sm">
-              <input
-                type="checkbox"
-                className="mt-0.5 size-4 accent-[var(--color-primary)]"
-                checked={pendente}
-                onChange={(e) => setPendente(e.target.checked)}
-                data-testid="fz-pendente"
-              />
-              <span>
-                <span className="font-medium">
-                  {tipo === "venda" ? "Ainda não recebi (a receber)" : "Ainda não paguei (a pagar)"}
-                </span>
-                <span className="block text-xs text-muted-foreground">
-                  Eu te lembro no dia do vencimento e o valor só entra nas contas quando você der
-                  baixa.
-                </span>
-              </span>
-            </label>
-          )}
-
-          {temValor && (
-            <div className="space-y-1.5">
-              <Label htmlFor="fz-valor">Valor total (R$)</Label>
-              <Input
-                id="fz-valor"
-                inputMode="decimal"
-                value={valor}
-                onChange={(e) => setValor(e.target.value)}
-                placeholder="Ex: 12000 ou 12 mil"
-                autoComplete="off"
-              />
+          <div className="shrink-0 space-y-2 border-t px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
+            {aviso && (
+              <p role="alert" className="text-sm text-destructive">
+                {aviso}
+              </p>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="ghost" onClick={onFechar}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={salvando}>
+                {salvando && <Loader2 className="size-4 animate-spin" />}
+                {registro ? "Salvar" : "Anotar"}
+              </Button>
             </div>
-          )}
-
-          <div className="space-y-1.5">
-            <Label htmlFor="fz-desc">{tipo === "nota" ? "Anotação" : "Descrição"}</Label>
-            <Input
-              id="fz-desc"
-              value={descricao}
-              onChange={(e) => setDescricao(e.target.value)}
-              placeholder={
-                tipo === "gasto"
-                  ? "Ex: adubo NPK, diesel, diária do Jorge"
-                  : tipo === "venda"
-                    ? "Ex: soja para a cooperativa"
-                    : tipo === "nota"
-                      ? "Ex: revisar a bomba do poço"
-                      : "Opcional"
-              }
-              maxLength={200}
-              autoComplete="off"
-            />
-          </div>
-
-          {tipo === "gasto" && (
-            <div className="space-y-1.5">
-              <Label htmlFor="fz-cat">Categoria</Label>
-              <Select
-                value={categoria || "auto"}
-                onValueChange={(v) => setCategoria(v === "auto" ? "" : v)}
-              >
-                <SelectTrigger id="fz-cat">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="auto">Escolher pelo que escrevi</SelectItem>
-                  {CATEGORIAS_GASTO.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {temQuantidade && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="fz-qtd">Quantidade</Label>
-                <Input
-                  id="fz-qtd"
-                  inputMode="decimal"
-                  value={quantidade}
-                  onChange={(e) => setQuantidade(e.target.value)}
-                  placeholder={tipo === "venda" || tipo === "estoque" ? "500" : "50"}
-                  autoComplete="off"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="fz-un">Unidade</Label>
-                <Input
-                  id="fz-un"
-                  value={unidade}
-                  onChange={(e) => setUnidade(e.target.value)}
-                  placeholder={
-                    tipo === "venda" || tipo === "colheita" || tipo === "estoque" ? "sacas" : "ha"
-                  }
-                  maxLength={20}
-                  autoComplete="off"
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="fz-cultura">Cultura</Label>
-              <Input
-                id="fz-cultura"
-                value={cultura}
-                onChange={(e) => setCultura(e.target.value)}
-                placeholder="Soja, milho, boi..."
-                maxLength={40}
-                autoComplete="off"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="fz-talhao">Talhão ou área</Label>
-              <Input
-                id="fz-talhao"
-                value={talhao}
-                onChange={(e) => setTalhao(e.target.value)}
-                placeholder="Talhão 3"
-                maxLength={60}
-                autoComplete="off"
-              />
-            </div>
-          </div>
-
-          {pendente && podePendente ? (
-            <div className="space-y-1.5">
-              <Label htmlFor="fz-vence">Vence em</Label>
-              <Input
-                id="fz-vence"
-                type="date"
-                value={venceEm}
-                min={hojeBrasilia()}
-                onChange={(e) => setVenceEm(e.target.value)}
-                required
-              />
-            </div>
-          ) : (
-            <div className="space-y-1.5">
-              <Label htmlFor="fz-data">Data</Label>
-              <Input
-                id="fz-data"
-                type="date"
-                value={data}
-                max={somarDias(hojeBrasilia(), 1)}
-                onChange={(e) => setData(e.target.value)}
-                required
-              />
-            </div>
-          )}
-
-          {aviso && (
-            <p role="alert" className="text-sm text-destructive">
-              {aviso}
-            </p>
-          )}
-
-          <div className="flex justify-end gap-2 pt-1">
-            <Button type="button" variant="ghost" onClick={onFechar}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={salvando}>
-              {salvando && <Loader2 className="size-4 animate-spin" />}
-              {registro ? "Salvar" : "Anotar"}
-            </Button>
           </div>
         </form>
       </DialogContent>
