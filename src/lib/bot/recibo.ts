@@ -545,7 +545,7 @@ async function respostaAoLote(
   if (anotadas === 0) return "Não consegui anotar agora. Tente de novo em instantes.";
   const falhas = lote.length - anotadas;
   return [
-    `Anotei ${anotadas} notas no caderno:`,
+    `Anotei no caderno ${anotadas} notas:`,
     ...linhas,
     `Total: ${formatarReais(Math.round(total * 100) / 100)}.`,
     ...(falhas ? [`${falhas} não consegui anotar, manda de novo.`] : []),
