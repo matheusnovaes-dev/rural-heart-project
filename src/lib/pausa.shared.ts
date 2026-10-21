@@ -1,6 +1,6 @@
 /**
  * Novo vencimento ao pausar: parte do vencimento atual (ou de hoje, se ele já passou) e soma os dias. Formato
- * yyyy-mm-dd da Asaas, em UTC para não depender do fuso do servidor (toque 4).
+ * yyyy-mm-dd da Asaas, em UTC para não depender do fuso do servidor.
  */
 export function novoVencimentoDaPausa(
   vencimentoAtual: string | null,
