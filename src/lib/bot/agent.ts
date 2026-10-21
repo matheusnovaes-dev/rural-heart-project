@@ -2276,6 +2276,7 @@ async function runAgentBase(input: {
         // O modelo às vezes manda a MESMA chamada duas vezes no mesmo lote (visto ao vivo: "tenho que pagar 5 mil de
         // arrendamento" gravou duas vezes). Chamadas idênticas do mesmo lote rodam uma só vez e dividem o resultado.
         const emAndamento = new Map<string, Promise<unknown>>();
+        const fantasmas = lancamentosFantasmaDoLote(mensagem.tool_calls as ToolCall[], texto);
         const resultados = await Promise.all(
           (mensagem.tool_calls as ToolCall[]).map(async (tc) => {
             let args: Record<string, unknown> = {};
@@ -2283,6 +2284,12 @@ async function runAgentBase(input: {
               args = JSON.parse(tc.function.arguments || "{}");
             } catch {
               args = {};
+            }
+            if (fantasmas.has(tc.id)) {
+              return {
+                tool_call_id: tc.id,
+                content: JSON.stringify({ sucesso: false, motivo: "repetiu_valor_anterior", ignorar: true }),
+              };
             }
             const chave = `${tc.function.name}|${JSON.stringify(args)}`;
             let execucao = emAndamento.get(chave);
@@ -2501,6 +2508,43 @@ export function limparAberturaDeAnuncio(resposta: string): string {
   });
   const corpo = mantidas.join(" ").trim() || "Oi! Eu sou o assistente de mercado do Safralume.";
   return `${corpo}\n\nTeste grátis de 7 dias, sem cartão. ${PERGUNTA_CULTURA}`;
+}
+
+/**
+ * Lançamentos do caderno que o modelo mandou no mesmo lote com o MESMO valor e quantidade mas descrições diferentes
+ * (visto ao vivo: "gastei dois mil de diesel" gravou também "adubo 2.000", copiado do contexto). Fica só o que tem a ver com o
+ * que o produtor escreveu: o que a descrição aparece na mensagem; se nenhum aparecer, o primeiro. Quem disse duas coisas
+ * de mesmo valor ("2 mil de diesel e 2 mil de adubo") tem as duas descrições na mensagem e mantém os dois.
+ */
+export function lancamentosFantasmaDoLote(chamadas: ToolCall[], texto: string): Set<string> {
+  const norm = (x: string) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const palavrasDaMensagem = new Set(norm(texto).split(/[^a-z0-9]+/).filter((w) => w.length >= 3));
+  const grupos = new Map<string, { id: string; descricao: string }[]>();
+  for (const tc of chamadas) {
+    if (tc.function.name !== "registrar_na_fazenda") continue;
+    let a: Record<string, unknown> = {};
+    try {
+      a = JSON.parse(tc.function.arguments || "{}");
+    } catch {
+      continue;
+    }
+    if (a["vence_em"]) continue;
+    const chave = `${a["tipo"]}|${a["valor"] ?? ""}|${a["quantidade"] ?? ""}`;
+    if (a["valor"] == null && a["quantidade"] == null) continue;
+    const g = grupos.get(chave) ?? [];
+    g.push({ id: tc.id, descricao: String(a["descricao"] ?? "") });
+    grupos.set(chave, g);
+  }
+  const descartar = new Set<string>();
+  for (const g of grupos.values()) {
+    if (g.length < 2) continue;
+    if (new Set(g.map((x) => norm(x.descricao))).size < 2) continue; // idênticas: o outro tratamento cuida
+    const tem = (d: string) => norm(d).split(/[^a-z0-9]+/).some((w) => w.length >= 3 && palavrasDaMensagem.has(w));
+    const mantidos = g.filter((x) => tem(x.descricao));
+    const ficam = new Set((mantidos.length > 0 ? mantidos : [g[0]!]).map((x) => x.id));
+    for (const x of g) if (!ficam.has(x.id)) descartar.add(x.id);
+  }
+  return descartar;
 }
 
 export async function runAgent(input: Parameters<typeof runAgentBase>[0]): Promise<RespostaAgente> {

@@ -160,6 +160,25 @@ export function direcaoDaPendencia(
   return null;
 }
 
+/** O que foi comprado, dito logo depois do valor: "gastei 70 mil de adubo" -> "adubo", "paguei 800 de diesel no posto" -> "diesel". */
+export function descricaoDoGasto(texto: string): string | null {
+  const t = extensoParaDigitos(texto)
+    .replace(/\s+/g, " ")
+    .trim();
+  const m = t.match(
+    /\b(?:gastei|paguei|comprei|investi|gasto|pago)\b\D{0,12}?[\d.,]+(?:\s*(?:mil|reais|real|k))?\s+(?:de|com|em|no|na|pra|para)\s+([a-z]+(?:\s+[a-z]+){0,2})/,
+  );
+  if (!m) return null;
+  const parada = new Set(["no", "na", "em", "dia", "hoje", "ontem", "para", "pra", "do", "da", "talhao", "e", "que", "por", "ate"]);
+  const palavras: string[] = [];
+  for (const w of m[1]!.split(" ")) {
+    if (parada.has(w)) break;
+    palavras.push(w);
+  }
+  const d = palavras.join(" ");
+  return d.length >= 3 ? d : null;
+}
+
 export async function registrarNaFazenda(
   supabase: SupabaseClient,
   args: ArgsRegistro,
@@ -393,7 +412,11 @@ export async function registrarNaFazenda(
     else if (tipo === "venda") descricao = `Venda${cultura ? ` de ${cultura.toLowerCase()}` : ""}`;
     else if (tipo === "estoque")
       descricao = `Estoque${cultura ? ` de ${cultura.toLowerCase()}` : ""}`;
-    else return { sucesso: false, motivo: "faltou_descricao" };
+    else {
+      // "gastei 70 mil de adubo": o modelo às vezes esquece a descrição e o bot pedia o que já estava escrito
+      descricao = descricaoDoGasto(ctx.texto);
+      if (!descricao) return { sucesso: false, motivo: "faltou_descricao" };
+    }
   }
   const categoria = tipo === "gasto" ? categoriaValida(args.categoria, descricao) : null;
   const unidade =
