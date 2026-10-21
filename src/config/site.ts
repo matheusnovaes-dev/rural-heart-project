@@ -79,5 +79,3 @@ export const pricingPlans: PricingPlan[] = [
     ],
   },
 ];
-
-// toque de sincronizacao
