@@ -191,14 +191,14 @@ const TOKENS_SIM = new Set(
   (
     "sim ss s simm simmm isso mesmo pode ser criar quero eu vou claro que ok okay bora vamos vamo com certeza confirmo " +
     "uhum aham positivo certo exato senhor sr beleza blz fechado demorou manda mandar vai la fazer favor por gostaria " +
-    "tambem testar cadastrar cadastro me comecar tudo bem ta ata sim pode certinho show top perfeito combinado dale yes yep okei okey fechou topo bom"
+    "tambem testar cadastrar cadastro me comecar tudo bem ta ata sim pode certinho show top perfeito combinado dale yes yep okei okey fechou topo bom certeza oks"
   ).split(" "),
 );
 const TOKENS_SIM_FORTES = new Set(
   (
     "sim ss s simm simmm isso pode quero claro ok okay bora vamos vamo confirmo uhum aham positivo certo exato beleza blz fechado demorou manda " +
     // Variações reais de "sim" no WhatsApp (achado 2026-10-21: "Okk" ficou sem resposta certa).
-    "certinho show top perfeito combinado dale yes yep okei okey fechou topo"
+    "certinho show top perfeito combinado dale yes yep okei okey fechou topo bom certeza oks"
   ).split(" "),
 );
 
