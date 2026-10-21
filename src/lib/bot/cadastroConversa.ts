@@ -117,6 +117,25 @@ function distanciaDeEdicao(a: string, b: string): number {
  * palavras do nome do estado; só vale distância pequena em relação ao tamanho.
  */
 export function ufsParecidas(texto: string): string[] {
+  return ufsParecidasComDistancia(texto).map(([uf]) => uf);
+}
+
+/**
+ * Estado quando só UM é parecido e a diferença é de uma letra ("matogrosso", "goiaz"). Serve só no passo do estado: o bot
+ * ainda mostra o estado na confirmação final ("crio seu cadastro ... em Goiás?") antes de criar, então não adivinha às cegas.
+ */
+export function ufUnicaMuitoParecida(texto: string): string | null {
+  // compara o texto inteiro (sem espaços) com o NOME INTEIRO do estado: "norte" ou "grande" não podem virar estado
+  const s = norm(texto).replace(/ /g, "");
+  if (s.length < 5) return null;
+  const nomes = ufs.map((u) => ({ uf: u.value as string, nome: norm(u.label).replace(/ /g, "") }));
+  nomes.push({ uf: "MG", nome: "minas" });
+  const achados = new Set<string>();
+  for (const { uf, nome } of nomes) if (nome.length >= 5 && distanciaDeEdicao(s, nome) <= 1) achados.add(uf);
+  return achados.size === 1 ? [...achados][0]! : null;
+}
+
+function ufsParecidasComDistancia(texto: string): [string, number][] {
   const palavras = norm(texto)
     .split(" ")
     .filter((t) => t.length >= 4);
@@ -135,10 +154,7 @@ export function ufsParecidas(texto: string): string[] {
       }
     }
   }
-  return [...pontos.entries()]
-    .sort((a, b) => a[1] - b[1])
-    .slice(0, 2)
-    .map(([uf]) => uf);
+  return [...pontos.entries()].sort((a, b) => a[1] - b[1]).slice(0, 2);
 }
 
 /** O que a pessoa escreveu, repetido na explicação ("Não reconheci “X”"): só mensagens curtas e sem aspas. */
@@ -159,7 +175,9 @@ function perguntaUf(cultura: string | null, tentativa: number, recusado?: string
   const explicacao = eco
     ? `Não reconheci “${eco}” como um estado${
         sugeridas.length
-          ? `. Você quis dizer ${sugeridas.map((u) => `${nomeDoEstado(u)} (${u})`).join(" ou ")}? Se for, responda a sigla. `
+          ? sugeridas.length === 1
+            ? `. Você quis dizer ${nomeDoEstado(sugeridas[0]!)} (${sugeridas[0]})? Se for, responda *sim*. `
+            : `. Você quis dizer ${sugeridas.map((u) => `${nomeDoEstado(u)} (${u})`).join(" ou ")}? Se for, responda a sigla. `
           : ". "
       }`
     : "";
@@ -405,6 +423,12 @@ export function decidirCadastro(params: {
   let cultura: string | null = lida.cultura;
   let uf: string | null = ufAtual;
   let cafeSemTipo = lida.cafeSemTipo;
+  if (!uf && passo === "uf" && !lida.cultura) uf = ufUnicaMuitoParecida(texto);
+  // "Você quis dizer Goiás (GO)? Se for, responda *sim*": o "sim" vale como o estado sugerido (só quando era uma sugestão só)
+  if (!uf && passo === "uf" && ultimaBot && ehAfirmacao(texto)) {
+    const sug = ultimaBot.match(/Você quis dizer ([^()?]+) \(([A-Z]{2})\)\? Se for, responda \*sim\*/);
+    if (sug) uf = sug[2]!;
+  }
 
   if (passo === "confirma" && ultimaBot) {
     // Correção sobre o que o bot propôs: só muda o que o produtor corrigiu.
@@ -483,7 +507,10 @@ export function decidirCadastro(params: {
   const falhas = trouxeAlgo ? 0 : falhasSeguidas(botDesc);
   // Repetir a pergunta que o bot acabou de fazer usa o texto de re-pergunta (outra frase).
   const tentativas = !trouxeAlgo && (passoDe(ultimaBot) === alvo || falhas > 0) ? 1 : 0;
-  if (falhas >= 1) {
+  // Quem está tentando escrever o estado e erra de novo (a 2ª digitação, com sugestão parecida) ganha mais uma chance
+  // antes de chamar a equipe: achado de 21/10 ("Mamosso" e depois "Gongais" pararam numa lead real).
+  const limiteDeFalhas = alvo === "uf" && ufsParecidas(texto).length > 0 ? 2 : 1;
+  if (falhas >= limiteDeFalhas) {
     const jaChamouEquipe = botDesc.slice(0, 12).some((m) => m.includes(MARCADOR_DE_CONTATO));
     if (!jaChamouEquipe) return { tipo: "responder", resposta: ESCALAR, precisa_humano: true };
     // A equipe já foi avisada e a pessoa segue sem dizer o que produz: uma confirmação curta e

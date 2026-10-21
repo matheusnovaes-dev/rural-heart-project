@@ -57,6 +57,7 @@ import {
 } from "@/lib/bot/tools/fazendaBase";
 import { cancelarLembrete, criarLembreteDoVencimento } from "@/lib/bot/tools/fazendaPendencias";
 import { custoDaCultura, lerAreas, linhaCurtaDoCusto } from "@/lib/bot/tools/fazendaCusto";
+import { avisoDeOrcamentoDoGasto } from "@/lib/bot/tools/fazendaOrcamento";
 import type { EstudoSalvo } from "@/lib/bot/propostas/tipos";
 import { temAcessoPrata, type Plano } from "@/lib/planos.shared";
 
@@ -590,7 +591,8 @@ async function montarConfirmacao(
       }
     }
   }
-  return `${MARCA_CONFIRMACAO_CADERNO}: ${linha}.${extra} Se algo ficou errado, diga "desfazer".`;
+  const orcamento = r.tipo === "gasto" ? await avisoDeOrcamentoDoGasto(supabase, produtor, r) : null;
+  return `${MARCA_CONFIRMACAO_CADERNO}: ${linha}.${extra}${orcamento ? ` ${orcamento}` : ""} Se algo ficou errado, diga "desfazer".`;
 }
 
 /** A confirmação certa para o lançamento (a pagar ou realizado). */

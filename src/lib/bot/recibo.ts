@@ -266,6 +266,14 @@ export async function rascunharRecibo(input: {
 > {
   const { supabase, produtor, midia, apiKey, signal } = input;
   if (!produtor.id) return { erro: "falha" };
+  // várias notas de uma vez: os rascunhos anteriores continuam esperando o "sim" (até o limite), em vez de sumirem
+  const pendentes = await rascunhosPendentes(supabase, produtor.id);
+  if (pendentes.length >= MAXIMO_DE_NOTAS_POR_VEZ) {
+    return {
+      texto: `Já tenho ${pendentes.length} notas esperando você confirmar (total ${formatarReais(somaDe(pendentes))}). Responda *sim* pra anotar essas, ou *não* pra descartar, e depois me manda as outras.`,
+    };
+  }
+
   const l = await lerRecibo(apiKey, midia, signal);
   if (!l) return { erro: "falha" };
   if (l.tipo_documento === "outro") return { naoEhRecibo: true };
@@ -293,14 +301,6 @@ export async function rascunharRecibo(input: {
   )!;
   const categoria = categoriaDeTexto(`${itens ?? ""} ${fornecedor ?? ""}`);
 
-  // um rascunho por vez: o novo substitui os antigos
-  await supabase
-    .from("fazenda_registros")
-    .update({ apagado_em: new Date().toISOString() })
-    .eq("produtor_id", produtor.id)
-    .eq("situacao", "rascunho")
-    .is("apagado_em", null);
-
   const { data: gravado, error } = await supabase
     .from("fazenda_registros")
     .insert({
@@ -321,7 +321,48 @@ export async function rascunharRecibo(input: {
     console.error("Erro ao criar rascunho de recibo:", error);
     return { erro: "falha" };
   }
-  return { texto: textoDoRascunho(l, gravado as RegistroFazenda, hoje) };
+  const novo = gravado as RegistroFazenda;
+  return {
+    texto:
+      pendentes.length > 0
+        ? textoDeLote(l, novo, pendentes, hoje)
+        : textoDoRascunho(l, novo, hoje),
+  };
+}
+
+const MAXIMO_DE_NOTAS_POR_VEZ = 8;
+
+const somaDe = (rs: RegistroFazenda[]) =>
+  Math.round(rs.reduce((t, r) => t + (r.valor ?? 0), 0) * 100) / 100;
+
+/** Segunda nota em diante: mostra o que leu e o total das notas que já estão esperando. */
+function textoDeLote(
+  l: LeituraDeRecibo,
+  novo: RegistroFazenda,
+  anteriores: RegistroFazenda[],
+  hoje: string,
+): string {
+  const todas = [...anteriores, novo];
+  const linhas: string[] = [`Li essa nota (a ${todas.length}ª):`];
+  const forn = suavizarCaixa(textoOuNull(l.fornecedor, 80), "nome");
+  const itens = suavizarCaixa(textoOuNull(l.descricao, 100));
+  if (forn) linhas.push(`Fornecedor: ${forn}`);
+  if (itens) linhas.push(`Itens: ${itens}`);
+  linhas.push(`Valor: ${formatarReais(novo.valor ?? 0)}`);
+  if (novo.vence_em) linhas.push(`Vencimento: ${dataLonga(novo.vence_em)}`);
+  else linhas.push(`Data: ${dataLonga(novo.ocorrido_em)}`);
+  linhas.push("");
+  const aPagar = todas.filter((r) => r.vence_em && r.vence_em >= hoje).length;
+  linhas.push(
+    `Tenho ${todas.length} notas esperando, no total de ${formatarReais(somaDe(todas))}${aPagar ? ` (${aPagar} a pagar, com lembrete no vencimento)` : ""}. Responda *sim* pra anotar todas ou *não* pra descartar todas.`,
+  );
+  linhas.push(
+    "Se o número desta última nota estiver errado, me diga o certo (por exemplo: o valor é 12.000). Pode mandar mais notas.",
+  );
+  if (l.confianca === "baixa") {
+    linhas.splice(1, 0, "A foto estava difícil de ler, então confira bem os números.");
+  }
+  return linhas.join("\n");
 }
 
 export const MENSAGEM_RECIBO_ILEGIVEL =
@@ -332,6 +373,23 @@ export const MENSAGEM_RECIBO_SEM_VALOR =
 // ---------------------------------------------------------------------------------------------
 // Resposta do produtor ao rascunho
 // ---------------------------------------------------------------------------------------------
+
+async function rascunhosPendentes(
+  supabase: SupabaseClient,
+  produtorId: string,
+): Promise<RegistroFazenda[]> {
+  const desde = new Date(Date.now() - MINUTOS_DE_VALIDADE_DO_RASCUNHO * 60_000).toISOString();
+  const { data } = await supabase
+    .from("fazenda_registros")
+    .select(CAMPOS_DO_RASCUNHO)
+    .eq("produtor_id", produtorId)
+    .eq("situacao", "rascunho")
+    .is("apagado_em", null)
+    .gte("criado_em", desde)
+    .order("criado_em", { ascending: true })
+    .limit(MAXIMO_DE_NOTAS_POR_VEZ + 2);
+  return (data ?? []) as RegistroFazenda[];
+}
 
 async function ultimoRascunho(
   supabase: SupabaseClient,
@@ -364,6 +422,11 @@ export async function tratarRespostaAoRascunho(
   const r = await ultimoRascunho(supabase, produtor.id);
   if (!r) return null;
   const hoje = hojeBrasilia();
+  const lote = await rascunhosPendentes(supabase, produtor.id);
+
+  if (lote.length > 1 && (ehNegacao(texto) || ehAfirmacao(texto) || ehPedidoDeAnotar(texto))) {
+    return respostaAoLote(supabase, produtor, telefone, texto, lote, hoje);
+  }
 
   if (ehNegacao(texto)) {
     await supabase
@@ -429,4 +492,63 @@ export async function tratarRespostaAoRascunho(
     }
   }
   return null;
+}
+
+
+/** "Sim" anota todas as notas esperando (cada uma como gasto ou a pagar), "não" descarta todas. */
+async function respostaAoLote(
+  supabase: SupabaseClient,
+  produtor: ProdutorContexto,
+  telefone: string,
+  texto: string,
+  lote: RegistroFazenda[],
+  hoje: string,
+): Promise<string> {
+  const ids = lote.map((x) => x.id);
+  if (ehNegacao(texto)) {
+    await supabase
+      .from("fazenda_registros")
+      .update({ apagado_em: new Date().toISOString() })
+      .in("id", ids)
+      .eq("produtor_id", produtor.id)
+      .eq("situacao", "rascunho");
+    return `Tudo bem, descartei as ${lote.length} notas. Nada foi anotado.`;
+  }
+  const linhas: string[] = [];
+  let anotadas = 0;
+  let total = 0;
+  for (const r of lote) {
+    const aPagar = !!r.vence_em && r.vence_em >= hoje;
+    const { data: promovido } = await supabase
+      .from("fazenda_registros")
+      .update({ situacao: aPagar ? "pendente" : "realizado" })
+      .eq("id", r.id)
+      .eq("produtor_id", produtor.id)
+      .eq("situacao", "rascunho")
+      .select(CAMPOS_DO_RASCUNHO)
+      .single();
+    if (!promovido) continue;
+    let reg = promovido as RegistroFazenda;
+    if (aPagar) {
+      const lembreteId = await criarLembreteDoVencimento(supabase, produtor, telefone, reg);
+      if (lembreteId) {
+        await supabase.from("fazenda_registros").update({ lembrete_id: lembreteId }).eq("id", reg.id);
+        reg = { ...reg, lembrete_id: lembreteId };
+      }
+    }
+    anotadas++;
+    total += reg.valor ?? 0;
+    linhas.push(
+      `• ${reg.descricao}: ${formatarReais(reg.valor ?? 0)}${aPagar ? ` (a pagar, vence em ${dataLonga(reg.vence_em!)})` : ""}`,
+    );
+  }
+  if (anotadas === 0) return "Não consegui anotar agora. Tente de novo em instantes.";
+  const falhas = lote.length - anotadas;
+  return [
+    `Anotei ${anotadas} notas no caderno:`,
+    ...linhas,
+    `Total: ${formatarReais(Math.round(total * 100) / 100)}.`,
+    ...(falhas ? [`${falhas} não consegui anotar, manda de novo.`] : []),
+    'Se algo ficou errado, diga "desfazer" (desfaz a última; repita pra desfazer as outras).',
+  ].join("\n");
 }

@@ -773,6 +773,70 @@ export function precoAlvoDaMargem(custoPorSaca: number, metaPct: number): number
   return Math.round((custoPorSaca / (1 - metaPct / 100)) * 100) / 100;
 }
 
+// ---------------------------------------------------------------------------------------------
+// Orçamento por categoria (plano Prata)
+// ---------------------------------------------------------------------------------------------
+
+export interface OrcamentoFazenda {
+  id?: string;
+  categoria: string;
+  valor: number;
+}
+
+export interface SituacaoDoOrcamento {
+  categoria: string;
+  orcado: number;
+  gasto: number;
+  /** % do orçamento já usado (pode passar de 100) */
+  pct: number;
+  /** quanto ainda cabe (negativo = quanto passou) */
+  restante: number;
+}
+
+/** Quanto de cada orçamento já foi gasto nos registros dados (só gasto realizado; o a pagar entra ao dar baixa). */
+export function situacaoDosOrcamentos(
+  orcamentos: OrcamentoFazenda[],
+  registros: RegistroFazenda[],
+): SituacaoDoOrcamento[] {
+  return orcamentos
+    .map((o) => {
+      const gasto = registros
+        .filter(
+          (r) =>
+            r.tipo === "gasto" &&
+            r.situacao === "realizado" &&
+            r.categoria === o.categoria,
+        )
+        .reduce((t, r) => t + (r.valor ?? 0), 0);
+      const g = Math.round(gasto * 100) / 100;
+      return {
+        categoria: o.categoria,
+        orcado: o.valor,
+        gasto: g,
+        pct: Math.round((g / o.valor) * 1000) / 10,
+        restante: Math.round((o.valor - g) * 100) / 100,
+      };
+    })
+    .sort((a, b) => b.pct - a.pct);
+}
+
+/**
+ * A frase de aviso quando um gasto novo FAZ o orçamento cruzar 80% ou 100% (só no momento da virada, para não repetir a
+ * cada lançamento). `gastoDoLancamento` é o valor que acabou de entrar.
+ */
+export function avisoDeOrcamento(sit: SituacaoDoOrcamento, gastoDoLancamento: number): string | null {
+  const antes = sit.gasto - gastoDoLancamento;
+  const pctAntes = (antes / sit.orcado) * 100;
+  const nome = sit.categoria.toLowerCase();
+  if (sit.gasto > sit.orcado && pctAntes <= 100) {
+    return `Atenção: o orçamento de ${nome} estourou. Você gastou ${formatarReais(sit.gasto)} de ${formatarReais(sit.orcado)} (${formatarReais(sit.gasto - sit.orcado)} acima).`;
+  }
+  if (sit.pct >= 80 && pctAntes < 80 && sit.gasto <= sit.orcado) {
+    return `Atenção: você já usou ${formatarQuantidade(Math.round(sit.pct))}% do orçamento de ${nome} (${formatarReais(sit.gasto)} de ${formatarReais(sit.orcado)}). Restam ${formatarReais(sit.restante)}.`;
+  }
+  return null;
+}
+
 export function margemPctNoPreco(custoPorSaca: number, preco: number): number | null {
   if (!(preco > 0) || !(custoPorSaca >= 0)) return null;
   return Math.round(((preco - custoPorSaca) / preco) * 1000) / 10;

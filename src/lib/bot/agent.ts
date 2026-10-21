@@ -63,6 +63,7 @@ import {
 } from "@/lib/bot/tools/fazendaPendencias";
 import { lerPendentes } from "@/lib/bot/tools/fazendaBase";
 import { tratarFechamentoDeProposta } from "@/lib/bot/tools/fazendaProposta";
+import { acaoDeOrcamento, tratarOrcamento } from "@/lib/bot/tools/fazendaOrcamento";
 import { tratarRespostaAoRascunho } from "@/lib/bot/recibo";
 import { acharFuncionario, responderFuncionario } from "@/lib/bot/funcionario";
 import {
@@ -1648,6 +1649,10 @@ async function runAgentBase(input: {
     ) {
       const m = await tratarMetaDeMargem(supabase, produtor, texto);
       if (m) return pronta(m);
+    }
+    if (acaoDeOrcamento(texto)) {
+      const o = await tratarOrcamento(supabase, produtor, texto);
+      if (o) return pronta(o);
     }
     if (ehPedidoDeCusto(texto)) {
       const c = await tratarPedidoDeCusto(supabase, produtor, texto);

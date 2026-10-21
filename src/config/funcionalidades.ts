@@ -30,8 +30,19 @@ export const funcionalidades: Funcionalidade[] = [
     id: "estoque_margem",
     titulo: "Estoque e aviso de venda por margem",
     descricao:
-      'Diga quantas sacas você tem guardadas ("tenho 5.000 sacas de soja no armazém") e ele acompanha o estoque com as colheitas e as vendas que você lança. Defina a sua meta de margem ("meta de margem 25%") e, quando o preço de hoje levar a margem até ela, ele avisa no WhatsApp, uma vez por dia no máximo, com o seu custo por saca e quantas sacas ainda faltam vender. Peça "meu estoque" para ver tudo, e "pausar o aviso de margem" para parar. É conta com o que você lançou, não é recomendação de venda.',
+      'Diga quantas sacas você tem guardadas ("tenho 5.000 sacas de soja no armazém") e ele acompanha o estoque com as colheitas e as vendas que você lança. Defina a sua meta de margem ("meta de margem 25%") e, quando o preço de hoje levar a margem até ela, ele avisa no WhatsApp, uma vez por dia no máximo, com o seu custo por saca e quantas sacas ainda faltam vender. Se o preço cair abaixo do seu custo por saca, ele avisa também (no máximo uma vez a cada 7 dias enquanto continuar abaixo). Peça "meu estoque" para ver tudo, e "pausar o aviso de margem" para parar. É conta com o que você lançou, não é recomendação de venda.',
     comoPedir: "Tenho 5.000 sacas de soja no armazém, ou: meta de margem 25%",
+    onde: "WhatsApp e painel",
+    plano: "Prata",
+    novidadeDesde: "2026-10-21",
+    destaque: 0,
+  },
+  {
+    id: "orcamento_categoria",
+    titulo: "Orçamento por categoria de gasto",
+    descricao:
+      'Diga quanto pretende gastar em cada categoria na safra ("orçamento de adubo 100 mil"). O caderno compara com o que você já gastou e, quando um lançamento leva a categoria a 80% e depois a 100% do orçamento, avisa na própria confirmação do gasto. Peça "meu orçamento" para ver todos, e "tirar orçamento de adubo" para remover. Conta só o gasto já pago, na safra de 1º de setembro a 31 de agosto.',
+    comoPedir: "Orçamento de adubo 100 mil, ou: meu orçamento",
     onde: "WhatsApp e painel",
     plano: "Prata",
     novidadeDesde: "2026-10-21",

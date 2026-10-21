@@ -40,8 +40,9 @@ export function EstoqueBloqueado({
         </div>
         <p className="text-sm text-muted-foreground">
           Veja quantas sacas você ainda tem sem vender e quanto valem ao preço de hoje. Defina a sua
-          meta de margem e receba um aviso no WhatsApp quando o preço chegar nela. Seus funcionários
-          também passam a anotar gasto, plantio e colheita direto pelo WhatsApp.
+          meta de margem e receba um aviso no WhatsApp quando o preço chegar nela. Defina também um
+          orçamento por categoria de gasto, com aviso ao passar de 80% e de 100%. Seus funcionários
+          passam a anotar gasto, plantio e colheita direto pelo WhatsApp.
         </p>
         <UpgradeButton
           planoAlvo="prata"

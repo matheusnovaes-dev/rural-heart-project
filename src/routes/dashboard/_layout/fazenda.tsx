@@ -58,6 +58,7 @@ import { useAuth, useRequireProdutor } from "@/lib/auth";
 import { temAcessoPrata, useAssinatura } from "@/lib/planos";
 import { CustoMargemCard } from "@/components/fazenda/CustoMargemCard";
 import { EstoqueBloqueado, EstoqueCard } from "@/components/fazenda/EstoqueCard";
+import { OrcamentoCard } from "@/components/fazenda/OrcamentoCard";
 import { PendenciasCard } from "@/components/fazenda/PendenciasCard";
 import { PorTalhaoCard } from "@/components/fazenda/PorTalhaoCard";
 import {
@@ -471,14 +472,17 @@ function FazendaPage() {
           />
 
           {temPrata ? (
-            <EstoqueCard
-              produtor={{ id: produtor.id, uf: produtor.uf }}
-              versao={versao}
-              onInformarEstoque={() => {
-                setTipoInicial("estoque");
-                setEditando("novo");
-              }}
-            />
+            <>
+              <EstoqueCard
+                produtor={{ id: produtor.id, uf: produtor.uf }}
+                versao={versao}
+                onInformarEstoque={() => {
+                  setTipoInicial("estoque");
+                  setEditando("novo");
+                }}
+              />
+              <OrcamentoCard produtor={{ id: produtor.id, uf: produtor.uf }} versao={versao} />
+            </>
           ) : (
             <EstoqueBloqueado
               assinaturaId={assinaturaId}

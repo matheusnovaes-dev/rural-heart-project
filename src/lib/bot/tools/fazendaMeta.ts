@@ -343,6 +343,7 @@ export async function montarAvisoDeMargem(
   const c = custo.conta.custoPorSaca;
   if (c === null || !custo.preco) return null;
   const margem = margemPctNoPreco(c, custo.preco.preco);
+  if (margem !== null && margem < 0) return avisoDePrecoAbaixoDoCusto(area, custo, c, margem, ultimo, agora, registrosDaSafra);
   if (margem === null || margem < meta) return null;
   if (ultimo && agora.getTime() - ultimo < 7 * DIA_MS) {
     const antes = area.ultimo_aviso_preco ?? 0;
@@ -361,4 +362,37 @@ export async function montarAvisoDeMargem(
   }
   partes.push("É conta com o que você lançou, não é recomendação de venda.");
   return { texto: partes.join(" "), preco: custo.preco.preco };
+}
+
+/**
+ * Preço abaixo do seu custo por saca: vale para quem definiu meta de margem (já aceitou receber avisos) e não repete
+ * enquanto o preço continuar abaixo: só avisa de novo depois de 7 dias, ou se ele voltou a cobrir o custo e caiu de novo.
+ * O último preço avisado fica em ultimo_aviso_preco, então "último aviso abaixo do custo" é ultimo_aviso_preco < custo.
+ */
+function avisoDePrecoAbaixoDoCusto(
+  area: AreaCultura,
+  custo: Awaited<ReturnType<typeof custoDaCultura>>,
+  c: number,
+  margem: number,
+  ultimo: number | null,
+  agora: Date,
+  registrosDaSafra: RegistroFazenda[],
+): AvisoDeMargem | null {
+  const preco = custo.preco!;
+  const antes = area.ultimo_aviso_preco ?? null;
+  const jaAvisadoAbaixo = ultimo !== null && antes !== null && antes < c;
+  if (jaAvisadoAbaixo && agora.getTime() - ultimo! < 7 * DIA_MS) return null;
+  const nome = nomeDaCultura(area.cultura);
+  const estimado = custo.conta.sacasOrigem === "conab";
+  const partes = [
+    `A ${nome} em ${preco.uf} está em ${formatarReais(preco.preco)} a saca (média das praças), abaixo do seu custo de ${formatarReais(c)} por saca${estimado ? " (estimativa com a produção média da Conab, diga a sua pra afinar)" : ""}. A margem está em ${formatarQuantidade(margem)}%.`,
+  ];
+  const est = calcularEstoque(registrosDaSafra, area.cultura);
+  if (est && est.sacas > 0) {
+    partes.push(
+      `Você tem cerca de ${formatarQuantidade(est.sacas)} sacas sem vender: a esse preço, cada saca fica ${formatarReais(c - preco.preco)} abaixo do custo.`,
+    );
+  }
+  partes.push("Quando a margem voltar à sua meta, eu te aviso. É conta com o que você lançou, não é recomendação de venda.");
+  return { texto: partes.join(" "), preco: preco.preco };
 }
