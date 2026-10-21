@@ -6,10 +6,15 @@ import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { useCustosDaSafra } from "@/components/fazenda/useCustosDaSafra";
 import { useRequireProdutor } from "@/lib/auth";
+import { temAcessoPrata, useAssinatura } from "@/lib/planos";
 import {
   COLUNAS_REGISTRO,
   ROTULO_TIPO,
+  calcularEstoque,
   dataLonga,
+  margemPctNoPreco,
+  mesmaCultura,
+  precoAlvoDaMargem,
   formatarQuantidade,
   formatarReais,
   fraseDeVencimento,
@@ -113,6 +118,41 @@ function RelatorioPage() {
     { id: produtor?.id ?? "", uf: produtor?.uf ?? null },
     carregando ? 0 : 1,
   );
+
+  const { plano } = useAssinatura();
+  const estoques = useMemo(() => {
+    if (!temAcessoPrata(plano)) return [];
+    const culturas = [
+      ...new Set(
+        custos.registros
+          .filter(
+            (r) =>
+              ["colheita", "venda", "estoque"].includes(r.tipo) &&
+              !!r.cultura &&
+              /saca/i.test(r.unidade ?? ""),
+          )
+          .map((r) => r.cultura!.toLowerCase()),
+      ),
+    ];
+    return culturas
+      .map((c) => {
+        const est = calcularEstoque(custos.registros, c);
+        const conta = custos.contas.find((x) => mesmaCultura(x.area.cultura, c));
+        const preco = custos.mercado[c]?.preco?.preco ?? null;
+        const custo = conta?.conta.custoPorSaca ?? null;
+        const meta = conta?.area.margem_alvo_pct ?? null;
+        return {
+          c,
+          est,
+          preco,
+          custo,
+          meta,
+          alvo: custo !== null && meta ? precoAlvoDaMargem(custo, meta) : null,
+          margem: custo !== null && preco ? margemPctNoPreco(custo, preco) : null,
+        };
+      })
+      .filter((x) => x.est);
+  }, [plano, custos.registros, custos.contas, custos.mercado]);
 
   if (!produtor || !montado) return null;
   const totalGastos = Math.max(1, resumo.gastos);
@@ -311,6 +351,42 @@ function RelatorioPage() {
                   Estimativa: considera só os gastos lançados no caderno. Arrendamento, juros e o
                   que não foi anotado ficam de fora.
                 </p>
+              </>
+            )}
+
+            {estoques.length > 0 && (
+              <>
+                <h2>Estoque e meta de margem</h2>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Cultura</th>
+                      <th className="num">Estoque</th>
+                      <th className="num">Valor hoje</th>
+                      <th className="num">Custo/saca</th>
+                      <th className="num">Margem hoje</th>
+                      <th className="num">Meta</th>
+                      <th className="num">Preço-alvo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {estoques.map((x) => (
+                      <tr key={x.c}>
+                        <td style={{ textTransform: "capitalize" }}>{x.c}</td>
+                        <td className="num">{formatarQuantidade(x.est!.sacas)} sc</td>
+                        <td className="num">
+                          {x.preco ? formatarReais(Math.round(x.est!.sacas * x.preco)) : ""}
+                        </td>
+                        <td className="num">{x.custo !== null ? formatarReais(x.custo) : ""}</td>
+                        <td className="num">
+                          {x.margem !== null ? `${formatarQuantidade(x.margem)}%` : ""}
+                        </td>
+                        <td className="num">{x.meta ? `${formatarQuantidade(x.meta)}%` : ""}</td>
+                        <td className="num">{x.alvo ? formatarReais(x.alvo) : ""}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </>
             )}
 

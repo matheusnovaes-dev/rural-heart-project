@@ -41,6 +41,7 @@ import { useRequireProdutor } from "@/lib/auth";
 import { normalizarWhatsapp } from "@/lib/telefone";
 import { limiteFuncionarios, useAssinatura, type Plano } from "@/lib/planos";
 import { UpgradeButton } from "@/components/dashboard/UpgradeButton";
+import { buildWhatsAppLink, siteConfig } from "@/config/site";
 import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 
 export const Route = createFileRoute("/dashboard/_layout/funcionarios")({
@@ -139,6 +140,28 @@ function FuncionariosPage() {
           Você já usou os {limite} funcionários do plano atual. Pra adicionar mais gente, é só fazer
           upgrade.
         </p>
+      )}
+      {limite > 0 && (
+        <Card data-testid="funcionario-lanca">
+          <CardContent className="space-y-1.5 pt-6 text-sm">
+            <p className="font-medium">Seus funcionários podem anotar pelo WhatsApp</p>
+            <p className="text-muted-foreground">
+              Quem está na lista acima pode mandar mensagem para o Safralume, no número{" "}
+              <a
+                className="font-medium text-foreground underline"
+                href={buildWhatsAppLink("Oi!")}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                {siteConfig.whatsapp.number.replace(/^55(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3")}
+              </a>
+              , e anotar gasto, plantio e colheita (“gastei 800 de diesel”, “colhi 500 sacas no
+              talhão 2”). O lançamento entra no seu caderno, na tela Fazenda, com o nome de quem
+              lançou. Eles não veem os totais da fazenda, não lançam vendas nem valores acima de R$
+              20.000, e só desfazem o que eles mesmos lançaram.
+            </p>
+          </CardContent>
+        </Card>
       )}
       <Card>
         <CardContent className="pt-6">

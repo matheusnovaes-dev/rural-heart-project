@@ -45,8 +45,10 @@ import {
   lerRegistros,
   numeroOuNull,
   numerosDaConversa,
+  planoDoProdutor,
   precoDeHoje,
   textoOuNull,
+  TEXTO_RECURSO_PRATA,
   ultimaDoBot,
   unidadeDoTexto,
   unidadePadrao,
@@ -55,6 +57,7 @@ import {
 import { cancelarLembrete, criarLembreteDoVencimento } from "@/lib/bot/tools/fazendaPendencias";
 import { custoDaCultura, lerAreas, linhaCurtaDoCusto } from "@/lib/bot/tools/fazendaCusto";
 import type { EstudoSalvo } from "@/lib/bot/propostas/tipos";
+import { temAcessoPrata, type Plano } from "@/lib/planos.shared";
 
 export { dataDoTexto, unidadeDoTexto, vencimentoDoTexto };
 
@@ -87,6 +90,10 @@ export type ResultadoRegistro =
         | "faltou_descricao"
         | "faltou_vencimento"
         | "vencimento_invalido"
+        | "plano_prata"
+        | "nao_permitido"
+        | "acima_do_limite"
+        | "faltou_quantidade"
         | "parece_plano_ou_pergunta"
         | "numero_nao_confere"
         | "conta_nao_fecha"
@@ -157,6 +164,11 @@ export async function registrarNaFazenda(
     historico: HistoricoLinha[];
     telefone?: string;
     estudo?: EstudoSalvo | null;
+    /** funcionário que está lançando (a fazenda é do `produtor`): restringe o que pode e esconde os totais */
+    lancadoPor?: string | null;
+    tiposPermitidos?: TipoRegistro[];
+    limiteDeValor?: number;
+    plano?: Plano;
   },
 ): Promise<ResultadoRegistro> {
   const { produtor } = ctx;
@@ -167,6 +179,20 @@ export async function registrarNaFazenda(
   let tipo = args.tipo as TipoRegistro;
   const hoje = hojeBrasilia();
   const tNorm = SEM_ACENTO(ctx.texto);
+  if (ctx.tiposPermitidos && !ctx.tiposPermitidos.includes(tipo)) {
+    return {
+      sucesso: false,
+      motivo: "nao_permitido",
+      detalhe: "esse tipo de lançamento é só do dono da fazenda; diga que ele precisa lançar",
+    };
+  }
+  // Estoque (contagem de sacas guardadas) é do plano Prata.
+  if (tipo === "estoque") {
+    const plano = ctx.plano ?? (await planoDoProdutor(supabase, produtor.id));
+    if (!temAcessoPrata(plano)) {
+      return { sucesso: false, motivo: "plano_prata", detalhe: TEXTO_RECURSO_PRATA };
+    }
+  }
   // a pagar ou a receber: o tipo vem do verbo escrito (receber = venda, pagar = gasto), não da escolha do modelo
   if (
     (tipo === "gasto" || tipo === "venda") &&
@@ -214,6 +240,13 @@ export async function registrarNaFazenda(
     }
   }
 
+  if (ctx.lancadoPor && querPendente) {
+    return {
+      sucesso: false,
+      motivo: "nao_permitido",
+      detalhe: "contas a pagar e a receber são do dono da fazenda; diga que ele precisa lançar",
+    };
+  }
   let situacao: "realizado" | "pendente" = "realizado";
   let venceEm: string | null = null;
   if (querPendente) {
@@ -273,6 +306,13 @@ export async function registrarNaFazenda(
       valor = Math.round(quantidade * precoUnitario * 100) / 100;
     }
     if (valor === null || valor <= 0) return { sucesso: false, motivo: "faltou_valor" };
+    if (ctx.limiteDeValor && valor > ctx.limiteDeValor) {
+      return {
+        sucesso: false,
+        motivo: "acima_do_limite",
+        detalhe: `lançamento de funcionário vai até ${formatarReais(ctx.limiteDeValor)}; esse valor precisa ser lançado pelo dono`,
+      };
+    }
     if (valor > 50_000_000) {
       return {
         sucesso: false,
@@ -312,6 +352,8 @@ export async function registrarNaFazenda(
         detalhe: `${quantidade} x ${precoUnitario} dá ${Math.round(quantidade * precoUnitario * 100) / 100}, não ${valor}; peça pro produtor confirmar`,
       };
     }
+  } else if (tipo === "estoque" && (quantidade === null || quantidade <= 0)) {
+    return { sucesso: false, motivo: "faltou_quantidade", detalhe: "pergunte quantas sacas" };
   } else if (quantidade !== null && !valorConfere(quantidade, conversa)) {
     return {
       sucesso: false,
@@ -321,6 +363,7 @@ export async function registrarNaFazenda(
   }
 
   let cultura = textoOuNull(args.cultura, 40);
+  if (!cultura && tipo === "estoque") cultura = produtor.cultura_principal?.toLowerCase() ?? null;
   if (!cultura && tipo === "venda") {
     const mencionada = [
       ctx.texto,
@@ -343,11 +386,15 @@ export async function registrarNaFazenda(
     else if (tipo === "colheita")
       descricao = `Colheita${cultura ? ` de ${cultura.toLowerCase()}` : ""}`;
     else if (tipo === "venda") descricao = `Venda${cultura ? ` de ${cultura.toLowerCase()}` : ""}`;
+    else if (tipo === "estoque")
+      descricao = `Estoque${cultura ? ` de ${cultura.toLowerCase()}` : ""}`;
     else return { sucesso: false, motivo: "faltou_descricao" };
   }
   const categoria = tipo === "gasto" ? categoriaValida(args.categoria, descricao) : null;
   const unidade =
-    unidadePadrao(args.unidade ?? null) ?? (quantidade !== null ? unidadeDoTexto(ctx.texto) : null);
+    unidadePadrao(args.unidade ?? null) ??
+    (quantidade !== null ? unidadeDoTexto(ctx.texto) : null) ??
+    (tipo === "estoque" ? "sacas" : null);
 
   // Mensagem repetida em segundos (o WhatsApp reenvia, o produtor toca duas vezes): não lança em dobro.
   const tresMinutos = new Date(Date.now() - 3 * 60_000).toISOString();
@@ -365,6 +412,9 @@ export async function registrarNaFazenda(
       (r.valor ?? null) === (valor ?? null) &&
       r.descricao.toLowerCase() === descricao!.toLowerCase() &&
       (r.cultura ?? null) === (cultura ?? null) &&
+      (r.quantidade ?? null) === (quantidade ?? null) &&
+      (r.talhao ?? null) === (talhao ?? null) &&
+      (r.lancado_por ?? null) === (ctx.lancadoPor ?? null) &&
       r.situacao === situacao,
   );
   if (repetido) {
@@ -394,7 +444,8 @@ export async function registrarNaFazenda(
         (tipo === "venda" && valor && quantidade
           ? Math.round((valor / quantidade) * 100) / 100
           : null),
-      origem: "whatsapp",
+      origem: ctx.lancadoPor ? "funcionario" : "whatsapp",
+      lancado_por: ctx.lancadoPor ?? null,
       situacao,
       vence_em: venceEm,
     })
@@ -427,8 +478,32 @@ export async function registrarNaFazenda(
       confirmacao: confirmacaoDePendencia(registro),
     };
   }
-  const confirmacao = await montarConfirmacao(supabase, produtor, registro);
+  const confirmacao = ctx.lancadoPor
+    ? confirmacaoDeFuncionario(registro, produtor.nome)
+    : tipo === "estoque"
+      ? await confirmacaoDeEstoque(supabase, produtor, registro)
+      : await montarConfirmacao(supabase, produtor, registro);
   return { sucesso: true, duplicado: false, registro, confirmacao };
+}
+
+/** Confirmação para o funcionário: sem totais da fazenda (isso é do dono). */
+export function confirmacaoDeFuncionario(r: RegistroFazenda, nomeDoDono: string): string {
+  const primeiro = nomeDoDono.trim().split(" ")[0] || nomeDoDono;
+  return `Anotei no caderno de ${primeiro}: ${descreverRegistro(r).slice(7).trim()}. Se errou, diga "desfazer".`;
+}
+
+async function confirmacaoDeEstoque(
+  supabase: SupabaseClient,
+  produtor: ProdutorContexto,
+  r: RegistroFazenda,
+): Promise<string> {
+  const qtd = `${formatarQuantidade(r.quantidade ?? 0)} ${r.unidade ?? "sacas"}`;
+  let extra = "";
+  const hoje = await precoDeHoje(supabase, produtor, r.cultura);
+  if (hoje && /saca/i.test(r.unidade ?? "") && r.quantidade) {
+    extra = ` Ao preço de hoje em ${hoje.uf} (${formatarReais(hoje.preco)} a saca), isso vale ${formatarReais(Math.round(r.quantidade * hoje.preco))}.`;
+  }
+  return `${MARCA_CONFIRMACAO_CADERNO}: Estoque${r.cultura ? ` de ${r.cultura.toLowerCase()}` : ""}, ${qtd} (contagem de ${dataLonga(r.ocorrido_em)}).${extra} Pra ver o estoque quando quiser, diga "meu estoque". Se algo ficou errado, diga "desfazer".`;
 }
 
 function confirmacaoDePendencia(r: RegistroFazenda): string {
@@ -700,23 +775,30 @@ function textoCadernoVazio(): string {
 export async function desfazerUltimoRegistro(
   supabase: SupabaseClient,
   produtor: ProdutorContexto,
+  /** funcionário: só desfaz o que ele mesmo lançou nas últimas 3 horas */
+  funcionario?: { nome: string },
 ): Promise<{ sucesso: boolean; texto: string }> {
   if (!produtor.id) return { sucesso: false, texto: "" };
-  const { data } = await supabase
+  let q = supabase
     .from("fazenda_registros")
     .select(COLUNAS_REGISTRO)
     .eq("produtor_id", produtor.id)
-    .eq("origem", "whatsapp")
     .is("apagado_em", null)
-    .neq("situacao", "rascunho")
-    .order("criado_em", { ascending: false })
-    .limit(1);
+    .neq("situacao", "rascunho");
+  q = funcionario
+    ? q
+        .eq("origem", "funcionario")
+        .eq("lancado_por", funcionario.nome)
+        .gte("criado_em", new Date(Date.now() - 3 * 3600_000).toISOString())
+    : q.eq("origem", "whatsapp");
+  const { data } = await q.order("criado_em", { ascending: false }).limit(1);
   const ultimo = (data ?? [])[0] as RegistroFazenda | undefined;
   if (!ultimo) {
     return {
       sucesso: false,
-      texto:
-        "Não achei nenhum lançamento feito por aqui para desfazer. Se for um do painel, dá pra apagar lá na tela Fazenda.",
+      texto: funcionario
+        ? "Não achei nenhum lançamento seu das últimas horas pra desfazer. Se precisar corrigir outro, fale com o dono da fazenda."
+        : "Não achei nenhum lançamento feito por aqui para desfazer. Se for um do painel, dá pra apagar lá na tela Fazenda.",
     };
   }
   const { error } = await supabase
@@ -751,6 +833,14 @@ export async function desfazerUltimoRegistro(
 export function pareceLancamentoNoCaderno(texto: string): boolean {
   const t = SEM_ACENTO(texto);
   if (t.includes("?")) return false;
+  if (
+    /\d/.test(t) &&
+    /\b(sacas?|sc)\b/.test(t) &&
+    /\b(estoque|armazem|armazenad\w*|silo|paiol|guardad\w*|estocad\w*|sem vender|a vender|ainda tenho)\b/.test(
+      t,
+    )
+  )
+    return true;
   if (VERBOS_DE_LANCAMENTO.test(t) && !temMarcaDePlano(t)) return true;
   // a pagar ou a receber: "tenho que pagar 5 mil de arrendamento dia 10", "vou receber 60 mil dia 30"
   return indicaPendencia(t) && /\d/.test(t) && !temMarcaDePlano(t);

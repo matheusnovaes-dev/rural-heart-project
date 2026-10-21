@@ -16,6 +16,7 @@ import {
   intervaloDoPeriodo,
   kgPorSaca,
   mesmaCultura,
+  precoAlvoDaMargem,
   resumir,
   somarGastosDaCultura,
   type RegistroFazenda,
@@ -29,9 +30,14 @@ export type AreaCultura = {
   cultura: string;
   area_ha: number;
   produtividade_sc_ha: number | null;
+  /** meta de margem sobre o preço, em % (plano Prata) */
+  margem_alvo_pct?: number | null;
+  aviso_venda_ativo?: boolean;
+  ultimo_aviso_em?: string | null;
+  ultimo_aviso_preco?: number | null;
 };
 
-const MARCA_PERGUNTA_AREA = "Quantos hectares de ";
+export const MARCA_PERGUNTA_AREA = "Quantos hectares de ";
 
 export async function lerAreas(
   supabase: SupabaseClient,
@@ -39,7 +45,9 @@ export async function lerAreas(
 ): Promise<AreaCultura[]> {
   const { data, error } = await supabase
     .from("fazenda_areas")
-    .select("cultura, area_ha, produtividade_sc_ha")
+    .select(
+      "cultura, area_ha, produtividade_sc_ha, margem_alvo_pct, aviso_venda_ativo, ultimo_aviso_em, ultimo_aviso_preco",
+    )
     .eq("produtor_id", produtorId)
     .order("area_ha", { ascending: false });
   if (error) console.error("Erro ao ler as áreas da fazenda:", error);
@@ -47,6 +55,16 @@ export async function lerAreas(
     cultura: a.cultura,
     area_ha: Number(a.area_ha),
     produtividade_sc_ha: a.produtividade_sc_ha === null ? null : Number(a.produtividade_sc_ha),
+    margem_alvo_pct:
+      a.margem_alvo_pct === null || a.margem_alvo_pct === undefined
+        ? null
+        : Number(a.margem_alvo_pct),
+    aviso_venda_ativo: a.aviso_venda_ativo !== false,
+    ultimo_aviso_em: a.ultimo_aviso_em ?? null,
+    ultimo_aviso_preco:
+      a.ultimo_aviso_preco === null || a.ultimo_aviso_preco === undefined
+        ? null
+        : Number(a.ultimo_aviso_preco),
   }));
 }
 
@@ -67,6 +85,32 @@ export async function salvarArea(
   );
   if (error) console.error("Erro ao salvar a área da cultura:", error);
   return !error;
+}
+
+/** Guarda a meta de margem da cultura (precisa já ter a área). Devolve false se não achou a cultura ou deu erro. */
+export async function salvarMetaDeMargem(
+  supabase: SupabaseClient,
+  produtorId: string,
+  cultura: string,
+  metaPct: number | null,
+  avisoAtivo?: boolean,
+): Promise<boolean> {
+  const mudanca: Record<string, unknown> = { atualizado_em: new Date().toISOString() };
+  if (metaPct !== undefined) mudanca["margem_alvo_pct"] = metaPct;
+  if (avisoAtivo !== undefined) mudanca["aviso_venda_ativo"] = avisoAtivo;
+  if (metaPct !== null) {
+    // meta nova: o aviso pode disparar de novo
+    mudanca["ultimo_aviso_em"] = null;
+    mudanca["ultimo_aviso_preco"] = null;
+  }
+  const { data, error } = await supabase
+    .from("fazenda_areas")
+    .update(mudanca)
+    .eq("produtor_id", produtorId)
+    .eq("cultura", normalizarCultura(cultura))
+    .select("id");
+  if (error) console.error("Erro ao salvar a meta de margem:", error);
+  return !error && (data ?? []).length > 0;
 }
 
 /** Média da Conab do estado em sacas por hectare (safra mais recente com dado). */
@@ -185,6 +229,11 @@ export function textoDoCusto(c: CustoDaCultura, uf: string | null): string {
               uf ? ` em ${uf}` : ""
             }${c.safraConab ? ` (safra ${c.safraConab})` : ""}`;
     L.push(`Produção considerada: ${formatarQuantidade(c.conta.sacas)} sacas (${como})`);
+    if (c.conta.colheitaParcial !== null) {
+      L.push(
+        `  Você já lançou ${formatarQuantidade(c.conta.colheitaParcial)} sacas colhidas, mas a colheita ainda parece parcial, então usei a estimativa.`,
+      );
+    }
   }
   if (c.conta.custoPorSaca !== null) {
     L.push(`Custo por saca: ${formatarReais(c.conta.custoPorSaca)}`);
@@ -343,9 +392,33 @@ export async function tratarRespostaDeArea(
     return "Não consegui guardar a área agora. Tente de novo em instantes, ou informe no painel, na tela Fazenda.";
   const areas = await lerAreas(supabase, produtor.id);
   const alvo = areas.find((a) => mesmaCultura(a.cultura, cultura))!;
+  // a pergunta pode trazer uma meta de margem ("Pra definir a meta de 25% de margem da soja eu preciso da área")
+  const metaDaPergunta = anterior.match(/meta de (\d{1,2}(?:[.,]\d+)?)% de margem/);
+  let metaSalva: number | null = null;
+  if (metaDaPergunta) {
+    const pct = Number(metaDaPergunta[1]!.replace(",", "."));
+    if (
+      pct >= 3 &&
+      pct <= 90 &&
+      (await salvarMetaDeMargem(supabase, produtor.id, cultura, pct, true))
+    ) {
+      metaSalva = pct;
+      alvo.margem_alvo_pct = pct;
+    }
+  }
   const { registros, rotulo } = await lerRegistros(supabase, produtor.id, "safra");
   const c = await custoDaCultura(supabase, produtor, alvo, areas, registros, rotulo);
-  return `Anotei: ${formatarQuantidade(area)} ha de ${cultura.toLowerCase()}.\n\n${textoDoCusto(c, produtor.uf)}`;
+  let extra = "";
+  if (metaSalva !== null) {
+    const precoAlvo =
+      c.conta.custoPorSaca !== null ? precoAlvoDaMargem(c.conta.custoPorSaca, metaSalva) : null;
+    extra = `\n\nMeta de margem guardada: ${formatarQuantidade(metaSalva)}%. Eu te aviso aqui no WhatsApp quando a margem chegar nela, no máximo uma vez por dia.${
+      precoAlvo !== null
+        ? ` Com o seu custo, o preço-alvo é ${formatarReais(precoAlvo)} a saca.`
+        : ""
+    }`;
+  }
+  return `Anotei: ${formatarQuantidade(area)} ha de ${cultura.toLowerCase()}.\n\n${textoDoCusto(c, produtor.uf)}${extra}`;
 }
 
 /** "minha área de soja é 500 hectares" fora de uma pergunta: guarda e confirma. */

@@ -124,9 +124,9 @@ export function CustoMargemCard({
                         conta.sacasOrigem === "colhido"
                           ? "colhido e lançado"
                           : conta.sacasOrigem === "informada"
-                            ? "a que você informou"
+                            ? `a que você informou${conta.colheitaParcial !== null ? ` (colheita parcial: ${formatarQuantidade(conta.colheitaParcial)} sc lançadas)` : ""}`
                             : conta.sacasOrigem === "conab"
-                              ? `média da Conab${m?.conab ? ` (${formatarQuantidade(m.conab.scHa)} sc/ha)` : ""}`
+                              ? `média da Conab${m?.conab ? ` (${formatarQuantidade(m.conab.scHa)} sc/ha)` : ""}${conta.colheitaParcial !== null ? `, colheita parcial: ${formatarQuantidade(conta.colheitaParcial)} sc lançadas` : ""}`
                               : "informe as sacas por hectare"
                       }
                     />

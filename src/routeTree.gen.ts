@@ -22,6 +22,7 @@ import { Route as TermosRouteImport } from './routes/termos'
 import { Route as DashboardLayoutRouteImport } from './routes/dashboard/_layout'
 import { Route as ApiAsaasWebhookRouteImport } from './routes/api/asaas/webhook'
 import { Route as ApiBotResponderRouteImport } from './routes/api/bot/responder'
+import { Route as ApiCronAvisoMargemRouteImport } from './routes/api/cron/aviso-margem'
 import { Route as ApiCronAvisoTrialRouteImport } from './routes/api/cron/aviso-trial'
 import { Route as ApiCronLeiloesAlertasRouteImport } from './routes/api/cron/leiloes-alertas'
 import { Route as ApiCronMensagemProativaRouteImport } from './routes/api/cron/mensagem-proativa'
@@ -112,6 +113,11 @@ const ApiAsaasWebhookRoute = ApiAsaasWebhookRouteImport.update({
 const ApiBotResponderRoute = ApiBotResponderRouteImport.update({
   id: '/api/bot/responder',
   path: '/api/bot/responder',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCronAvisoMargemRoute = ApiCronAvisoMargemRouteImport.update({
+  id: '/api/cron/aviso-margem',
+  path: '/api/cron/aviso-margem',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiCronAvisoTrialRoute = ApiCronAvisoTrialRouteImport.update({
@@ -268,6 +274,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardLayoutRouteWithChildren
   '/api/asaas/webhook': typeof ApiAsaasWebhookRoute
   '/api/bot/responder': typeof ApiBotResponderRoute
+  '/api/cron/aviso-margem': typeof ApiCronAvisoMargemRoute
   '/api/cron/aviso-trial': typeof ApiCronAvisoTrialRoute
   '/api/cron/leiloes-alertas': typeof ApiCronLeiloesAlertasRoute
   '/api/cron/mensagem-proativa': typeof ApiCronMensagemProativaRoute
@@ -308,6 +315,7 @@ export interface FileRoutesByTo {
   '/termos': typeof TermosRoute
   '/api/asaas/webhook': typeof ApiAsaasWebhookRoute
   '/api/bot/responder': typeof ApiBotResponderRoute
+  '/api/cron/aviso-margem': typeof ApiCronAvisoMargemRoute
   '/api/cron/aviso-trial': typeof ApiCronAvisoTrialRoute
   '/api/cron/leiloes-alertas': typeof ApiCronLeiloesAlertasRoute
   '/api/cron/mensagem-proativa': typeof ApiCronMensagemProativaRoute
@@ -350,6 +358,7 @@ export interface FileRoutesById {
   '/dashboard/_layout': typeof DashboardLayoutRouteWithChildren
   '/api/asaas/webhook': typeof ApiAsaasWebhookRoute
   '/api/bot/responder': typeof ApiBotResponderRoute
+  '/api/cron/aviso-margem': typeof ApiCronAvisoMargemRoute
   '/api/cron/aviso-trial': typeof ApiCronAvisoTrialRoute
   '/api/cron/leiloes-alertas': typeof ApiCronLeiloesAlertasRoute
   '/api/cron/mensagem-proativa': typeof ApiCronMensagemProativaRoute
@@ -393,6 +402,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/api/asaas/webhook'
     | '/api/bot/responder'
+    | '/api/cron/aviso-margem'
     | '/api/cron/aviso-trial'
     | '/api/cron/leiloes-alertas'
     | '/api/cron/mensagem-proativa'
@@ -433,6 +443,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/api/asaas/webhook'
     | '/api/bot/responder'
+    | '/api/cron/aviso-margem'
     | '/api/cron/aviso-trial'
     | '/api/cron/leiloes-alertas'
     | '/api/cron/mensagem-proativa'
@@ -474,6 +485,7 @@ export interface FileRouteTypes {
     | '/dashboard/_layout'
     | '/api/asaas/webhook'
     | '/api/bot/responder'
+    | '/api/cron/aviso-margem'
     | '/api/cron/aviso-trial'
     | '/api/cron/leiloes-alertas'
     | '/api/cron/mensagem-proativa'
@@ -516,6 +528,7 @@ export interface RootRouteChildren {
   DashboardLayoutRoute: typeof DashboardLayoutRouteWithChildren
   ApiAsaasWebhookRoute: typeof ApiAsaasWebhookRoute
   ApiBotResponderRoute: typeof ApiBotResponderRoute
+  ApiCronAvisoMargemRoute: typeof ApiCronAvisoMargemRoute
   ApiCronAvisoTrialRoute: typeof ApiCronAvisoTrialRoute
   ApiCronLeiloesAlertasRoute: typeof ApiCronLeiloesAlertasRoute
   ApiCronMensagemProativaRoute: typeof ApiCronMensagemProativaRoute
@@ -617,6 +630,13 @@ declare module '@tanstack/react-router' {
       path: '/api/bot/responder'
       fullPath: '/api/bot/responder'
       preLoaderRoute: typeof ApiBotResponderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cron/aviso-margem': {
+      id: '/api/cron/aviso-margem'
+      path: '/api/cron/aviso-margem'
+      fullPath: '/api/cron/aviso-margem'
+      preLoaderRoute: typeof ApiCronAvisoMargemRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/cron/aviso-trial': {
@@ -864,6 +884,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardLayoutRoute: DashboardLayoutRouteWithChildren,
   ApiAsaasWebhookRoute: ApiAsaasWebhookRoute,
   ApiBotResponderRoute: ApiBotResponderRoute,
+  ApiCronAvisoMargemRoute: ApiCronAvisoMargemRoute,
   ApiCronAvisoTrialRoute: ApiCronAvisoTrialRoute,
   ApiCronLeiloesAlertasRoute: ApiCronLeiloesAlertasRoute,
   ApiCronMensagemProativaRoute: ApiCronMensagemProativaRoute,

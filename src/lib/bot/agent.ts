@@ -43,6 +43,14 @@ import {
   resumoDaFazenda,
 } from "@/lib/bot/tools/fazenda";
 import {
+  acaoDoAvisoDeMargem,
+  ehPedidoDeEstoque,
+  ehPedidoDePrecoAlvo,
+  margemAlvoDoTexto,
+  textoDoEstoque,
+  tratarMetaDeMargem,
+} from "@/lib/bot/tools/fazendaMeta";
+import {
   ehPedidoDeCusto,
   tratarAreaDeFrase,
   tratarPedidoDeCusto,
@@ -56,6 +64,7 @@ import {
 import { lerPendentes } from "@/lib/bot/tools/fazendaBase";
 import { tratarFechamentoDeProposta } from "@/lib/bot/tools/fazendaProposta";
 import { tratarRespostaAoRascunho } from "@/lib/bot/recibo";
+import { acharFuncionario, responderFuncionario } from "@/lib/bot/funcionario";
 import {
   ehPedidoDePararAvisos,
   ehPedidoDeSair,
@@ -1280,6 +1289,24 @@ async function runAgentBase(input: {
   // agente (e o modelo) só enxerga a conversa de verdade; o estudo vira contexto à parte.
   const { historico, estudo: estudoRecente } = separarEstudoDoHistorico(input.historico);
 
+  // Número de funcionário cadastrado pelo dono (plano Prata): anota gasto, plantio e colheita na fazenda do dono, com
+  // regras próprias (ver funcionario.ts). Só entra aqui quem NÃO é produtor cadastrado.
+  if (!produtor.id) {
+    const funcionario = await acharFuncionario(supabase, telefone);
+    if (funcionario) {
+      return responderFuncionario({
+        supabase,
+        apiKey,
+        signal,
+        telefone,
+        texto,
+        historico,
+        funcionario,
+        temMidia: !!input.midia,
+      });
+    }
+  }
+
   // Foto/PDF vem ANTES de qualquer regra de texto: a legenda ("segue a foto da
   // proposta") não pode cair nas respostas prontas de "você lê foto?". A leitura
   // e o estudo são feitos por código (ver estudoDeProposta.ts).
@@ -1610,6 +1637,17 @@ async function runAgentBase(input: {
     // 5) pedidos de leitura
     if (ehPedidoDePendencias(texto)) {
       return pronta(textoDePendencias(await lerPendentes(supabase, produtor.id)));
+    }
+    if (ehPedidoDeEstoque(texto)) {
+      return pronta(await textoDoEstoque(supabase, produtor));
+    }
+    if (
+      margemAlvoDoTexto(texto) !== null ||
+      acaoDoAvisoDeMargem(texto) ||
+      ehPedidoDePrecoAlvo(texto)
+    ) {
+      const m = await tratarMetaDeMargem(supabase, produtor, texto);
+      if (m) return pronta(m);
     }
     if (ehPedidoDeCusto(texto)) {
       const c = await tratarPedidoDeCusto(supabase, produtor, texto);

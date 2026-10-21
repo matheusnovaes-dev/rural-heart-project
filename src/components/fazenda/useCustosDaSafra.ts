@@ -18,6 +18,9 @@ export type Area = {
   cultura: string;
   area_ha: number;
   produtividade_sc_ha: number | null;
+  /** meta de margem sobre o preço, em % (plano Prata) */
+  margem_alvo_pct: number | null;
+  aviso_venda_ativo: boolean;
 };
 
 export type ContaDaCultura = {
@@ -40,7 +43,7 @@ export function useCustosDaSafra(produtor: { id: string; uf: string | null }, ve
     const [a, r] = await Promise.all([
       supabase
         .from("fazenda_areas")
-        .select("id, cultura, area_ha, produtividade_sc_ha")
+        .select("id, cultura, area_ha, produtividade_sc_ha, margem_alvo_pct, aviso_venda_ativo")
         .eq("produtor_id", produtor.id)
         .order("area_ha", { ascending: false }),
       supabase
@@ -48,8 +51,8 @@ export function useCustosDaSafra(produtor: { id: string; uf: string | null }, ve
         .select(COLUNAS_REGISTRO)
         .eq("produtor_id", produtor.id)
         .is("apagado_em", null)
-        .eq("situacao", "realizado")
-        .in("tipo", ["gasto", "colheita"])
+        .neq("situacao", "rascunho")
+        .in("tipo", ["gasto", "colheita", "venda", "estoque"])
         .gte("ocorrido_em", desde)
         .lte("ocorrido_em", ate)
         .limit(3000),
@@ -59,6 +62,11 @@ export function useCustosDaSafra(produtor: { id: string; uf: string | null }, ve
         ...x,
         area_ha: Number(x.area_ha),
         produtividade_sc_ha: x.produtividade_sc_ha === null ? null : Number(x.produtividade_sc_ha),
+        margem_alvo_pct:
+          x.margem_alvo_pct === null || x.margem_alvo_pct === undefined
+            ? null
+            : Number(x.margem_alvo_pct),
+        aviso_venda_ativo: x.aviso_venda_ativo !== false,
       })),
     );
     setRegistros((r.data ?? []) as unknown as RegistroFazenda[]);
@@ -111,5 +119,5 @@ export function useCustosDaSafra(produtor: { id: string; uf: string | null }, ve
     [areas, registros, colhido, mercado],
   );
 
-  return { areas, contas, carregando, recarregar: carregar, rotulo };
+  return { areas, contas, registros, mercado, carregando, recarregar: carregar, rotulo };
 }

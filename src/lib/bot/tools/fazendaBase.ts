@@ -14,6 +14,7 @@ import {
   type PeriodoCaderno,
   type RegistroFazenda,
 } from "@/lib/fazenda.shared";
+import type { Plano } from "@/lib/planos.shared";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
 import type { ProdutorContexto } from "@/lib/bot/types";
 import { buscarPreco } from "@/lib/bot/tools/preco";
@@ -271,3 +272,26 @@ export function indicaPendencia(texto: string): boolean {
 }
 
 export { hojeBrasilia };
+
+// ---------------------------------------------------------------------------------------------
+// Plano
+// ---------------------------------------------------------------------------------------------
+
+/** Plano da assinatura do produtor (bronze quando não acha). Estoque, meta de margem e funcionário são do Prata. */
+export async function planoDoProdutor(
+  supabase: SupabaseClient,
+  produtorId: string | null,
+): Promise<Plano> {
+  if (!produtorId) return "bronze";
+  const { data } = await supabase
+    .from("assinaturas")
+    .select("plano")
+    .eq("produtor_id", produtorId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<{ plano: Plano }>();
+  return data?.plano === "prata" || data?.plano === "ouro" ? data.plano : "bronze";
+}
+
+export const TEXTO_RECURSO_PRATA =
+  "Esse recurso é do plano Prata: estoque de grãos, meta de margem com aviso de venda e funcionários anotando pelo WhatsApp. Se quiser, responda *quero assinar* que eu te mando o link pra mudar de plano.";

@@ -91,6 +91,7 @@ type AbaId =
   | "sinal"
   | "alertas"
   | "fazenda"
+  | "estoque"
   | "clima"
   | "plantio"
   | "ferrugem"
@@ -109,6 +110,12 @@ const abas: {
   { id: "sinal", label: "Sinal de venda", icon: IconesSafralume["sinal-venda"], plano: "bronze" },
   { id: "alertas", label: "Alertas & lembretes", icon: IconesSafralume["alerta"], plano: "bronze" },
   { id: "fazenda", label: "Caderno da fazenda", icon: IconesSafralume["safra"], plano: "bronze" },
+  {
+    id: "estoque",
+    label: "Estoque e aviso de venda",
+    icon: IconesSafralume["saca"],
+    plano: "prata",
+  },
   { id: "clima", label: "Clima", icon: IconesSafralume["clima-sol"], plano: "bronze" },
   { id: "plantio", label: "Plantio", icon: IconesSafralume["janela-plantio"], plano: "bronze" },
   {
@@ -138,6 +145,8 @@ const legendas: Record<AbaId, string> = {
   alertas: "Avisos de preço, clima e dólar, e lembretes da lavoura direto no WhatsApp.",
   fazenda:
     "Gastos, vendas e plantios por mensagem, áudio ou foto da nota, com a pagar, a receber e custo por saca.",
+  estoque:
+    "Quantas sacas faltam vender, sua meta de margem e o aviso no WhatsApp quando o preço chegar nela.",
   clima: "Previsão de chuva e temperatura pra sua cidade, pelos próximos dias.",
   plantio: "A janela de plantio oficial (ZARC) pra sua cultura e região.",
   ferrugem: "O risco de ferrugem da soja na sua região, pra se antecipar.",
@@ -415,6 +424,7 @@ export function DashboardPreview() {
                       {aba === "sinal" && <PreviewSinalVenda />}
                       {aba === "alertas" && <PreviewAlertas />}
                       {aba === "fazenda" && <PreviewFazenda />}
+                      {aba === "estoque" && <PreviewEstoque />}
                       {aba === "clima" && <PreviewClima />}
                       {aba === "plantio" && <PreviewPlantio />}
                       {aba === "ferrugem" && <PreviewFerrugem />}
@@ -734,6 +744,47 @@ function PreviewFazenda() {
       <p className="rounded-lg bg-secondary px-3 py-2 text-xs text-muted-foreground">
         No WhatsApp é só escrever, mandar áudio ou a foto da nota. Diga “custo por saca” e veja a
         sua margem.
+      </p>
+    </div>
+  );
+}
+
+function PreviewEstoque() {
+  const dados = [
+    { rotulo: "Estoque", valor: "8.000 sc", nota: "contagem + colheitas − vendas" },
+    { rotulo: "Custo por saca", valor: "R$ 60,00", nota: "com o que você lançou" },
+    { rotulo: "Preço-alvo", valor: "R$ 80,00", nota: "para 25% de margem" },
+  ];
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-3 gap-2">
+        {dados.map((d) => (
+          <div key={d.rotulo} className="rounded-lg border border-border p-3">
+            <p className="text-[11px] text-muted-foreground">{d.rotulo}</p>
+            <p className="font-mono text-sm font-semibold tabular-nums text-foreground sm:text-base">
+              {d.valor}
+            </p>
+            <p className="text-[10px] leading-tight text-muted-foreground">{d.nota}</p>
+          </div>
+        ))}
+      </div>
+      <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+        <p className="text-[11px] font-medium text-primary">Aviso no WhatsApp</p>
+        <p className="mt-1 text-sm text-foreground">
+          A soja chegou a R$ 136,38. Pelo seu custo de R$ 60,00 por saca, sua margem está em 56%,
+          acima da meta de 25%. Você tem cerca de 8.000 sacas sem vender.
+        </p>
+      </div>
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm">
+        <span className="text-foreground">Meta de margem</span>
+        <span className="font-mono font-semibold text-foreground">25%</span>
+        <Badge variant="secondary" className="text-[10px]">
+          Avisar no WhatsApp: ligado
+        </Badge>
+      </div>
+      <p className="rounded-lg bg-secondary px-3 py-2 text-xs text-muted-foreground">
+        Seus funcionários também anotam gasto, plantio e colheita pelo WhatsApp, direto no seu
+        caderno. Conta com o que você lançou, não é recomendação de venda.
       </p>
     </div>
   );

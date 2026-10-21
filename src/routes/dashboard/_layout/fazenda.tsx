@@ -13,7 +13,9 @@ import {
   Trash2,
   TrendingDown,
   TrendingUp,
+  Users,
   Wallet,
+  Warehouse,
   Wheat,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -53,7 +55,9 @@ import {
 import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 import { supabase } from "@/lib/supabase";
 import { useAuth, useRequireProdutor } from "@/lib/auth";
+import { temAcessoPrata, useAssinatura } from "@/lib/planos";
 import { CustoMargemCard } from "@/components/fazenda/CustoMargemCard";
+import { EstoqueBloqueado, EstoqueCard } from "@/components/fazenda/EstoqueCard";
 import { PendenciasCard } from "@/components/fazenda/PendenciasCard";
 import { PorTalhaoCard } from "@/components/fazenda/PorTalhaoCard";
 import {
@@ -100,6 +104,7 @@ const ICONE_TIPO: Record<TipoRegistro, typeof Wallet> = {
   plantio: Sprout,
   colheita: Wheat,
   nota: StickyNote,
+  estoque: Warehouse,
 };
 
 const COR_TIPO: Record<TipoRegistro, string> = {
@@ -108,6 +113,7 @@ const COR_TIPO: Record<TipoRegistro, string> = {
   plantio: "bg-lime-100 text-lime-900",
   colheita: "bg-orange-100 text-orange-900",
   nota: "bg-slate-100 text-slate-700",
+  estoque: "bg-sky-100 text-sky-900",
 };
 
 const EXEMPLOS = [
@@ -136,6 +142,9 @@ function FazendaPage() {
   const [temQualquerCoisa, setTemQualquerCoisa] = useState<boolean | null>(null);
   const [pendentes, setPendentes] = useState<RegistroFazenda[]>([]);
   const [versao, setVersao] = useState(0);
+  const [tipoInicial, setTipoInicial] = useState<TipoRegistro>("gasto");
+  const { plano, assinaturaId, asaasSubscriptionId } = useAssinatura();
+  const temPrata = temAcessoPrata(plano);
 
   const carregar = useCallback(async () => {
     if (!supabase || !produtor) return;
@@ -337,7 +346,13 @@ function FazendaPage() {
                 Relatório (PDF)
               </Link>
             </Button>
-            <Button size="sm" onClick={() => setEditando("novo")}>
+            <Button
+              size="sm"
+              onClick={() => {
+                setTipoInicial("gasto");
+                setEditando("novo");
+              }}
+            >
               <Plus className="size-4" />
               Novo lançamento
             </Button>
@@ -355,14 +370,23 @@ function FazendaPage() {
               action={
                 <div className="flex flex-col items-center gap-3">
                   <ul className="space-y-1.5 text-sm text-muted-foreground">
-                    {EXEMPLOS.map((e) => (
+                    {(temPrata
+                      ? [...EXEMPLOS, "tenho 5.000 sacas de soja no armazém"]
+                      : EXEMPLOS
+                    ).map((e) => (
                       <li key={e} className="rounded-full bg-secondary px-3 py-1">
                         “{e}”
                       </li>
                     ))}
                   </ul>
                   <div className="flex flex-wrap justify-center gap-2">
-                    <Button size="sm" onClick={() => setEditando("novo")}>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setTipoInicial("gasto");
+                        setEditando("novo");
+                      }}
+                    >
                       <Plus className="size-4" />
                       Novo lançamento
                     </Button>
@@ -445,6 +469,22 @@ function FazendaPage() {
             culturasSugeridas={culturasSugeridas}
             versao={versao}
           />
+
+          {temPrata ? (
+            <EstoqueCard
+              produtor={{ id: produtor.id, uf: produtor.uf }}
+              versao={versao}
+              onInformarEstoque={() => {
+                setTipoInicial("estoque");
+                setEditando("novo");
+              }}
+            />
+          ) : (
+            <EstoqueBloqueado
+              assinaturaId={assinaturaId}
+              asaasSubscriptionId={asaasSubscriptionId}
+            />
+          )}
 
           {!carregando && resumo.porTalhao.length > 0 && (
             <PorTalhaoCard porTalhao={resumo.porTalhao} onFiltrar={(t) => setBusca(t)} />
@@ -610,6 +650,8 @@ function FazendaPage() {
         registro={editando === "novo" ? null : editando}
         produtorId={produtor.id}
         produtorWhatsapp={produtor.whatsapp}
+        tipoInicial={tipoInicial}
+        temPrata={temPrata}
         culturaPadrao={produtor.cultura_principal ?? ""}
         onFechar={() => setEditando(null)}
         onSalvo={() => {
@@ -717,6 +759,11 @@ function LinhaRegistro({
               {r.preco_unitario ? ` a ${formatarReais(r.preco_unitario)}` : ""}
             </span>
           )}
+          {r.origem === "funcionario" && (
+            <span className="inline-flex items-center gap-0.5 font-medium text-foreground">
+              <Users className="size-3" /> Lançado por {r.lancado_por ?? "funcionário"}
+            </span>
+          )}
           {r.origem === "whatsapp" && (
             <span className="inline-flex items-center gap-0.5">
               <MessageCircle className="size-3" /> WhatsApp
@@ -763,6 +810,8 @@ function FormularioRegistro({
   registro,
   produtorId,
   produtorWhatsapp,
+  tipoInicial,
+  temPrata,
   culturaPadrao,
   onFechar,
   onSalvo,
@@ -771,6 +820,8 @@ function FormularioRegistro({
   registro: RegistroFazenda | null;
   produtorId: string;
   produtorWhatsapp: string;
+  tipoInicial: TipoRegistro;
+  temPrata: boolean;
   culturaPadrao: string;
   onFechar: () => void;
   onSalvo: () => void;
@@ -808,7 +859,8 @@ function FormularioRegistro({
       setPendente(registro.situacao === "pendente");
       setVenceEm(registro.vence_em ?? "");
     } else {
-      setTipo("gasto");
+      setTipo(tipoInicial);
+      setUnidade(tipoInicial === "estoque" ? "sacas" : "");
       setData(hojeBrasilia());
       setDescricao("");
       setValor("");
@@ -820,11 +872,12 @@ function FormularioRegistro({
       setPendente(false);
       setVenceEm("");
     }
-  }, [aberto, registro, culturaPadrao]);
+  }, [aberto, registro, culturaPadrao, tipoInicial]);
 
   const temValor = tipo === "gasto" || tipo === "venda";
   const podePendente = temValor;
-  const temQuantidade = tipo === "venda" || tipo === "plantio" || tipo === "colheita";
+  const temQuantidade =
+    tipo === "venda" || tipo === "plantio" || tipo === "colheita" || tipo === "estoque";
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
@@ -836,9 +889,13 @@ function FormularioRegistro({
       return;
     }
     const qtd = temQuantidade && quantidade.trim() ? (numerosDoTexto(quantidade)[0] ?? null) : null;
+    if (tipo === "estoque" && (qtd === null || qtd <= 0 || !cultura.trim())) {
+      setAviso("Informe a cultura e quantas sacas você tem guardadas.");
+      return;
+    }
     const desc =
       descricao.trim() ||
-      (tipo === "plantio" || tipo === "colheita" || tipo === "venda"
+      (tipo === "plantio" || tipo === "colheita" || tipo === "venda" || tipo === "estoque"
         ? `${ROTULO_TIPO[tipo]}${cultura ? ` de ${cultura.toLowerCase()}` : ""}`
         : "");
     if (!desc) {
@@ -866,7 +923,15 @@ function FormularioRegistro({
       cultura: cultura.trim() ? cultura.trim().slice(0, 40) : null,
       talhao: talhao.trim() ? talhao.trim().slice(0, 60) : null,
       quantidade: qtd,
-      unidade: qtd !== null && unidade.trim() ? unidade.trim().slice(0, 20) : null,
+      // sem unidade digitada, vale a do placeholder: ha no plantio, sacas nos outros
+      unidade:
+        qtd !== null
+          ? unidade.trim()
+            ? unidade.trim().slice(0, 20)
+            : tipo === "plantio"
+              ? "ha"
+              : "sacas"
+          : null,
       preco_unitario:
         tipo === "venda" && total && qtd ? Math.round((total / qtd) * 100) / 100 : null,
     };
@@ -925,27 +990,33 @@ function FormularioRegistro({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={salvar} className="flex flex-col gap-3.5">
-          <div role="radiogroup" aria-label="Tipo" className="grid grid-cols-5 gap-1.5">
-            {TIPOS_REGISTRO.map((t) => {
-              const Icone = ICONE_TIPO[t];
-              return (
-                <button
-                  type="button"
-                  key={t}
-                  role="radio"
-                  aria-checked={tipo === t}
-                  onClick={() => setTipo(t)}
-                  className={`flex flex-col items-center gap-1 rounded-lg border px-1 py-2 text-[11px] transition-colors ${
-                    tipo === t
-                      ? "border-primary bg-primary/10 font-medium text-primary"
-                      : "border-border text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Icone className="size-4" />
-                  {ROTULO_TIPO[t]}
-                </button>
-              );
-            })}
+          <div
+            role="radiogroup"
+            aria-label="Tipo"
+            className={`grid gap-1.5 ${temPrata || tipo === "estoque" ? "grid-cols-6" : "grid-cols-5"}`}
+          >
+            {TIPOS_REGISTRO.filter((t) => t !== "estoque" || temPrata || tipo === "estoque").map(
+              (t) => {
+                const Icone = ICONE_TIPO[t];
+                return (
+                  <button
+                    type="button"
+                    key={t}
+                    role="radio"
+                    aria-checked={tipo === t}
+                    onClick={() => setTipo(t)}
+                    className={`flex flex-col items-center gap-1 rounded-lg border px-1 py-2 text-[11px] transition-colors ${
+                      tipo === t
+                        ? "border-primary bg-primary/10 font-medium text-primary"
+                        : "border-border text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Icone className="size-4" />
+                    {ROTULO_TIPO[t]}
+                  </button>
+                );
+              },
+            )}
           </div>
 
           {podePendente && (
@@ -1034,7 +1105,7 @@ function FormularioRegistro({
                   inputMode="decimal"
                   value={quantidade}
                   onChange={(e) => setQuantidade(e.target.value)}
-                  placeholder={tipo === "venda" ? "500" : "50"}
+                  placeholder={tipo === "venda" || tipo === "estoque" ? "500" : "50"}
                   autoComplete="off"
                 />
               </div>
@@ -1044,7 +1115,9 @@ function FormularioRegistro({
                   id="fz-un"
                   value={unidade}
                   onChange={(e) => setUnidade(e.target.value)}
-                  placeholder={tipo === "venda" || tipo === "colheita" ? "sacas" : "ha"}
+                  placeholder={
+                    tipo === "venda" || tipo === "colheita" || tipo === "estoque" ? "sacas" : "ha"
+                  }
                   maxLength={20}
                   autoComplete="off"
                 />

@@ -27,6 +27,29 @@ export const DIAS_DE_NOVIDADE = 30;
 
 export const funcionalidades: Funcionalidade[] = [
   {
+    id: "estoque_margem",
+    titulo: "Estoque e aviso de venda por margem",
+    descricao:
+      'Diga quantas sacas você tem guardadas ("tenho 5.000 sacas de soja no armazém") e ele acompanha o estoque com as colheitas e as vendas que você lança. Defina a sua meta de margem ("meta de margem 25%") e, quando o preço de hoje levar a margem até ela, ele avisa no WhatsApp, uma vez por dia no máximo, com o seu custo por saca e quantas sacas ainda faltam vender. Peça "meu estoque" para ver tudo, e "pausar o aviso de margem" para parar. É conta com o que você lançou, não é recomendação de venda.',
+    comoPedir: "Tenho 5.000 sacas de soja no armazém, ou: meta de margem 25%",
+    onde: "WhatsApp e painel",
+    plano: "Prata",
+    novidadeDesde: "2026-10-21",
+    destaque: 0,
+  },
+  {
+    id: "funcionario_lanca",
+    titulo: "Funcionário anota pelo WhatsApp",
+    descricao:
+      'Os funcionários cadastrados na tela Funcionários mandam mensagem para o Safralume ("gastei 800 de diesel", "colhi 500 sacas no talhão 2") e o lançamento entra no seu caderno da fazenda com o nome de quem lançou. Eles anotam gasto, plantio e colheita (gasto de até R$ 20.000), não veem os totais da fazenda e só desfazem o que eles mesmos lançaram.',
+    comoPedir:
+      "Cadastre o funcionário na tela Funcionários e peça para ele mandar mensagem para o Safralume",
+    onde: "WhatsApp e painel",
+    plano: "Prata",
+    novidadeDesde: "2026-10-21",
+    destaque: 1,
+  },
+  {
     id: "caderno_fazenda",
     titulo: "Caderno da fazenda",
     descricao:

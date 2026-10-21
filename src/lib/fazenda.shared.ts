@@ -6,7 +6,7 @@ import { normalizarCultura } from "@/config/culturas";
  * como se soma, o que é "este mês"). Sem dependência de servidor, para rodar também no navegador.
  */
 
-export const TIPOS_REGISTRO = ["gasto", "venda", "plantio", "colheita", "nota"] as const;
+export const TIPOS_REGISTRO = ["gasto", "venda", "plantio", "colheita", "nota", "estoque"] as const;
 export type TipoRegistro = (typeof TIPOS_REGISTRO)[number];
 
 export const ROTULO_TIPO: Record<TipoRegistro, string> = {
@@ -15,6 +15,7 @@ export const ROTULO_TIPO: Record<TipoRegistro, string> = {
   plantio: "Plantio",
   colheita: "Colheita",
   nota: "Anotação",
+  estoque: "Estoque",
 };
 
 /** realizado = já aconteceu; pendente = a pagar ou a receber (tem vencimento); rascunho = nota lida da foto, esperando o "sim". */
@@ -33,7 +34,7 @@ export type RegistroFazenda = {
   quantidade: number | null;
   unidade: string | null;
   preco_unitario: number | null;
-  origem: "whatsapp" | "painel";
+  origem: "whatsapp" | "painel" | "funcionario";
   criado_em: string;
   situacao: Situacao;
   /** AAAA-MM-DD, só em pendente */
@@ -41,11 +42,13 @@ export type RegistroFazenda = {
   lembrete_id: string | null;
   /** dia em que foi pago ou recebido */
   realizado_em: string | null;
+  /** nome do funcionário que lançou (origem funcionario) */
+  lancado_por: string | null;
 };
 
 /** Colunas lidas do banco (a mesma lista no bot e no painel). */
 export const COLUNAS_REGISTRO =
-  "id, tipo, ocorrido_em, valor, descricao, categoria, cultura, talhao, quantidade, unidade, preco_unitario, origem, criado_em, situacao, vence_em, lembrete_id, realizado_em";
+  "id, tipo, ocorrido_em, valor, descricao, categoria, cultura, talhao, quantidade, unidade, preco_unitario, origem, criado_em, situacao, vence_em, lembrete_id, realizado_em, lancado_por";
 
 /** Categorias de gasto (a lista que o painel oferece e que o bot escolhe sozinho pelo texto). */
 export const CATEGORIAS_GASTO = [
@@ -132,6 +135,13 @@ function paraNumero(bruto: string): number | null {
 export function numerosDoTexto(texto: string): number[] {
   const t = SEM_ACENTO(texto).replace(/r\$\s*/g, "");
   const achados = new Set<number>();
+  // "1 milhão e 800 mil" (e "2 milhões e 300 mil"): o que a regra geral abaixo leria como 1.000.000 e 800.000 separados
+  for (const m of t.matchAll(
+    /(\d{1,3}(?:[.,]\d+)?)\s*(?:milhao|milhoes)\s*e\s*(\d{1,3})\s*mil\b/g,
+  )) {
+    const n = Number(m[1]!.replace(",", ".")) * 1_000_000 + Number(m[2]) * 1000;
+    if (Number.isFinite(n)) achados.add(Math.round(n * 100) / 100);
+  }
   const re =
     /(\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?)(?:\s*(mil|k|milhoes|milhao)\b(?:\s+e\s+(meio|\d{1,3})\b)?)?/g;
   for (const m of t.matchAll(re)) {
@@ -407,6 +417,8 @@ export function descreverRegistro(r: RegistroFazenda): string {
       return `${dataCurta(r.ocorrido_em)}  Plantio${de}${qtd ? `, ${qtd}` : ""}${onde}`;
     case "colheita":
       return `${dataCurta(r.ocorrido_em)}  Colheita${de}${qtd ? `, ${qtd}` : ""}${onde}`;
+    case "estoque":
+      return `${dataCurta(r.ocorrido_em)}  Estoque${de}${qtd ? `: ${qtd}` : ""}`;
     default:
       return `${dataCurta(r.ocorrido_em)}  ${r.descricao}`;
   }
@@ -509,6 +521,8 @@ export type ResultadoCusto = {
   custoPorHa: number;
   sacas: number | null;
   sacasOrigem: "colhido" | "informada" | "conab" | null;
+  /** sacas colhidas e lançadas até agora quando a colheita parece parcial (a conta usou a estimativa) */
+  colheitaParcial: number | null;
   custoPorSaca: number | null;
   margemPorSaca: number | null;
   margemPct: number | null;
@@ -522,15 +536,24 @@ export function calcularCustoEMargem(e: EntradaCusto): ResultadoCusto {
   const custoPorHa = e.area_ha > 0 ? e.gastos / e.area_ha : 0;
   let sacas: number | null = null;
   let sacasOrigem: ResultadoCusto["sacasOrigem"] = null;
-  if (e.sacasColhidas && e.sacasColhidas > 0) {
-    sacas = e.sacasColhidas;
+  // Estimativa pela área: a produtividade que o produtor informou ou, sem ela, a média da Conab do estado.
+  const estimativa =
+    e.produtividade_sc_ha && e.produtividade_sc_ha > 0
+      ? { sacas: e.area_ha * e.produtividade_sc_ha, origem: "informada" as const }
+      : e.produtividadeConab && e.produtividadeConab > 0
+        ? { sacas: e.area_ha * e.produtividadeConab, origem: "conab" as const }
+        : null;
+  const colhidas = e.sacasColhidas && e.sacasColhidas > 0 ? e.sacasColhidas : null;
+  let colheitaParcial: number | null = null;
+  // O colhido e lançado vale quando a colheita já está perto do fim (80% ou mais da estimativa). Colheita pela metade
+  // dividiria o gasto da safra inteira por metade das sacas e inflaria o custo por saca.
+  if (colhidas !== null && (!estimativa || colhidas >= estimativa.sacas * 0.8)) {
+    sacas = colhidas;
     sacasOrigem = "colhido";
-  } else if (e.produtividade_sc_ha && e.produtividade_sc_ha > 0) {
-    sacas = e.area_ha * e.produtividade_sc_ha;
-    sacasOrigem = "informada";
-  } else if (e.produtividadeConab && e.produtividadeConab > 0) {
-    sacas = e.area_ha * e.produtividadeConab;
-    sacasOrigem = "conab";
+  } else if (estimativa) {
+    sacas = estimativa.sacas;
+    sacasOrigem = estimativa.origem;
+    if (colhidas !== null) colheitaParcial = colhidas;
   }
   const custoPorSaca = sacas && sacas > 0 && e.gastos > 0 ? e.gastos / sacas : null;
   const margemPorSaca =
@@ -544,6 +567,7 @@ export function calcularCustoEMargem(e: EntradaCusto): ResultadoCusto {
     custoPorHa: arred(custoPorHa),
     sacas: sacas === null ? null : Math.round(sacas),
     sacasOrigem,
+    colheitaParcial,
     custoPorSaca: custoPorSaca === null ? null : arred(custoPorSaca),
     margemPorSaca: margemPorSaca === null ? null : arred(margemPorSaca),
     margemPct: margemPct === null ? null : Math.round(margemPct * 10) / 10,
@@ -585,4 +609,79 @@ export function somarGastosDaCultura(
     semCulturaIncluidos: incluir ? semCultura : 0,
     semCulturaFora: incluir ? 0 : semCultura,
   };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Estoque, preço-alvo e margem (plano Prata)
+// ---------------------------------------------------------------------------------------------
+
+export type EstoqueDaCultura = {
+  cultura: string;
+  /** sacas guardadas agora: contagem mais recente, mais colheitas e menos vendas depois dela */
+  sacas: number;
+  /** de onde vem a base: contagem lançada, ou só colheitas e vendas da safra */
+  base: "contagem" | "colheita";
+  baseData: string | null;
+  colhidas: number;
+  vendidas: number;
+  /** sacas já vendidas mas ainda a receber (contam como vendidas) */
+  aReceber: number;
+};
+
+/**
+ * Estoque de uma cultura em sacas. Parte da contagem mais recente ("tenho 5.000 sacas no armazém"), soma as
+ * colheitas lançadas depois e tira as vendas depois (as vendas a receber também saem do estoque: a saca já foi
+ * vendida). Sem contagem, usa as colheitas e as vendas da safra inteira.
+ */
+export function calcularEstoque(
+  registros: RegistroFazenda[],
+  cultura: string,
+): EstoqueDaCultura | null {
+  const daCultura = registros.filter(
+    (r) =>
+      (r.situacao ?? "realizado") !== "rascunho" &&
+      mesmaCultura(r.cultura, cultura) &&
+      r.quantidade !== null &&
+      /saca/i.test(r.unidade ?? ""),
+  );
+  const contagens = daCultura
+    .filter((r) => r.tipo === "estoque")
+    .sort(
+      (a, b) =>
+        b.ocorrido_em.localeCompare(a.ocorrido_em) || b.criado_em.localeCompare(a.criado_em),
+    );
+  const contagem = contagens[0];
+  // depois da contagem: dia seguinte ou, no mesmo dia, lançado depois dela
+  const depois = (r: RegistroFazenda) =>
+    !contagem ||
+    r.ocorrido_em > contagem.ocorrido_em ||
+    (r.ocorrido_em === contagem.ocorrido_em && r.criado_em > contagem.criado_em);
+  const colheitas = daCultura.filter((r) => r.tipo === "colheita" && depois(r));
+  const vendas = daCultura.filter((r) => r.tipo === "venda" && depois(r));
+  if (!contagem && colheitas.length === 0 && vendas.length === 0) return null;
+  const soma = (l: RegistroFazenda[]) => l.reduce((t, r) => t + (r.quantidade ?? 0), 0);
+  const colhidas = soma(colheitas);
+  const vendidas = soma(vendas);
+  const aReceber = soma(vendas.filter((r) => r.situacao === "pendente"));
+  const baseSacas = contagem ? (contagem.quantidade ?? 0) : 0;
+  return {
+    cultura,
+    sacas: Math.max(0, Math.round((baseSacas + colhidas - vendidas) * 100) / 100),
+    base: contagem ? "contagem" : "colheita",
+    baseData: contagem ? contagem.ocorrido_em : null,
+    colhidas,
+    vendidas,
+    aReceber,
+  };
+}
+
+/** Preço da saca em que a margem sobre o preço chega a `metaPct` (margem = (preço - custo) / preço). */
+export function precoAlvoDaMargem(custoPorSaca: number, metaPct: number): number | null {
+  if (!(custoPorSaca > 0) || !(metaPct > 0) || metaPct >= 95) return null;
+  return Math.round((custoPorSaca / (1 - metaPct / 100)) * 100) / 100;
+}
+
+export function margemPctNoPreco(custoPorSaca: number, preco: number): number | null {
+  if (!(preco > 0) || !(custoPorSaca >= 0)) return null;
+  return Math.round(((preco - custoPorSaca) / preco) * 1000) / 10;
 }
