@@ -1,6 +1,13 @@
 import { lazy, Suspense, useEffect, useRef, useState, type ComponentProps } from "react";
 
+import { LeadForm } from "@/components/landing/LeadForm";
 import { cn } from "@/lib/utils";
+
+/**
+ * EXPERIMENTO 2026-10-21: com `false` o formulário volta a vir junto do carregamento inicial (como até 16/10). Ligar de novo
+ * só se a conversão da landing não mudar sem ele. Ver nota do funil em memória.
+ */
+const SOB_DEMANDA = false;
 
 /**
  * O formulário de cadastro (react-hook-form, zod, seletores) só é preciso depois de um toque no CTA ou no fim da página,
@@ -12,7 +19,7 @@ const LeadFormLazy = lazy(() => importar().then((m) => ({ default: m.LeadForm })
 
 let pedido = false;
 export function precarregarLeadForm() {
-  if (pedido) return;
+  if (!SOB_DEMANDA || pedido) return;
   pedido = true;
   void importar().catch(() => {
     pedido = false;
@@ -41,6 +48,7 @@ function Esqueleto({ className }: { className?: string }) {
 
 /** Dentro do modal (já aberto por um toque): carrega na hora, com esqueleto enquanto o pedaço chega. */
 export function LeadFormCarregavel(props: Props) {
+  if (!SOB_DEMANDA) return <LeadForm {...props} />;
   return (
     <Suspense
       fallback={
@@ -57,6 +65,7 @@ export function LeadFormCarregavel(props: Props) {
  * área chega perto da tela, ou depois de alguns segundos ociosos (quem usa o link #comece cai direto aqui).
  */
 export function LeadFormAoChegar(props: Props) {
+  if (!SOB_DEMANDA) return <LeadForm {...props} />;
   const ref = useRef<HTMLDivElement>(null);
   const [montar, setMontar] = useState(false);
 

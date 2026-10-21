@@ -48,6 +48,8 @@ function isH3SwallowedErrorBody(body: string): boolean {
 // 28KB, só chegava depois dos ~340KB de JS. Marcados como prioridade baixa, a foto vai primeiro e os scripts chegam logo
 // em seguida (a página já está desenhada: o JS só serve para a hidratação). Streaming com HTMLRewriter (Cloudflare e Bun);
 // se não existir ou falhar, a resposta segue intocada.
+const APLICAR_PRIORIDADE_BAIXA = false;
+
 function baixarPrioridadeDosScripts(request: Request, response: Response): Response {
   try {
     const rewriter = (globalThis as unknown as { HTMLRewriter?: new () => unknown }).HTMLRewriter;
@@ -73,7 +75,12 @@ export default {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return baixarPrioridadeDosScripts(request, await normalizeCatastrophicSsrResponse(response));
+      const normalizada = await normalizeCatastrophicSsrResponse(response);
+      // EXPERIMENTO 2026-10-21: a prioridade baixa dos scripts (foto do hero primeiro) está DESLIGADA enquanto medimos se a
+      // conversão da landing (leads por visualização de página: 33% até 16/10, 17% de 17 a 20/10) volta sem ela.
+      return APLICAR_PRIORIDADE_BAIXA
+        ? baixarPrioridadeDosScripts(request, normalizada)
+        : normalizada;
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
