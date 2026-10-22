@@ -294,7 +294,8 @@ export function buildContextoFuncionalidades(hoje: Date = new Date()): string {
 
 /** Resposta pronta ao botão "Ver as novidades" do comunicado: por código, não depende do modelo. */
 export function respostaNovidades(hoje: Date = new Date()): string {
-  const itens = novidadesRecentes(hoje).slice(0, 6);
+  // 3 itens (eram 6, ~1.800 caracteres: parede de texto no celular); a ordem editorial já põe as melhores primeiro.
+  const itens = novidadesRecentes(hoje).slice(0, 3);
   if (itens.length === 0) {
     return "Por enquanto não temos novidade nova além do que você já usa. Se quiser conhecer tudo o que dá pra pedir por aqui, me pergunta 'o que o Safralume faz?' que eu te mostro.";
   }
@@ -304,10 +305,10 @@ export function respostaNovidades(hoje: Date = new Date()): string {
   };
   const linhas = itens.map(
     (f) =>
-      `• *${f.titulo}* (${dataCurta(f.novidadeDesde!)}): ${primeiraFrase(f.descricao)} ${f.fraseDeUso ?? `Pra usar, mande: "${f.comoPedir}".`}`,
+      `• *${f.titulo}*: ${primeiraFrase(f.descricao)} ${f.fraseDeUso ?? `Pra usar, mande: "${f.comoPedir}".`}`,
   );
   return [
-    "Olha o que o Safralume ganhou nas últimas semanas 🌾",
+    "Olha o que o Safralume ganhou de novo 🌾",
     "",
     ...linhas,
     "",

@@ -3,7 +3,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { buscarPrevisao } from "@/lib/clima";
 import { CULTURA_PARA_B3 } from "@/config/b3";
 import { filtrarPorProduto, normalizarCultura } from "@/config/culturas";
-import { rotuloFonte } from "@/lib/bot/tools/mercado";
 import {
   calcularPosicao,
   combinarComClima,
@@ -162,16 +161,21 @@ export async function buscarSinalVenda(
     texto = `${texto} O preço de hoje é ${brl(precoAtual.preco)}${unidade ? ` por ${unidade}` : ""}, contra mínima de ${brl(minSerie)} e máxima de ${brl(maxSerie)} nos últimos 90 dias.`;
   }
   if (contratoMaisProximo && citarFuturoB3) {
-    const casas = contratoMaisProximo.moeda === "USD" && contratoMaisProximo.preco < 100 ? 4 : 2;
+    // 2 casas (27,52) e mês por extenso: "27,5187 US$/saca" e "nov/26" eram ruído para o produtor.
     const precoFormatado = contratoMaisProximo.preco.toLocaleString("pt-BR", {
-      minimumFractionDigits: casas,
-      maximumFractionDigits: casas,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     });
     const mesAno = new Date(`${contratoMaisProximo.mesAnoVencimento}T00:00:00`).toLocaleDateString(
       "pt-BR",
-      { month: "short", year: "2-digit" },
+      { month: "long", year: "numeric" },
     );
-    texto = `${texto} No mercado futuro, o contrato de ${contratoMaisProximo.nomeProduto} com vencimento em ${mesAno} está cotado a ${precoFormatado} ${contratoMaisProximo.unidade} (${rotuloFonte(codigo!)}).`;
+    // "Soja (cross listing CME)" e "(negociado na B3, referenciado ao CME (Chicago))" eram jargão: fica só o produto e a B3.
+    const nomeSimples = contratoMaisProximo.nomeProduto
+      .replace(/\s*\(.*$/, "")
+      .trim()
+      .toLowerCase();
+    texto = `${texto} No mercado futuro (B3), o contrato de ${nomeSimples} para ${mesAno} está cotado a ${precoFormatado} ${contratoMaisProximo.unidade}.`;
   }
 
   return { disponivel: true, tone: sinal.tone, texto };
