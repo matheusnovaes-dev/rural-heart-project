@@ -10,6 +10,7 @@ import {
 import { filtrarPorProduto, normalizarCultura, tipoDeCafePadrao } from "@/config/culturas";
 import { ehFonteMensal, escolherFontePreco, mediaDePracas, mesPorExtenso } from "@/lib/precoFonte";
 import { produtoPrincipal } from "@/lib/precos";
+import { buscarReferenciaAtacado, type ReferenciaAtacado } from "@/lib/referenciaAtacado";
 
 type PrecoRow = {
   produto: string;
@@ -65,12 +66,17 @@ export type ResultadoBuscarPreco = {
    * aparece como substituto quando o estado NÃO tem dado recente).
    */
   comparativo_regional?: BenchmarkRegional;
+  /**
+   * Só SP e só cebola, batata, alho, feijão, frango, ovos e suíno: preço de ATACADO (IEA-SP, Grande São Paulo). Não é o que o
+   * produtor recebe; vale como referência (e é a única quando o produtor não tem preço recebido em dia). `frase` é texto pronto.
+   */
+  referencia_atacado?: ReferenciaAtacado;
   erro?: "produto_ausente" | "uf_ausente";
   /** "Café" sem tipo: qual tipo a ferramenta considerou (o bot precisa dizer isso ao produtor). */
   tipo_cafe_assumido?: { considerado: string; outro_tipo: string; motivo: string };
 };
 
-export async function buscarPreco(
+async function buscarPrecoDoProdutor(
   supabase: SupabaseClient,
   args: { produto: string | null; uf: string | null; incluir_frete: boolean },
   ctx?: {
@@ -286,4 +292,21 @@ export async function buscarPreco(
     ...comReferencia,
     ...comComparativo,
   };
+}
+
+/** Preço do produtor (ver buscarPrecoDoProdutor) mais, em SP, a referência de atacado quando a cultura tem uma. */
+export async function buscarPreco(
+  supabase: SupabaseClient,
+  args: { produto: string | null; uf: string | null; incluir_frete: boolean },
+  ctx?: {
+    lat: number | null;
+    lon: number | null;
+    pediuFrete?: boolean;
+    culturaCadastrada?: string | null;
+  },
+): Promise<ResultadoBuscarPreco> {
+  const r = await buscarPrecoDoProdutor(supabase, args, ctx);
+  if (!args.produto || !args.uf || r.erro) return r;
+  const atacado = await buscarReferenciaAtacado(supabase, normalizarCultura(args.produto), args.uf);
+  return atacado ? { ...r, referencia_atacado: atacado } : r;
 }
