@@ -210,14 +210,16 @@ const TOKENS_SIM = new Set(
   (
     "sim ss s simm simmm isso mesmo pode ser criar quero eu vou claro que ok okay bora vamos vamo com certeza confirmo " +
     "uhum aham positivo certo exato senhor sr beleza blz fechado demorou manda mandar vai la fazer favor por gostaria " +
-    "tambem testar cadastrar cadastro me comecar tudo bem ta ata sim pode certinho show top perfeito combinado dale yes yep okei okey fechou topo bom certeza oks"
+    "tambem testar cadastrar cadastro me comecar tudo bem ta ata sim pode certinho show top perfeito combinado dale yes yep okei okey fechou topo bom certeza oks " +
+    // Achado 2026-10-22: "Sim pode cria", "É isso", "Isso aí", "Sim, obrigado" não eram lidos como confirmação.
+    "cria crie criar faz faca o a esta e ai obrigado obrigada valeu correto exatamente"
   ).split(" "),
 );
 const TOKENS_SIM_FORTES = new Set(
   (
     "sim ss s simm simmm isso pode quero claro ok okay bora vamos vamo confirmo uhum aham positivo certo exato beleza blz fechado demorou manda " +
     // Variações reais de "sim" no WhatsApp (achado 2026-10-21: "Okk" ficou sem resposta certa).
-    "certinho show top perfeito combinado dale yes yep okei okey fechou topo bom certeza oks"
+    "certinho show top perfeito combinado dale yes yep okei okey fechou topo bom certeza oks cria crie faz faca correto exatamente"
   ).split(" "),
 );
 
@@ -408,7 +410,7 @@ export function decidirCadastro(params: {
   // Fora de uma pergunta específica, só entra quem respondeu de fato ou pediu o cadastro.
   if (!trouxeAlgo) {
     if (ehNegacao(texto) && passo !== "confirma") return null;
-    if (AGRADECIMENTO_OU_DESPEDIDA.test(norm(texto))) return null;
+    if (AGRADECIMENTO_OU_DESPEDIDA.test(norm(texto)) && !ehAfirmacao(texto)) return null;
     if (passo === "convite" && !ehAfirmacao(texto) && !querCadastrar) return null;
     if (
       passo !== "convite" &&
