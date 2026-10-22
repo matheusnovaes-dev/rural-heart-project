@@ -504,6 +504,48 @@
 }
 
 /* Máscara de cada palavra dos títulos em duas vozes (TituloDuasVozes): folga em cima e embaixo para acento e cedilha. */
+/* Trecho em serifa dourado (TituloDuasVozes com corSerifa="ouro", em fundos escuros): degradê de ouro no próprio texto e
+   um brilho que atravessa a palavra uma vez, logo depois que ela sobe da máscara (--atraso por palavra = cascata). */
+.serifa-ouro {
+  background-image: linear-gradient(
+    100deg,
+    #b8762a 0%,
+    #e9b44c 18%,
+    #f7dc94 32%,
+    #e9b44c 44%,
+    #fff4cf 50%,
+    #e9b44c 56%,
+    #c98b2b 72%,
+    #b8762a 100%
+  );
+  background-size: 280% 100%;
+  background-position: 100% 0;
+  /* folga para o til e a cedilha: com background-clip:text só o que cabe na caixa da palavra é pintado (entrelinha 0,8) */
+  padding: 0.24em 0.06em 0.2em;
+  margin: -0.24em -0.06em -0.2em;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.serifa-ouro[data-visivel="true"] {
+  animation: serifa-brilho 2.4s cubic-bezier(0.2, 0.7, 0.2, 1) var(--atraso, 0.5s) both;
+}
+@keyframes serifa-brilho {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 8% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .serifa-ouro[data-visivel] {
+    animation: none;
+    background-position: 8% 0;
+  }
+}
+
 .palavra-mascara {
   display: inline-block;
   overflow: hidden;
