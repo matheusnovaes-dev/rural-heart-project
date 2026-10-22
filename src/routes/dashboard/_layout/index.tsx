@@ -7,13 +7,11 @@ import {
   BarChart3,
   Bell,
   CloudSun,
-  MessageCircle,
   Package,
   Sprout,
   Minus,
   TrendingUp,
   Users,
-  X,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,10 +48,13 @@ import { mediaDePracas } from "@/lib/precoFonte";
 import { buildWhatsAppLink } from "@/config/site";
 import { verificarConversaWhatsapp } from "@/lib/notificacoes.server";
 import { AnimatedNumber } from "@/components/dashboard/AnimatedNumber";
-import { SafralumeIcon } from "@/components/icons/SafralumeIcon";
 import { AbasPremium, type AbaPremium } from "@/components/dashboard/inicio/AbasPremium";
 import { KpiBento } from "@/components/dashboard/inicio/KpiBento";
 import { OQueMudou } from "@/components/dashboard/inicio/OQueMudou";
+import {
+  PrimeirosPassos,
+  primeirosPassosEncerrados,
+} from "@/components/dashboard/inicio/PrimeirosPassos";
 import { SeletorDePeriodo } from "@/components/dashboard/inicio/SeletorDePeriodo";
 import { useResumoDoCaderno } from "@/components/dashboard/inicio/useResumoDoCaderno";
 import { aoMoverSpotlight } from "@/lib/useSpotlight";
@@ -320,6 +321,9 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
   function dispensarBannerWhatsapp() {
     setBannerWhatsappVisivel(false);
   }
+  const [passosEncerrados, setPassosEncerrados] = useState(() =>
+    primeirosPassosEncerrados(produtor.id),
+  );
 
   useEffect(() => {
     if (!supabase) return;
@@ -499,51 +503,16 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
         </motion.div>
       )}
 
-      {/* Enquanto a checagem não volta, reserva o lugar do convite (com a altura dele) para o preço não descer depois */}
-      {bannerWhatsappVisivel && jaConversouNoWhatsapp === null && (
-        <div
-          aria-hidden="true"
-          className="min-h-[17rem] animate-pulse min-[350px]:min-h-[14rem] rounded-xl border border-primary/15 bg-primary/5 sm:min-h-[6.75rem]"
-        />
-      )}
-
-      {convitePrimeiraMensagem && (
-        <motion.div
-          variants={itemVariants}
-          className="rounded-xl border border-primary/30 bg-primary/5 p-4 shadow-sm sm:flex sm:items-center sm:justify-between sm:gap-6 sm:p-5"
-        >
-          <div className="flex items-start gap-3">
-            <SafralumeIcon nome="whatsapp" className="size-9 shrink-0" />
-            <div>
-              <p className="text-base font-semibold text-foreground">
-                Falta 1 passo: peça seu primeiro preço
-              </p>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                O Safralume funciona no WhatsApp. Toque no botão, mande a pergunta que já vai
-                escrita e receba o preço da sua região em segundos.
-              </p>
-            </div>
-          </div>
-          <div className="mt-3 flex items-center gap-2 sm:mt-0 sm:shrink-0">
-            <a
-              href={buildWhatsAppLink(perguntaDePreco(produtor.cultura_principal))}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => trackLanding("AtivacaoWhatsappClique", { origem: "painel" })}
-              className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-cta px-3 text-[15px] font-bold whitespace-nowrap text-cta-foreground shadow-sm transition hover:bg-cta/90 sm:flex-none sm:px-5 sm:text-base"
-            >
-              <MessageCircle className="size-5" aria-hidden="true" />
-              Ver meu preço no WhatsApp
-            </a>
-            <button
-              type="button"
-              onClick={dispensarBannerWhatsapp}
-              aria-label="Dispensar"
-              className="flex size-10 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground pointer-coarse:size-11"
-            >
-              <X className="size-4" />
-            </button>
-          </div>
+      {/* Trilha de ativação (antigo convite "Falta 1 passo": mesmo botão, mesma pergunta e mesmos eventos) */}
+      {bannerWhatsappVisivel && !passosEncerrados && (
+        <motion.div variants={itemVariants}>
+          <PrimeirosPassos
+            produtorId={produtor.id}
+            jaConversou={jaConversouNoWhatsapp}
+            whatsappHref={buildWhatsAppLink(perguntaDePreco(produtor.cultura_principal))}
+            onDispensarSessao={dispensarBannerWhatsapp}
+            onEncerrado={() => setPassosEncerrados(true)}
+          />
         </motion.div>
       )}
 
