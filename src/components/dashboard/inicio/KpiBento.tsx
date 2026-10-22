@@ -11,16 +11,10 @@ import { formatarQuantidade, formatarReais as formatarReaisBruto } from "@/lib/f
 
 /** "R$ 60" sem quebra de linha entre o R$ e o número. */
 const formatarReais = (n: number) => formatarReaisBruto(n).replace("R$ ", "R$\u00a0");
+import { reaisCompacto } from "@/lib/formatosPainel";
 import { supabase } from "@/lib/supabase";
 
 type VariacaoCambio = Awaited<ReturnType<typeof buscarVariacaoCambio>>;
-
-/** R$ 1,1 mi, R$ 12 mil, R$ 950: curto o bastante para caber no indicador. */
-export function reaisCompacto(n: number): string {
-  if (n < 0) return `−${reaisCompacto(-n)}`;
-  if (Math.abs(n) < 10_000) return formatarReais(n);
-  return `R$\u00a0${n.toLocaleString("pt-BR", { notation: "compact", maximumFractionDigits: 2 })}`;
-}
 
 function dataCurta(iso: string): string {
   const [, m, d] = iso.slice(0, 10).split("-");

@@ -63,7 +63,7 @@ import { CustoMargemCard } from "@/components/fazenda/CustoMargemCard";
 import { EstoqueBloqueado, EstoqueCard } from "@/components/fazenda/EstoqueCard";
 import { OrcamentoCard } from "@/components/fazenda/OrcamentoCard";
 import { AbasPremium, type AbaPremium } from "@/components/dashboard/inicio/AbasPremium";
-import { reaisCompacto } from "@/components/dashboard/inicio/KpiBento";
+import { reaisCompacto } from "@/lib/formatosPainel";
 import { aoMoverSpotlight } from "@/lib/useSpotlight";
 import { PendenciasCard } from "@/components/fazenda/PendenciasCard";
 import { PorTalhaoCard } from "@/components/fazenda/PorTalhaoCard";

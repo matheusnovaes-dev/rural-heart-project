@@ -9,7 +9,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { reaisCompacto } from "@/components/dashboard/inicio/KpiBento";
+import { reaisCompacto } from "@/lib/formatosPainel";
 import type { ResumoDoCaderno } from "@/components/dashboard/inicio/useResumoDoCaderno";
 import type { Previsao } from "@/lib/clima";
 import { formatarQuantidade, formatarReais as formatarReaisBruto } from "@/lib/fazenda.shared";
