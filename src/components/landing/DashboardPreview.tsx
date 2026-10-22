@@ -259,7 +259,9 @@ export function DashboardPreview() {
   // Calculado direto da rolagem (motion value), sem re-renderizar o React a cada quadro.
   const zoom = useTransform(progresso, (v) => {
     // máquina fraca (nível marcado pelo DesktopFX): sem câmera, o redesenho a cada quadro trava a rolagem
-    if (document.documentElement.dataset["fxNivel"] === "baixa") return 1;
+    // (typeof document: este cálculo também roda no servidor na 1ª renderização, onde não existe document)
+    if (typeof document !== "undefined" && document.documentElement.dataset["fxNivel"] === "baixa")
+      return 1;
     const { c, dentro } = capituloDaRolagem(v);
     const ultimo = c === CAPITULOS.length - 1;
     return 1 + 0.14 * suave(0.06, 0.32, dentro) * (ultimo ? 1 : 1 - suave(0.8, 0.97, dentro));
@@ -470,7 +472,6 @@ export function DashboardPreview() {
                             botaoRefs.current[item.id] = el;
                           }}
                           type="button"
-                          aria-label={item.label}
                           aria-pressed={aba === item.id}
                           onClick={() => selecionarManual(item.id)}
                           className={cn(
@@ -481,7 +482,8 @@ export function DashboardPreview() {
                           )}
                         >
                           <item.icon className="size-6 shrink-0" />
-                          <span className="hidden min-w-0 flex-1 truncate sm:inline">
+                          {/* o texto sempre existe para leitores de tela; só fica invisível no celular (ícones) */}
+                          <span className="min-w-0 flex-1 truncate max-sm:sr-only">
                             {item.label}
                           </span>
                           <span
