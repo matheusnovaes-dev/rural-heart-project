@@ -1,4 +1,5 @@
 import { deveAvisarEquipeDeLeadBloqueado } from "@/lib/bot/fimDoTeste";
+import { ehDuvidaDeValor, respostaDuvidaDeValor } from "@/lib/bot/duvidaDeValor";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { culturaMencionada, mencionaDerivadoDeGrao, normalizarCultura } from "@/config/culturas";
@@ -1611,6 +1612,20 @@ async function runAgentBase(input: {
     return {
       resposta: RESPOSTA_POUCO_USO,
       precisa_humano: false,
+      cadastro_criado: false,
+      convite_dispensado: true,
+    };
+  }
+
+  // Dúvida de valor de cliente cadastrado ("não entendi como vou obter lucro", "pra que serve"): resposta consultiva por
+  // código, sem promessa de lucro, com uma pergunta que puxa o caso da pessoa, e aviso ao Matheus (ver duvidaDeValor.ts).
+  if (produtor.id && ehDuvidaDeValor(texto)) {
+    const cultura = produtor.cultura_principal
+      ? normalizarCultura(produtor.cultura_principal)
+      : null;
+    return {
+      resposta: respostaDuvidaDeValor(cultura),
+      precisa_humano: true,
       cadastro_criado: false,
       convite_dispensado: true,
     };
