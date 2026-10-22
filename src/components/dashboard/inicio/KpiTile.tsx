@@ -4,7 +4,7 @@ import { ArrowDown, ArrowUp, ArrowUpRight, Minus, type LucideIcon } from "lucide
 import type { ReactNode } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { aoMoverSpotlight } from "@/lib/useSpotlight";
+import { aoMoverSpotlight, aoSairSpotlight } from "@/lib/useSpotlight";
 
 const itemVariants = {
   hidden: { opacity: 0, y: 12 },
@@ -49,6 +49,8 @@ export function KpiTile({
   const corpo = (
     <div
       onPointerMove={aoMoverSpotlight}
+      onPointerLeave={aoSairSpotlight}
+      data-tilt=""
       data-testid={testId}
       className={`card-premium spot ${ouro ? "kpi-ouro" : "spot-suave"} group relative flex h-full min-h-[9rem] flex-col justify-between gap-3 overflow-hidden p-3.5 sm:min-h-[9.5rem] sm:p-5`}
     >
@@ -94,7 +96,7 @@ export function KpiTile({
         ) : (
           <>
             <div className="flex flex-wrap items-end gap-x-2 gap-y-1">
-              <p className="font-display text-[clamp(1.35rem,5.6vw,1.75rem)] leading-none font-semibold tracking-tight whitespace-nowrap tabular-nums sm:text-[2rem]">
+              <p className="font-display text-[clamp(1.35rem,5.6vw,1.75rem)] leading-none font-semibold tracking-tight whitespace-nowrap tabular-nums sm:text-[1.75rem] xl:text-[1.9rem]">
                 {valor}
               </p>
               {chip}

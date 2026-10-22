@@ -324,9 +324,7 @@ export async function rascunharRecibo(input: {
   const novo = gravado as RegistroFazenda;
   return {
     texto:
-      pendentes.length > 0
-        ? textoDeLote(l, novo, pendentes, hoje)
-        : textoDoRascunho(l, novo, hoje),
+      pendentes.length > 0 ? textoDeLote(l, novo, pendentes, hoje) : textoDoRascunho(l, novo, hoje),
   };
 }
 
@@ -494,7 +492,6 @@ export async function tratarRespostaAoRascunho(
   return null;
 }
 
-
 /** "Sim" anota todas as notas esperando (cada uma como gasto ou a pagar), "não" descarta todas. */
 async function respostaAoLote(
   supabase: SupabaseClient,
@@ -532,7 +529,10 @@ async function respostaAoLote(
     if (aPagar) {
       const lembreteId = await criarLembreteDoVencimento(supabase, produtor, telefone, reg);
       if (lembreteId) {
-        await supabase.from("fazenda_registros").update({ lembrete_id: lembreteId }).eq("id", reg.id);
+        await supabase
+          .from("fazenda_registros")
+          .update({ lembrete_id: lembreteId })
+          .eq("id", reg.id);
         reg = { ...reg, lembrete_id: lembreteId };
       }
     }

@@ -516,7 +516,7 @@ function FazendaPage() {
                               Para onde foi o dinheiro
                             </h2>
                             <ul className="space-y-2.5">
-                              {resumo.porCategoria.slice(0, 6).map((c) => (
+                              {resumo.porCategoria.slice(0, 6).map((c, i) => (
                                 <li key={c.categoria}>
                                   <div className="mb-1 flex justify-between gap-3 text-sm">
                                     <span className="truncate">{c.categoria}</span>

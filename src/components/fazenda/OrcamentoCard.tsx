@@ -146,7 +146,7 @@ export function OrcamentoCard({
                   </div>
                   <div className="mt-1 h-2 overflow-hidden rounded-full bg-secondary">
                     <div
-                      className={`h-full rounded-full ${cor}`}
+                      className={`barra-x h-full rounded-full ${cor}`}
                       style={{ width: `${Math.min(100, Math.max(0, s.pct))}%` }}
                     />
                   </div>

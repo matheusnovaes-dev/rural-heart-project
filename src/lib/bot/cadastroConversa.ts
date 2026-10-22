@@ -131,7 +131,8 @@ export function ufUnicaMuitoParecida(texto: string): string | null {
   const nomes = ufs.map((u) => ({ uf: u.value as string, nome: norm(u.label).replace(/ /g, "") }));
   nomes.push({ uf: "MG", nome: "minas" });
   const achados = new Set<string>();
-  for (const { uf, nome } of nomes) if (nome.length >= 5 && distanciaDeEdicao(s, nome) <= 1) achados.add(uf);
+  for (const { uf, nome } of nomes)
+    if (nome.length >= 5 && distanciaDeEdicao(s, nome) <= 1) achados.add(uf);
   return achados.size === 1 ? [...achados][0]! : null;
 }
 
@@ -426,7 +427,9 @@ export function decidirCadastro(params: {
   if (!uf && passo === "uf" && !lida.cultura) uf = ufUnicaMuitoParecida(texto);
   // "Você quis dizer Goiás (GO)? Se for, responda *sim*": o "sim" vale como o estado sugerido (só quando era uma sugestão só)
   if (!uf && passo === "uf" && ultimaBot && ehAfirmacao(texto)) {
-    const sug = ultimaBot.match(/Você quis dizer ([^()?]+) \(([A-Z]{2})\)\? Se for, responda \*sim\*/);
+    const sug = ultimaBot.match(
+      /Você quis dizer ([^()?]+) \(([A-Z]{2})\)\? Se for, responda \*sim\*/,
+    );
     if (sug) uf = sug[2]!;
   }
 

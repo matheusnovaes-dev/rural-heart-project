@@ -1,4 +1,6 @@
 import { motion } from "framer-motion";
+
+import { RevelarCada } from "@/components/dashboard/inicio/Revelar";
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 
@@ -51,7 +53,7 @@ export function AbasPremium({
       const inicio = Date.now();
       const soltar = () => {
         const painel = el.querySelector<HTMLElement>(`[data-ativo="true"]`);
-        const carregando = !!painel?.querySelector(".animate-pulse");
+        const carregando = !!painel?.querySelector("[data-skeleton], .animate-pulse");
         if (carregando && Date.now() - inicio < 6000) {
           window.setTimeout(soltar, 150);
           return;
@@ -162,7 +164,7 @@ export function AbasPremium({
             data-ativo={id === valor}
             className="painel-aba flex min-w-0 flex-col gap-5"
           >
-            {children(id)}
+            <RevelarCada>{children(id)}</RevelarCada>
           </div>
         ))}
       </div>

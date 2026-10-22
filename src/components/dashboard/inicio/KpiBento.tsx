@@ -3,6 +3,7 @@ import { CalendarClock, CloudSun, DollarSign, PiggyBank, Warehouse } from "lucid
 import { useEffect, useState } from "react";
 
 import { AnimatedNumber } from "@/components/dashboard/AnimatedNumber";
+import { Sparkline } from "@/components/dashboard/Sparkline";
 import { KpiTile } from "@/components/dashboard/inicio/KpiTile";
 import type { ResumoDoCaderno } from "@/components/dashboard/inicio/useResumoDoCaderno";
 import { buscarVariacaoCambio } from "@/lib/bot/tools/mercado";
@@ -39,9 +40,18 @@ export function KpiBento({
   municipio: string | null;
 }) {
   const [cambio, setCambio] = useState<VariacaoCambio | null | undefined>(undefined);
+  const [serieCambio, setSerieCambio] = useState<number[]>([]);
   useEffect(() => {
     if (!supabase) return;
     let vivo = true;
+    supabase
+      .from("cambio")
+      .select("data, cotacao_venda")
+      .order("data", { ascending: false })
+      .limit(24)
+      .then(({ data }) => {
+        if (vivo && data) setSerieCambio(data.map((d) => Number(d.cotacao_venda)).reverse());
+      });
     buscarVariacaoCambio(supabase)
       .then((v) => vivo && setCambio(v))
       .catch(() => vivo && setCambio(null));
@@ -228,7 +238,11 @@ export function KpiBento({
         }
         delta={cambio ? { valor: cambio.variacao } : null}
         rodape={cambio ? "variação desde o último pregão" : undefined}
-      />
+      >
+        {serieCambio.length >= 3 && (
+          <Sparkline data={serieCambio} animar className="mt-1 h-7 w-full" color="var(--chart-1)" />
+        )}
+      </KpiTile>
     </motion.div>
   );
 }

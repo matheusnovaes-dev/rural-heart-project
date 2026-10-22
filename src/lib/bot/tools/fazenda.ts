@@ -162,14 +162,28 @@ export function direcaoDaPendencia(
 
 /** O que foi comprado, dito logo depois do valor: "gastei 70 mil de adubo" -> "adubo", "paguei 800 de diesel no posto" -> "diesel". */
 export function descricaoDoGasto(texto: string): string | null {
-  const t = extensoParaDigitos(texto)
-    .replace(/\s+/g, " ")
-    .trim();
+  const t = extensoParaDigitos(texto).replace(/\s+/g, " ").trim();
   const m = t.match(
     /\b(?:gastei|paguei|comprei|investi|gasto|pago)\b\D{0,12}?[\d.,]+(?:\s*(?:mil|reais|real|k))?\s+(?:de|com|em|no|na|pra|para)\s+([a-z]+(?:\s+[a-z]+){0,2})/,
   );
   if (!m) return null;
-  const parada = new Set(["no", "na", "em", "dia", "hoje", "ontem", "para", "pra", "do", "da", "talhao", "e", "que", "por", "ate"]);
+  const parada = new Set([
+    "no",
+    "na",
+    "em",
+    "dia",
+    "hoje",
+    "ontem",
+    "para",
+    "pra",
+    "do",
+    "da",
+    "talhao",
+    "e",
+    "que",
+    "por",
+    "ate",
+  ]);
   const palavras: string[] = [];
   for (const w of m[1]!.split(" ")) {
     if (parada.has(w)) break;
@@ -430,7 +444,12 @@ export async function registrarNaFazenda(
   if ((tipo === "gasto" || tipo === "venda") && valor !== null && !ctx.estudo) {
     const atuais = numerosDoTexto(ctx.texto);
     const naMensagem = (n: number | null) => n !== null && valorConfere(n, atuais);
-    if (atuais.length > 0 && !naMensagem(valor) && !naMensagem(quantidade) && !naMensagem(precoUnitario)) {
+    if (
+      atuais.length > 0 &&
+      !naMensagem(valor) &&
+      !naMensagem(quantidade) &&
+      !naMensagem(precoUnitario)
+    ) {
       const dezMinutos = new Date(Date.now() - 10 * 60_000).toISOString();
       const { data: jaLancado } = await supabase
         .from("fazenda_registros")
@@ -441,7 +460,8 @@ export async function registrarNaFazenda(
         .is("apagado_em", null)
         .gte("criado_em", dezMinutos)
         .limit(1);
-      if ((jaLancado ?? []).length > 0) return { sucesso: false, motivo: "repetiu_valor_anterior", ignorar: true };
+      if ((jaLancado ?? []).length > 0)
+        return { sucesso: false, motivo: "repetiu_valor_anterior", ignorar: true };
     }
   }
 
@@ -614,7 +634,8 @@ async function montarConfirmacao(
       }
     }
   }
-  const orcamento = r.tipo === "gasto" ? await avisoDeOrcamentoDoGasto(supabase, produtor, r) : null;
+  const orcamento =
+    r.tipo === "gasto" ? await avisoDeOrcamentoDoGasto(supabase, produtor, r) : null;
   return `${MARCA_CONFIRMACAO_CADERNO}: ${linha}.${extra}${orcamento ? ` ${orcamento}` : ""} Se algo ficou errado, diga "desfazer".`;
 }
 

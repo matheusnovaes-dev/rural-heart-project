@@ -54,8 +54,9 @@ import { SafralumeIcon } from "@/components/icons/SafralumeIcon";
 import { AbasPremium, type AbaPremium } from "@/components/dashboard/inicio/AbasPremium";
 import { KpiBento } from "@/components/dashboard/inicio/KpiBento";
 import { OQueMudou } from "@/components/dashboard/inicio/OQueMudou";
+import { SeletorDePeriodo } from "@/components/dashboard/inicio/SeletorDePeriodo";
 import { useResumoDoCaderno } from "@/components/dashboard/inicio/useResumoDoCaderno";
-import { aoMoverSpotlight } from "@/lib/useSpotlight";
+import { aoMoverSpotlight, aoSairSpotlight } from "@/lib/useSpotlight";
 
 // Entrada em stagger dos blocos do painel — pedido do Matheus 2026-10-07
 // pra tirar a sensação de "tudo aparece seco de uma vez". Offset pequeno
@@ -210,6 +211,11 @@ type PrecoRegionalHistorico = { regiao: string; preco: number; data_referencia: 
 function dataCurta(iso: string): string {
   const [ano, mes, dia] = iso.slice(0, 10).split("-");
   return `${dia}/${mes}/${ano}`;
+}
+
+function dataEixoCurto(iso: string): string {
+  const [, mes, dia] = iso.slice(0, 10).split("-");
+  return `${dia}/${mes}`;
 }
 
 function dataEixo(iso: string): string {
@@ -403,6 +409,29 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
     serie === null
       ? undefined
       : (atual?.data_referencia ?? precosRegionais[0]?.data_referencia ?? null);
+  const [diasDoGrafico, setDiasDoGrafico] = useState(30);
+  const corteGrafico = new Date(Date.now() - diasDoGrafico * 86_400_000).toISOString().slice(0, 10);
+  const serieDoGrafico = serie
+    ? serie.filter((s) => s.data_referencia.slice(0, 10) >= corteGrafico)
+    : serie;
+  const regionaisDoGrafico = regionaisHistorico.filter(
+    (r) => r.data_referencia.slice(0, 10) >= corteGrafico,
+  );
+  const estatisticas = (() => {
+    const base = serieDoGrafico ?? [];
+    if (base.length < 3) return null;
+    const precos = base.map((s) => s.preco);
+    const max = Math.max(...precos);
+    const min = Math.min(...precos);
+    return {
+      max,
+      min,
+      media: precos.reduce((t, v) => t + v, 0) / precos.length,
+      dataMax: base[precos.indexOf(max)]!.data_referencia,
+      dataMin: base[precos.indexOf(min)]!.data_referencia,
+      variacao: ((precos.at(-1)! - precos[0]!) / precos[0]!) * 100,
+    };
+  })();
   const resumo = useResumoDoCaderno(
     { id: produtor.id, uf: produtor.uf, cultura_principal: produtor.cultura_principal },
     precoExibido ?? mediaRegional,
@@ -421,8 +450,15 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
     >
       <motion.div
         variants={itemVariants}
-        className="flex flex-col gap-1 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between"
+        className="relative isolate flex flex-col gap-1 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between"
       >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -inset-x-8 -top-12 -z-10 h-64 overflow-hidden max-lg:hidden"
+        >
+          <span className="aurora-mancha aurora-a -top-10 left-[8%] h-48 w-80 bg-[oklch(0.62_0.09_155/0.35)]" />
+          <span className="aurora-mancha aurora-b -top-14 right-[6%] h-52 w-96 bg-[oklch(0.78_0.13_80/0.30)]" />
+        </div>
         <div>
           <p className="text-sm font-medium text-muted-foreground">Visão geral</p>
           <h1 className="mt-1 font-display text-[1.7rem] font-semibold tracking-tight text-foreground text-balance sm:text-4xl">
@@ -463,7 +499,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
       {bannerWhatsappVisivel && jaConversouNoWhatsapp === null && (
         <div
           aria-hidden="true"
-          className="min-h-[17rem] animate-pulse min-[400px]:min-h-[14rem] rounded-xl border border-primary/15 bg-primary/5 sm:min-h-[6.75rem]"
+          className="min-h-[17rem] animate-pulse min-[350px]:min-h-[14rem] rounded-xl border border-primary/15 bg-primary/5 sm:min-h-[6.75rem]"
         />
       )}
 
@@ -605,9 +641,49 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                     )}
                   </div>
                   {serie.length >= 5 && (
-                    <Suspense fallback={<EsperaGrafico />}>
-                      <PrecoHeroChart serie={serie} cultura={produtor.cultura_principal} />
-                    </Suspense>
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-xs font-medium opacity-75">Evolução do preço</span>
+                        <SeletorDePeriodo
+                          valor={diasDoGrafico}
+                          onChange={setDiasDoGrafico}
+                          opcoes={[
+                            { valor: 30, rotulo: "30 dias" },
+                            { valor: 90, rotulo: "90 dias" },
+                          ]}
+                        />
+                      </div>
+                      <Suspense fallback={<EsperaGrafico />}>
+                        <PrecoHeroChart
+                          serie={
+                            serieDoGrafico && serieDoGrafico.length >= 3 ? serieDoGrafico : serie
+                          }
+                          cultura={produtor.cultura_principal}
+                        />
+                      </Suspense>
+                      {estatisticas && (
+                        <dl className="grid grid-cols-3 gap-2 text-center">
+                          {[
+                            ["Máxima", estatisticas.max, dataEixoCurto(estatisticas.dataMax)],
+                            ["Média", estatisticas.media, `${diasDoGrafico} dias`],
+                            ["Mínima", estatisticas.min, dataEixoCurto(estatisticas.dataMin)],
+                          ].map(([rot, val, sub]) => (
+                            <div
+                              key={String(rot)}
+                              className="rounded-xl bg-primary-foreground/8 px-2 py-2 ring-1 ring-primary-foreground/10"
+                            >
+                              <dt className="text-[0.68rem] font-semibold tracking-wide uppercase opacity-70">
+                                {rot}
+                              </dt>
+                              <dd className="font-mono text-sm font-semibold tabular-nums">
+                                R$ {Number(val).toFixed(2).replace(".", ",")}
+                              </dd>
+                              <dd className="text-[0.68rem] opacity-60">{sub}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                      )}
+                    </div>
                   )}
                 </div>
               ) : precosRegionais.length > 0 ? (
@@ -649,9 +725,26 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                       </div>
                     ))}
                   </div>
-                  <Suspense fallback={<EsperaGrafico />}>
-                    <PrecoRegionalHeroChart regioes={regionaisHistorico} />
-                  </Suspense>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs font-medium opacity-75">Evolução por praça</span>
+                      <SeletorDePeriodo
+                        valor={diasDoGrafico}
+                        onChange={setDiasDoGrafico}
+                        opcoes={[
+                          { valor: 30, rotulo: "30 dias" },
+                          { valor: 90, rotulo: "90 dias" },
+                        ]}
+                      />
+                    </div>
+                    <Suspense fallback={<EsperaGrafico />}>
+                      <PrecoRegionalHeroChart
+                        regioes={
+                          regionaisDoGrafico.length >= 6 ? regionaisDoGrafico : regionaisHistorico
+                        }
+                      />
+                    </Suspense>
+                  </div>
                   {frete && <p className="max-w-md text-xs opacity-80">{frete.frase}</p>}
                   <div className="mt-1 flex items-center gap-1.5 text-sm opacity-80">
                     <span className="capitalize">

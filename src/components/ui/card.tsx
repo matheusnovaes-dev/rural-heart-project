@@ -1,16 +1,21 @@
 import * as React from "react";
 
+import { aoMoverSpotlight } from "@/lib/useSpotlight";
 import { cn } from "@/lib/utils";
 
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
+  ({ className, onPointerMove, ...props }, ref) => (
     <div
       ref={ref}
       data-slot="card"
       className={cn(
-        "rounded-2xl border border-border/70 bg-card text-card-foreground shadow-[0_1px_0_0_rgb(255_255_255/0.65)_inset,0_1px_2px_rgb(20_40_25/0.05),0_12px_30px_-18px_rgb(20_40_25/0.2)]",
+        "spot spot-suave relative rounded-2xl border border-border/70 bg-card text-card-foreground shadow-[0_1px_0_0_rgb(255_255_255/0.65)_inset,0_1px_2px_rgb(20_40_25/0.05),0_12px_30px_-18px_rgb(20_40_25/0.2)]",
         className,
       )}
+      onPointerMove={(e) => {
+        aoMoverSpotlight(e);
+        onPointerMove?.(e);
+      }}
       {...props}
     />
   ),

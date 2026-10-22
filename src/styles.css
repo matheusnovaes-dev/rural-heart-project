@@ -1136,3 +1136,191 @@ html[data-tema-reveal]::view-transition-new(root) {
     animation: aba-entra 0.28s cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
+
+
+/* =====================================================================================================================
+   Casca do painel premium (2026-10-22): menu lateral com profundidade e indicador que desliza, cabeçalho de vidro,
+   inclinação 3D e brilho no mouse (só desktop), aurora no topo do Início, esqueleto com brilho e botões com pressão.
+   ===================================================================================================================== */
+[data-sidebar="sidebar"] {
+  background:
+    radial-gradient(130% 55% at 0% 0%, oklch(0.44 0.075 156 / 0.55), transparent 62%),
+    radial-gradient(100% 45% at 100% 100%, oklch(0.66 0.115 76 / 0.12), transparent 62%),
+    linear-gradient(180deg, oklch(0.29 0.058 158), oklch(0.225 0.05 158));
+}
+[data-sidebar="sidebar"] [data-active="true"] {
+  background: linear-gradient(90deg, rgb(255 255 255 / 0.13), rgb(255 255 255 / 0.04));
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.09),
+    0 8px 18px -12px rgb(0 0 0 / 0.7);
+}
+[data-sidebar="sidebar"] a {
+  transition:
+    background-color 0.2s ease,
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  [data-sidebar="sidebar"] a:hover {
+    transform: translateX(2px);
+  }
+}
+
+/* Cabeçalho de vidro */
+.cabecalho-painel {
+  background: color-mix(in oklab, var(--background) 70%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  backdrop-filter: blur(18px) saturate(1.5);
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 65%, transparent);
+}
+
+/* Inclinação 3D + brilho (cartões marcados com data-tilt; só mouse de verdade e movimento permitido) */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .card-premium[data-tilt] {
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+  .card-premium[data-tilt]:hover {
+    transform: perspective(900px) translateY(-3px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transition:
+      transform 0.12s ease-out,
+      box-shadow 0.28s ease,
+      border-color 0.28s ease;
+  }
+}
+
+/* Luz que segue o cursor pelo fundo do painel (desktop) */
+.luz-cursor {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  --cx: 60%;
+  --cy: 10%;
+  background: radial-gradient(
+    560px circle at var(--cx) var(--cy),
+    color-mix(in oklab, var(--cta) 8%, transparent),
+    transparent 65%
+  );
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.luz-cursor[data-ativa="true"] {
+  opacity: 1;
+}
+
+/* Aurora: manchas de luz que derivam devagar atrás da saudação do Início (só desktop) */
+@keyframes aurora-deriva-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(60px, 20px, 0) scale(1.15);
+  }
+}
+@keyframes aurora-deriva-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.05);
+  }
+  50% {
+    transform: translate3d(-70px, 10px, 0) scale(0.92);
+  }
+}
+.aurora-mancha {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  opacity: 0.55;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .aurora-a {
+    animation: aurora-deriva-a 16s ease-in-out infinite;
+  }
+  .aurora-b {
+    animation: aurora-deriva-b 20s ease-in-out infinite;
+  }
+}
+
+/* Esqueleto com brilho passando */
+@keyframes brilho-esqueleto {
+  100% {
+    transform: translateX(100%);
+  }
+}
+.skeleton-brilho {
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-brilho::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.4), transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton-brilho::after {
+    animation: brilho-esqueleto 1.5s ease-in-out infinite;
+  }
+}
+
+/* Botões do painel: leve pressão e profundidade (restrito ao painel; landing e login ficam como estão) */
+.dashboard-shell [data-slot="button"] {
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.2s ease,
+    transform 0.12s ease,
+    filter 0.15s ease;
+}
+.dashboard-shell [data-slot="button"]:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.dashboard-shell [data-slot="button"].bg-primary {
+  background-image: linear-gradient(180deg, oklch(0.4 0.058 157), var(--primary));
+  box-shadow:
+    0 1px 0 0 rgb(255 255 255 / 0.18) inset,
+    0 8px 16px -8px rgb(20 60 35 / 0.6);
+}
+@media (hover: hover) and (pointer: fine) {
+  .dashboard-shell [data-slot="button"].bg-primary:hover {
+    filter: brightness(1.1);
+    box-shadow:
+      0 1px 0 0 rgb(255 255 255 / 0.22) inset,
+      0 12px 22px -10px rgb(20 60 35 / 0.7);
+  }
+}
+.spot-off::before {
+  display: none;
+}
+
+/* Barras que crescem ao aparecer (categorias, meses, orçamento) */
+@keyframes barra-cresce-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes barra-cresce-y {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .barra-x {
+    transform-origin: left center;
+    animation: barra-cresce-x 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: var(--atraso, 0s);
+  }
+  .barra-y {
+    transform-origin: center bottom;
+    animation: barra-cresce-y 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: var(--atraso, 0s);
+  }
+}

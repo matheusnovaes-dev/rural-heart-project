@@ -281,7 +281,7 @@ function PrecosPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
                 >
-                  <Card className="gap-3 py-4">
+                  <Card className="card-premium gap-3 py-4">
                     <CardHeader className="gap-1 pb-0">
                       <CardDescription className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
                         <span
@@ -335,7 +335,7 @@ function PrecosPage() {
                           </span>
                         )}
                       </div>
-                      <Sparkline data={s.sparkline} color={s.color} />
+                      <Sparkline data={s.sparkline} color={s.color} animar />
                     </CardContent>
                   </Card>
                 </motion.div>

@@ -2304,7 +2304,11 @@ async function runAgentBase(input: {
             if (fantasmas.has(tc.id)) {
               return {
                 tool_call_id: tc.id,
-                content: JSON.stringify({ sucesso: false, motivo: "repetiu_valor_anterior", ignorar: true }),
+                content: JSON.stringify({
+                  sucesso: false,
+                  motivo: "repetiu_valor_anterior",
+                  ignorar: true,
+                }),
               };
             }
             const chave = `${tc.function.name}|${JSON.stringify(args)}`;
@@ -2533,8 +2537,16 @@ export function limparAberturaDeAnuncio(resposta: string): string {
  * de mesmo valor ("2 mil de diesel e 2 mil de adubo") tem as duas descrições na mensagem e mantém os dois.
  */
 export function lancamentosFantasmaDoLote(chamadas: ToolCall[], texto: string): Set<string> {
-  const norm = (x: string) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  const palavrasDaMensagem = new Set(norm(texto).split(/[^a-z0-9]+/).filter((w) => w.length >= 3));
+  const norm = (x: string) =>
+    x
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+  const palavrasDaMensagem = new Set(
+    norm(texto)
+      .split(/[^a-z0-9]+/)
+      .filter((w) => w.length >= 3),
+  );
   const grupos = new Map<string, { id: string; descricao: string }[]>();
   for (const tc of chamadas) {
     if (tc.function.name !== "registrar_na_fazenda") continue;
@@ -2555,7 +2567,10 @@ export function lancamentosFantasmaDoLote(chamadas: ToolCall[], texto: string): 
   for (const g of grupos.values()) {
     if (g.length < 2) continue;
     if (new Set(g.map((x) => norm(x.descricao))).size < 2) continue; // idênticas: o outro tratamento cuida
-    const tem = (d: string) => norm(d).split(/[^a-z0-9]+/).some((w) => w.length >= 3 && palavrasDaMensagem.has(w));
+    const tem = (d: string) =>
+      norm(d)
+        .split(/[^a-z0-9]+/)
+        .some((w) => w.length >= 3 && palavrasDaMensagem.has(w));
     const mantidos = g.filter((x) => tem(x.descricao));
     const ficam = new Set((mantidos.length > 0 ? mantidos : [g[0]!]).map((x) => x.id));
     for (const x of g) if (!ficam.has(x.id)) descartar.add(x.id);

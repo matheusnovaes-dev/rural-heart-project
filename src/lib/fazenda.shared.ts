@@ -158,12 +158,55 @@ export function numerosDoTexto(texto: string): number[] {
 }
 
 const EXT_UNIDADES: Record<string, number> = {
-  zero: 0, um: 1, uma: 1, dois: 2, duas: 2, tres: 3, quatro: 4, cinco: 5, seis: 6, sete: 7, oito: 8, nove: 9,
-  dez: 10, onze: 11, doze: 12, treze: 13, catorze: 14, quatorze: 14, quinze: 15, dezesseis: 16, dezessete: 17,
-  dezoito: 18, dezenove: 19, vinte: 20, trinta: 30, quarenta: 40, cinquenta: 50, sessenta: 60, setenta: 70,
-  oitenta: 80, noventa: 90, cem: 100, cento: 100, duzentos: 200, duzentas: 200, trezentos: 300, trezentas: 300,
-  quatrocentos: 400, quatrocentas: 400, quinhentos: 500, quinhentas: 500, seiscentos: 600, seiscentas: 600,
-  setecentos: 700, setecentas: 700, oitocentos: 800, oitocentas: 800, novecentos: 900, novecentas: 900,
+  zero: 0,
+  um: 1,
+  uma: 1,
+  dois: 2,
+  duas: 2,
+  tres: 3,
+  quatro: 4,
+  cinco: 5,
+  seis: 6,
+  sete: 7,
+  oito: 8,
+  nove: 9,
+  dez: 10,
+  onze: 11,
+  doze: 12,
+  treze: 13,
+  catorze: 14,
+  quatorze: 14,
+  quinze: 15,
+  dezesseis: 16,
+  dezessete: 17,
+  dezoito: 18,
+  dezenove: 19,
+  vinte: 20,
+  trinta: 30,
+  quarenta: 40,
+  cinquenta: 50,
+  sessenta: 60,
+  setenta: 70,
+  oitenta: 80,
+  noventa: 90,
+  cem: 100,
+  cento: 100,
+  duzentos: 200,
+  duzentas: 200,
+  trezentos: 300,
+  trezentas: 300,
+  quatrocentos: 400,
+  quatrocentas: 400,
+  quinhentos: 500,
+  quinhentas: 500,
+  seiscentos: 600,
+  seiscentas: 600,
+  setecentos: 700,
+  setecentas: 700,
+  oitocentos: 800,
+  oitocentas: 800,
+  novecentos: 900,
+  novecentas: 900,
 };
 
 interface TrechoExtenso {
@@ -176,7 +219,11 @@ interface TrechoExtenso {
 function trechosPorExtenso(t: string): TrechoExtenso[] {
   // dígitos viram "#": "12 mil" já é lido pela regra numérica, o "mil" solto depois de um dígito não pode virar 1000
   const base = t.replace(/\d[\d.,]*/g, (d) => "#".repeat(d.length));
-  const toks = [...base.matchAll(/[a-z#]+/g)].map((m) => ({ w: m[0].startsWith("#") ? "#" : m[0], ini: m.index!, fim: m.index! + m[0].length }));
+  const toks = [...base.matchAll(/[a-z#]+/g)].map((m) => ({
+    w: m[0].startsWith("#") ? "#" : m[0],
+    ini: m.index!,
+    fim: m.index! + m[0].length,
+  }));
   const saida: TrechoExtenso[] = [];
   const ehNum = (w: string | undefined) =>
     w !== undefined && (w in EXT_UNIDADES || w === "mil" || w === "milhao" || w === "milhoes");
@@ -184,7 +231,11 @@ function trechosPorExtenso(t: string): TrechoExtenso[] {
   while (i < toks.length) {
     const ant = toks[i - 1]?.w;
     const w0 = toks[i]!.w;
-    if (!ehNum(w0) || (ant === "#" && (w0 === "mil" || w0 === "milhao" || w0 === "milhoes")) || (ant === "por" && w0 === "cento")) {
+    if (
+      !ehNum(w0) ||
+      (ant === "#" && (w0 === "mil" || w0 === "milhao" || w0 === "milhoes")) ||
+      (ant === "por" && w0 === "cento")
+    ) {
       i++;
       continue;
     }
@@ -197,7 +248,11 @@ function trechosPorExtenso(t: string): TrechoExtenso[] {
     let soArtigo = true;
     while (i < toks.length) {
       const w = toks[i]!.w;
-      if (w === "e" && usadas > 0 && (ehNum(toks[i + 1]?.w) || (ultimoMult && toks[i + 1]?.w === "meio"))) {
+      if (
+        w === "e" &&
+        usadas > 0 &&
+        (ehNum(toks[i + 1]?.w) || (ultimoMult && toks[i + 1]?.w === "meio"))
+      ) {
         i++;
         continue;
       }
@@ -243,7 +298,8 @@ function numerosPorExtenso(t: string): number[] {
  */
 export function extensoParaDigitos(texto: string): string {
   let t = SEM_ACENTO(texto);
-  for (const x of trechosPorExtenso(t).reverse()) t = t.slice(0, x.ini) + String(x.valor) + t.slice(x.fim);
+  for (const x of trechosPorExtenso(t).reverse())
+    t = t.slice(0, x.ini) + String(x.valor) + t.slice(x.fim);
   return t.replace(/\bdia primeiro\b/g, "dia 1");
 }
 
@@ -802,10 +858,7 @@ export function situacaoDosOrcamentos(
     .map((o) => {
       const gasto = registros
         .filter(
-          (r) =>
-            r.tipo === "gasto" &&
-            r.situacao === "realizado" &&
-            r.categoria === o.categoria,
+          (r) => r.tipo === "gasto" && r.situacao === "realizado" && r.categoria === o.categoria,
         )
         .reduce((t, r) => t + (r.valor ?? 0), 0);
       const g = Math.round(gasto * 100) / 100;
@@ -824,7 +877,10 @@ export function situacaoDosOrcamentos(
  * A frase de aviso quando um gasto novo FAZ o orçamento cruzar 80% ou 100% (só no momento da virada, para não repetir a
  * cada lançamento). `gastoDoLancamento` é o valor que acabou de entrar.
  */
-export function avisoDeOrcamento(sit: SituacaoDoOrcamento, gastoDoLancamento: number): string | null {
+export function avisoDeOrcamento(
+  sit: SituacaoDoOrcamento,
+  gastoDoLancamento: number,
+): string | null {
   const antes = sit.gasto - gastoDoLancamento;
   const pctAntes = (antes / sit.orcado) * 100;
   const nome = sit.categoria.toLowerCase();

@@ -343,7 +343,8 @@ export async function montarAvisoDeMargem(
   const c = custo.conta.custoPorSaca;
   if (c === null || !custo.preco) return null;
   const margem = margemPctNoPreco(c, custo.preco.preco);
-  if (margem !== null && margem < 0) return avisoDePrecoAbaixoDoCusto(area, custo, c, margem, ultimo, agora, registrosDaSafra);
+  if (margem !== null && margem < 0)
+    return avisoDePrecoAbaixoDoCusto(area, custo, c, margem, ultimo, agora, registrosDaSafra);
   if (margem === null || margem < meta) return null;
   if (ultimo && agora.getTime() - ultimo < 7 * DIA_MS) {
     const antes = area.ultimo_aviso_preco ?? 0;
@@ -393,6 +394,8 @@ function avisoDePrecoAbaixoDoCusto(
       `Você tem cerca de ${formatarQuantidade(est.sacas)} sacas sem vender: a esse preço, cada saca fica ${formatarReais(c - preco.preco)} abaixo do custo.`,
     );
   }
-  partes.push("Quando a margem voltar à sua meta, eu te aviso. É conta com o que você lançou, não é recomendação de venda.");
+  partes.push(
+    "Quando a margem voltar à sua meta, eu te aviso. É conta com o que você lançou, não é recomendação de venda.",
+  );
   return { texto: partes.join(" "), preco: preco.preco };
 }
