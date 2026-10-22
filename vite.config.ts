@@ -6,7 +6,11 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+import { coresAntigas } from "./plugins/coresAntigas";
+
 export default defineConfig({
+  // Cores de reserva para navegador antigo (Chrome < 111, WebView desatualizado): ver plugins/coresAntigas.ts
+  vite: { plugins: [coresAntigas()] },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
