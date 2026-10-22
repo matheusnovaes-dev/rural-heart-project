@@ -12,6 +12,7 @@ import type { HistoricoLinha } from "@/lib/bot/prompt";
 import type { MidiaRecebida } from "@/lib/bot/propostas/tipos";
 import type { ProdutorContexto } from "@/lib/bot/types";
 import { verificarCobranca } from "@/lib/bot/cobranca";
+import { MARCA_AVISO_AUTOMATICO } from "@/lib/bot/avisoAutomatico";
 import { avisoDeFimDoTeste } from "@/lib/bot/fimDoTeste";
 import { supabaseServiceRole } from "@/lib/supabase.server";
 
@@ -133,7 +134,11 @@ export const Route = createFileRoute("/api/bot/responder")({
           );
           // Fim do teste grátis: lembrete por código dentro da janela de 24h (livre, sem template), uma vez por
           // dia e só depois de uma resposta com conteúdo. Nunca em cadastro novo nem quando chama a equipe.
-          if (!resposta.cadastro_criado && !resposta.precisa_humano) {
+          if (
+            !resposta.cadastro_criado &&
+            !resposta.precisa_humano &&
+            !resposta.resposta.includes(MARCA_AVISO_AUTOMATICO)
+          ) {
             const aviso = await avisoDeFimDoTeste({
               supabase,
               produtorId: body.produtor.id,

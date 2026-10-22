@@ -1,5 +1,10 @@
 import { deveAvisarEquipeDeLeadBloqueado } from "@/lib/bot/fimDoTeste";
-import { ehDuvidaDeValor, respostaDuvidaDeValor } from "@/lib/bot/duvidaDeValor";
+import {
+  ehDuvidaDeValor,
+  respondeuAQuantidade,
+  respostaDuvidaDeValor,
+  responderValorDaVenda,
+} from "@/lib/bot/duvidaDeValor";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { culturaMencionada, mencionaDerivadoDeGrao, normalizarCultura } from "@/config/culturas";
@@ -1629,6 +1634,24 @@ async function runAgentBase(input: {
       cadastro_criado: false,
       convite_dispensado: true,
     };
+  }
+
+  // A pessoa respondeu "quantas sacas pretende vender?" (pergunta da resposta de valor): conta por código, com o preço do banco.
+  if (produtor.id) {
+    const ultimaDoBot = [...historico]
+      .sort((a, b) => b.ordem - a.ordem)
+      .find((h) => h.role === "assistant")?.conteudo;
+    if (respondeuAQuantidade(texto, ultimaDoBot)) {
+      const valor = await responderValorDaVenda(supabase, produtor, texto).catch(() => null);
+      if (valor) {
+        return {
+          resposta: valor,
+          precisa_humano: false,
+          cadastro_criado: false,
+          convite_dispensado: true,
+        };
+      }
+    }
   }
 
   // Caderno da fazenda: tudo que tem resposta certa por código é respondido ANTES do modelo, com os números do
