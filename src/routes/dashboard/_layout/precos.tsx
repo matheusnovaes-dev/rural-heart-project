@@ -1,3 +1,4 @@
+import { ehFonteMensal } from "@/lib/precoFonte";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
@@ -38,6 +39,7 @@ type PrecoRow = {
   preco: number;
   data_referencia: string;
   produto: string;
+  fonte?: string;
 };
 
 /** Chave de série do gráfico: "PR" quando é preço único do estado, "MG ·
@@ -99,7 +101,7 @@ function PrecosPage() {
       const acumuladas: PrecoRow[] = [];
       for (let inicio = 0; ; inicio += TAMANHO_PAGINA) {
         const { data, error } = await filtrarPorProduto(
-          supabase!.from("precos").select("uf, regiao, preco, data_referencia, produto"),
+          supabase!.from("precos").select("uf, regiao, preco, data_referencia, produto, fonte"),
           cultura,
         )
           .gte("data_referencia", desde.toISOString().slice(0, 10))
@@ -217,6 +219,8 @@ function PrecosPage() {
         serie,
         atual: atual?.preco ?? null,
         variacao,
+        // Fonte mensal (IEA-SP): a variação é contra o MÊS anterior, não contra a semana passada.
+        mensal: !!atual?.fonte && ehFonteMensal(atual.fonte),
         min: precos.length ? Math.min(...precos) : null,
         max: precos.length ? Math.max(...precos) : null,
         sparkline: precos.slice(-14),
@@ -324,7 +328,7 @@ function PrecosPage() {
                             )}
                             {Math.abs(s.variacao) < 0.05
                               ? "estável"
-                              : `${Math.abs(s.variacao).toFixed(1)}% sem.`}
+                              : `${Math.abs(s.variacao).toFixed(1)}% ${s.mensal ? "mês" : "sem."}`}
                           </span>
                         ) : (
                           <span className="text-xs text-muted-foreground">Sem histórico</span>
