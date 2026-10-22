@@ -10,7 +10,6 @@ import { Header } from "@/components/landing/Header";
 import { PrecosCarrossel } from "@/components/landing/PrecosCarrossel";
 import { Hero } from "@/components/landing/Hero";
 import { CalculadoraSafraLanding } from "@/components/landing/CalculadoraSafraLanding";
-import { TudoNumaMensagem } from "@/components/landing/TudoNumaMensagem";
 import { Solution } from "@/components/landing/Solution";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { DashboardPreview } from "@/components/landing/DashboardPreview";
@@ -108,7 +107,6 @@ function Index() {
           <Hero />
           <PrecosCarrossel />
           <Solution />
-          <TudoNumaMensagem />
           <MapaBrasilFundo>
             <CalculadoraSafraLanding />
             <HowItWorks />
