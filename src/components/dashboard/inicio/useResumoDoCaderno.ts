@@ -1,4 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  assinaturaDosRegistros,
+  COLUNAS_DA_ASSINATURA,
+  useAtualizarAoVoltar,
+} from "@/lib/useAtualizarAoVoltar";
 
 import { useCustosDaSafra } from "@/components/fazenda/useCustosDaSafra";
 import {
@@ -46,10 +51,38 @@ export function useResumoDoCaderno(
   /** Preço da cultura principal que a tela já tem (série do estado ou média das praças), para quando o estado não tem preço único. */
   precoReferencia: number | null = null,
 ): ResumoDoCaderno {
-  const { areas, contas, registros, mercado, carregando } = useCustosDaSafra({
-    id: produtor.id,
-    uf: produtor.uf,
-  });
+  // Lançou pelo WhatsApp com o painel aberto: ao voltar para a aba (ou a cada 30 s com ela visível) confere se o
+  // caderno mudou e só então recalcula os indicadores, sem esqueleto.
+  const [versao, setVersao] = useState(0);
+  const assinaturaAtual = useRef<string | null>(null);
+  const conferir = useCallback(() => {
+    if (!supabase) return;
+    supabase
+      .from("fazenda_registros")
+      .select(COLUNAS_DA_ASSINATURA)
+      .eq("produtor_id", produtor.id)
+      .is("apagado_em", null)
+      .neq("situacao", "rascunho")
+      .order("criado_em", { ascending: false })
+      .limit(3000)
+      .then(({ data, error }) => {
+        if (error || !data) return;
+        const a = assinaturaDosRegistros([data]);
+        // a primeira leitura só marca o ponto de partida (a tela acabou de carregar com esses dados)
+        if (assinaturaAtual.current !== null && a !== assinaturaAtual.current)
+          setVersao((v) => v + 1);
+        assinaturaAtual.current = a;
+      });
+  }, [produtor.id]);
+  useEffect(() => {
+    assinaturaAtual.current = null;
+    conferir();
+  }, [conferir]);
+  useAtualizarAoVoltar(conferir);
+  const { areas, contas, registros, mercado, carregando } = useCustosDaSafra(
+    { id: produtor.id, uf: produtor.uf },
+    versao,
+  );
   const [plano, setPlano] = useState<Plano | null>(null);
   const [pendentes, setPendentes] = useState<RegistroFazenda[] | null>(null);
 
@@ -74,7 +107,7 @@ export function useResumoDoCaderno(
     return () => {
       vivo = false;
     };
-  }, [produtor.id]);
+  }, [produtor.id, versao]);
 
   return useMemo(() => {
     const cultura = produtor.cultura_principal;

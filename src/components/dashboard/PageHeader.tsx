@@ -17,8 +17,10 @@ export function PageHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="relative flex flex-col gap-3 pb-1 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center gap-3.5">
+    // flex-wrap em vez de trocar de coluna para linha num breakpoint fixo: os botões só vão para o lado do título quando
+    // cabem de verdade (com 3 botões, num tablet ou notebook pequeno, o título era espremido palavra por palavra).
+    <div className="relative flex flex-wrap items-center justify-between gap-x-6 gap-y-3 pb-1">
+      <div className="flex min-w-[min(100%,20rem)] flex-1 items-center gap-3.5">
         {iconePersonalizado ? (
           <Icon className="size-11 shrink-0 drop-shadow-sm" />
         ) : (
@@ -35,7 +37,7 @@ export function PageHeader({
           )}
         </div>
       </div>
-      {action && <div className="shrink-0">{action}</div>}
+      {action && <div className="max-w-full shrink-0">{action}</div>}
     </div>
   );
 }

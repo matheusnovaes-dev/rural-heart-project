@@ -202,12 +202,12 @@ function DashboardGuard() {
         />
         <SidebarInset>
           <header className="cabecalho-painel sticky top-0 z-20 flex h-16 items-center gap-3 px-4 sm:px-6">
-            {/* No celular o produtor entra com a sidebar fechada e o ícone sozinho (PanelLeft) não é óbvio para quem não
-                é familiarizado com esse padrão de app: vira um botão com rótulo "Menu" até o breakpoint sm, onde a
+            {/* No celular e no tablet o produtor entra com a sidebar fechada e o ícone sozinho (PanelLeft) não é óbvio para
+                quem não é familiarizado com esse padrão de app: vira um botão com rótulo "Menu" até o breakpoint lg, onde a
                 sidebar já fica aberta por padrão. */}
-            <div className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 shadow-sm sm:border-none sm:bg-transparent sm:p-0 sm:shadow-none">
+            <div className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 shadow-sm lg:border-none lg:bg-transparent lg:p-0 lg:shadow-none">
               <SidebarTrigger />
-              <span className="text-xs font-medium text-muted-foreground sm:hidden">Menu</span>
+              <span className="text-xs font-medium text-muted-foreground lg:hidden">Menu</span>
             </div>
             <DataAgora />
             <AtalhoBusca />
@@ -284,7 +284,7 @@ function DataAgora() {
   });
   const hora = agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   return (
-    <span className="hidden items-center gap-2 rounded-full border border-border/70 bg-card/70 px-3 py-1.5 text-xs font-medium text-muted-foreground lg:inline-flex">
+    <span className="hidden items-center gap-2 rounded-full border border-border/70 bg-card/70 px-3 py-1.5 text-xs font-medium text-muted-foreground md:inline-flex">
       <CalendarDays className="size-3.5" aria-hidden="true" />
       <span>{dia.replace(".", "").replace(/^./, (c) => c.toUpperCase())}</span>
       <span className="h-3 w-px bg-border" aria-hidden="true" />
@@ -351,7 +351,7 @@ function PlanoChip({ produtorId }: { produtorId: string | undefined }) {
   return (
     <Link
       to="/dashboard/assinatura"
-      className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-sidebar-primary/15 px-2 py-0.5 text-[0.68rem] font-bold tracking-wide text-sidebar-primary uppercase ring-1 ring-sidebar-primary/30 outline-none transition hover:bg-sidebar-primary/25 focus-visible:ring-2"
+      className="alvo-toque relative mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-sidebar-primary/15 px-2 py-0.5 text-[0.68rem] font-bold tracking-wide text-sidebar-primary uppercase ring-1 ring-sidebar-primary/30 outline-none transition hover:bg-sidebar-primary/25 focus-visible:ring-2"
     >
       <span className="size-1.5 rounded-full bg-sidebar-primary" aria-hidden="true" />
       Plano {plano.charAt(0).toUpperCase() + plano.slice(1)}

@@ -27,7 +27,7 @@ export function SeletorDePeriodo({
             role="radio"
             aria-checked={ativo}
             onClick={() => onChange(o.valor)}
-            className="relative rounded-full px-3 py-1 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground/60"
+            className="alvo-toque relative rounded-full px-3 py-1 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground/60"
           >
             {ativo && (
               <motion.span

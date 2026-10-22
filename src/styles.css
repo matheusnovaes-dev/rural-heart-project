@@ -1342,3 +1342,13 @@ html[data-tema-reveal]::view-transition-new(root) {
   font-family: var(--font-dashboard-display);
   letter-spacing: 0;
 }
+
+/* Alvo de toque: chips e chaves pequenos (20-26px de altura) ganham uma área invisível de ~44px no toque, sem mudar o
+   visual. Só em tela de toque; no mouse o alvo visível já basta. */
+@media (pointer: coarse) {
+  .alvo-toque::after {
+    content: "";
+    position: absolute;
+    inset: -10px -4px;
+  }
+}

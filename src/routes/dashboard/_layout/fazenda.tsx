@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { assinaturaDosRegistros, useAtualizarAoVoltar } from "@/lib/useAtualizarAoVoltar";
 import {
   CalendarClock,
   Download,
@@ -171,58 +172,69 @@ function FazendaPage() {
   const { plano, assinaturaId, asaasSubscriptionId } = useAssinatura();
   const temPrata = temAcessoPrata(plano);
 
-  const carregar = useCallback(async () => {
-    if (!supabase || !produtor) return;
-    setCarregando(true);
-    const { desde, ate } = intervaloDoPeriodo(periodo);
-    const [principal, aPagarReceber] = await Promise.all([
-      supabase
-        .from("fazenda_registros")
-        .select(COLUNAS_REGISTRO)
-        .eq("produtor_id", produtor.id)
-        .is("apagado_em", null)
-        .eq("situacao", "realizado")
-        .gte("ocorrido_em", desde)
-        .lte("ocorrido_em", ate)
-        .order("ocorrido_em", { ascending: false })
-        .order("criado_em", { ascending: false })
-        .limit(2000),
-      supabase
-        .from("fazenda_registros")
-        .select(COLUNAS_REGISTRO)
-        .eq("produtor_id", produtor.id)
-        .is("apagado_em", null)
-        .eq("situacao", "pendente")
-        .order("vence_em", { ascending: true })
-        .limit(500),
-    ]);
-    const { data, error } = principal;
-    setErro(!!error);
-    const lista = (data ?? []) as unknown as RegistroFazenda[];
-    const doPendente = (aPagarReceber.data ?? []) as unknown as RegistroFazenda[];
-    setRegistros(lista);
-    setPendentes(doPendente);
-    setVersao((v) => v + 1);
-    if (lista.length > 0 || doPendente.length > 0) setTemQualquerCoisa(true);
-    else if (periodo === "tudo" || temQualquerCoisa === null) {
-      if (periodo === "tudo") setTemQualquerCoisa(false);
-      else {
-        const { count } = await supabase
+  const assinaturaAtual = useRef("");
+  // silencioso: atualização em segundo plano (voltou para a aba, lançou pelo WhatsApp). Sem esqueleto e sem mexer em
+  // nada se os lançamentos são os mesmos, para a tela não piscar nem os cartões filhos recarregarem à toa.
+  const carregar = useCallback(
+    async (silencioso = false) => {
+      if (!supabase || !produtor) return;
+      if (!silencioso) setCarregando(true);
+      const { desde, ate } = intervaloDoPeriodo(periodo);
+      const [principal, aPagarReceber] = await Promise.all([
+        supabase
           .from("fazenda_registros")
-          .select("id", { count: "exact", head: true })
+          .select(COLUNAS_REGISTRO)
           .eq("produtor_id", produtor.id)
           .is("apagado_em", null)
-          .neq("situacao", "rascunho");
-        setTemQualquerCoisa((count ?? 0) > 0);
+          .eq("situacao", "realizado")
+          .gte("ocorrido_em", desde)
+          .lte("ocorrido_em", ate)
+          .order("ocorrido_em", { ascending: false })
+          .order("criado_em", { ascending: false })
+          .limit(2000),
+        supabase
+          .from("fazenda_registros")
+          .select(COLUNAS_REGISTRO)
+          .eq("produtor_id", produtor.id)
+          .is("apagado_em", null)
+          .eq("situacao", "pendente")
+          .order("vence_em", { ascending: true })
+          .limit(500),
+      ]);
+      const { data, error } = principal;
+      if (silencioso && (error || aPagarReceber.error)) return; // falha em segundo plano: mantém o que está na tela
+      setErro(!!error);
+      const lista = (data ?? []) as unknown as RegistroFazenda[];
+      const doPendente = (aPagarReceber.data ?? []) as unknown as RegistroFazenda[];
+      const assinatura = assinaturaDosRegistros([lista, doPendente]);
+      if (silencioso && assinatura === assinaturaAtual.current) return;
+      assinaturaAtual.current = assinatura;
+      setRegistros(lista);
+      setPendentes(doPendente);
+      setVersao((v) => v + 1);
+      if (lista.length > 0 || doPendente.length > 0) setTemQualquerCoisa(true);
+      else if (periodo === "tudo" || temQualquerCoisa === null) {
+        if (periodo === "tudo") setTemQualquerCoisa(false);
+        else {
+          const { count } = await supabase
+            .from("fazenda_registros")
+            .select("id", { count: "exact", head: true })
+            .eq("produtor_id", produtor.id)
+            .is("apagado_em", null)
+            .neq("situacao", "rascunho");
+          setTemQualquerCoisa((count ?? 0) > 0);
+        }
       }
-    }
-    setCarregando(false);
+      setCarregando(false);
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [produtor, periodo]);
+    [produtor, periodo],
+  );
 
   useEffect(() => {
     carregar();
   }, [carregar]);
+  useAtualizarAoVoltar(() => carregar(true));
 
   const resumo = useMemo(() => resumir(registros), [registros]);
   const porMes = useMemo(() => {

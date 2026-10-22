@@ -148,7 +148,7 @@ function FuncionariosPage() {
             <p className="text-muted-foreground">
               Quem está na lista acima pode mandar mensagem para o Safralume, no número{" "}
               <a
-                className="font-medium text-foreground underline"
+                className="alvo-toque relative font-medium text-foreground underline"
                 href={buildWhatsAppLink("Oi!")}
                 target="_blank"
                 rel="noreferrer noopener"

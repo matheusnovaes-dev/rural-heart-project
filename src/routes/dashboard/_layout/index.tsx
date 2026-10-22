@@ -197,7 +197,7 @@ function AssinaturaBanner({
         ? "expira hoje"
         : `${diasRestantes} dia${diasRestantes === 1 ? "" : "s"} restante${diasRestantes === 1 ? "" : "s"}`}
       .{" "}
-      <Link to="/assinar" className="underline">
+      <Link to="/assinar" className="alvo-toque relative underline">
         Confirmar plano e assinar agora
       </Link>
     </div>
@@ -468,7 +468,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
             {resumo.plano && (
               <Link
                 to="/dashboard/assinatura"
-                className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold-soft px-2.5 py-1 text-xs font-semibold text-gold-foreground outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-ring"
+                className="alvo-toque relative inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold-soft px-2.5 py-1 text-xs font-semibold text-gold-foreground outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <span className="size-1.5 rounded-full bg-gold" aria-hidden="true" />
                 Plano {resumo.plano.charAt(0).toUpperCase() + resumo.plano.slice(1)}
