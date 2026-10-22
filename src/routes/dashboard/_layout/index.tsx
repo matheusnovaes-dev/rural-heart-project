@@ -564,9 +564,9 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
               <CardTitle className="flex items-center justify-between gap-2 text-sm font-medium opacity-90">
                 <span className="flex items-center gap-2">
                   <TrendingUp className="size-4" />
-                  Seu preço hoje
+                  {mensal ? "Seu preço · média mensal" : "Seu preço hoje"}
                 </span>
-                {atual?.updated_at && (
+                {atual?.updated_at && !mensal && (
                   <AtualizadoEm iso={atual.updated_at} className="opacity-75" />
                 )}
               </CardTitle>
