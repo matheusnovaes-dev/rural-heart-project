@@ -56,9 +56,12 @@ export function Solution() {
         </Reveal>
 
         <Reveal delay={0.15} className="flex flex-col items-center gap-3">
-          <Flutuar className="flex w-full justify-center">
-            <PhoneMockup />
-          </Flutuar>
+          {/* data-palco3d: no desktop o celular entra girado em 3D e assenta com o scroll (desktop/interacoes.ts) */}
+          <div data-palco3d="celular" className="flex w-full justify-center">
+            <Flutuar className="flex w-full justify-center">
+              <PhoneMockup />
+            </Flutuar>
+          </div>
           <p className="font-mono text-[10.5px] tracking-[0.18em] text-muted-foreground uppercase">
             Exemplo ilustrativo de conversa
           </p>

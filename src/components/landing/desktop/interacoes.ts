@@ -390,3 +390,99 @@ export function iniciarProfundidade(): () => void {
     els.forEach((el) => (el.style.translate = ""));
   };
 }
+
+// -------------------------------------------------------------------- palcos 3D
+/**
+ * Câmera 3D guiada pelo scroll nos elementos que já existem (não são objetos decorativos): `data-palco3d="celular"`
+ * entra girado e vai assentando, `"painel"` chega deitado em perspectiva e "pousa" na tela enquanto as camadas marcadas
+ * com `data-camada="N"` descolam e voltam ao lugar, e `"plano-esq" | "plano-meio" | "plano-dir"` chegam em leque, de
+ * trás do cartão do meio. Depois de pousados, o painel e os planos seguem o mouse de leve. Só transform e a
+ * propriedade `translate`, tudo no mesmo laço; nada roda fora da tela.
+ */
+export function iniciarPalcos3D(): () => void {
+  const els = Array.from(document.querySelectorAll<HTMLElement>("[data-palco3d]"));
+  if (!els.length) return () => {};
+  type Estado = { e: number; mx: number; my: number; alvoMx: number; alvoMy: number };
+  const estados = new Map<HTMLElement, Estado>();
+  const visiveis = new Set<HTMLElement>();
+  const io = new IntersectionObserver(
+    (entradas) =>
+      entradas.forEach((en) => {
+        const el = en.target as HTMLElement;
+        if (en.isIntersecting) visiveis.add(el);
+        else visiveis.delete(el);
+      }),
+    { rootMargin: "200px 0px" },
+  );
+  els.forEach((el) => {
+    estados.set(el, { e: 0, mx: 0, my: 0, alvoMx: 0, alvoMy: 0 });
+    el.style.willChange = "transform";
+    el.style.transformOrigin = el.dataset["palco3d"] === "painel" ? "50% 0%" : "50% 50%";
+    io.observe(el);
+  });
+  const aoMover = (ev: PointerEvent) => {
+    if (ev.pointerType !== "mouse") return;
+    visiveis.forEach((el) => {
+      const s = estados.get(el)!;
+      const r = el.getBoundingClientRect();
+      const dentro =
+        ev.clientX >= r.left &&
+        ev.clientX <= r.right &&
+        ev.clientY >= r.top &&
+        ev.clientY <= r.bottom;
+      s.alvoMx = dentro ? (ev.clientX - r.left) / r.width - 0.5 : 0;
+      s.alvoMy = dentro ? (ev.clientY - r.top) / r.height - 0.5 : 0;
+    });
+  };
+  window.addEventListener("pointermove", aoMover, { passive: true });
+
+  const parar = registrar(() => {
+    const vh = window.innerHeight;
+    visiveis.forEach((el) => {
+      const s = estados.get(el)!;
+      const r = el.getBoundingClientRect();
+      const tipo = el.dataset["palco3d"];
+      // entrada: 0 quando o topo encosta no pé da tela, 1 quando chega a ~15% do topo (curva suave nas duas pontas,
+      // para o movimento ser visível durante toda a entrada e não só no primeiro instante)
+      const p = Math.max(0, Math.min(1, (vh - r.top) / (vh * 0.85)));
+      const alvoE = p * p * (3 - 2 * p);
+      s.e = lerp(s.e, alvoE, 0.16);
+      s.mx = lerp(s.mx, s.alvoMx, 0.08);
+      s.my = lerp(s.my, s.alvoMy, 0.08);
+      const f = 1 - s.e; // quanto falta para pousar
+      // órbita: o quanto o centro do elemento está acima/abaixo do meio da tela (-1..1)
+      const o = Math.max(-1, Math.min(1, (r.top + r.height / 2 - vh / 2) / vh));
+      let t = "";
+      if (tipo === "celular") {
+        t = `perspective(1200px) translate3d(${(-f * 12).toFixed(2)}%,${(f * 140).toFixed(1)}px,${(-f * 260).toFixed(1)}px) rotateX(${(f * 24 - o * 5).toFixed(2)}deg) rotateY(${(-f * 62 + o * 12).toFixed(2)}deg) rotateZ(${(-f * 9).toFixed(2)}deg)`;
+      } else if (tipo === "painel") {
+        t = `perspective(1600px) translate3d(0,${(f * 220).toFixed(1)}px,${(-f * 380).toFixed(1)}px) rotateX(${(f * 58 - s.my * 5).toFixed(2)}deg) rotateY(${(-f * 14 + s.mx * 7).toFixed(2)}deg) rotateZ(${(f * 3).toFixed(2)}deg)`;
+        // reflexo de luz que atravessa o vidro do painel enquanto ele pousa
+        el.style.setProperty("--brilho", f.toFixed(3));
+        el.querySelectorAll<HTMLElement>("[data-camada]").forEach((c) => {
+          const n = Number(c.dataset["camada"]) || 0;
+          c.style.translate = `${(s.mx * n * 0.6).toFixed(2)}px ${(-f * n * 4 + s.my * n * 0.5).toFixed(2)}px`;
+        });
+      } else if (tipo?.startsWith("plano-")) {
+        const lado = tipo === "plano-esq" ? 1 : tipo === "plano-dir" ? -1 : 0;
+        const tx = lado * f * 96; // em %: começa empilhado atrás do cartão do meio
+        const tz = -f * (lado ? 520 : 220);
+        const ry = lado * f * 52 + s.mx * 8;
+        const rx = (lado ? f * 10 : f * 38) - s.my * 6;
+        const rz = lado * f * -6;
+        t = `perspective(1400px) translate3d(${tx.toFixed(2)}%,${(f * 120).toFixed(1)}px,${tz.toFixed(1)}px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) rotateZ(${rz.toFixed(2)}deg)`;
+      }
+      el.style.transform = t;
+    });
+  });
+  return () => {
+    window.removeEventListener("pointermove", aoMover);
+    parar();
+    io.disconnect();
+    els.forEach((el) => {
+      el.style.transform = "";
+      el.style.willChange = "";
+      el.querySelectorAll<HTMLElement>("[data-camada]").forEach((c) => (c.style.translate = ""));
+    });
+  };
+}

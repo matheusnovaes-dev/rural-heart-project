@@ -320,120 +320,125 @@ export function DashboardPreview() {
             o preview nunca parecia o produto real, por mais que o conteúdo
             batesse. Pedido do Matheus 2026-10-12: "tem que ser FODA, o mais
             realista possível". */}
-            <div
-              data-spotlight
-              className="dashboard-shell overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
-              onMouseEnter={() => setAutoplay(false)}
-              onMouseLeave={() => setAutoplay(true)}
-            >
-              {/* barra de navegador, só decorativa */}
-              <div className="flex items-center gap-2 border-b border-border bg-secondary/60 px-4 py-2.5">
-                <span className="size-2.5 rounded-full bg-destructive/60" />
-                <span className="size-2.5 rounded-full bg-gold/50" />
-                <span className="size-2.5 rounded-full bg-primary/60" />
-                <span className="ml-3 rounded-md bg-background px-3 py-1 font-mono text-xs text-muted-foreground">
-                  app.safralume.com.br/dashboard
-                </span>
-              </div>
+            {/* data-palco3d: no desktop o painel chega deitado em perspectiva e pousa; as camadas descolam e voltam */}
+            <div data-palco3d="painel">
+              <div
+                data-spotlight
+                className="dashboard-shell overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
+                onMouseEnter={() => setAutoplay(false)}
+                onMouseLeave={() => setAutoplay(true)}
+              >
+                {/* barra de navegador, só decorativa */}
+                <div className="flex items-center gap-2 border-b border-border bg-secondary/60 px-4 py-2.5">
+                  <span className="size-2.5 rounded-full bg-destructive/60" />
+                  <span className="size-2.5 rounded-full bg-gold/50" />
+                  <span className="size-2.5 rounded-full bg-primary/60" />
+                  <span className="ml-3 rounded-md bg-background px-3 py-1 font-mono text-xs text-muted-foreground">
+                    app.safralume.com.br/dashboard
+                  </span>
+                </div>
 
-              <div className="flex flex-col sm:flex-row">
-                {/* mini sidebar — mesma cor/estrutura da sidebar real (bg-sidebar
+                <div className="flex flex-col sm:flex-row">
+                  {/* mini sidebar — mesma cor/estrutura da sidebar real (bg-sidebar
                 verde-escuro, badge de logo, item ativo em sidebar-accent) */}
-                <div
-                  ref={sidebarRef}
-                  className="relative flex shrink-0 flex-col gap-1 border-b border-sidebar-border bg-sidebar p-2 sm:w-52 sm:border-r sm:border-b-0 sm:p-3"
-                >
-                  <div className="mb-2 hidden items-center gap-2.5 px-1 pb-3 sm:flex">
-                    <img src={MIDIA.logo} alt="" className="size-8 rounded-[0.6rem]" />
-                    <div className="min-w-0">
-                      <span className="block truncate font-display text-sm font-semibold text-sidebar-foreground">
-                        Safralume
-                      </span>
-                      <span className="block text-[10px] font-medium tracking-wide text-sidebar-foreground/55 uppercase">
-                        Fazenda Santa Luzia
-                      </span>
+                  <div
+                    ref={sidebarRef}
+                    className="relative flex shrink-0 flex-col gap-1 border-b border-sidebar-border bg-sidebar p-2 sm:w-52 sm:border-r sm:border-b-0 sm:p-3"
+                  >
+                    <div className="mb-2 hidden items-center gap-2.5 px-1 pb-3 sm:flex">
+                      <img src={MIDIA.logo} alt="" className="size-8 rounded-[0.6rem]" />
+                      <div className="min-w-0">
+                        <span className="block truncate font-display text-sm font-semibold text-sidebar-foreground">
+                          Safralume
+                        </span>
+                        <span className="block text-[10px] font-medium tracking-wide text-sidebar-foreground/55 uppercase">
+                          Fazenda Santa Luzia
+                        </span>
+                      </div>
+                    </div>
+
+                    <CursorFantasma pos={cursorPos} />
+                    <div data-camada="7" className="grid grid-cols-5 gap-1 sm:flex sm:flex-col">
+                      {abas.map((item) => (
+                        <button
+                          key={item.id}
+                          ref={(el) => {
+                            botaoRefs.current[item.id] = el;
+                          }}
+                          type="button"
+                          aria-label={item.label}
+                          aria-pressed={aba === item.id}
+                          onClick={() => selecionarManual(item.id)}
+                          className={cn(
+                            "flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors sm:gap-1.5 sm:px-2.5 sm:text-[13px] sm:tracking-tight pointer-coarse:min-h-11 pointer-coarse:min-w-11 sm:flex-none sm:justify-start",
+                            aba === item.id
+                              ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                              : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+                          )}
+                        >
+                          <item.icon className="size-6 shrink-0" />
+                          <span className="hidden min-w-0 flex-1 truncate sm:inline">
+                            {item.label}
+                          </span>
+                          <span
+                            className={cn(
+                              "hidden shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold sm:inline",
+                              aba === item.id
+                                ? "bg-sidebar-primary/25 text-sidebar-primary"
+                                : planoBadge[item.plano].className,
+                            )}
+                          >
+                            {planoBadge[item.plano].label}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="mt-1 flex items-center gap-1.5 border-t border-sidebar-border px-3 pt-3 sm:hidden">
+                      {abas.map((item) => (
+                        <span
+                          key={item.id}
+                          className={cn(
+                            "h-1 flex-1 rounded-full transition-colors",
+                            aba === item.id ? "bg-sidebar-primary" : "bg-sidebar-border",
+                          )}
+                        />
+                      ))}
+                    </div>
+
+                    <div className="mt-auto hidden items-center gap-2 border-t border-sidebar-border px-1 pt-3 text-sidebar-foreground/55 sm:flex">
+                      <LogOut className="size-3.5" />
+                      <span className="text-xs">Sair</span>
                     </div>
                   </div>
 
-                  <CursorFantasma pos={cursorPos} />
-                  <div className="grid grid-cols-5 gap-1 sm:flex sm:flex-col">
-                    {abas.map((item) => (
-                      <button
-                        key={item.id}
-                        ref={(el) => {
-                          botaoRefs.current[item.id] = el;
-                        }}
-                        type="button"
-                        aria-label={item.label}
-                        aria-pressed={aba === item.id}
-                        onClick={() => selecionarManual(item.id)}
-                        className={cn(
-                          "flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors sm:gap-1.5 sm:px-2.5 sm:text-[13px] sm:tracking-tight pointer-coarse:min-h-11 pointer-coarse:min-w-11 sm:flex-none sm:justify-start",
-                          aba === item.id
-                            ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
-                        )}
-                      >
-                        <item.icon className="size-6 shrink-0" />
-                        <span className="hidden min-w-0 flex-1 truncate sm:inline">
-                          {item.label}
-                        </span>
-                        <span
-                          className={cn(
-                            "hidden shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold sm:inline",
-                            aba === item.id
-                              ? "bg-sidebar-primary/25 text-sidebar-primary"
-                              : planoBadge[item.plano].className,
-                          )}
+                  {/* conteúdo, muda com a aba */}
+                  <div className="min-h-96 flex-1 overflow-hidden bg-background p-4 sm:p-6">
+                    <div data-camada="16">
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={aba}
+                          initial={{ opacity: 0, x: 14 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -14 }}
+                          transition={{ duration: 0.25, ease: "easeOut" }}
                         >
-                          {planoBadge[item.plano].label}
-                        </span>
-                      </button>
-                    ))}
+                          {aba === "precos" && <PreviewPrecos precosReais={precosReais} />}
+                          {aba === "sinal" && <PreviewSinalVenda />}
+                          {aba === "alertas" && <PreviewAlertas />}
+                          {aba === "fazenda" && <PreviewFazenda />}
+                          {aba === "estoque" && <PreviewEstoque />}
+                          {aba === "clima" && <PreviewClima />}
+                          {aba === "plantio" && <PreviewPlantio />}
+                          {aba === "ferrugem" && <PreviewFerrugem />}
+                          {aba === "insumos" && <PreviewInsumos />}
+                          {aba === "leiloes" && <PreviewLeiloes />}
+                          {aba === "suporte" && <PreviewSuporte />}
+                          {aba === "acompanhamento" && <PreviewAcompanhamento />}
+                        </motion.div>
+                      </AnimatePresence>
+                    </div>
                   </div>
-
-                  <div className="mt-1 flex items-center gap-1.5 border-t border-sidebar-border px-3 pt-3 sm:hidden">
-                    {abas.map((item) => (
-                      <span
-                        key={item.id}
-                        className={cn(
-                          "h-1 flex-1 rounded-full transition-colors",
-                          aba === item.id ? "bg-sidebar-primary" : "bg-sidebar-border",
-                        )}
-                      />
-                    ))}
-                  </div>
-
-                  <div className="mt-auto hidden items-center gap-2 border-t border-sidebar-border px-1 pt-3 text-sidebar-foreground/55 sm:flex">
-                    <LogOut className="size-3.5" />
-                    <span className="text-xs">Sair</span>
-                  </div>
-                </div>
-
-                {/* conteúdo, muda com a aba */}
-                <div className="min-h-96 flex-1 overflow-hidden bg-background p-4 sm:p-6">
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={aba}
-                      initial={{ opacity: 0, x: 14 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -14 }}
-                      transition={{ duration: 0.25, ease: "easeOut" }}
-                    >
-                      {aba === "precos" && <PreviewPrecos precosReais={precosReais} />}
-                      {aba === "sinal" && <PreviewSinalVenda />}
-                      {aba === "alertas" && <PreviewAlertas />}
-                      {aba === "fazenda" && <PreviewFazenda />}
-                      {aba === "estoque" && <PreviewEstoque />}
-                      {aba === "clima" && <PreviewClima />}
-                      {aba === "plantio" && <PreviewPlantio />}
-                      {aba === "ferrugem" && <PreviewFerrugem />}
-                      {aba === "insumos" && <PreviewInsumos />}
-                      {aba === "leiloes" && <PreviewLeiloes />}
-                      {aba === "suporte" && <PreviewSuporte />}
-                      {aba === "acompanhamento" && <PreviewAcompanhamento />}
-                    </motion.div>
-                  </AnimatePresence>
                 </div>
               </div>
             </div>

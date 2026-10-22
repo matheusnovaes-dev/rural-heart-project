@@ -1352,3 +1352,27 @@ html[data-tema-reveal]::view-transition-new(root) {
     inset: -10px -4px;
   }
 }
+
+/* Reflexo de luz no vidro do painel da landing enquanto ele pousa em 3D (desktop/interacoes.ts define --brilho, de 1 a 0;
+   sem o script de desktop a variável não existe e o reflexo fica invisível). */
+[data-palco3d="painel"] {
+  position: relative;
+}
+[data-palco3d="painel"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-radius: 1rem;
+  pointer-events: none;
+  background: linear-gradient(
+    112deg,
+    transparent 30%,
+    rgb(255 255 255 / 0.55) 46%,
+    rgb(255 255 255 / 0.12) 52%,
+    transparent 64%
+  );
+  opacity: calc(var(--brilho, 0) * 1.6);
+  transform: translateX(calc((var(--brilho, 0) - 0.5) * 140%));
+  mix-blend-mode: soft-light;
+}

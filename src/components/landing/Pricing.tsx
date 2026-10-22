@@ -63,14 +63,20 @@ export function Pricing({ semTrial = false }: { semTrial?: boolean }) {
               // card inteiro do Bronze.
               className={cn("h-full", plan.highlighted && "max-lg:order-first")}
             >
-              {plan.highlighted ? (
-                // Plano em destaque: um fio de luz laranja dá a volta no cartão (só transform, ver .anel-destaque)
-                <div className="anel-destaque h-full lg:-translate-y-3 lg:scale-[1.02]">
+              {/* data-palco3d: no desktop os cartões chegam em leque, saindo de trás do cartão do meio */}
+              <div
+                data-palco3d={index === 0 ? "plano-esq" : index === 1 ? "plano-meio" : "plano-dir"}
+                className="h-full"
+              >
+                {plan.highlighted ? (
+                  // Plano em destaque: um fio de luz laranja dá a volta no cartão (só transform, ver .anel-destaque)
+                  <div className="anel-destaque h-full lg:-translate-y-3 lg:scale-[1.02]">
+                    <CartaoPlano plan={plan} semTrial={semTrial} />
+                  </div>
+                ) : (
                   <CartaoPlano plan={plan} semTrial={semTrial} />
-                </div>
-              ) : (
-                <CartaoPlano plan={plan} semTrial={semTrial} />
-              )}
+                )}
+              </div>
             </Reveal>
           ))}
         </div>

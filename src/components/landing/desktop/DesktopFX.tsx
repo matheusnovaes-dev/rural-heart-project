@@ -10,6 +10,7 @@ import {
   iniciarCortinas,
   iniciarCursor,
   iniciarMagneticos,
+  iniciarPalcos3D,
   iniciarParallax,
   iniciarProfundidade,
   iniciarScrollSuave,
@@ -40,6 +41,7 @@ export default function DesktopFX({ leve = false }: { leve?: boolean }) {
     seguro(iniciarParallax);
     seguro(iniciarProfundidade);
     seguro(iniciarCortinas);
+    seguro(iniciarPalcos3D);
     const hero = document.getElementById("topo");
     if (hero) seguro(() => iniciarParticulas(hero));
     if (hero) seguro(() => iniciarVento(hero));
