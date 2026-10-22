@@ -1,5 +1,5 @@
-import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from "react";
+import { motion } from "framer-motion";
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 
 export type AbaPremium = {
@@ -32,6 +32,37 @@ export function AbasPremium({
 }) {
   const uid = useId().replace(/:/g, "");
   const refs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const caixa = useRef<HTMLDivElement | null>(null);
+  // Painéis já visitados ficam montados (só escondidos): trocar de aba é instantâneo, não recarrega os dados e a página
+  // não encolhe no meio da troca (era o "pisca" no celular: o painel antigo sumia e a página inteira encolhia).
+  const [visitadas, setVisitadas] = useState<string[]>([valor]);
+  useEffect(() => {
+    setVisitadas((v) => (v.includes(valor) ? v : [...v, valor]));
+  }, [valor]);
+
+  function trocar(id: string) {
+    if (id === valor) return;
+    // segura a altura atual até o painel novo terminar de carregar (sem esqueletos), no máximo 6 s: se ele ainda está
+    // carregando, a página não despenca e não "pisca" no meio da troca
+    const el = caixa.current;
+    if (el) {
+      el.style.transition = "none";
+      el.style.minHeight = `${el.offsetHeight}px`;
+      const inicio = Date.now();
+      const soltar = () => {
+        const painel = el.querySelector<HTMLElement>(`[data-ativo="true"]`);
+        const carregando = !!painel?.querySelector(".animate-pulse");
+        if (carregando && Date.now() - inicio < 6000) {
+          window.setTimeout(soltar, 150);
+          return;
+        }
+        el.style.transition = "min-height 0.45s cubic-bezier(0.22, 1, 0.36, 1)";
+        el.style.minHeight = "0px";
+      };
+      window.setTimeout(soltar, 450);
+    }
+    onChange(id);
+  }
 
   useEffect(() => {
     refs.current[valor]?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
@@ -40,7 +71,7 @@ export function AbasPremium({
   function aoTeclar(e: KeyboardEvent<HTMLButtonElement>, i: number) {
     const ir = (j: number) => {
       const alvo = abas[(j + abas.length) % abas.length]!;
-      onChange(alvo.id);
+      trocar(alvo.id);
       refs.current[alvo.id]?.focus();
     };
     if (e.key === "ArrowRight") {
@@ -80,7 +111,7 @@ export function AbasPremium({
               aria-selected={ativo}
               aria-controls={`${uid}-painel-${a.id}`}
               tabIndex={ativo ? 0 : -1}
-              onClick={() => onChange(a.id)}
+              onClick={() => trocar(a.id)}
               onKeyDown={(e) => aoTeclar(e, i)}
               className="relative flex h-10 min-w-fit flex-1 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-2.5 text-[0.82rem] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring sm:flex-none sm:gap-2 sm:px-4 sm:text-sm"
             >
@@ -120,21 +151,21 @@ export function AbasPremium({
           );
         })}
       </div>
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={valor}
-          role="tabpanel"
-          id={`${uid}-painel-${valor}`}
-          aria-labelledby={`${uid}-aba-${valor}`}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          className="flex min-w-0 flex-col gap-5"
-        >
-          {children(valor)}
-        </motion.div>
-      </AnimatePresence>
+      <div ref={caixa} className="min-w-0">
+        {(visitadas.includes(valor) ? visitadas : [...visitadas, valor]).map((id) => (
+          <div
+            key={id}
+            role="tabpanel"
+            id={`${uid}-painel-${id}`}
+            aria-labelledby={`${uid}-aba-${id}`}
+            hidden={id !== valor}
+            data-ativo={id === valor}
+            className="painel-aba flex min-w-0 flex-col gap-5"
+          >
+            {children(id)}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

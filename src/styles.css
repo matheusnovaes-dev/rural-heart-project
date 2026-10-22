@@ -1119,3 +1119,20 @@ html[data-tema-reveal]::view-transition-new(root) {
   border-color: color-mix(in oklab, var(--gold) 35%, var(--border));
   --spot-cor: rgb(255 255 255 / 0.45);
 }
+
+/* Painel de aba que vira o ativo: entra com um fade curto, sem desmontar nada (ver AbasPremium). */
+@keyframes aba-entra {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .painel-aba[data-ativo="true"] {
+    animation: aba-entra 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 import { LogOut, Search } from "lucide-react";
 
@@ -213,7 +213,11 @@ function DashboardGuard() {
             </span>
             <AtalhoBusca />
           </header>
-          <div id="conteudo" tabIndex={-1} className="fundo-painel flex-1 p-4 outline-none sm:p-6 lg:p-8">
+          <div
+            id="conteudo"
+            tabIndex={-1}
+            className="fundo-painel flex-1 p-4 outline-none sm:p-6 lg:p-8"
+          >
             <AnimatedOutlet />
           </div>
         </SidebarInset>
@@ -230,18 +234,17 @@ function DashboardGuard() {
  * apresentação: rápido o bastante pra nunca parecer travando o clique. */
 function AnimatedOutlet() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  // Só entrada (sem saída em "wait"): antes o conteúdo antigo sumia e o novo entrava de opacidade 0, e no celular a tela
+  // toda piscava a cada troca de página. Agora o novo conteúdo já nasce quase opaco e só desliza de leve.
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={pathname}
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -8 }}
-        transition={{ duration: 0.18, ease: "easeOut" }}
-      >
-        <Outlet />
-      </motion.div>
-    </AnimatePresence>
+    <motion.div
+      key={pathname}
+      initial={{ opacity: 0.86, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+    >
+      <Outlet />
+    </motion.div>
   );
 }
 
