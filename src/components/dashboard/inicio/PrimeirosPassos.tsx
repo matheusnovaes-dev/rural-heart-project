@@ -210,6 +210,9 @@ export function PrimeirosPassos({
 
   // Enquanto não sabe tudo, reserva o lugar com a altura do cartão (sem isso o preço desce depois: pulo de layout).
   if (!conhecido) {
+    // Quem já conversou pode ter feito tudo: reservar e depois recolher seria um pulo grande (medido: 0,65 no celular).
+    // Só quem ainda não conversou tem o cartão garantido (o passo 1 está pendente), então só aí o espaço é reservado.
+    if (jaConversou === true) return null;
     return (
       <div
         aria-hidden="true"
@@ -253,7 +256,9 @@ export function PrimeirosPassos({
           >
             {totalFeitos === 0
               ? "Deixe o Safralume trabalhando pra você"
-              : `Faltam ${PASSOS.length - totalFeitos} ${PASSOS.length - totalFeitos === 1 ? "passo" : "passos"} pra aproveitar tudo`}
+              : PASSOS.length - totalFeitos === 1
+                ? "Falta 1 passo pra aproveitar tudo"
+                : `Faltam ${PASSOS.length - totalFeitos} passos pra aproveitar tudo`}
           </h2>
         </div>
         <div className="flex shrink-0 items-center gap-1">
