@@ -4,6 +4,7 @@ import { ListChecks, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { ChamarHoje } from "@/components/dashboard/ChamarHoje";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -109,8 +110,9 @@ function LeadsPage() {
         icon={IconesSafralume.leads}
         iconePersonalizado
         title="Leads"
-        description="Quem preencheu o formulário da landing page"
+        description="Quem chamar hoje e quem preencheu o formulário da landing page"
       />
+      <ChamarHoje />
       <Card>
         <CardContent className="flex flex-col gap-4 pt-6">
           {leads.length > 0 && (

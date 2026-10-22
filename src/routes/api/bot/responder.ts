@@ -12,6 +12,7 @@ import type { HistoricoLinha } from "@/lib/bot/prompt";
 import type { MidiaRecebida } from "@/lib/bot/propostas/tipos";
 import type { ProdutorContexto } from "@/lib/bot/types";
 import { verificarCobranca } from "@/lib/bot/cobranca";
+import { avisoDeFimDoTeste } from "@/lib/bot/fimDoTeste";
 import { supabaseServiceRole } from "@/lib/supabase.server";
 
 type RequestBody = {
@@ -130,6 +131,17 @@ export const Route = createFileRoute("/api/bot/responder")({
           resposta.resposta = confirmacaoComEstadoPorExtenso(
             trocarJargaoUf(manterSoAConfirmacao(tirarTravessoes(resposta.resposta))),
           );
+          // Fim do teste grátis: lembrete por código dentro da janela de 24h (livre, sem template), uma vez por
+          // dia e só depois de uma resposta com conteúdo. Nunca em cadastro novo nem quando chama a equipe.
+          if (!resposta.cadastro_criado && !resposta.precisa_humano) {
+            const aviso = await avisoDeFimDoTeste({
+              supabase,
+              produtorId: body.produtor.id,
+              historico: body.historico ?? [],
+              resposta: resposta.resposta,
+            });
+            if (aviso) resposta.resposta = `${resposta.resposta}\n\n${aviso}`;
+          }
           return Response.json(resposta);
         } catch (err) {
           console.error("Erro no agente do bot:", err);
