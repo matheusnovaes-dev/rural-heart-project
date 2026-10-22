@@ -98,6 +98,75 @@ function insightDoUf(previsao: Previsao) {
   return { texto: "Semana com baixo risco de chuva.", tone: "chuva-baixa" as const };
 }
 
+/** Cinco colunas: barra de chuva (cheia = 100%), faixa de temperatura posicionada na escala da semana e os números. */
+function PrevisaoVisual({ previsao }: { previsao: Previsao }) {
+  const maxs = previsao.tempMax.slice(0, previsao.dias.length);
+  const mins = previsao.tempMin.slice(0, previsao.dias.length);
+  const alto = Math.max(...maxs);
+  const baixo = Math.min(...mins);
+  const escala = Math.max(1, alto - baixo);
+  return (
+    <div className="grid grid-cols-5 gap-2">
+      {previsao.dias.map((dia, i) => {
+        const pct = Math.round(previsao.chuvaPct[i] ?? 0);
+        const forte = pct >= 60;
+        const media = pct >= 30;
+        const tmax = previsao.tempMax[i] ?? 0;
+        const tmin = previsao.tempMin[i] ?? 0;
+        return (
+          <div
+            key={dia}
+            className={`flex flex-col items-center gap-2.5 rounded-2xl border px-1.5 py-3 text-center ${
+              i === 0
+                ? "border-primary/25 bg-gradient-to-b from-primary/[0.07] to-transparent"
+                : "border-border/60 bg-card"
+            }`}
+          >
+            <span className="text-xs font-semibold capitalize">
+              {i === 0
+                ? "hoje"
+                : new Date(`${dia}T00:00:00`).toLocaleDateString("pt-BR", { weekday: "short" })}
+            </span>
+            <div
+              className="relative h-24 w-5 overflow-hidden rounded-full bg-secondary"
+              role="img"
+              aria-label={`${pct}% de chance de chuva`}
+            >
+              <div
+                className={`barra-y absolute inset-x-0 bottom-0 rounded-full ${
+                  forte
+                    ? "bg-gradient-to-t from-red-500 to-orange-400"
+                    : media
+                      ? "bg-gradient-to-t from-amber-500 to-yellow-300"
+                      : "bg-gradient-to-t from-sky-500 to-sky-300"
+                }`}
+                style={{ height: `${Math.max(4, pct)}%`, ["--atraso" as string]: `${i * 0.08}s` }}
+              />
+            </div>
+            <span className="flex items-center gap-1 font-mono text-sm font-semibold tabular-nums">
+              <CloudRain className="size-3 opacity-70" aria-hidden="true" />
+              {pct}%
+            </span>
+            <div className="relative h-16 w-1.5 rounded-full bg-secondary" aria-hidden="true">
+              <div
+                className="absolute inset-x-0 rounded-full bg-gradient-to-t from-sky-400 via-emerald-400 to-amber-400"
+                style={{
+                  bottom: `${((tmin - baixo) / escala) * 100}%`,
+                  height: `${Math.max(8, ((tmax - tmin) / escala) * 100)}%`,
+                }}
+              />
+            </div>
+            <span className="flex flex-col items-center font-mono text-xs leading-tight tabular-nums">
+              <span className="text-sm font-semibold">{Math.round(tmax)}°</span>
+              <span className="text-muted-foreground">{Math.round(tmin)}°</span>
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function ClimaConteudo() {
   const { produtor, cooperativa } = useAuth();
   const [locaisPrimarios, setLocaisPrimarios] = useState<Local[]>([]);
@@ -243,7 +312,7 @@ function ClimaConteudo() {
         </Card>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className={`grid gap-4 ${locais.length > 1 ? "lg:grid-cols-2" : ""}`}>
         <AnimatePresence initial={false}>
           {locais.map((local, index) => {
             const previsao = previsoes[local.chave];
@@ -313,40 +382,7 @@ function ClimaConteudo() {
                             {insight.texto}
                           </p>
                         )}
-                        <div className="grid grid-cols-5 gap-1.5">
-                          {previsao.dias.map((dia, i) => {
-                            const pct = previsao.chuvaPct[i] ?? 0;
-                            const { tone } = faixaChuva(pct);
-                            return (
-                              <div
-                                key={dia}
-                                className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-center ${
-                                  i === 0 ? "ring-1 ring-primary/40" : ""
-                                } ${toneClasses[tone]}`}
-                              >
-                                <span className="text-xs font-semibold capitalize">
-                                  {i === 0
-                                    ? "hoje"
-                                    : new Date(`${dia}T00:00:00`).toLocaleDateString("pt-BR", {
-                                        weekday: "short",
-                                      })}
-                                </span>
-                                <span className="flex items-center gap-1 font-mono text-sm font-semibold tabular-nums">
-                                  <CloudRain className="size-3" />
-                                  {Math.round(pct)}%
-                                </span>
-                                <span className="flex flex-col items-center font-mono text-xs leading-tight tabular-nums">
-                                  <span className="font-semibold">
-                                    {Math.round(previsao.tempMax[i] ?? 0)}°
-                                  </span>
-                                  <span className="opacity-80">
-                                    {Math.round(previsao.tempMin[i] ?? 0)}°
-                                  </span>
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
+                        <PrevisaoVisual previsao={previsao} />
                       </>
                     )}
                   </CardContent>
