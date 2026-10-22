@@ -12,6 +12,10 @@ import { listarQuemChamarHoje, type Grupo, type PessoaParaChamar } from "@/lib/c
 const CHAVE = "safralume:chamados";
 
 const ROTULO: Record<Grupo, { titulo: string; dica: string }> = {
+  escrevendo: {
+    titulo: "Teste venceu, mas continua escrevendo",
+    dica: "Estão pedindo o produto e só recebem o aviso de assinar. Chame hoje.",
+  },
   quente: {
     titulo: "Usando agora, teste acabando",
     dica: "Quem já usa é quem mais converte: pergunte o que achou.",
@@ -59,7 +63,7 @@ export function ChamarHoje() {
   }, [token]);
 
   const grupos = useMemo(() => {
-    const ordem: Grupo[] = ["quente", "ajudar", "reconquistar", "vencido"];
+    const ordem: Grupo[] = ["escrevendo", "quente", "ajudar", "reconquistar", "vencido"];
     return ordem
       .map((g) => ({ g, itens: (lista ?? []).filter((p) => p.grupo === g) }))
       .filter((x) => x.itens.length > 0);

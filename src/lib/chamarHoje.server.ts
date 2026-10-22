@@ -12,7 +12,7 @@ import { supabaseServiceRole } from "@/lib/supabase.server";
  */
 const EMAIL_ADMIN = "sirmatheus143@gmail.com";
 
-export type Grupo = "quente" | "ajudar" | "reconquistar" | "vencido";
+export type Grupo = "escrevendo" | "quente" | "ajudar" | "reconquistar" | "vencido";
 
 export type PessoaParaChamar = {
   id: string;
@@ -86,6 +86,8 @@ export function montarRoteiro(p: {
   const eu = "Aqui é o Matheus, do Safralume (safralume.com.br).";
   const g = gancho(p);
   switch (p.grupo) {
+    case "escrevendo":
+      return `${oi} ${eu} Tenho visto você mandar as novidades e as contas da safra por aqui e adoro acompanhar. Seu teste terminou e eu não quero que você fique sem resposta: me conta, o que mais te ajudaria no dia a dia? Se quiser continuar, te mando o link na hora 🌱`;
     case "quente":
       return `${oi} ${eu} ${g[0]!.toUpperCase()}${g.slice(1)} e queria saber: tem ajudado no seu dia a dia? Se tiver algo que você sente falta ou que não ficou claro, me conta que eu resolvo por aqui mesmo 🌱`;
     case "ajudar":
@@ -137,7 +139,6 @@ export async function montarListaParaChamar(supabase: SupabaseClient): Promise<P
     if (!p || !p.whatsapp || !a.trial_expira_em) continue;
     if (TESTES.test(String(p.nome ?? ""))) continue;
     const vence = (new Date(a.trial_expira_em as string).getTime() - agora) / 86_400_000;
-    if (vence < -10) continue; // vencido há mais de 10 dias: esfriou
     const f = falas.get(chave(p.whatsapp as string)) ?? [];
     const mensagens = f.length;
     const ultimaPergunta = ultimaPerguntaReal(f);
@@ -147,7 +148,13 @@ export async function montarListaParaChamar(supabase: SupabaseClient): Promise<P
 
     let grupo: Grupo;
     let motivo: string;
-    if (vence < 0) {
+    if (vence < 0 && diasDesdeUltima !== null && diasDesdeUltima <= 3 && mensagens >= 2) {
+      // Venceu mas segue escrevendo: está batendo no aviso de assinatura. É quem mais vale chamar.
+      grupo = "escrevendo";
+      motivo = `Teste venceu há ${Math.ceil(-vence)} dia(s) e continua escrevendo (última mensagem há ${Math.floor(diasDesdeUltima)} dia(s), ${mensagens} no total); só recebe o aviso de assinar`;
+    } else if (vence < -10) {
+      continue; // vencido há mais de 10 dias e sem escrever: esfriou
+    } else if (vence < 0) {
       if (mensagens === 0) continue; // nunca usou e já venceu: sem gancho, fica para a reativação
       grupo = "vencido";
       motivo = `Teste venceu há ${Math.ceil(-vence)} dia(s); conversou ${mensagens}x`;
@@ -181,7 +188,13 @@ export async function montarListaParaChamar(supabase: SupabaseClient): Promise<P
     });
   }
 
-  const peso: Record<Grupo, number> = { quente: 0, ajudar: 1, reconquistar: 2, vencido: 3 };
+  const peso: Record<Grupo, number> = {
+    escrevendo: 0,
+    quente: 1,
+    ajudar: 2,
+    reconquistar: 3,
+    vencido: 4,
+  };
   return lista.sort(
     (a, b) =>
       peso[a.grupo] - peso[b.grupo] ||
