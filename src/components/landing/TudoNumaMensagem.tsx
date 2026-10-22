@@ -377,14 +377,17 @@ function CartaoPlantio({ exemplos }: { exemplos: ReturnType<typeof useExemplosDo
             </span>
           </p>
           <p className="mt-0.5 text-sm text-[oklch(0.45_0.02_156)]">{p.periodoAtual}</p>
-          {p.proximas.length > 0 && (
+          {p.proximas.some((j) => j.periodo !== p.periodoAtual) && (
             <ul className="mt-3 space-y-1">
-              {p.proximas.slice(0, 2).map((j) => (
-                <li key={j.periodo} className="flex justify-between gap-4 text-xs">
-                  <span>{j.periodo}</span>
-                  <span className="font-mono">{j.risco != null ? `risco ${j.risco}%` : "—"}</span>
-                </li>
-              ))}
+              {p.proximas
+                .filter((j) => j.periodo !== p.periodoAtual)
+                .slice(0, 2)
+                .map((j) => (
+                  <li key={j.periodo} className="flex justify-between gap-4 text-xs">
+                    <span>{j.periodo}</span>
+                    <span className="font-mono">{j.risco != null ? `risco ${j.risco}%` : "—"}</span>
+                  </li>
+                ))}
             </ul>
           )}
         </>
