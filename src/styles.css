@@ -873,23 +873,6 @@ html.intro-ativa .intro-cobertura {
   color: color-mix(in oklab, var(--primary-foreground) 70%, transparent);
   animation: menu-surge 0.5s ease 0.8s both;
 }
-/* Botão de som ambiente do desktop (desktop/SomAmbiente.tsx): barras paradas baixas; ligadas, sobem e descem */
-.som-barra {
-  height: 30%;
-  transition: height 0.4s ease;
-}
-.som-barra-ligada {
-  animation: som-barra 0.9s ease-in-out infinite alternate;
-}
-@keyframes som-barra {
-  from {
-    height: 25%;
-  }
-  to {
-    height: 100%;
-  }
-}
-
 /* Contador 00% → 100% e linha que enche na base, no mesmo tempo da assinatura (CSS puro: @property anima o número) */
 @property --intro-pct {
   syntax: "<integer>";

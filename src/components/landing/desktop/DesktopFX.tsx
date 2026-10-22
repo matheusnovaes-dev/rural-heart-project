@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 
 import IndiceLateral from "@/components/landing/desktop/IndiceLateral";
-import SomAmbiente from "@/components/landing/desktop/SomAmbiente";
 import { iniciarParticulas } from "@/components/landing/desktop/particulas";
 import { iniciarFluxo } from "@/components/landing/desktop/fluxo";
 import { iniciarCurvas } from "@/components/landing/desktop/curvas";
@@ -52,10 +51,5 @@ export default function DesktopFX({ leve = false }: { leve?: boolean }) {
     seguro(iniciarCurvas);
     return () => limpezas.reverse().forEach((f) => f());
   }, []);
-  return leve ? null : (
-    <>
-      <IndiceLateral />
-      <SomAmbiente />
-    </>
-  );
+  return leve ? null : <IndiceLateral />;
 }
