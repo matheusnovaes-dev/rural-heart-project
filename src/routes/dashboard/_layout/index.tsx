@@ -472,7 +472,8 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
           <h1 className="mt-1 font-display text-[1.7rem] font-semibold tracking-tight text-foreground text-balance sm:text-4xl">
             {greeting()}, {produtor.nome.split(" ")[0]}
           </h1>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          {/* No toque, a etiqueta do plano tem 44px (área de toque) e chega depois do resto: a linha já nasce com essa altura */}
+          <div className="mt-3 flex flex-wrap items-center gap-2 pointer-coarse:min-h-11">
             {resumo.plano && (
               <Link
                 to="/dashboard/assinatura"

@@ -66,8 +66,17 @@ export function AbasPremium({
     onChange(id);
   }
 
+  // Centraliza a aba ativa rolando SÓ a faixa das abas, na horizontal. (Antes era scrollIntoView com block "nearest": ao
+  // montar a tela, com as abas abaixo da dobra no celular, o navegador rolava a PÁGINA inteira até elas, ~1.300px.)
+  const lista = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    refs.current[valor]?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+    const l = lista.current;
+    const b = refs.current[valor];
+    if (!l || !b || l.scrollWidth <= l.clientWidth) return;
+    const rl = l.getBoundingClientRect();
+    const rb = b.getBoundingClientRect();
+    const alvo = l.scrollLeft + (rb.left - rl.left) - (l.clientWidth - rb.width) / 2;
+    l.scrollTo({ left: Math.max(0, alvo), behavior: "smooth" });
   }, [valor]);
 
   function aoTeclar(e: KeyboardEvent<HTMLButtonElement>, i: number) {
@@ -94,6 +103,7 @@ export function AbasPremium({
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <div
+        ref={lista}
         role="tablist"
         aria-label={rotulo}
         className="flex w-full max-w-full gap-1 self-start overflow-x-auto rounded-2xl sm:w-auto border border-border/70 bg-card/80 p-1 shadow-sm backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
