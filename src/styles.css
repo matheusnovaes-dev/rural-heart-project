@@ -1324,3 +1324,21 @@ html[data-tema-reveal]::view-transition-new(root) {
     animation-delay: var(--atraso, 0s);
   }
 }
+
+/* Menu lateral no celular: ele abre num painel que fica FORA do .dashboard-shell (portal no body), então não herdava as
+   cores escuras do menu. Sem isso o fundo verde-escuro ficava com texto escuro (invisível). Mesmas variáveis do shell. */
+[data-sidebar="sidebar"][data-mobile="true"] {
+  --sidebar: oklch(0.275 0.055 158);
+  --sidebar-foreground: oklch(0.91 0.016 115);
+  --sidebar-primary: oklch(0.72 0.105 76);
+  --sidebar-primary-foreground: oklch(0.225 0.045 158);
+  --sidebar-accent: oklch(0.36 0.06 156);
+  --sidebar-accent-foreground: oklch(0.985 0.006 105);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: oklch(0.72 0.105 76);
+  font-family: var(--font-dashboard);
+}
+[data-sidebar="sidebar"][data-mobile="true"] .font-display {
+  font-family: var(--font-dashboard-display);
+  letter-spacing: 0;
+}
