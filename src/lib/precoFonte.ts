@@ -49,3 +49,27 @@ export function mediaDePracas(precos: number[]): number | null {
   const soma = precos.reduce((acc, p) => acc + p, 0);
   return Math.round((soma / precos.length) * 100) / 100;
 }
+
+const MESES_POR_EXTENSO = [
+  "janeiro",
+  "fevereiro",
+  "março",
+  "abril",
+  "maio",
+  "junho",
+  "julho",
+  "agosto",
+  "setembro",
+  "outubro",
+  "novembro",
+  "dezembro",
+];
+
+/** Fonte que publica a média de um MÊS (data gravada = dia 1): hoje o IEA-SP mensal. */
+export const ehFonteMensal = (fonte: string) => /\(mensal\)/i.test(fonte);
+
+/** "2026-06-01" -> "junho/2026". */
+export function mesPorExtenso(dataIso: string): string {
+  const [ano, mes] = dataIso.slice(0, 10).split("-");
+  return `${MESES_POR_EXTENSO[Number(mes) - 1] ?? mes}/${ano}`;
+}

@@ -46,6 +46,7 @@ import { hojeNoBrasil, rotuloDoDia, type Previsao } from "@/lib/clima";
 import { buscarPrevisaoPorCoordenadasServidor, buscarPrevisaoServidor } from "@/lib/clima.server";
 import { buscarFrete, type ResultadoFrete } from "@/lib/paridade";
 import { buscarPrecosDaUf } from "@/lib/precos";
+import { ehFonteMensal, mesPorExtenso } from "@/lib/precoFonte";
 import { mediaDePracas } from "@/lib/precoFonte";
 import { buildWhatsAppLink } from "@/config/site";
 import { verificarConversaWhatsapp } from "@/lib/notificacoes.server";
@@ -204,7 +205,12 @@ function AssinaturaBanner({
   );
 }
 
-type PrecoHistorico = { preco: number; data_referencia: string; updated_at: string | null };
+type PrecoHistorico = {
+  preco: number;
+  data_referencia: string;
+  updated_at: string | null;
+  fonte?: string;
+};
 type PrecoRegional = { regiao: string; preco: number; data_referencia: string; fonte?: string };
 type PrecoRegionalHistorico = { regiao: string; preco: number; data_referencia: string };
 
@@ -329,7 +335,9 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
       // estado quando está em dia, ou as praças do dia mais recente quando a
       // do estado está defasada (Conab de MT ficou parada 4 semanas enquanto a
       // BBM publicava todo dia) ou não existe.
-      buscarPrecosDaUf(supabase, produtor.cultura_principal, produtor.uf).then((r) => {
+      buscarPrecosDaUf(supabase, produtor.cultura_principal, produtor.uf, {
+        incluirMensal: true,
+      }).then((r) => {
         setSerie(r.serieEstado);
         setPrecosRegionais(r.regionais);
         setRegionaisHistorico(r.regionaisHistorico);
@@ -396,6 +404,8 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
 
   const atual = serie?.at(-1) ?? null;
   const anterior = serie?.at(-2) ?? null;
+  // Média mensal do IEA-SP (SP, com meses de atraso): o painel diz o mês e não promete frete nem variação do dia.
+  const mensal = !!atual?.fonte && ehFonteMensal(atual.fonte);
   const variacao =
     atual && anterior && anterior.preco !== 0
       ? ((atual.preco - anterior.preco) / anterior.preco) * 100
@@ -595,7 +605,7 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                           </span>
                           <AnimatedNumber value={precoExibido} />
                         </p>
-                        {variacao != null && Math.abs(variacao) >= 0.05 && (
+                        {!mensal && variacao != null && Math.abs(variacao) >= 0.05 && (
                           <span
                             className={`mb-2 inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
                               variacao > 0
@@ -620,15 +630,24 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                         </span>
                         <TrocarCulturaDialog produtor={produtor} />
                       </div>
-                      <p className="mt-1 text-xs opacity-70">
-                        Preço na sua região: é o que você recebe, com o frete até o porto já
-                        incluído.
-                      </p>
-                      <p className="mt-1 max-w-md text-xs opacity-80">
-                        {frete
-                          ? frete.frase
-                          : "Ainda não temos rota de frete de referência pra essa cultura na sua região."}
-                      </p>
+                      {mensal ? (
+                        <p className="mt-1 max-w-md text-xs opacity-80">
+                          Média de {mesPorExtenso(atual!.data_referencia)} · {atual!.fonte}. Dado
+                          mensal do estado de São Paulo, publicado com alguns meses de atraso.
+                        </p>
+                      ) : (
+                        <>
+                          <p className="mt-1 text-xs opacity-70">
+                            Preço na sua região: é o que você recebe, com o frete até o porto já
+                            incluído.
+                          </p>
+                          <p className="mt-1 max-w-md text-xs opacity-80">
+                            {frete
+                              ? frete.frase
+                              : "Ainda não temos rota de frete de referência pra essa cultura na sua região."}
+                          </p>
+                        </>
+                      )}
                     </div>
                     {serie.length >= 2 && serie.length < 5 && (
                       <div className="w-full max-w-56">
@@ -643,20 +662,26 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                   {serie.length >= 5 && (
                     <div className="flex flex-col gap-3">
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-xs font-medium opacity-75">Evolução do preço</span>
-                        <SeletorDePeriodo
-                          valor={diasDoGrafico}
-                          onChange={setDiasDoGrafico}
-                          opcoes={[
-                            { valor: 30, rotulo: "30 dias" },
-                            { valor: 90, rotulo: "90 dias" },
-                          ]}
-                        />
+                        <span className="text-xs font-medium opacity-75">
+                          {mensal ? "Evolução da média mensal" : "Evolução do preço"}
+                        </span>
+                        {!mensal && (
+                          <SeletorDePeriodo
+                            valor={diasDoGrafico}
+                            onChange={setDiasDoGrafico}
+                            opcoes={[
+                              { valor: 30, rotulo: "30 dias" },
+                              { valor: 90, rotulo: "90 dias" },
+                            ]}
+                          />
+                        )}
                       </div>
                       <Suspense fallback={<EsperaGrafico />}>
                         <PrecoHeroChart
                           serie={
-                            serieDoGrafico && serieDoGrafico.length >= 3 ? serieDoGrafico : serie
+                            !mensal && serieDoGrafico && serieDoGrafico.length >= 3
+                              ? serieDoGrafico
+                              : serie
                           }
                           cultura={produtor.cultura_principal}
                         />

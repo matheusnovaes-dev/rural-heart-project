@@ -24,7 +24,13 @@ export function produtoPrincipal(cultura: string): string | null {
   return PRODUTO_PRINCIPAL[normalizarCultura(cultura)] ?? null;
 }
 
-export type LinhaEstado = { preco: number; data_referencia: string; updated_at: string | null };
+export type LinhaEstado = {
+  preco: number;
+  data_referencia: string;
+  updated_at: string | null;
+  /** Só nas linhas de fonte mensal (IEA-SP): serve para o painel citar o mês em vez do dia 1. */
+  fonte?: string;
+};
 export type LinhaRegional = {
   regiao: string;
   preco: number;
@@ -33,6 +39,8 @@ export type LinhaRegional = {
 };
 
 const DIAS_DE_HISTORICO = 90;
+/** Fonte mensal do IEA-SP chega com ~4 meses de atraso: precisa de uma janela maior que a dos preços diários. */
+const DIAS_DE_HISTORICO_MENSAL = 240;
 
 /**
  * Preços de uma cultura numa UF já com a fonte escolhida (ver
@@ -44,6 +52,8 @@ export async function buscarPrecosDaUf(
   supabase: SupabaseClient,
   culturaCadastrada: string,
   uf: string,
+  /** Painel do produtor: sem preço diário no estado, aceita a média mensal do IEA-SP (rotulada no painel). Bot, calculadora e avisos NÃO usam. */
+  opcoes: { incluirMensal?: boolean } = {},
 ): Promise<{
   fonte: FonteDePreco;
   serieEstado: LinhaEstado[];
@@ -101,6 +111,21 @@ export async function buscarPrecosDaUf(
     ]);
   }
 
+  if (opcoes.incluirMensal && (estado ?? []).length === 0) {
+    const desdeMensal = new Date();
+    desdeMensal.setDate(desdeMensal.getDate() - DIAS_DE_HISTORICO_MENSAL);
+    const { data: mensal } = await filtrarPorProduto(
+      supabase.from("precos").select("preco, data_referencia, updated_at, fonte"),
+      cultura,
+    )
+      .eq("uf", uf)
+      .eq("regiao", "")
+      .ilike("fonte", "%(mensal)")
+      .gte("data_referencia", desdeMensal.toISOString().slice(0, 10))
+      .order("data_referencia", { ascending: true })
+      .returns<LinhaEstado[]>();
+    estado = mensal ?? [];
+  }
   const serieEstado = estado ?? [];
   // Praça CIF (porto/indústria) é outro nível de preço: fora da média e da lista do interior.
   // regionaisTodas fica do jeito que a consulta devolveu (mais recente primeiro) porque

@@ -1,3 +1,4 @@
+import { ehFonteMensal } from "@/lib/precoFonte";
 import { motion } from "framer-motion";
 import {
   ArrowDownRight,
@@ -43,7 +44,7 @@ export function OQueMudou({
 }: {
   cultura: string | null;
   uf: string | null;
-  serie: { preco: number; data_referencia: string }[] | null;
+  serie: { preco: number; data_referencia: string; fonte?: string }[] | null;
   previsao: Previsao | null | undefined;
   resumo: ResumoDoCaderno;
 }) {
@@ -75,7 +76,9 @@ export function OQueMudou({
 
   const atual = serie?.at(-1);
   const anterior = serie?.at(-2);
-  if (atual && anterior && anterior.preco > 0) {
+  // Fonte mensal (IEA-SP): o ponto anterior é o mês passado, não "ontem": não entra em "o que mudou desde ontem".
+  const mensal = !!atual?.fonte && ehFonteMensal(atual.fonte);
+  if (atual && anterior && anterior.preco > 0 && !mensal) {
     const v = ((atual.preco - anterior.preco) / anterior.preco) * 100;
     if (Math.abs(v) >= 0.3) {
       itens.push({

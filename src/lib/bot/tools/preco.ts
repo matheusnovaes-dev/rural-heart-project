@@ -8,7 +8,7 @@ import {
   type BenchmarkRegional,
 } from "@/lib/referenciaMercado";
 import { filtrarPorProduto, normalizarCultura, tipoDeCafePadrao } from "@/config/culturas";
-import { escolherFontePreco, mediaDePracas } from "@/lib/precoFonte";
+import { ehFonteMensal, escolherFontePreco, mediaDePracas, mesPorExtenso } from "@/lib/precoFonte";
 import { produtoPrincipal } from "@/lib/precos";
 
 type PrecoRow = {
@@ -22,31 +22,9 @@ type PrecoRow = {
   periodo_referencia?: string;
 };
 
-const MESES_POR_EXTENSO = [
-  "janeiro",
-  "fevereiro",
-  "março",
-  "abril",
-  "maio",
-  "junho",
-  "julho",
-  "agosto",
-  "setembro",
-  "outubro",
-  "novembro",
-  "dezembro",
-];
-
-/** Fonte que publica a média de um MÊS (data gravada = dia 1): hoje o IEA-SP mensal. */
-export const ehFonteMensal = (fonte: string) => /\(mensal\)/i.test(fonte);
-
-/** "2026-06-01" -> "junho/2026". */
-export function mesPorExtenso(dataIso: string): string {
-  const [ano, mes] = dataIso.slice(0, 10).split("-");
-  return `${MESES_POR_EXTENSO[Number(mes) - 1] ?? mes}/${ano}`;
-}
-
 /** Linhas de fonte mensal ganham o mês por extenso; as demais passam como estão. */
+export { ehFonteMensal, mesPorExtenso };
+
 export function comPeriodo<T extends PrecoRow>(linhas: T[]): T[] {
   return linhas.map((r) =>
     ehFonteMensal(r.fonte) ? { ...r, periodo_referencia: mesPorExtenso(r.data_referencia) } : r,
