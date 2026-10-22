@@ -18,7 +18,10 @@ const SERIFA = { fontFamily: '"Instrument Serif", "Times New Roman", serif' };
  */
 export function Faq() {
   return (
-    <section id="duvidas" className="mx-auto max-w-6xl scroll-mt-16 px-4 py-14 sm:px-6 sm:py-24">
+    <section
+      id="duvidas"
+      className="mx-auto max-w-6xl scroll-mt-16 px-4 py-14 sm:px-6 sm:py-24 xl:pl-[max(1.5rem,calc(11.5rem-(100vw-72rem)/2))]"
+    >
       <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
         <Reveal className="lg:sticky lg:top-28 lg:self-start">
           <p
@@ -28,8 +31,12 @@ export function Faq() {
           >
             ?
           </p>
-          <TituloDuasVozes antes="Perguntas" serifa="FREQUENTES" className="mt-3 text-foreground" />
-          <p className="mt-5 max-w-sm text-muted-foreground">
+          <TituloDuasVozes
+            antes="Perguntas"
+            serifa="FREQUENTES"
+            className="mt-3 text-foreground desk:text-6xl xl:text-7xl"
+          />
+          <p className="mt-5 max-w-sm text-muted-foreground desk:text-lg">
             Ainda com dúvida? Fale com a gente pelo WhatsApp, a resposta vem de uma pessoa. Ou leia
             a{" "}
             <Link

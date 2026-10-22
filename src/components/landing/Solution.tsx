@@ -10,7 +10,7 @@ import { brl2, diaMes, fraseDeFuturo, fraseDePlantio, fraseDeSinal } from "@/lib
 export function Solution() {
   return (
     <section id="problema" className="bg-secondary/50 py-12 sm:py-20">
-      <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2">
+      <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 xl:pl-[max(1.5rem,calc(11.5rem-(100vw-72rem)/2))]">
         <Reveal>
           {/* A antiga seção "O problema não é falta de dado" (3 cards) repetia
               o que o H1 do hero já diz: virou o título desta, que mostra a
@@ -18,9 +18,9 @@ export function Solution() {
           <TituloDuasVozes
             antes="O problema não é falta de dado. É não saber"
             serifa="A HORA CERTA."
-            className="text-foreground sm:text-4xl lg:text-5xl"
+            className="text-foreground sm:text-4xl lg:text-5xl desk:text-6xl"
           />
-          <p className="mt-4 max-w-md text-muted-foreground">
+          <p className="mt-4 max-w-md text-muted-foreground desk:mt-6 desk:max-w-lg desk:text-lg">
             Pergunte no WhatsApp e receba o preço da sua região, o do porto com frete e um sinal de
             que é hora de vender ou esperar, sempre com fonte e data.
           </p>

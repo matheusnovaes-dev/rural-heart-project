@@ -61,6 +61,9 @@ export function IntroAssinatura() {
         </div>
         <p className="intro-frase">Sempre na hora certa</p>
       </div>
+      {/* contador e linha de carregamento (como a abertura do Active Theory), só CSS */}
+      <span className="intro-contador" />
+      <span className="intro-barra" />
     </div>
   );
 }

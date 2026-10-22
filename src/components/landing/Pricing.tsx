@@ -39,15 +39,15 @@ export function Pricing({ semTrial = false }: { semTrial?: boolean }) {
         }}
       />
       <Grao />
-      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-20">
-        <Reveal className="mx-auto max-w-2xl text-center">
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-20 xl:pl-[max(1.5rem,calc(11.5rem-(100vw-72rem)/2))]">
+        <Reveal className="mx-auto max-w-2xl text-center desk:max-w-4xl">
           <TituloDuasVozes
             antes="Planos para cada tamanho de"
             serifa="OPERAÇÃO"
-            className="text-[#f6f3ec]"
+            className="text-[#f6f3ec] desk:text-7xl"
             corSerifa="#e9b44c"
           />
-          <p className="mt-3 text-[#f6f3ec]/75">
+          <p className="mt-3 text-[#f6f3ec]/75 desk:mt-5 desk:text-lg">
             {semTrial
               ? "Escolha o plano e comece agora. Cancele quando quiser."
               : "Todos começam com 7 dias grátis, sem cartão. Cancele quando quiser."}

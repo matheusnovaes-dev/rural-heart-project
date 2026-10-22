@@ -713,6 +713,18 @@ html.lenis body {
   }
 }
 
+/* Curvas de nível do desktop (desktop/curvas.ts): o canvas fica atrás de toda a página (z-index -1), então enquanto ele
+   roda a cor do capítulo passa a ser pintada pelo <html> e o body e a raiz da landing ficam transparentes. Nada muda na
+   ordem das camadas (header, modais, botões). */
+html.curvas-ativas {
+  background-color: var(--fundo-capitulo, var(--color-background));
+  transition: background-color 1s ease;
+}
+html.curvas-ativas body,
+html.curvas-ativas .fundo-capitulos {
+  background-color: transparent;
+}
+
 /* Brilho que varre o cartão do plano Ouro de tempos em tempos (um gradiente diagonal deslizando por transform). */
 .plano-brilho::before {
   content: "";
@@ -860,6 +872,65 @@ html.intro-ativa .intro-cobertura {
   text-transform: uppercase;
   color: color-mix(in oklab, var(--primary-foreground) 70%, transparent);
   animation: menu-surge 0.5s ease 0.8s both;
+}
+/* Botão de som ambiente do desktop (desktop/SomAmbiente.tsx): barras paradas baixas; ligadas, sobem e descem */
+.som-barra {
+  height: 30%;
+  transition: height 0.4s ease;
+}
+.som-barra-ligada {
+  animation: som-barra 0.9s ease-in-out infinite alternate;
+}
+@keyframes som-barra {
+  from {
+    height: 25%;
+  }
+  to {
+    height: 100%;
+  }
+}
+
+/* Contador 00% → 100% e linha que enche na base, no mesmo tempo da assinatura (CSS puro: @property anima o número) */
+@property --intro-pct {
+  syntax: "<integer>";
+  inherits: false;
+  initial-value: 0;
+}
+.intro-contador {
+  position: absolute;
+  right: 2.5rem;
+  bottom: 2rem;
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: color-mix(in oklab, var(--primary-foreground) 62%, transparent);
+  counter-reset: intro-pct var(--intro-pct);
+  animation: intro-conta 1.05s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.intro-contador::after {
+  content: counter(intro-pct, decimal-leading-zero) "%";
+}
+.intro-barra {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--cta);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: intro-barra 1.05s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes intro-conta {
+  to {
+    --intro-pct: 100;
+  }
+}
+@keyframes intro-barra {
+  to {
+    transform: scaleX(1);
+  }
 }
 @keyframes intro-escreve {
   from {

@@ -1,8 +1,10 @@
 import { useEffect } from "react";
 
 import IndiceLateral from "@/components/landing/desktop/IndiceLateral";
+import SomAmbiente from "@/components/landing/desktop/SomAmbiente";
 import { iniciarParticulas } from "@/components/landing/desktop/particulas";
 import { iniciarFluxo } from "@/components/landing/desktop/fluxo";
+import { iniciarCurvas } from "@/components/landing/desktop/curvas";
 import { iniciarVento } from "@/components/landing/desktop/vento";
 import { iniciarLetrasRolando } from "@/components/landing/desktop/letrasRolando";
 import {
@@ -47,7 +49,13 @@ export default function DesktopFX({ leve = false }: { leve?: boolean }) {
     if (hero) seguro(() => iniciarVento(hero));
     const faixa = document.querySelector<HTMLElement>('section[aria-label^="Culturas cobertas"]');
     if (faixa) seguro(() => iniciarFluxo(faixa));
+    seguro(iniciarCurvas);
     return () => limpezas.reverse().forEach((f) => f());
   }, []);
-  return leve ? null : <IndiceLateral />;
+  return leve ? null : (
+    <>
+      <IndiceLateral />
+      <SomAmbiente />
+    </>
+  );
 }

@@ -19,14 +19,14 @@ export function FinalCta() {
         palavra="grátis"
         className="top-[2%] left-[-4%] text-[clamp(8rem,30vw,20rem)] text-[color:var(--cta)]/25"
       />
-      <div className="mx-auto grid max-w-5xl items-start gap-10 px-4 sm:px-6 lg:grid-cols-2">
+      <div className="mx-auto grid max-w-5xl items-start gap-10 px-4 sm:px-6 lg:grid-cols-2 xl:pl-[max(1.5rem,calc(11.5rem-(100vw-64rem)/2))]">
         <Reveal>
           <TituloDuasVozes
             antes="Teste grátis por"
             serifa="7 DIAS"
-            className="text-foreground sm:text-4xl lg:text-5xl"
+            className="text-foreground sm:text-4xl lg:text-5xl desk:text-6xl xl:text-7xl"
           />
-          <p className="mt-4 max-w-md text-muted-foreground">
+          <p className="mt-4 max-w-md text-muted-foreground desk:text-lg">
             Enquanto você lê isso, o preço de hoje já pode estar diferente do de ontem.
           </p>
 

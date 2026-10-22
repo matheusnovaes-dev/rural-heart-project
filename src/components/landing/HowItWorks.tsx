@@ -150,7 +150,7 @@ export function HowItWorks() {
       className="mx-auto max-w-6xl scroll-mt-16 px-4 py-12 sm:py-20 sm:px-6"
     >
       <Reveal className="mx-auto max-w-2xl text-center">
-        <TituloDuasVozes antes="Como" serifa="FUNCIONA" className="text-foreground" />
+        <TituloDuasVozes antes="Como" serifa="FUNCIONA" className="text-foreground desk:text-7xl" />
       </Reveal>
 
       <RevelarAoRolar className="mt-10">
