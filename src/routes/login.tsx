@@ -170,7 +170,8 @@ function LoginPage() {
     <div className="flex h-dvh flex-col overflow-hidden bg-secondary/40 lg:h-screen lg:flex-row lg:overflow-visible">
       <DesktopFXLoader leve />
       {/* Painel de marca (desktop) */}
-      <div
+      <aside
+        aria-label="Sobre o Safralume"
         className="relative hidden w-full max-w-xl flex-col justify-between overflow-hidden p-10 text-white lg:flex"
         onMouseMove={seguirCursor}
       >
@@ -216,13 +217,13 @@ function LoginPage() {
           className="pointer-events-none relative z-10 -mb-2 w-56 -rotate-[4deg] opacity-95"
         />
         <Ticker />
-      </div>
+      </aside>
 
       {/* Faixa compacta (mobile) — pedido do Matheus 2026-10-12: a tela de
           login tem que caber inteira num quadrante só, sem rolar. Cortado o
           título grande, o chip flutuante e deixado só a marca + ticker
           pequeno, pra sobrar espaço pro que importa aqui (o formulário). */}
-      <div className="sticky top-0 z-20 min-w-0 shrink-0 overflow-hidden px-5 py-3 text-white lg:hidden">
+      <header className="sticky top-0 z-20 min-w-0 shrink-0 overflow-hidden px-5 py-3 text-white lg:hidden">
         <BrandBackdrop animado={false} />
         <div className="relative z-10 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -238,10 +239,10 @@ function LoginPage() {
         <div className="relative z-10 mt-2">
           <Ticker compact />
         </div>
-      </div>
+      </header>
 
       {/* Formulário */}
-      <div className="relative flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 py-3 lg:items-center lg:justify-center lg:overflow-hidden lg:py-10">
+      <main className="relative flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 py-3 lg:items-center lg:justify-center lg:overflow-hidden lg:py-10">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 hidden overflow-hidden lg:block"
@@ -447,7 +448,7 @@ function LoginPage() {
             )}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

@@ -54,7 +54,7 @@ export function Conversa() {
           style={atraso(1500)}
         >
           Soja no Paraná: preço da sua região, comparado com o porto e já com o frete.
-          <span className="mt-1.5 block text-xs text-[#1b2b1d]/55">
+          <span className="mt-1.5 block text-xs text-[#1b2b1d]/72">
             Fonte e data em toda resposta
           </span>
         </p>

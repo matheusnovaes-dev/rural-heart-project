@@ -98,6 +98,7 @@ export function PrecosCarrossel() {
 
       {/* Faixa rolando */}
       <div
+        role="group"
         aria-label="Preços de referência do dia"
         className={`relative mt-12 min-h-[7.5rem] [mask-image:linear-gradient(to_right,transparent,#000_7%,#000_93%,transparent)] transition-opacity duration-700 sm:mt-16 ${itens.length ? "opacity-100" : "opacity-0"}`}
       >
@@ -134,7 +135,7 @@ function Cartao({ item }: { item: ItemDoMercado }) {
       </span>
       {v !== null ? (
         <span
-          className={`text-sm font-semibold tabular-nums ${sobe ? "text-[#1f8f55]" : desce ? "text-[#c2412d]" : "text-muted-foreground"}`}
+          className={`text-sm font-semibold tabular-nums ${sobe ? "text-[#17753f]" : desce ? "text-[#c2412d]" : "text-muted-foreground"}`}
         >
           {sobe ? "▲" : desce ? "▼" : "•"} {brl(Math.abs(v), 1)}% em 7 dias
         </span>

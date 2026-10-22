@@ -145,13 +145,13 @@ export function Footer() {
             © {new Date().getFullYear()} {siteConfig.name}. Todos os direitos reservados.
           </span>
         </div>
-        <p className="max-w-3xl leading-relaxed opacity-80">
+        <p className="max-w-3xl leading-relaxed opacity-95">
           {siteConfig.name} apresenta cenários de mercado agrícola com base em dados públicos
           oficiais (Conab, Imea e órgãos estaduais de agricultura). As informações têm caráter
           informativo e não constituem recomendação de investimento, consultoria financeira ou
           garantia de preço futuro.
         </p>
-        <p className="text-[10px] opacity-75">
+        <p className="text-[10px] opacity-95">
           CNPJ 68.802.997/0001-37 (68.802.997 MATHEUS NOVAES DE MOURA)
         </p>
       </div>

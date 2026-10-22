@@ -257,7 +257,7 @@ function AtalhoBusca() {
     <button
       type="button"
       onClick={abrir}
-      aria-label="Buscar no painel"
+      aria-label="Buscar no painel ⌘K"
       className="group ml-auto flex h-10 items-center gap-2.5 rounded-xl border border-border/80 bg-card/80 px-3 text-sm text-muted-foreground shadow-sm outline-none backdrop-blur transition hover:border-primary/30 hover:text-foreground hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring sm:w-60"
     >
       <Search className="size-4 shrink-0" aria-hidden="true" />

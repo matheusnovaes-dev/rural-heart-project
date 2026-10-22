@@ -103,8 +103,15 @@ function Index() {
     <CadastroProvider>
       <div className="fundo-capitulos min-h-screen bg-background">
         <IntroAssinatura />
+        {/* Quem navega por teclado ou leitor de tela pula o cabeçalho e cai direto no conteúdo */}
+        <a
+          href="#conteudo"
+          className="sr-only z-[300] rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+        >
+          Pular para o conteúdo
+        </a>
         <Header />
-        <main>
+        <main id="conteudo" tabIndex={-1} className="outline-none">
           <Hero />
           <PrecosCarrossel />
           <Solution />

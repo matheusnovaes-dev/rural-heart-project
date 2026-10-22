@@ -8,6 +8,7 @@ export function PainelEsqueleto() {
   return (
     <div
       className="dashboard-shell flex min-h-screen bg-background"
+      role="status"
       aria-busy="true"
       aria-label="Carregando o painel"
     >
