@@ -112,7 +112,7 @@ export function Footer() {
             <TituloDuasVozes
               antes="SEMPRE NA"
               serifa="HORA CERTA."
-              corSerifa="oklch(0.9 0.05 90 / 0.55)"
+              corSerifa="ouro"
               className="text-[clamp(2.4rem,9.4vw,5.4rem)] leading-[0.9] text-primary-foreground sm:text-[clamp(2.6rem,6vw,5.4rem)] lg:text-[clamp(2.6rem,4.6vw,5.4rem)]"
             />
             <a

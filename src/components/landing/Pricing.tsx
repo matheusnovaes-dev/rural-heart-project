@@ -45,7 +45,7 @@ export function Pricing({ semTrial = false }: { semTrial?: boolean }) {
             antes="Planos para cada tamanho de"
             serifa="OPERAÇÃO"
             className="text-[#f6f3ec] desk:text-7xl"
-            corSerifa="#e9b44c"
+            corSerifa="ouro"
           />
           <p className="mt-3 text-[#f6f3ec]/75 desk:mt-5 desk:text-lg">
             {semTrial
