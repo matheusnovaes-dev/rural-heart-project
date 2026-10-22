@@ -137,6 +137,7 @@ export const Route = createFileRoute("/api/bot/responder")({
             const aviso = await avisoDeFimDoTeste({
               supabase,
               produtorId: body.produtor.id,
+              telefone: body.telefone,
               historico: body.historico ?? [],
               resposta: resposta.resposta,
             });

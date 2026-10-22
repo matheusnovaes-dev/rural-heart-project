@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { HistoricoLinha } from "@/lib/bot/prompt";
+import { telefonesDoBot } from "@/lib/telefone";
 
 /**
  * Aviso de fim de teste DENTRO da conversa (pedido do Matheus 2026-10-22: converter o máximo possível em
@@ -27,8 +28,77 @@ export function quandoAcabaOTeste(expiraEmIso: string, agora = new Date()): stri
   return `em ${dias} dias`;
 }
 
-export function textoAvisoFimDoTeste(quando: string): string {
+export type UsoDoTeste = { consultas: number; alertas: number; lancamentos: number };
+
+/** "trocou 9 mensagens com a gente, deixou 2 alertas ligados e anotou 3 lançamentos": só o que a pessoa realmente fez. */
+export function frasesDeUso(uso: UsoDoTeste | null): string | null {
+  if (!uso) return null;
+  const partes: string[] = [];
+  if (uso.consultas >= 3) partes.push(`trocou ${uso.consultas} mensagens com a gente`);
+  if (uso.alertas >= 1)
+    partes.push(`deixou ${uso.alertas} ${uso.alertas === 1 ? "alerta ligado" : "alertas ligados"}`);
+  if (uso.lancamentos >= 1)
+    partes.push(
+      `anotou ${uso.lancamentos} ${uso.lancamentos === 1 ? "lançamento" : "lançamentos"} no caderno da fazenda`,
+    );
+  if (partes.length === 0) return null;
+  return partes.length === 1 ? partes[0]! : `${partes.slice(0, -1).join(", ")} e ${partes.at(-1)}`;
+}
+
+export function textoAvisoFimDoTeste(quando: string, uso: UsoDoTeste | null = null): string {
+  const resumo = frasesDeUso(uso);
+  if (resumo) {
+    return `⏳ Lembrete: seu teste grátis acaba ${quando}. Nesses dias você já ${resumo}. Pra não perder isso, responda *quero assinar* que eu te mando o link (Pix, cartão ou boleto).`;
+  }
   return `⏳ Lembrete: seu teste grátis acaba ${quando}. Pra continuar com preços, alertas e o caderno da fazenda sem interromper, responda *quero assinar* que eu te mando o link (Pix, cartão ou boleto).`;
+}
+
+/** O que a pessoa fez durante o teste, direto do banco (conversas, alertas ligados, lançamentos do caderno). */
+export async function usoDuranteOTeste(
+  supabase: SupabaseClient,
+  produtorId: string,
+  telefone: string | null,
+  desdeIso: string,
+): Promise<UsoDoTeste | null> {
+  try {
+    const contar = async (q: PromiseLike<{ count: number | null }>) => (await q).count ?? 0;
+    const [consultas, alertasPreco, alertasClima, lancamentos] = await Promise.all([
+      telefone
+        ? contar(
+            supabase
+              .from("bot_conversas")
+              .select("id", { count: "exact", head: true })
+              .in("telefone", telefonesDoBot(telefone))
+              .eq("role", "user")
+              .gte("created_at", desdeIso),
+          )
+        : Promise.resolve(0),
+      contar(
+        supabase
+          .from("alertas_preco")
+          .select("id", { count: "exact", head: true })
+          .eq("produtor_id", produtorId)
+          .eq("ativo", true),
+      ),
+      contar(
+        supabase
+          .from("alertas_clima")
+          .select("id", { count: "exact", head: true })
+          .eq("produtor_id", produtorId)
+          .eq("ativo", true),
+      ),
+      contar(
+        supabase
+          .from("fazenda_registros")
+          .select("id", { count: "exact", head: true })
+          .eq("produtor_id", produtorId)
+          .is("apagado_em", null),
+      ),
+    ]);
+    return { consultas, alertas: alertasPreco + alertasClima, lancamentos };
+  } catch {
+    return null;
+  }
 }
 
 /** Já avisou nas últimas horas? Confere pelas mensagens do próprio bot no histórico. */
@@ -52,6 +122,7 @@ export function respostaComporta(resposta: string): boolean {
 export async function avisoDeFimDoTeste(params: {
   supabase: SupabaseClient;
   produtorId: string | null;
+  telefone?: string | null;
   historico: HistoricoLinha[];
   resposta: string;
   agora?: Date;
@@ -64,12 +135,20 @@ export async function avisoDeFimDoTeste(params: {
   try {
     const { data } = await supabase
       .from("assinaturas")
-      .select("status, trial_expira_em")
+      .select("status, trial_expira_em, created_at")
       .eq("produtor_id", produtorId)
       .maybeSingle();
     if (!data || data.status !== "trial" || !data.trial_expira_em) return null;
     const quando = quandoAcabaOTeste(data.trial_expira_em, agora);
-    return quando ? textoAvisoFimDoTeste(quando) : null;
+    if (!quando) return null;
+    const uso = await usoDuranteOTeste(
+      supabase,
+      produtorId,
+      params.telefone ?? null,
+      (data as { created_at?: string }).created_at ??
+        new Date(agora.getTime() - 8 * 86_400_000).toISOString(),
+    );
+    return textoAvisoFimDoTeste(quando, uso);
   } catch {
     return null;
   }

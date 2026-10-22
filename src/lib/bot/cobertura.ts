@@ -31,6 +31,23 @@ export function lerPerguntaDeCobertura(texto: string): string | null {
     .replace(/[?!.,]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+  // Derivado que o catálogo não tem ("polpa de cana", "melaço de cana", "semente de soja"): o modelo trocava pelo produto
+  // principal e respondia sobre cana/soja (achado 2026-10-22). "polpa de buriti" existe no catálogo e segue o fluxo normal.
+  const original = texto.toLowerCase().replace(/[?!.,]/g, " ");
+  const derivado = original.match(
+    /\b(polpa|mela[çc]o|vinha[çc]a|caldo|palha|silagem|sementes?|mudas?)\s+(?:de|do|da)\s+([a-zà-ú]{3,}(?:\s+de\s+[a-zà-ú]{3,})?)/,
+  );
+  if (
+    derivado &&
+    /\b(preco|precos|quanto|cotacao|valor|tem|ta|esta|custa)\b/.test(t) &&
+    !/\b(comprador|compradores|compra|vender|vendo|venda)\b/.test(t)
+  ) {
+    const frase = `${derivado[1]} de ${derivado[2]}`;
+    const noCatalogo = culturasMencionadas(frase).some((c) =>
+      semAcento(c).startsWith(semAcento(derivado[1]!)),
+    );
+    if (!noCatalogo) return frase;
+  }
   // "tem dado de polpa?" com produto FORA do catálogo: sem ferramenta o modelo respondia de cabeça pela conversa anterior
   // ("polpa de cana" depois de falar de cana). Produto do catálogo ("tem preço de soja?") segue o fluxo normal de preço.
   const foraDoCatalogo = t.match(
