@@ -58,8 +58,9 @@ export const Route = createFileRoute("/")({
       {
         rel: "preload",
         as: "image",
-        href: MIDIA.hero1920,
-        type: "image/webp",
+        // AVIF: quem não lê AVIF ignora este preload e o <picture> cai no WebP normalmente
+        href: MIDIA.hero1920Avif,
+        type: "image/avif",
         media: "(min-width: 1100px)",
         fetchPriority: "high" as const,
       },

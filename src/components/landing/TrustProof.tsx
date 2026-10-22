@@ -8,6 +8,7 @@ import { MIDIA } from "@/assets/midia";
 import { Grao } from "@/components/landing/Grao";
 import { RevelarImagem } from "@/components/landing/RevelarImagem";
 import { useDesktopFino } from "@/components/landing/desktop/useDesktopFino";
+import { nivelDaMaquina } from "@/components/landing/desktop/qualidade";
 
 // Desktop com mouse e máquina boa: no lugar da foto entra o mapa 3D com o caminho de cada fonte até a resposta. O
 // pedaço só é baixado nessa condição; celular e quem pede menos movimento ficam com a foto.
@@ -103,7 +104,7 @@ function GraoAoNumeroCasca() {
       aria-hidden="true"
       className="relative hidden h-[240vh] desk:-mt-20 desk:mb-12 desk:block"
     >
-      {fino ? (
+      {fino && nivelDaMaquina() !== "baixa" ? (
         <Suspense fallback={null}>
           <GraoAoNumero progresso={scrollYProgress} />
         </Suspense>

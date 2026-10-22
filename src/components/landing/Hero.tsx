@@ -108,6 +108,8 @@ export function Hero() {
                 do caminho crítico de quem chega do anúncio pelo celular. */}
             <source media="(max-width: 640px)" srcSet={MIDIA.hero828} type="image/webp" />
             {/* telas largas ganham a foto em 1920px (138 KB): a de 1000px esticada ficava macia demais */}
+            {/* AVIF primeiro (90 KB em vez de 135 KB, mesma foto a olho nu); quem não lê AVIF cai no WebP */}
+            <source media="(min-width: 1100px)" srcSet={MIDIA.hero1920Avif} type="image/avif" />
             <source media="(min-width: 1100px)" srcSet={MIDIA.hero1920} type="image/webp" />
             <source srcSet={MIDIA.hero1000Webp} type="image/webp" />
             <img

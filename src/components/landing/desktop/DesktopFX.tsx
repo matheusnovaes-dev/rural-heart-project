@@ -4,6 +4,7 @@ import IndiceLateral from "@/components/landing/desktop/IndiceLateral";
 import { iniciarParticulas } from "@/components/landing/desktop/particulas";
 import { iniciarFluxo } from "@/components/landing/desktop/fluxo";
 import { iniciarCurvas } from "@/components/landing/desktop/curvas";
+import { nivelDaMaquina } from "@/components/landing/desktop/qualidade";
 import { iniciarVento } from "@/components/landing/desktop/vento";
 import { iniciarLetrasRolando } from "@/components/landing/desktop/letrasRolando";
 import {
@@ -37,18 +38,24 @@ export default function DesktopFX({ leve = false }: { leve?: boolean }) {
     seguro(iniciarMagneticos);
     seguro(iniciarLetrasRolando);
     if (leve) return () => limpezas.reverse().forEach((f) => f());
-    seguro(iniciarScrollSuave);
+    // Máquina fraca (placa sem aceleração ou gráfico Intel antigo): ficam os efeitos de CSS/transform; WebGL e rolagem
+    // suave ficam de fora, para a página rolar lisa em qualquer PC (ver qualidade.ts).
+    const nivel = nivelDaMaquina();
+    const leveDeVerdade = nivel === "baixa";
+    if (!leveDeVerdade) seguro(iniciarScrollSuave);
     seguro(iniciarCartoes);
     seguro(iniciarParallax);
     seguro(iniciarProfundidade);
     seguro(iniciarCortinas);
     seguro(iniciarPalcos3D);
     const hero = document.getElementById("topo");
-    if (hero) seguro(() => iniciarParticulas(hero));
-    if (hero) seguro(() => iniciarVento(hero));
-    const faixa = document.querySelector<HTMLElement>('section[aria-label^="Culturas cobertas"]');
-    if (faixa) seguro(() => iniciarFluxo(faixa));
-    seguro(iniciarCurvas);
+    if (!leveDeVerdade) {
+      if (hero) seguro(() => iniciarParticulas(hero));
+      if (hero) seguro(() => iniciarVento(hero));
+      const faixa = document.querySelector<HTMLElement>('section[aria-label^="Culturas cobertas"]');
+      if (faixa) seguro(() => iniciarFluxo(faixa));
+      seguro(() => iniciarCurvas(nivel === "media" ? 1 : 1.5));
+    }
     return () => limpezas.reverse().forEach((f) => f());
   }, []);
   return leve ? null : <IndiceLateral />;

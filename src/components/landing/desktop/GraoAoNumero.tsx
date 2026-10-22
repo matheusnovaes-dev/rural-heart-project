@@ -6,6 +6,7 @@ import { SEDES } from "@/components/landing/desktop/mapaFontes";
 import { useExemplosDoDia } from "@/hooks/useExemplosDoDia";
 import { brl2, diaMes } from "@/lib/exemplosLanding";
 import { criarPrograma } from "./gl";
+import { nivelDaMaquina } from "./qualidade";
 
 /**
  * "Do grão ao número" (só desktop, abre o capítulo das fontes): milhares de grãos de luz soltos na tela, como os números
@@ -115,7 +116,10 @@ export default function GraoAoNumero({ progresso }: { progresso: MotionValue<num
     gl.useProgram(prog);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE);
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // Máquina média: metade dos grãos e resolução 1x (o brilho é suave, quase não se nota)
+    const media = nivelDaMaquina() === "media";
+    const dpr = media ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+    let quantas = media ? Math.round(N * 0.5) : N;
     const loc = (n: string) => gl.getAttribLocation(prog, n);
     const uni = (n: string) => gl.getUniformLocation(prog, n);
     const uRes = uni("uRes"),
@@ -245,7 +249,11 @@ export default function GraoAoNumero({ progresso }: { progresso: MotionValue<num
           lentas = fps < 20 ? lentas + 1 : 0;
           janelaIni = agora;
           janelaQuadros = 0;
-          if (lentas >= 2) {
+          // Primeira janela lenta: menos grãos. Duas seguidas já com menos grãos: versão parada.
+          if (lentas >= 1 && quantas > N * 0.3) {
+            quantas = Math.round(quantas * 0.5);
+            lentas = 0;
+          } else if (lentas >= 2) {
             cancelAnimationFrame(raf);
             raf = 0;
             setSemGl(true);
@@ -275,9 +283,9 @@ export default function GraoAoNumero({ progresso }: { progresso: MotionValue<num
       gl.clear(gl.COLOR_BUFFER_BIT);
       // primeiro o halo (pontos grandes e fracos = brilho difuso), depois os grãos
       gl.uniform1f(uHalo, 1);
-      gl.drawArrays(gl.POINTS, 0, N);
+      gl.drawArrays(gl.POINTS, 0, quantas);
       gl.uniform1f(uHalo, 0);
-      gl.drawArrays(gl.POINTS, 0, N);
+      gl.drawArrays(gl.POINTS, 0, quantas);
     }
 
     return () => {

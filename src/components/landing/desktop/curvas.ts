@@ -44,7 +44,7 @@ void main(){
   gl_FragColor = vec4(tinta * a, a);
 }`;
 
-export function iniciarCurvas(): () => void {
+export function iniciarCurvas(dprMax = 1.5): () => void {
   const secoes = SECOES.map((id) => document.getElementById(id)).filter(
     (e): e is HTMLElement => !!e,
   );
@@ -86,7 +86,7 @@ export function iniciarCurvas(): () => void {
     uPx = u("px");
 
   // Linhas finas pedem resolução real (no máximo 1,5x para não pesar em tela retina).
-  const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+  let dpr = Math.min(window.devicePixelRatio || 1, dprMax);
   const ajustar = () => {
     canvas.width = Math.round(window.innerWidth * dpr);
     canvas.height = Math.round(window.innerHeight * dpr);
@@ -144,11 +144,19 @@ export function iniciarCurvas(): () => void {
     const dt = ultimo ? agora - ultimo : 33;
     ultimo = agora;
     media = media * 0.9 + Math.min(dt, 200) * 0.1;
-    if (++quadros > 60 && media > 90) {
-      desistiu = true;
-      canvas.remove();
-      raiz.classList.remove("curvas-ativas");
-      return;
+    // Lento (menos de ~15 quadros por segundo nesta camada a 30): primeiro baixa a resolução; no limite, desiste.
+    if (++quadros > 60 && media > 66) {
+      quadros = 0;
+      media = 33;
+      if (dpr > 0.6) {
+        dpr = Math.max(0.6, dpr * 0.67);
+        ajustar();
+      } else {
+        desistiu = true;
+        canvas.remove();
+        raiz.classList.remove("curvas-ativas");
+        return;
+      }
     }
     mx += (alvoX - mx) * 0.06;
     my += (alvoY - my) * 0.06;
