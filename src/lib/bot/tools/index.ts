@@ -6,6 +6,7 @@ import { culturasNoTexto } from "@/lib/bot/produtoConsultado";
 import { buscarPreco } from "@/lib/bot/tools/preco";
 import {
   culturaMencionada,
+  culturasMencionadas,
   culturaMaisRecenteNoHistorico,
   normalizarCultura,
 } from "@/config/culturas";
@@ -873,7 +874,19 @@ function resolverCultura(ctx: ToolContext, produtoDoModelo: string): string {
     ) {
       return mencionada;
     }
-    return produtoDoModelo;
+    // O modelo mandou um produto que a pessoa não citou (achado 2026-10-22: "preço da cenoura" virou
+    // buscar_preco("CENA") e, noutra rodada, buscar_preco("CANA DE AÇÚCAR") para quem tem cana cadastrada): vale a
+    // cultura que ela escreveu. Se o produto do modelo é uma das culturas citadas (pergunta com duas culturas, uma
+    // chamada por cultura) ou aparece no texto, o dele continua valendo.
+    const produtoNormalizado = normalizarCultura(produtoDoModelo);
+    const textoSemAcento = semAcentoSimples(ctx.texto);
+    const palavrasDoModelo = semAcentoSimples(produtoDoModelo)
+      .split(/\s+/)
+      .filter((p) => p.length >= 4);
+    const modeloCoerente =
+      culturasMencionadas(ctx.texto).includes(produtoNormalizado) ||
+      palavrasDoModelo.some((p) => textoSemAcento.includes(p));
+    return modeloCoerente ? produtoDoModelo : mencionada;
   }
   // Cultura escrita com erro de digitação ("mio" = milho, "soj" = soja): o catálogo não reconhece a palavra, mas o
   // modelo entendeu certo. Sem isto o código trocava pelo cadastro (soja) e o produtor recebia o preço de outra

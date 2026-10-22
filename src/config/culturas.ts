@@ -309,6 +309,17 @@ export function culturaMencionada(texto: string): string | null {
   return normalizarCultura(original);
 }
 
+/** Todas as culturas do catálogo (ou apelidos) citadas no texto, já normalizadas e sem repetição, na ordem em que aparecem. */
+export function culturasMencionadas(texto: string): string[] {
+  const achadas: string[] = [];
+  for (const m of removerAcentos(texto).matchAll(new RegExp(REGEX_CULTURA_CATALOGO.source, "gi"))) {
+    const original = TERMO_SEM_ACENTO_PARA_ORIGINAL.get(m[1]!.toLowerCase()) ?? m[1]!;
+    const c = normalizarCultura(original);
+    if (!achadas.includes(c)) achadas.push(c);
+  }
+  return achadas;
+}
+
 /**
  * Achado real 2026-10-12 (print do Matheus: perguntou produção de soja,
  * pergunta de acompanhamento sem citar cultura voltou falando de preço de
