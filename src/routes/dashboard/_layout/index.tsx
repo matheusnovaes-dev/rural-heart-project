@@ -933,7 +933,9 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                     key={l.id}
                     className="flex items-center justify-between gap-2 rounded-md border border-border p-2.5 text-sm transition-colors hover:bg-accent/50"
                   >
-                    <span className="truncate font-medium text-foreground">{l.titulo}</span>
+                    <span className="line-clamp-2 min-w-0 font-medium text-foreground" title={l.titulo}>
+                      {l.titulo}
+                    </span>
                     <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
                       {new Date(l.enviar_em).toLocaleString("pt-BR", {
                         day: "2-digit",
