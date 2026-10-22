@@ -40,6 +40,26 @@ function culturaConfirmadaPeloProdutor(
   return falasDoProdutor.some((fala) => culturaMencionada(fala) === alvo);
 }
 
+/** Texto pré-preenchido do anúncio de Mensagens (clique para o WhatsApp). */
+const TEXTO_DO_ANUNCIO = /posso\s+ter\s+mais\s+informa[çc][õo]es\s+sobre\s+isso/i;
+
+/**
+ * Origem de quem se cadastra conversando no WhatsApp. Antes ficava em branco (75 de 100 cadastros em 30 dias),
+ * e sem isso não dá para saber quanto custa um cadastro do anúncio de Mensagens. Mesmo vocabulário do site
+ * (origem, utm_source, utm_medium, utm_campaign).
+ */
+export function origemDoCadastroPeloWhatsapp(
+  texto: string,
+  historico: { role: string; conteudo: string }[],
+): { origem: string; utm_source?: string; utm_medium?: string } {
+  const doAnuncio =
+    TEXTO_DO_ANUNCIO.test(texto) ||
+    historico.some((h) => h.role === "user" && TEXTO_DO_ANUNCIO.test(h.conteudo));
+  return doAnuncio
+    ? { origem: "anuncio_whatsapp", utm_source: "meta_ads", utm_medium: "click_to_whatsapp" }
+    : { origem: "whatsapp" };
+}
+
 /**
  * Cadastro de teste (7 dias, plano Bronze, sem cartão) criado direto na
  * conversa do WhatsApp — pra quem chegou via anúncio e não quer sair pro
@@ -84,16 +104,26 @@ export async function criarContaTeste(
     return { sucesso: false, motivo: "ja_tem_conta" };
   }
 
-  const { data: produtor, error: erroProdutor } = await supabase
+  const base = {
+    nome: ctx.produtor.nome || "Produtor",
+    whatsapp,
+    cultura_principal: args.cultura_principal,
+    uf: args.uf,
+  };
+  const comOrigem = { ...base, ...origemDoCadastroPeloWhatsapp(ctx.texto, ctx.historico) };
+  let { data: produtor, error: erroProdutor } = await supabase
     .from("produtores")
-    .insert({
-      nome: ctx.produtor.nome || "Produtor",
-      whatsapp,
-      cultura_principal: args.cultura_principal,
-      uf: args.uf,
-    })
+    .insert(comOrigem)
     .select("id")
     .single();
+  // Se a coluna rejeitar o valor de origem (restrição que não conheço), cria sem ela: a conta vale mais que a estatística.
+  if (erroProdutor && erroProdutor.code !== "23505") {
+    ({ data: produtor, error: erroProdutor } = await supabase
+      .from("produtores")
+      .insert(base)
+      .select("id")
+      .single());
+  }
   // Corrida rara (duas mensagens quase simultâneas confirmando ao mesmo
   // tempo): a constraint unique em `whatsapp` pega o que o SELECT acima
   // não pegou — trata como "já tem conta", não como erro de verdade.
