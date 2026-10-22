@@ -9,7 +9,7 @@ import { buscarFerrugemAsiatica } from "@/lib/bot/tools/ferrugem";
 import { buscarProgressoSafraConab, buscarVariacaoCambio } from "@/lib/bot/tools/mercado";
 import { buscarSinalVenda } from "@/lib/bot/tools/sinalVenda";
 import { buscarLeiloesProximos } from "@/lib/bot/tools/leiloes";
-import { buscarPrevisao } from "@/lib/clima";
+import { diaParaResumo, buscarPrevisao } from "@/lib/clima";
 import { buscarPrecosDaUf } from "@/lib/precos";
 
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
@@ -222,17 +222,18 @@ export async function montarResumoProativoDiario(
     }
   }
 
-  if (previsao && previsao.dias.length > 0) {
-    const chuvaHoje = previsao.chuvaPct[0];
-    const minHoje = previsao.tempMin[0];
-    if (chuvaHoje != null && chuvaHoje >= LIMIAR_CHUVA_FORTE_PCT) {
+  const diaAlerta = previsao ? diaParaResumo(previsao, "hoje") : null;
+  if (previsao && diaAlerta) {
+    const chuvaDoDia = previsao.chuvaPct[diaAlerta.idx];
+    const minDoDia = previsao.tempMin[diaAlerta.idx];
+    if (chuvaDoDia != null && chuvaDoDia >= LIMIAR_CHUVA_FORTE_PCT) {
       return limitarResumo(
-        `Previsão de chuva forte hoje na capital do seu estado (referência): ${Math.round(chuvaHoje)}% de chance.`,
+        `Previsão de chuva forte ${diaAlerta.quando} na capital do seu estado (referência): ${Math.round(chuvaDoDia)}% de chance.`,
       );
     }
-    if (minHoje != null && minHoje <= LIMIAR_GEADA_TEMP_MIN) {
+    if (minDoDia != null && minDoDia <= LIMIAR_GEADA_TEMP_MIN) {
       return limitarResumo(
-        `Risco de geada hoje na capital do seu estado (referência): mínima prevista de ${Math.round(minHoje)}°C.`,
+        `Risco de geada ${diaAlerta.quando} na capital do seu estado (referência): mínima prevista de ${Math.round(minDoDia)}°C.`,
       );
     }
   }
@@ -319,9 +320,10 @@ export async function montarResumoReativacao(
   if (doCaderno) partes.push(doCaderno);
   if (sinal?.disponivel && sinal.texto) partes.push(sinal.texto);
 
-  if (previsao && previsao.dias.length > 0) {
-    const idx = previsao.dias.length > 1 ? 1 : 0;
-    const quando = idx === 1 ? "Amanhã" : "Hoje";
+  const diaResumo = previsao ? diaParaResumo(previsao, "amanha") : null;
+  if (previsao && diaResumo) {
+    const idx = diaResumo.idx;
+    const quando = diaResumo.quando.charAt(0).toUpperCase() + diaResumo.quando.slice(1);
     const condicao = previsao.condicaoTexto?.[idx];
     const max = previsao.tempMax[idx];
     const chuva = previsao.chuvaPct[idx];

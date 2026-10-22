@@ -113,6 +113,63 @@ export type Previsao = {
   fonte: "CPTEC/INPE" | "Open-Meteo";
 };
 
+/**
+ * "Hoje" e "amanhã" pela DATA, nunca pela posição. O CPTEC (fonte principal) não traz o dia de hoje: a previsão dele começa
+ * no dia seguinte (21/10/2026: o XML listava 22, 23, 24 e 25/10). Tratar o primeiro item como "hoje" mostrava a quinta
+ * como "Hoje" e fazia o "amanhã" do WhatsApp ser, na verdade, depois de amanhã.
+ */
+export function hojeNoBrasil(agora: Date = new Date()): string {
+  return new Date(agora.getTime() - 3 * 3600_000).toISOString().slice(0, 10);
+}
+
+function somarDiasIso(iso: string, dias: number): string {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + dias);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Rótulo do dia: "Hoje", "Amanhã" ou o dia da semana ("Sex."), conforme a data em relação a hoje. */
+export function rotuloDoDia(
+  dia: string,
+  hoje: string = hojeNoBrasil(),
+): { curto: string; longo: string } {
+  if (dia === hoje) return { curto: "Hoje", longo: "hoje" };
+  if (dia === somarDiasIso(hoje, 1)) return { curto: "Amanhã", longo: "amanhã" };
+  const d = new Date(`${dia}T12:00:00Z`);
+  const semana = (f: "short" | "long") =>
+    d.toLocaleDateString("pt-BR", { weekday: f, timeZone: "UTC" });
+  const curto = semana("short");
+  return { curto: curto.charAt(0).toUpperCase() + curto.slice(1), longo: semana("long") };
+}
+
+/** Posição do dia na previsão, ou -1 se a fonte não traz esse dia (CPTEC não traz hoje). */
+export function indiceDoDia(
+  previsao: Previsao,
+  alvo: "hoje" | "amanha",
+  hoje: string = hojeNoBrasil(),
+): number {
+  return previsao.dias.indexOf(alvo === "hoje" ? hoje : somarDiasIso(hoje, 1));
+}
+
+/**
+ * Dia para um resumo curto: o de hoje, se a fonte tem; senão o primeiro que ela tem (com o rótulo certo, "amanhã" ou o
+ * dia da semana). `preferir: "amanha"` pega amanhã quando existir (usado no resumo da manhã).
+ */
+export function diaParaResumo(
+  previsao: Previsao,
+  preferir: "hoje" | "amanha",
+  hoje: string = hojeNoBrasil(),
+): { idx: number; quando: string } | null {
+  if (previsao.dias.length === 0) return null;
+  const ordem =
+    preferir === "amanha" ? (["amanha", "hoje"] as const) : (["hoje", "amanha"] as const);
+  for (const alvo of ordem) {
+    const idx = indiceDoDia(previsao, alvo, hoje);
+    if (idx >= 0) return { idx, quando: rotuloDoDia(previsao.dias[idx]!, hoje).longo };
+  }
+  return { idx: 0, quando: rotuloDoDia(previsao.dias[0]!, hoje).longo };
+}
+
 // Medido ao vivo em produção: da Cloudflare Workers até a Open-Meteo, o
 // request legítimo (sem nada de errado) já leva bem mais que os 4s que a
 // v1 desse retry dava — com esse timeout curto, as duas tentativas batiam

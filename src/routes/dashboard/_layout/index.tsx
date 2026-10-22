@@ -42,7 +42,7 @@ import { diasEntre } from "@/lib/precoFonte";
 import { perguntaDePreco } from "@/lib/ativacaoTexto";
 import { trackLanding } from "@/lib/metaPixel";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Previsao } from "@/lib/clima";
+import { hojeNoBrasil, rotuloDoDia, type Previsao } from "@/lib/clima";
 import { buscarPrevisaoPorCoordenadasServidor, buscarPrevisaoServidor } from "@/lib/clima.server";
 import { buscarFrete, type ResultadoFrete } from "@/lib/paridade";
 import { buscarPrecosDaUf } from "@/lib/precos";
@@ -879,12 +879,8 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
                               : "border-transparent bg-secondary text-muted-foreground"
                           }`}
                         >
-                          <span className="text-xs font-semibold capitalize">
-                            {i === 0
-                              ? "hoje"
-                              : new Date(`${dia}T00:00:00`).toLocaleDateString("pt-BR", {
-                                  weekday: "short",
-                                })}
+                          <span className="text-xs font-semibold">
+                            {rotuloDoDia(dia, hojeNoBrasil()).curto}
                           </span>
                           <span className="font-mono text-xs font-semibold tabular-nums">
                             {pct}%

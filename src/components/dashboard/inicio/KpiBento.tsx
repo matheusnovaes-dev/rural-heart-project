@@ -7,7 +7,7 @@ import { Sparkline } from "@/components/dashboard/Sparkline";
 import { KpiTile } from "@/components/dashboard/inicio/KpiTile";
 import type { ResumoDoCaderno } from "@/components/dashboard/inicio/useResumoDoCaderno";
 import { buscarVariacaoCambio } from "@/lib/bot/tools/mercado";
-import type { Previsao } from "@/lib/clima";
+import { indiceDoDia, rotuloDoDia, type Previsao } from "@/lib/clima";
 import { formatarQuantidade, formatarReais as formatarReaisBruto } from "@/lib/fazenda.shared";
 
 /** "R$ 60" sem quebra de linha entre o R$ e o número. */
@@ -61,6 +61,11 @@ export function KpiBento({
   }, []);
 
   const { margem, estoque, pendencias, carregando, prata } = resumo;
+  // dia do tile de clima: hoje, ou o primeiro dia que a fonte traz (o CPTEC começa em amanhã)
+  const idxClima = previsao ? Math.max(0, indiceDoDia(previsao, "hoje")) : 0;
+  const quandoClima = previsao?.dias[idxClima]
+    ? rotuloDoDia(previsao.dias[idxClima]!).longo
+    : "hoje";
   const pend = pendencias;
   const proximo = pend
     ? [...pend.aPagar, ...pend.aReceber].sort((a, b) => a.dias - b.dias)[0]
@@ -169,11 +174,12 @@ export function KpiBento({
               ? { texto: "Previsão indisponível agora.", acao: "Ver o clima" }
               : null
           }
-          valor={previsao ? `${Math.round(previsao.tempMax[0] ?? 0)}°` : undefined}
+          valor={previsao ? `${Math.round(previsao.tempMax[idxClima] ?? 0)}°` : undefined}
           rodape={
             previsao ? (
               <>
-                Chuva {previsao.chuvaPct[0] ?? 0}% hoje · {municipio ?? uf ?? "sua região"}
+                Chuva {previsao.chuvaPct[idxClima] ?? 0}% {quandoClima} ·{" "}
+                {municipio ?? uf ?? "sua região"}
               </>
             ) : undefined
           }

@@ -30,7 +30,7 @@ import { EmptyState } from "@/components/dashboard/EmptyState";
 import { TrocarCulturaDialog } from "@/components/dashboard/TrocarCulturaDialog";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
-import type { Previsao } from "@/lib/clima";
+import { hojeNoBrasil, indiceDoDia, rotuloDoDia, type Previsao } from "@/lib/clima";
 import {
   buscarMunicipioServidor,
   buscarPrevisaoPorCoordenadasServidor,
@@ -105,6 +105,9 @@ function PrevisaoVisual({ previsao }: { previsao: Previsao }) {
   const alto = Math.max(...maxs);
   const baixo = Math.min(...mins);
   const escala = Math.max(1, alto - baixo);
+  const hoje = hojeNoBrasil();
+  // destaque no dia de hoje; se a fonte não traz hoje (o CPTEC começa em amanhã), no primeiro dia da lista
+  const destaque = Math.max(0, indiceDoDia(previsao, "hoje", hoje));
   return (
     <div className="grid grid-cols-5 gap-2">
       {previsao.dias.map((dia, i) => {
@@ -117,16 +120,12 @@ function PrevisaoVisual({ previsao }: { previsao: Previsao }) {
           <div
             key={dia}
             className={`flex flex-col items-center gap-2.5 rounded-2xl border px-1.5 py-3 text-center ${
-              i === 0
+              i === destaque
                 ? "border-primary/25 bg-gradient-to-b from-primary/[0.07] to-transparent"
                 : "border-border/60 bg-card"
             }`}
           >
-            <span className="text-xs font-semibold capitalize">
-              {i === 0
-                ? "hoje"
-                : new Date(`${dia}T00:00:00`).toLocaleDateString("pt-BR", { weekday: "short" })}
-            </span>
+            <span className="text-xs font-semibold">{rotuloDoDia(dia, hoje).curto}</span>
             <div
               className="relative h-24 w-5 overflow-hidden rounded-full bg-secondary"
               role="img"
@@ -280,7 +279,7 @@ function ClimaConteudo() {
         icon={IconesSafralume["clima-sol"]}
         iconePersonalizado
         title="Tendências climáticas"
-        description="Previsão de chuva e temperatura pros próximos 5 dias, por estado ou cidade."
+        description="Previsão de chuva e temperatura pros próximos dias, por estado ou cidade."
         action={dialogAdicionarLocal}
       />
 

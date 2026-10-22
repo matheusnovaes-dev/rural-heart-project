@@ -11,7 +11,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { normalizarCultura } from "@/config/culturas";
 import { ufs } from "@/config/ufs";
-import { buscarPrevisao } from "@/lib/clima";
+import { buscarPrevisao, diaParaResumo } from "@/lib/clima";
 import { primeiroNome } from "@/lib/nomes";
 import { semTravessao, montarResumoReengajamento } from "@/lib/bot/reengajamento";
 import { buscarPreco } from "@/lib/bot/tools/preco";
@@ -83,9 +83,10 @@ export async function montarBlocosDoTesteDrive(
   if (jaTemPreco && sinal?.disponivel && sinal.texto) {
     linhas.push(`📈 *Sinal de venda:* ${resumirFrases(sinal.texto, 280)}`);
   }
-  if (previsao && previsao.dias.length > 0) {
-    const idx = previsao.dias.length > 1 ? 1 : 0;
-    const quando = idx === 1 ? "Amanhã" : "Hoje";
+  const diaResumo = previsao ? diaParaResumo(previsao, "amanha") : null;
+  if (previsao && diaResumo) {
+    const idx = diaResumo.idx;
+    const quando = diaResumo.quando.charAt(0).toUpperCase() + diaResumo.quando.slice(1);
     const condicao = previsao.condicaoTexto?.[idx];
     const max = previsao.tempMax[idx];
     const chuva = previsao.chuvaPct[idx];

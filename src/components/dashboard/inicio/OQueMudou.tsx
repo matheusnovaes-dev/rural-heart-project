@@ -11,7 +11,7 @@ import {
 
 import { reaisCompacto } from "@/lib/formatosPainel";
 import type { ResumoDoCaderno } from "@/components/dashboard/inicio/useResumoDoCaderno";
-import type { Previsao } from "@/lib/clima";
+import { rotuloDoDia, type Previsao } from "@/lib/clima";
 import { formatarQuantidade, formatarReais as formatarReaisBruto } from "@/lib/fazenda.shared";
 
 const formatarReais = (n: number) => formatarReaisBruto(n).replace("R$ ", "R$\u00a0");
@@ -29,10 +29,6 @@ const TOM: Record<Item["tom"], string> = {
   alerta: "bg-amber-500/18 text-amber-900",
   neutro: "bg-primary/10 text-primary",
 };
-
-function diaDaSemana(iso: string): string {
-  return new Date(`${iso}T00:00:00`).toLocaleDateString("pt-BR", { weekday: "long" });
-}
 
 /**
  * "O que mudou desde ontem": no máximo quatro linhas, escolhidas por urgência, todas calculadas com dados que a tela já
@@ -99,7 +95,7 @@ export function OQueMudou({
         id: "chuva",
         icone: CloudRain,
         tom: "neutro",
-        titulo: `Chuva forte prevista ${i === 0 ? "hoje" : i === 1 ? "amanhã" : diaDaSemana(previsao.dias[i]!)}`,
+        titulo: `Chuva forte prevista ${rotuloDoDia(previsao.dias[i]!).longo}`,
         detalhe: `${previsao.chuvaPct[i]}% de chance de chuva`,
       });
     }
