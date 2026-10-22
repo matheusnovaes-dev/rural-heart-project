@@ -137,7 +137,7 @@ const MESES_POR_EXTENSO = [
 ];
 
 export function fonteDeLeiteEhMensal(fonte: string): boolean {
-  return /^(conseleite|epagri|iea-sp \(mensal)/i.test(fonte);
+  return /^(conseleite|epagri|cepea|iea-sp \(mensal)/i.test(fonte);
 }
 
 export function montarCotacao(linha: LinhaCotacao): CotacaoLeite {
