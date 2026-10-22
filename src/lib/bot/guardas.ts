@@ -176,6 +176,14 @@ function dataBr(isoDate: string): string | null {
  */
 export function garantirDataDoPreco(resposta: string, dataReferencia: string | null): string {
   if (!dataReferencia) return resposta;
+  // Fonte mensal: chega o mês por extenso ("junho/2026"), e basta a resposta dizer esse mês e esse ano.
+  const mensal = /^([a-zç]+)\/(\d{4})$/i.exec(dataReferencia);
+  if (mensal) {
+    const texto = resposta.toLowerCase();
+    if (texto.includes(mensal[1]!.toLowerCase()) && texto.includes(mensal[2]!)) return resposta;
+    const fim = resposta.trimEnd();
+    return `${fim}${/[.!?]$/.test(fim) ? " " : ". "}Média de ${dataReferencia}.`;
+  }
   const dd = dataBr(dataReferencia);
   if (!dd) return resposta;
   const [dia, mes] = dd.split("/");

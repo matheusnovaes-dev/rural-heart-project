@@ -18,7 +18,40 @@ type PrecoRow = {
   regiao: string;
   data_referencia: string;
   fonte: string;
+  /** Só nas fontes mensais (ex: "junho/2026"): é a média do mês, NÃO um dia. Citar este texto no lugar de dd/mm/aaaa. */
+  periodo_referencia?: string;
 };
+
+const MESES_POR_EXTENSO = [
+  "janeiro",
+  "fevereiro",
+  "março",
+  "abril",
+  "maio",
+  "junho",
+  "julho",
+  "agosto",
+  "setembro",
+  "outubro",
+  "novembro",
+  "dezembro",
+];
+
+/** Fonte que publica a média de um MÊS (data gravada = dia 1): hoje o IEA-SP mensal. */
+export const ehFonteMensal = (fonte: string) => /\(mensal\)/i.test(fonte);
+
+/** "2026-06-01" -> "junho/2026". */
+export function mesPorExtenso(dataIso: string): string {
+  const [ano, mes] = dataIso.slice(0, 10).split("-");
+  return `${MESES_POR_EXTENSO[Number(mes) - 1] ?? mes}/${ano}`;
+}
+
+/** Linhas de fonte mensal ganham o mês por extenso; as demais passam como estão. */
+export function comPeriodo<T extends PrecoRow>(linhas: T[]): T[] {
+  return linhas.map((r) =>
+    ehFonteMensal(r.fonte) ? { ...r, periodo_referencia: mesPorExtenso(r.data_referencia) } : r,
+  );
+}
 
 type FreteRow = {
   municipio_origem: string;
@@ -201,17 +234,22 @@ export async function buscarPreco(
 
   const precoRepresentativo =
     origem === "regional" ? precoMedioRegioes : (atuais[0]?.preco ?? null);
-  const benchmark = await buscarBenchmarkRegional(supabase, {
-    cultura: produto,
-    uf,
-    precoUf: precoRepresentativo,
-  });
+  // A média mensal de um estado não se compara com o preço de outros estados em outras datas e unidades
+  // (achado 2026-10-22: alface de SP, R$/kg de junho, "177% acima" de SC, que usa R$/unidade).
+  const ehMensal = atuais.length > 0 && atuais.every((r) => ehFonteMensal(r.fonte));
+  const benchmark = ehMensal
+    ? null
+    : await buscarBenchmarkRegional(supabase, {
+        cultura: produto,
+        uf,
+        precoUf: precoRepresentativo,
+      });
   const comComparativo = benchmark ? { comparativo_regional: benchmark } : {};
 
   if (!incluir_frete) {
     return {
       encontrado: true,
-      precos: atuais,
+      precos: comPeriodo(atuais),
       ...dadosDeOrigem,
       ...comReferencia,
       ...comComparativo,
@@ -229,8 +267,20 @@ export async function buscarPreco(
   });
   if (!frete) {
     return ctx?.pediuFrete
-      ? { encontrado: true, precos: atuais, frete: null, ...dadosDeOrigem, ...comComparativo }
-      : { encontrado: true, precos: atuais, ...dadosDeOrigem, ...comReferencia, ...comComparativo };
+      ? {
+          encontrado: true,
+          precos: comPeriodo(atuais),
+          frete: null,
+          ...dadosDeOrigem,
+          ...comComparativo,
+        }
+      : {
+          encontrado: true,
+          precos: comPeriodo(atuais),
+          ...dadosDeOrigem,
+          ...comReferencia,
+          ...comComparativo,
+        };
   }
   // Frete de referência sem paridade (MT, GO, milho...) só entra se o produtor
   // perguntou de frete: sem porto pra comparar, é ruído que o modelo repetia
@@ -238,7 +288,7 @@ export async function buscarPreco(
   if (frete.tipo === "frete_referencia" && !ctx?.pediuFrete) {
     return {
       encontrado: true,
-      precos: atuais,
+      precos: comPeriodo(atuais),
       ...dadosDeOrigem,
       ...comReferencia,
       ...comComparativo,
@@ -247,7 +297,7 @@ export async function buscarPreco(
 
   return {
     encontrado: true,
-    precos: atuais,
+    precos: comPeriodo(atuais),
     frete: frete.rota,
     frete_e_paridade: frete,
     ...dadosDeOrigem,

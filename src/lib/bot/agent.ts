@@ -748,7 +748,12 @@ function extrairDataDoPreco(messages: OpenAIMessage[]): string | null {
     if (nomePorToolCallId.get(m.tool_call_id) !== "buscar_preco") continue;
     try {
       const parsed = JSON.parse(m.content ?? "{}");
-      const data = parsed?.precos?.[0]?.data_referencia;
+      // Fonte mensal (IEA-SP): a "data" a citar é o mês ("junho/2026"), não o dia 1 gravado no banco.
+      const linha = parsed?.precos?.[0];
+      const data =
+        typeof linha?.periodo_referencia === "string"
+          ? linha.periodo_referencia
+          : linha?.data_referencia;
       datas.push(typeof data === "string" ? data : null);
     } catch {
       datas.push(null);

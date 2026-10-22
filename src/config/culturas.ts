@@ -91,6 +91,22 @@ const CATALOGO: Cultura[] = [
   { value: "trigo", label: "Trigo" },
   { value: "umbu", label: "Umbu" },
   { value: "uva", label: "Uva" },
+  // Hortifrúti com preço mensal do IEA-SP (estado de SP), pedido do Matheus em 2026-10-22.
+  { value: "abacate", label: "Abacate" },
+  { value: "abóbora", label: "Abóbora" },
+  { value: "abobrinha", label: "Abobrinha" },
+  { value: "alface", label: "Alface" },
+  { value: "beterraba", label: "Beterraba" },
+  { value: "caqui", label: "Caqui" },
+  { value: "cenoura", label: "Cenoura" },
+  { value: "figo", label: "Figo" },
+  { value: "goiaba", label: "Goiaba" },
+  { value: "limão", label: "Limão" },
+  { value: "melancia", label: "Melancia" },
+  { value: "morango", label: "Morango" },
+  { value: "pêssego", label: "Pêssego" },
+  { value: "pimentão", label: "Pimentão" },
+  { value: "repolho", label: "Repolho" },
 ];
 
 /**
