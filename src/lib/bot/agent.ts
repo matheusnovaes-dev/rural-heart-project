@@ -1,5 +1,14 @@
 import { deveAvisarEquipeDeLeadBloqueado } from "@/lib/bot/fimDoTeste";
 import {
+  RESPOSTA_CHAMAR_PESSOA,
+  ehConfusao,
+  ehPerguntaDeCondicoes,
+  jaMostrouAjudaRecente,
+  respostaAoMenu,
+  respostaDeCondicoes,
+  respostaMenuDeAjuda,
+} from "@/lib/bot/ajudaDoProdutor";
+import {
   ehDuvidaDeValor,
   respondeuAQuantidade,
   respostaDuvidaDeValor,
@@ -1492,6 +1501,17 @@ async function runAgentBase(input: {
     };
   }
 
+  // "E se eu não gostar? Vai me cobrar? Posso cancelar?" de quem ainda não é cliente: resposta pronta (só fatos
+  // documentados) e convite para começar. Antes o modelo respondia com preço de cultura.
+  if (!produtor.id && ehPerguntaDeCondicoes(texto)) {
+    return {
+      resposta: respostaDeCondicoes(true),
+      precisa_humano: false,
+      cadastro_criado: false,
+      convite_dispensado: true,
+    };
+  }
+
   // Cadastro pelo WhatsApp conduzido por código (uma pergunta por vez, menu numerado, "sim" aceito,
   // sem repetir a mesma pergunta). Achado 2026-10-15: dois leads do anúncio ficaram presos num
   // ciclo de "Sim" porque o modelo repetia a pergunta de cultura e estado.
@@ -1622,18 +1642,34 @@ async function runAgentBase(input: {
     };
   }
 
-  // Dúvida de valor de cliente cadastrado ("não entendi como vou obter lucro", "pra que serve"): resposta consultiva por
-  // código, sem promessa de lucro, com uma pergunta que puxa o caso da pessoa, e aviso ao Matheus (ver duvidaDeValor.ts).
-  if (produtor.id && ehDuvidaDeValor(texto)) {
-    const cultura = produtor.cultura_principal
+  // Ajuda para quem está perdido, por código (ver ajudaDoProdutor.ts): resposta ao menu 1-5, condições do teste e do
+  // cancelamento, dúvida de valor ("como vou ter lucro") e confusão ("não entendi nada"). Se a pessoa já viu a ajuda e
+  // segue perdida, chama alguém da equipe em vez de repetir.
+  if (produtor.id) {
+    const botDesc = [...historico]
+      .filter((h) => h.role === "assistant")
+      .sort((a, b) => b.ordem - a.ordem)
+      .map((h) => h.conteudo);
+    const culturaDele = produtor.cultura_principal
       ? normalizarCultura(produtor.cultura_principal)
       : null;
-    return {
-      resposta: respostaDuvidaDeValor(cultura),
-      precisa_humano: true,
+    const pronta = (resposta: string, precisaHumano = false): RespostaAgente => ({
+      resposta,
+      precisa_humano: precisaHumano,
       cadastro_criado: false,
       convite_dispensado: true,
-    };
+    });
+    const aoMenu = respostaAoMenu(texto, botDesc[0], culturaDele);
+    if (aoMenu?.tipo === "responder") return pronta(aoMenu.resposta);
+    if (aoMenu?.tipo === "reescrever") return runAgentBase({ ...input, texto: aoMenu.texto });
+    if (ehPerguntaDeCondicoes(texto)) return pronta(respostaDeCondicoes());
+    const duvidaDeValor = ehDuvidaDeValor(texto);
+    if (duvidaDeValor || ehConfusao(texto)) {
+      if (jaMostrouAjudaRecente(botDesc)) return pronta(RESPOSTA_CHAMAR_PESSOA, true);
+      return duvidaDeValor
+        ? pronta(respostaDuvidaDeValor(culturaDele), true)
+        : pronta(respostaMenuDeAjuda(culturaDele));
+    }
   }
 
   // A pessoa respondeu "quantas sacas pretende vender?" (pergunta da resposta de valor): conta por código, com o preço do banco.

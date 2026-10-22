@@ -322,7 +322,7 @@ export async function responderPlanos(
 export function respostaDePrecoSemAssunto(): RespostaComDados {
   return {
     resposta:
-      "Quanto custa o quê? Posso te passar o preço de uma cultura (soja, milho, boi, café...) ou o valor dos planos do Safralume. É só me dizer qual.",
+      "Se você quer saber o valor do Safralume: o plano Bronze custa R$39 por mês (pequenos produtores), o Prata R$129 e o Ouro R$299. O teste de 7 dias é grátis e não pede cartão. Se queria o preço de uma cultura (soja, milho, boi, café...), é só me dizer qual que eu busco.",
     precisa_humano: false,
     convite_dispensado: true,
   };
@@ -498,6 +498,20 @@ function ultimaDoAssistente(historico: HistoricoLinha[]): string | null {
 }
 
 /** "👍", "ok", "valeu" depois de uma resposta sem pergunta pendente; "sim" solto sem conversa nenhuma antes. */
+/** Quantas respostas de cortesia ("Por nada!", 👍, 🌱) o bot deu seguidas, da mais recente para trás. */
+function acenosSeguidos(historico: HistoricoLinha[]): number {
+  const bot = [...historico]
+    .filter((h) => h.role === "assistant")
+    .sort((a, b) => b.ordem - a.ordem)
+    .map((h) => h.conteudo.trim());
+  let n = 0;
+  for (const m of bot) {
+    if (m.startsWith("Por nada!") || m === "👍" || m === "🌱") n++;
+    else break;
+  }
+  return n;
+}
+
 export function responderAcenoSolto(
   texto: string,
   historico: HistoricoLinha[],
@@ -507,8 +521,15 @@ export function responderAcenoSolto(
   const ultima = ultimaDoAssistente(historico);
   if (AGRADECIMENTO_OU_OK.test(t) && /[\p{L}\p{Extended_Pictographic}]/u.test(t)) {
     if (ultima && /\?|Confirma/i.test(ultima)) return null; // tem pergunta pendente: o fluxo normal entende o "ok"
+    // Quem manda vários "ok / ta bom / obrigado" seguidos não precisa de "Por nada!" toda vez: a 2ª vez só um 👍, a 3ª uma 🌱.
+    const seguidos = acenosSeguidos(historico);
     return {
-      resposta: "Por nada! Qualquer coisa é só chamar aqui. 🌾",
+      resposta:
+        seguidos === 0
+          ? "Por nada! Qualquer coisa é só chamar aqui. 🌾"
+          : seguidos === 1
+            ? "👍"
+            : "🌱",
       precisa_humano: false,
       convite_dispensado: true,
     };
