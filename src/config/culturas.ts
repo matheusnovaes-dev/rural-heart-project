@@ -162,6 +162,11 @@ const ALIAS_CULTURA: Record<string, string> = {
   carneiros: "carne ovina",
   cordeiro: "carne ovina",
   cordeiros: "carne ovina",
+  // "cana" é como o produtor fala (6 dos 10 clientes de cana estão em SP): sem o apelido, "preço da cana em SP" não
+  // contava como cultura citada e o código trocava a busca pela cultura do cadastro (2026-10-22).
+  cana: "cana de açúcar",
+  "cana-de-açúcar": "cana de açúcar",
+  "cana de acucar": "cana de açúcar",
   porco: "suíno",
   porcos: "suíno",
   suínos: "suíno",

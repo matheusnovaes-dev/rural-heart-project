@@ -216,10 +216,14 @@ export async function buscarPreco(
     .map((r) => r.data_referencia)
     .sort()
     .at(-1)!;
+  const periodoUf = atuais.every((r) => ehFonteMensal(r.fonte))
+    ? mesPorExtenso(dataMaisRecente)
+    : null;
   const referencia = await buscarReferenciaMercado(supabase, {
     cultura: produto,
     uf,
     ultimaDataUf: dataMaisRecente,
+    periodoUf,
   });
   const comReferencia = referencia ? { referencia_mercado: referencia } : {};
 

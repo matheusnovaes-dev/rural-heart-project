@@ -106,11 +106,13 @@ export function montarReferenciaMercado(params: {
   cultura: string;
   uf: string;
   ultimaDataUf: string | null;
+  /** Fonte mensal do estado: o mês por extenso ("junho/2026"), para citar no lugar do dia 1 gravado. */
+  periodoUf?: string | null;
   hojeIso: string;
   outras: PrecoOutraUf[];
   futuros: ContratoFuturo[];
 }): ReferenciaMercado | null {
-  const { cultura, uf, ultimaDataUf, hojeIso, outras, futuros } = params;
+  const { cultura, uf, ultimaDataUf, periodoUf, hojeIso, outras, futuros } = params;
   if (outras.length === 0 && futuros.length === 0) return null;
 
   const partes: string[] = [];
@@ -119,7 +121,7 @@ export function montarReferenciaMercado(params: {
     // Estado com dado em dia: só as referências (painel do boi mostra sempre).
   } else if (ultimaDataUf) {
     partes.push(
-      `O último dado de ${cultura} em ${nomeDaUf(uf)} é de ${dataBr(ultimaDataUf)}, há ${dias} dias.`,
+      `O último dado de ${cultura} em ${nomeDaUf(uf)} é de ${periodoUf ? `${periodoUf} (média do mês)` : dataBr(ultimaDataUf)}, há ${dias} dias.`,
     );
   } else {
     partes.push(`Ainda não temos preço de ${cultura} em ${nomeDaUf(uf)}.`);
@@ -288,6 +290,7 @@ export async function buscarReferenciaMercado(
     cultura: string;
     uf: string;
     ultimaDataUf: string | null;
+    periodoUf?: string | null;
     sempre?: boolean;
     hoje?: Date;
   },
@@ -306,6 +309,7 @@ export async function buscarReferenciaMercado(
     cultura: ehBoi(params.cultura) ? "boi gordo" : normalizarCultura(params.cultura),
     uf: params.uf,
     ultimaDataUf: params.ultimaDataUf,
+    periodoUf: params.periodoUf ?? null,
     hojeIso,
     outras,
     futuros,
