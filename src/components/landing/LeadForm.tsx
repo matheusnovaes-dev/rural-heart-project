@@ -36,7 +36,7 @@ import { buscarPreviaDePreco, type PreviaDePreco } from "@/lib/precoCadastro.ser
 import { anotarOrigemDoProdutor, inserirComOrigem } from "@/lib/origem";
 import { culturas, DESTAQUES, normalizarCultura } from "@/config/culturas";
 import { enviarBoasVindasWhatsApp } from "@/lib/notificacoes.server";
-import { lerCookiesMeta, trackCadastroConcluido, trackCadastroIniciado } from "@/lib/metaPixel";
+import { lerCookiesMeta, trackCadastroConcluido } from "@/lib/metaPixel";
 import { trackConversaoServidor } from "@/lib/metaCapi.server";
 
 const leadSchema = z.object({

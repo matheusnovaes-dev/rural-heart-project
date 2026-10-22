@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { siteConfig } from "@/config/site";
 import { MIDIA } from "@/assets/midia";
 import { NomeMarca } from "@/components/landing/NomeMarca";
 

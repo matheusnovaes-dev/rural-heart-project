@@ -6,7 +6,7 @@ import { ArrowUpRight, X } from "lucide-react";
 import { MIDIA } from "@/assets/midia";
 import { Grao } from "@/components/landing/Grao";
 import { NomeMarca } from "@/components/landing/NomeMarca";
-import { buildWhatsAppLink, siteConfig } from "@/config/site";
+import { buildWhatsAppLink } from "@/config/site";
 import { trackLanding } from "@/lib/metaPixel";
 
 const SERIFA = { fontFamily: '"Instrument Serif", "Times New Roman", serif' };

@@ -1,9 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { lazy, Suspense, useEffect, useId, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowDown,
-  ArrowRight,
   ArrowUp,
   BarChart3,
   Bell,
@@ -57,7 +56,7 @@ import { KpiBento } from "@/components/dashboard/inicio/KpiBento";
 import { OQueMudou } from "@/components/dashboard/inicio/OQueMudou";
 import { SeletorDePeriodo } from "@/components/dashboard/inicio/SeletorDePeriodo";
 import { useResumoDoCaderno } from "@/components/dashboard/inicio/useResumoDoCaderno";
-import { aoMoverSpotlight, aoSairSpotlight } from "@/lib/useSpotlight";
+import { aoMoverSpotlight } from "@/lib/useSpotlight";
 
 // Entrada em stagger dos blocos do painel — pedido do Matheus 2026-10-07
 // pra tirar a sensação de "tudo aparece seco de uma vez". Offset pequeno
@@ -220,11 +219,6 @@ function dataCurta(iso: string): string {
 }
 
 function dataEixoCurto(iso: string): string {
-  const [, mes, dia] = iso.slice(0, 10).split("-");
-  return `${dia}/${mes}`;
-}
-
-function dataEixo(iso: string): string {
   const [, mes, dia] = iso.slice(0, 10).split("-");
   return `${dia}/${mes}`;
 }

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { MenuTelaCheia } from "@/components/landing/MenuTelaCheia";
 import { NomeMarca } from "@/components/landing/NomeMarca";
 import { useCadastro } from "@/components/landing/CadastroProvider";
-import { siteConfig, buildWhatsAppLink } from "@/config/site";
+import { buildWhatsAppLink } from "@/config/site";
 import { trackLanding } from "@/lib/metaPixel";
 import { MIDIA } from "@/assets/midia";
 

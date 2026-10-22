@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
 import { MIDIA } from "@/assets/midia";
-import { buildWhatsAppLink, siteConfig } from "@/config/site";
+import { buildWhatsAppLink } from "@/config/site";
 import { NomeMarca } from "@/components/landing/NomeMarca";
 
 const SERIFA = { fontFamily: '"Instrument Serif", "Times New Roman", serif' };

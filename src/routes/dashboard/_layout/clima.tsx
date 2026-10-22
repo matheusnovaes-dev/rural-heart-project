@@ -2,9 +2,9 @@ import { ConfirmarAcao } from "@/components/dashboard/ConfirmarAcao";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, CloudRain, Loader2, MapPin, Plus, Thermometer, X } from "lucide-react";
+import { AlertTriangle, CloudRain, Loader2, MapPin, Plus, X } from "lucide-react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IconesSafralume } from "@/components/icons/SafralumeIcon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,15 +59,6 @@ function chaveDoLocal(uf: string, municipio: string | null) {
 
 function labelDoLocal(local: Local) {
   return local.municipio ? `${local.municipio} · ${local.uf}` : local.uf;
-}
-
-// Chuva alta é a leitura que mais importa pro produtor (risco de colheita
-// parada, estrada ruim pro escoamento) — três faixas simples em vez de só
-// mostrar o número cru.
-function faixaChuva(pct: number): { tone: "chuva-alta" | "chuva-media" | "chuva-baixa" } {
-  if (pct >= 60) return { tone: "chuva-alta" };
-  if (pct >= 30) return { tone: "chuva-media" };
-  return { tone: "chuva-baixa" };
 }
 
 const toneClasses = {

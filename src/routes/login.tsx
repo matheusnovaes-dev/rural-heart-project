@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { buildWhatsAppLink, siteConfig } from "@/config/site";
+import { buildWhatsAppLink } from "@/config/site";
 
 const destaques = [
   "Preço da sua saca comparado com o porto, com o frete",
@@ -57,8 +57,6 @@ const cartoes = [
     recuo: "ml-4",
   },
 ];
-
-const tituloDoPainel = "Saiba o preço da sua saca e quanto o porto paga, direto no WhatsApp";
 
 // Ilustrativo — mesma cara do painel/ticker do dashboard (ContextoMercado),
 // não é dado ao vivo aqui, só clima da marca na tela de login.

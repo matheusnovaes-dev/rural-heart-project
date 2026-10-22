@@ -516,7 +516,13 @@ function FazendaPage() {
                   />
 
                   {!carregando && resumo.porTalhao.length > 0 && (
-                    <PorTalhaoCard porTalhao={resumo.porTalhao} onFiltrar={(t) => setBusca(t)} />
+                    <PorTalhaoCard
+                      porTalhao={resumo.porTalhao}
+                      onFiltrar={(t) => {
+                        setBusca(t);
+                        trocarAba("lancamentos");
+                      }}
+                    />
                   )}
 
                   {!carregando && (resumo.porCategoria.length > 0 || porMes.length > 1) && (
@@ -528,7 +534,7 @@ function FazendaPage() {
                               Para onde foi o dinheiro
                             </h2>
                             <ul className="space-y-2.5">
-                              {resumo.porCategoria.slice(0, 6).map((c, i) => (
+                              {resumo.porCategoria.slice(0, 6).map((c) => (
                                 <li key={c.categoria}>
                                   <div className="mb-1 flex justify-between gap-3 text-sm">
                                     <span className="truncate">{c.categoria}</span>

@@ -5,7 +5,7 @@ import { Loader2, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
-import { buildWhatsAppLink, siteConfig } from "@/config/site";
+import { buildWhatsAppLink } from "@/config/site";
 
 import { lerLiteral, lerTexto, parametros } from "@/lib/searchParams";
 import { MIDIA } from "@/assets/midia";

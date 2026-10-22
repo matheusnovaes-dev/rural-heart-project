@@ -8,7 +8,6 @@ import { CampoWhatsappCta } from "@/components/landing/CampoWhatsappCta";
 import { useCadastro } from "@/components/landing/CadastroProvider";
 import { trackLanding } from "@/lib/metaPixel";
 import { Reveal } from "@/components/landing/Reveal";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";

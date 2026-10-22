@@ -1,15 +1,13 @@
 import { ContaAte } from "@/components/landing/ContaAte";
 import {
-  animate,
   motion,
-  useInView,
   useMotionTemplate,
   useMotionValue,
   useReducedMotion,
   useScroll,
   useTransform,
 } from "framer-motion";
-import { useEffect, useRef, type MouseEvent } from "react";
+import { useRef, type MouseEvent } from "react";
 import { BadgeCheck, ShieldCheck } from "lucide-react";
 
 import { CampoWhatsappCta } from "@/components/landing/CampoWhatsappCta";

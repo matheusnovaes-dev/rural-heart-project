@@ -1,7 +1,6 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import type { LucideIcon } from "lucide-react";
 import { CalendarDays, LogOut, Search } from "lucide-react";
 
 import {
@@ -291,44 +290,6 @@ function DataAgora() {
       <span className="font-mono tabular-nums">{hora}</span>
     </span>
   );
-}
-
-/** Luz suave que segue o cursor pelo fundo do painel. Só desktop com mouse e movimento permitido. */
-function LuzDoCursor() {
-  const ref = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const ok =
-      window.matchMedia("(hover: hover) and (pointer: fine)").matches &&
-      !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!ok) return;
-    let quadro = 0;
-    let x = 0;
-    let y = 0;
-    const mover = (e: PointerEvent) => {
-      x = e.clientX;
-      y = e.clientY;
-      if (quadro) return;
-      quadro = requestAnimationFrame(() => {
-        quadro = 0;
-        el.style.setProperty("--cx", `${x}px`);
-        el.style.setProperty("--cy", `${y}px`);
-        el.dataset["ativa"] = "true";
-      });
-    };
-    const sair = () => {
-      el.dataset["ativa"] = "false";
-    };
-    window.addEventListener("pointermove", mover, { passive: true });
-    document.addEventListener("pointerleave", sair);
-    return () => {
-      window.removeEventListener("pointermove", mover);
-      document.removeEventListener("pointerleave", sair);
-      if (quadro) cancelAnimationFrame(quadro);
-    };
-  }, []);
-  return <div ref={ref} className="luz-cursor" aria-hidden="true" data-ativa="false" />;
 }
 
 /** Selo do plano no menu lateral (só quem tem assinatura própria). */

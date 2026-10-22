@@ -1188,26 +1188,6 @@ html[data-tema-reveal]::view-transition-new(root) {
   }
 }
 
-/* Luz que segue o cursor pelo fundo do painel (desktop) */
-.luz-cursor {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  --cx: 60%;
-  --cy: 10%;
-  background: radial-gradient(
-    560px circle at var(--cx) var(--cy),
-    color-mix(in oklab, var(--cta) 8%, transparent),
-    transparent 65%
-  );
-  opacity: 0;
-  transition: opacity 0.6s ease;
-}
-.luz-cursor[data-ativa="true"] {
-  opacity: 1;
-}
-
 /* Aurora: manchas de luz que derivam devagar atrás da saudação do Início (só desktop) */
 @keyframes aurora-deriva-a {
   0%,
