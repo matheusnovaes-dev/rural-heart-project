@@ -258,6 +258,8 @@ export function DashboardPreview() {
   // Câmera: em cada capítulo o painel começa inteiro, aproxima do conteúdo e volta antes de trocar de capítulo.
   // Calculado direto da rolagem (motion value), sem re-renderizar o React a cada quadro.
   const zoom = useTransform(progresso, (v) => {
+    // máquina fraca (nível marcado pelo DesktopFX): sem câmera, o redesenho a cada quadro trava a rolagem
+    if (document.documentElement.dataset["fxNivel"] === "baixa") return 1;
     const { c, dentro } = capituloDaRolagem(v);
     const ultimo = c === CAPITULOS.length - 1;
     return 1 + 0.14 * suave(0.06, 0.32, dentro) * (ultimo ? 1 : 1 - suave(0.8, 0.97, dentro));

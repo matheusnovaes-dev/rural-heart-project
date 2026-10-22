@@ -38,16 +38,16 @@ export default function DesktopFX({ leve = false }: { leve?: boolean }) {
     seguro(iniciarMagneticos);
     seguro(iniciarLetrasRolando);
     if (leve) return () => limpezas.reverse().forEach((f) => f());
-    // Máquina fraca (placa sem aceleração ou gráfico Intel antigo): ficam os efeitos de CSS/transform; WebGL e rolagem
-    // suave ficam de fora, para a página rolar lisa em qualquer PC (ver qualidade.ts).
+    // Máquina fraca (placa sem aceleração ou gráfico Intel antigo): ficam os efeitos de CSS/transform; WebGL, rolagem suave e transformações contínuas
+    // ligadas à rolagem (3D, paralaxe, profundidade: redesenho caro sem placa boa) ficam de fora, para a página rolar lisa em qualquer PC (ver qualidade.ts).
     const nivel = nivelDaMaquina();
     const leveDeVerdade = nivel === "baixa";
     if (!leveDeVerdade) seguro(iniciarScrollSuave);
     seguro(iniciarCartoes);
-    seguro(iniciarParallax);
-    seguro(iniciarProfundidade);
+    if (!leveDeVerdade) seguro(iniciarParallax);
+    if (!leveDeVerdade) seguro(iniciarProfundidade);
     seguro(iniciarCortinas);
-    seguro(iniciarPalcos3D);
+    if (!leveDeVerdade) seguro(iniciarPalcos3D);
     const hero = document.getElementById("topo");
     if (!leveDeVerdade) {
       if (hero) seguro(() => iniciarParticulas(hero));
