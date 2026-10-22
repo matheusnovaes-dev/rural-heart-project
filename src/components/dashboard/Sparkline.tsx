@@ -8,10 +8,13 @@ export function Sparkline({
   data,
   color = "var(--chart-1)",
   className = "h-11 w-full",
+  animar = false,
 }: {
   data: number[];
   color?: string;
   className?: string;
+  /** A linha se desenha uma vez ao aparecer (respeita "reduzir movimento"). */
+  animar?: boolean;
 }) {
   // useId em vez de derivar do `color`: duas sparklines da mesma cor na mesma
   // página gerariam o mesmo id de gradiente e uma sobrescreveria a outra.
@@ -49,6 +52,8 @@ export function Sparkline({
       <path d={areaPath} fill={`url(#${gradId})`} />
       <path
         d={linePath}
+        pathLength={animar ? 1 : undefined}
+        className={animar ? "grafico-linha" : undefined}
         fill="none"
         stroke={color}
         strokeWidth="1.6"

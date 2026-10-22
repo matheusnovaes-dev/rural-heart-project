@@ -5,9 +5,12 @@ import {
   ArrowDown,
   ArrowRight,
   ArrowUp,
+  BarChart3,
   Bell,
   CloudSun,
   MessageCircle,
+  Package,
+  Sprout,
   Minus,
   TrendingUp,
   Users,
@@ -33,7 +36,6 @@ import { PrecoInsumosCard } from "@/components/dashboard/PrecoInsumosCard";
 import { ProgressoSafraCard } from "@/components/dashboard/ProgressoSafraCard";
 import { ReferenciaMercadoCard } from "@/components/dashboard/ReferenciaMercadoCard";
 import { BenchmarkRegionalCard } from "@/components/dashboard/BenchmarkRegionalCard";
-import { DolarCard } from "@/components/dashboard/DolarCard";
 import { PecaNoWhatsApp } from "@/components/dashboard/PecaNoWhatsApp";
 import { DIAS_DADO_DESATUALIZADO } from "@/lib/referenciaMercado";
 import { diasEntre } from "@/lib/precoFonte";
@@ -49,6 +51,11 @@ import { buildWhatsAppLink } from "@/config/site";
 import { verificarConversaWhatsapp } from "@/lib/notificacoes.server";
 import { AnimatedNumber } from "@/components/dashboard/AnimatedNumber";
 import { SafralumeIcon } from "@/components/icons/SafralumeIcon";
+import { AbasPremium, type AbaPremium } from "@/components/dashboard/inicio/AbasPremium";
+import { KpiBento } from "@/components/dashboard/inicio/KpiBento";
+import { OQueMudou } from "@/components/dashboard/inicio/OQueMudou";
+import { useResumoDoCaderno } from "@/components/dashboard/inicio/useResumoDoCaderno";
+import { aoMoverSpotlight } from "@/lib/useSpotlight";
 
 // Entrada em stagger dos blocos do painel — pedido do Matheus 2026-10-07
 // pra tirar a sensação de "tudo aparece seco de uma vez". Offset pequeno
@@ -227,6 +234,12 @@ const EsperaGrafico = () => (
   />
 );
 
+const ABAS_DO_INICIO: AbaPremium[] = [
+  { id: "mercado", rotulo: "Mercado", icone: BarChart3 },
+  { id: "safra", rotulo: "Plantio e safra", rotuloCurto: "Safra", icone: Sprout },
+  { id: "insumos", rotulo: "Insumos e boletim", rotuloCurto: "Insumos", icone: Package },
+];
+
 function ProdutorHome({ produtor }: { produtor: Produtor }) {
   // Antes isso era só um "dispensado pra sempre" no localStorage — um clique
   // errado (ou o "X" por curiosidade) escondia o convite pro WhatsApp de
@@ -358,6 +371,23 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
     busca.then(setPrevisao);
   }, [produtor.uf, produtor.lat, produtor.lon]);
 
+  const [aba, setAba] = useState<string>(() => {
+    try {
+      const salva = sessionStorage.getItem("safralume_inicio_aba");
+      return ABAS_DO_INICIO.some((a) => a.id === salva) ? (salva as string) : "mercado";
+    } catch {
+      return "mercado";
+    }
+  });
+  function trocarAba(id: string) {
+    setAba(id);
+    try {
+      sessionStorage.setItem("safralume_inicio_aba", id);
+    } catch {
+      // sem armazenamento: só não lembra a aba
+    }
+  }
+
   const atual = serie?.at(-1) ?? null;
   const anterior = serie?.at(-2) ?? null;
   const variacao =
@@ -373,6 +403,10 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
     serie === null
       ? undefined
       : (atual?.data_referencia ?? precosRegionais[0]?.data_referencia ?? null);
+  const resumo = useResumoDoCaderno(
+    { id: produtor.id, uf: produtor.uf, cultura_principal: produtor.cultura_principal },
+    precoExibido ?? mediaRegional,
+  );
   const regionalDesatualizado =
     precosRegionais[0] != null &&
     diasEntre(precosRegionais[0].data_referencia, new Date().toISOString().slice(0, 10)) >
@@ -391,9 +425,26 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
       >
         <div>
           <p className="text-sm font-medium text-muted-foreground">Visão geral</p>
-          <h1 className="mt-1 font-display text-2xl font-semibold text-foreground text-balance sm:text-3xl">
+          <h1 className="mt-1 font-display text-[1.7rem] font-semibold tracking-tight text-foreground text-balance sm:text-4xl">
             {greeting()}, {produtor.nome.split(" ")[0]}
           </h1>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {resumo.plano && (
+              <Link
+                to="/dashboard/assinatura"
+                className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold-soft px-2.5 py-1 text-xs font-semibold text-gold-foreground outline-none transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <span className="size-1.5 rounded-full bg-gold" aria-hidden="true" />
+                Plano {resumo.plano.charAt(0).toUpperCase() + resumo.plano.slice(1)}
+              </Link>
+            )}
+            {produtor.cultura_principal && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground capitalize">
+                {produtor.cultura_principal}
+                {produtor.uf ? ` · ${produtor.uf}` : ""}
+              </span>
+            )}
+          </div>
         </div>
         <p className="mt-2 text-sm font-medium text-muted-foreground sm:mt-0">{todayLabel()}</p>
       </motion.div>
@@ -402,15 +453,17 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
         <CompletarAcessoCard />
       </motion.div>
 
-      <motion.div variants={itemVariants}>
-        <PecaNoWhatsApp cultura={produtor.cultura_principal} uf={produtor.uf} />
-      </motion.div>
+      {!(bannerWhatsappVisivel && jaConversouNoWhatsapp !== true) && (
+        <motion.div variants={itemVariants}>
+          <PecaNoWhatsApp cultura={produtor.cultura_principal} uf={produtor.uf} />
+        </motion.div>
+      )}
 
       {/* Enquanto a checagem não volta, reserva o lugar do convite (com a altura dele) para o preço não descer depois */}
       {bannerWhatsappVisivel && jaConversouNoWhatsapp === null && (
         <div
           aria-hidden="true"
-          className="min-h-[14rem] animate-pulse rounded-xl border border-primary/15 bg-primary/5 sm:min-h-[6.75rem]"
+          className="min-h-[17rem] animate-pulse min-[400px]:min-h-[14rem] rounded-xl border border-primary/15 bg-primary/5 sm:min-h-[6.75rem]"
         />
       )}
 
@@ -454,6 +507,197 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
         </motion.div>
       )}
 
+      <div className="grid gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+        <motion.div variants={itemVariants} className="h-full">
+          <Card
+            data-testid="preco-hero"
+            onPointerMove={aoMoverSpotlight}
+            className="kpi-hero spot borda-viva card-premium relative h-full gap-0 overflow-hidden py-0 text-primary-foreground"
+          >
+            <CardHeader className="relative border-b border-primary-foreground/15 px-5 pt-5 pb-4 sm:px-6">
+              <CardTitle className="flex items-center justify-between gap-2 text-sm font-medium opacity-90">
+                <span className="flex items-center gap-2">
+                  <TrendingUp className="size-4" />
+                  Seu preço hoje
+                </span>
+                {atual?.updated_at && (
+                  <AtualizadoEm iso={atual.updated_at} className="opacity-75" />
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent
+              className={`relative flex flex-1 flex-col gap-4 px-5 pt-5 pb-5 sm:px-6 sm:pt-6 sm:pb-6 ${
+                // enquanto carrega, reserva uma altura parecida com a do cartão pronto: sem isso ele nascia com
+                // ~60px e crescia até ~600px, empurrando tudo que vem embaixo (pulo de layout)
+                serie === null || frete === undefined ? "min-h-[36rem] sm:min-h-[30rem]" : ""
+              }`}
+            >
+              {serie === null || frete === undefined ? (
+                <div className="flex flex-col gap-3" aria-hidden="true">
+                  <Skeleton className="h-14 w-56 bg-primary-foreground/15" />
+                  <Skeleton className="h-3 w-44 bg-primary-foreground/10" />
+                  <div className="mt-1 flex flex-col gap-2.5">
+                    {[0, 1, 2, 3].map((i) => (
+                      <div key={i} className="flex items-center justify-between gap-6">
+                        <Skeleton className="h-4 w-40 bg-primary-foreground/10" />
+                        <Skeleton className="h-4 w-16 bg-primary-foreground/15" />
+                      </div>
+                    ))}
+                  </div>
+                  <EsperaGrafico />
+                  <Skeleton className="h-3 w-full bg-primary-foreground/10" />
+                  <Skeleton className="h-3 w-3/4 bg-primary-foreground/10" />
+                </div>
+              ) : atual && precoExibido != null ? (
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-wrap items-end justify-between gap-4">
+                    <div>
+                      <div className="flex items-end gap-2">
+                        <p className="font-mono text-4xl font-semibold tabular-nums sm:text-5xl">
+                          <span className="mr-1 align-top text-xl font-sans font-semibold opacity-70">
+                            R$
+                          </span>
+                          <AnimatedNumber value={precoExibido} />
+                        </p>
+                        {variacao != null && Math.abs(variacao) >= 0.05 && (
+                          <span
+                            className={`mb-2 inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                              variacao > 0
+                                ? "bg-primary-foreground/15"
+                                : "bg-destructive/25 text-primary-foreground"
+                            }`}
+                          >
+                            {variacao > 0 ? (
+                              <ArrowUp className="size-3" />
+                            ) : (
+                              <ArrowDown className="size-3" />
+                            )}
+                            <span className="font-mono tabular-nums">
+                              {Math.abs(variacao).toFixed(1)}%
+                            </span>
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-1 flex items-center gap-1.5 text-sm opacity-80">
+                        <span className="capitalize">
+                          {produtor.cultura_principal} · {produtor.uf}
+                        </span>
+                        <TrocarCulturaDialog produtor={produtor} />
+                      </div>
+                      <p className="mt-1 text-xs opacity-70">
+                        Preço na sua região: é o que você recebe, com o frete até o porto já
+                        incluído.
+                      </p>
+                      <p className="mt-1 max-w-md text-xs opacity-80">
+                        {frete
+                          ? frete.frase
+                          : "Ainda não temos rota de frete de referência pra essa cultura na sua região."}
+                      </p>
+                    </div>
+                    {serie.length >= 2 && serie.length < 5 && (
+                      <div className="w-full max-w-56">
+                        <Sparkline
+                          data={serie.map((s) => s.preco)}
+                          color="currentColor"
+                          className="h-12 w-full"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  {serie.length >= 5 && (
+                    <Suspense fallback={<EsperaGrafico />}>
+                      <PrecoHeroChart serie={serie} cultura={produtor.cultura_principal} />
+                    </Suspense>
+                  )}
+                </div>
+              ) : precosRegionais.length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  {mediaRegional != null && (
+                    <div className="mb-1">
+                      <p className="font-mono text-4xl font-semibold tabular-nums sm:text-5xl">
+                        <span className="mr-1 align-top font-sans text-xl font-semibold opacity-70">
+                          R$
+                        </span>
+                        <AnimatedNumber value={mediaRegional} />
+                      </p>
+                      <p className="mt-1 text-xs opacity-75">
+                        média das praças de {produtor.uf}
+                        {precosRegionais[0]?.data_referencia
+                          ? ` · ${dataCurta(precosRegionais[0].data_referencia)}`
+                          : ""}
+                        {precosRegionais[0]?.fonte ? ` · ${precosRegionais[0].fonte}` : ""}
+                      </p>
+                    </div>
+                  )}
+                  <p className="text-sm opacity-80">
+                    {regionalDesatualizado
+                      ? `O último preço por região em ${produtor.uf} é de ${dataCurta(precosRegionais[0]!.data_referencia)} e está desatualizado (veja as referências abaixo):`
+                      : motivoRegional === "estado_defasado"
+                        ? `O preço do estado (${produtor.uf}) está desatualizado. Estes são os preços mais recentes por região, de ${dataCurta(precosRegionais[0]!.data_referencia)}:`
+                        : `${produtor.uf} não tem um preço único pro estado, só por região:`}
+                  </p>
+                  <div className="flex flex-col gap-1">
+                    {precosRegionais.map((r) => (
+                      <div
+                        key={r.regiao}
+                        className="flex items-baseline justify-between gap-3 text-sm"
+                      >
+                        <span className="opacity-90">{r.regiao}</span>
+                        <span className="font-mono font-semibold tabular-nums">
+                          R${r.preco.toFixed(2).replace(".", ",")}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <Suspense fallback={<EsperaGrafico />}>
+                    <PrecoRegionalHeroChart regioes={regionaisHistorico} />
+                  </Suspense>
+                  {frete && <p className="max-w-md text-xs opacity-80">{frete.frase}</p>}
+                  <div className="mt-1 flex items-center gap-1.5 text-sm opacity-80">
+                    <span className="capitalize">
+                      {produtor.cultura_principal} · {produtor.uf}
+                    </span>
+                    <TrocarCulturaDialog produtor={produtor} />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 text-sm opacity-80">
+                  <span>
+                    {/leite/i.test(produtor.cultura_principal ?? "")
+                      ? `Leite não tem cotação pública diária em ${produtor.uf ?? "sua região"}. Veja as referências abaixo.`
+                      : `Ainda não temos preço pra ${produtor.cultura_principal ?? "sua cultura"} em ${produtor.uf ?? "sua região"}. Veja as referências de outros estados logo abaixo.`}
+                  </span>
+                  <TrocarCulturaDialog produtor={produtor} />
+                </div>
+              )}
+              <Link
+                to="/dashboard/alertas"
+                search={{ abrir: "preco" }}
+                className="alvo-toque text-sm font-medium text-primary-foreground underline underline-offset-2 opacity-90 hover:opacity-100"
+              >
+                Avisar quando o preço mudar
+              </Link>
+            </CardContent>
+          </Card>
+        </motion.div>
+        <div className="flex min-w-0 flex-col gap-4 sm:gap-5">
+          <KpiBento
+            resumo={resumo}
+            previsao={previsao}
+            uf={produtor.uf}
+            municipio={produtor.municipio}
+          />
+
+          <OQueMudou
+            cultura={produtor.cultura_principal}
+            uf={produtor.uf}
+            serie={serie}
+            previsao={previsao}
+            resumo={resumo}
+          />
+        </div>
+      </div>
+
       <motion.div
         variants={itemVariants}
         className="grid gap-5 lg:grid-cols-[minmax(0,1.65fr)_minmax(18rem,.75fr)] lg:items-start"
@@ -466,205 +710,40 @@ function ProdutorHome({ produtor }: { produtor: Produtor }) {
           className="flex min-w-0 flex-col gap-5"
         >
           <motion.div variants={itemVariants}>
-            <Card className="relative overflow-hidden border-primary bg-primary text-primary-foreground shadow-lg">
-              {/* Glow sutil atrás do número — o card era bg-primary sólido,
-                  sem nenhuma profundidade. Gradiente radial no canto, não
-                  animado (CPU-barato, sempre visível, não pisca). */}
-              <div
-                className="pointer-events-none absolute -top-24 -right-24 size-64 rounded-full bg-primary-foreground/10 blur-3xl"
-                aria-hidden="true"
-              />
-              <CardHeader className="relative border-b border-primary-foreground/15 px-5 pb-4 sm:px-6">
-                <CardTitle className="flex items-center justify-between gap-2 text-sm font-medium opacity-90">
-                  <span className="flex items-center gap-2">
-                    <TrendingUp className="size-4" />
-                    Seu preço hoje
-                  </span>
-                  {atual?.updated_at && (
-                    <AtualizadoEm iso={atual.updated_at} className="opacity-75" />
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent
-                className={`relative flex flex-col gap-4 px-5 pt-5 sm:px-6 sm:pt-6 ${
-                  // enquanto carrega, reserva uma altura parecida com a do cartão pronto: sem isso ele nascia com
-                  // ~60px e crescia até ~600px, empurrando tudo que vem embaixo (pulo de layout)
-                  serie === null || frete === undefined ? "min-h-[28rem] sm:min-h-[19rem]" : ""
-                }`}
-              >
-                {serie === null || frete === undefined ? (
-                  <Skeleton className="h-14 w-56 bg-primary-foreground/15" />
-                ) : atual && precoExibido != null ? (
-                  <div className="flex flex-col gap-4">
-                    <div className="flex flex-wrap items-end justify-between gap-4">
-                      <div>
-                        <div className="flex items-end gap-2">
-                          <p className="font-mono text-4xl font-semibold tabular-nums sm:text-5xl">
-                            <span className="mr-1 align-top text-xl font-sans font-semibold opacity-70">
-                              R$
-                            </span>
-                            <AnimatedNumber value={precoExibido} />
-                          </p>
-                          {variacao != null && Math.abs(variacao) >= 0.05 && (
-                            <span
-                              className={`mb-2 inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
-                                variacao > 0
-                                  ? "bg-primary-foreground/15"
-                                  : "bg-destructive/25 text-primary-foreground"
-                              }`}
-                            >
-                              {variacao > 0 ? (
-                                <ArrowUp className="size-3" />
-                              ) : (
-                                <ArrowDown className="size-3" />
-                              )}
-                              <span className="font-mono tabular-nums">
-                                {Math.abs(variacao).toFixed(1)}%
-                              </span>
-                            </span>
-                          )}
-                        </div>
-                        <div className="mt-1 flex items-center gap-1.5 text-sm opacity-80">
-                          <span className="capitalize">
-                            {produtor.cultura_principal} · {produtor.uf}
-                          </span>
-                          <TrocarCulturaDialog produtor={produtor} />
-                        </div>
-                        <p className="mt-1 text-xs opacity-70">
-                          Preço na sua região: é o que você recebe, com o frete até o porto já
-                          incluído.
-                        </p>
-                        <p className="mt-1 max-w-md text-xs opacity-80">
-                          {frete
-                            ? frete.frase
-                            : "Ainda não temos rota de frete de referência pra essa cultura na sua região."}
-                        </p>
-                      </div>
-                      {serie.length >= 2 && serie.length < 5 && (
-                        <div className="w-full max-w-56">
-                          <Sparkline
-                            data={serie.map((s) => s.preco)}
-                            color="currentColor"
-                            className="h-12 w-full"
-                          />
-                        </div>
-                      )}
-                    </div>
-                    {serie.length >= 5 && (
-                      <Suspense fallback={<EsperaGrafico />}>
-                        <PrecoHeroChart serie={serie} cultura={produtor.cultura_principal} />
-                      </Suspense>
+            <AbasPremium
+              rotulo="Mais do seu mercado"
+              abas={ABAS_DO_INICIO}
+              valor={aba}
+              onChange={trocarAba}
+            >
+              {(v) =>
+                v === "mercado" ? (
+                  <>
+                    <InsightsPanel produtor={produtor} />
+                    {/leite/i.test(produtor.cultura_principal ?? "") && (
+                      <LeiteCard produtor={produtor} />
                     )}
-                  </div>
-                ) : precosRegionais.length > 0 ? (
-                  <div className="flex flex-col gap-2">
-                    <p className="text-sm opacity-80">
-                      {regionalDesatualizado
-                        ? `O último preço por região em ${produtor.uf} é de ${dataCurta(precosRegionais[0]!.data_referencia)} e está desatualizado (veja as referências abaixo):`
-                        : motivoRegional === "estado_defasado"
-                          ? `O preço do estado (${produtor.uf}) está desatualizado. Estes são os preços mais recentes por região, de ${dataCurta(precosRegionais[0]!.data_referencia)}:`
-                          : `${produtor.uf} não tem um preço único pro estado, só por região:`}
-                    </p>
-                    <div className="flex flex-col gap-1">
-                      {precosRegionais.map((r) => (
-                        <div
-                          key={r.regiao}
-                          className="flex items-baseline justify-between gap-3 text-sm"
-                        >
-                          <span className="opacity-90">{r.regiao}</span>
-                          <span className="font-mono font-semibold tabular-nums">
-                            R${r.preco.toFixed(2).replace(".", ",")}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    {mediaRegional != null && (
-                      <p className="mt-1 text-xs opacity-80">
-                        Média das regiões: R${mediaRegional.toFixed(2).replace(".", ",")}
-                        {precosRegionais[0]?.fonte && <> · fonte: {precosRegionais[0].fonte}</>}
-                      </p>
-                    )}
-                    <Suspense fallback={<EsperaGrafico />}>
-                      <PrecoRegionalHeroChart regioes={regionaisHistorico} />
-                    </Suspense>
-                    {frete && <p className="max-w-md text-xs opacity-80">{frete.frase}</p>}
-                    <div className="mt-1 flex items-center gap-1.5 text-sm opacity-80">
-                      <span className="capitalize">
-                        {produtor.cultura_principal} · {produtor.uf}
-                      </span>
-                      <TrocarCulturaDialog produtor={produtor} />
-                    </div>
-                  </div>
+                    <ReferenciaMercadoCard produtor={produtor} ultimaData={ultimaDataDoEstado} />
+                    <BenchmarkRegionalCard
+                      produtor={produtor}
+                      precoUf={precoExibido ?? mediaRegional}
+                    />
+                    <Watchlist produtor={produtor} />
+                  </>
+                ) : v === "safra" ? (
+                  <>
+                    <JanelaPlantioCard produtor={produtor} />
+                    <ProgressoSafraCard produtor={produtor} />
+                    <FerrugemAsiaticaCard produtor={produtor} />
+                  </>
                 ) : (
-                  <div className="flex items-center gap-1.5 text-sm opacity-80">
-                    <span>
-                      {/leite/i.test(produtor.cultura_principal ?? "")
-                        ? `Leite não tem cotação pública diária em ${produtor.uf ?? "sua região"}. Veja as referências abaixo.`
-                        : `Ainda não temos preço pra ${produtor.cultura_principal ?? "sua cultura"} em ${produtor.uf ?? "sua região"}. Veja as referências de outros estados logo abaixo.`}
-                    </span>
-                    <TrocarCulturaDialog produtor={produtor} />
-                  </div>
-                )}
-                <Link
-                  to="/dashboard/alertas"
-                  search={{ abrir: "preco" }}
-                  className="alvo-toque text-sm font-medium text-primary-foreground underline underline-offset-2 opacity-90 hover:opacity-100"
-                >
-                  Avisar quando o preço mudar
-                </Link>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Achado real 2026-10-12 (print do Matheus): no mobile a coluna
-              lateral inteira (onde o DolarCard morava) só aparece depois de
-              TODOS os cards da coluna principal — "ficou lá embaixo" de
-              verdade. Movido pra cá, logo após o hero de preço, pra aparecer
-              perto do topo em qualquer tela. */}
-          <motion.div variants={itemVariants}>
-            <InsightsPanel produtor={produtor} />
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
-            <DolarCard />
-          </motion.div>
-
-          {/leite/i.test(produtor.cultura_principal ?? "") && (
-            <motion.div variants={itemVariants}>
-              <LeiteCard produtor={produtor} />
-            </motion.div>
-          )}
-
-          <motion.div variants={itemVariants}>
-            <ReferenciaMercadoCard produtor={produtor} ultimaData={ultimaDataDoEstado} />
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
-            <BenchmarkRegionalCard produtor={produtor} precoUf={precoExibido ?? mediaRegional} />
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
-            <Watchlist produtor={produtor} />
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
-            <JanelaPlantioCard produtor={produtor} />
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
-            <ProgressoSafraCard produtor={produtor} />
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
-            <FerrugemAsiaticaCard produtor={produtor} />
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
-            <PrecoInsumosCard produtor={produtor} />
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
-            <BoletimSemanal produtor={produtor} />
+                  <>
+                    <PrecoInsumosCard produtor={produtor} />
+                    <BoletimSemanal produtor={produtor} />
+                  </>
+                )
+              }
+            </AbasPremium>
           </motion.div>
         </motion.div>
 

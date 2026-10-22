@@ -213,7 +213,7 @@ function DashboardGuard() {
             </span>
             <AtalhoBusca />
           </header>
-          <div id="conteudo" tabIndex={-1} className="flex-1 p-4 outline-none sm:p-6 lg:p-8">
+          <div id="conteudo" tabIndex={-1} className="fundo-painel flex-1 p-4 outline-none sm:p-6 lg:p-8">
             <AnimatedOutlet />
           </div>
         </SidebarInset>

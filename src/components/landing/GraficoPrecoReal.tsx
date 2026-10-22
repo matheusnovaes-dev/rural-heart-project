@@ -50,7 +50,7 @@ export function GraficoPrecoReal({ serie, titulo }: { serie: Ponto[]; titulo: st
   }
 
   return (
-    <Card className="hidden gap-2 py-3 desk:block">
+    <Card className="rounded-xl border-border shadow hidden gap-2 py-3 desk:block">
       <CardContent className="px-3">
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs font-semibold text-muted-foreground">{titulo}</p>

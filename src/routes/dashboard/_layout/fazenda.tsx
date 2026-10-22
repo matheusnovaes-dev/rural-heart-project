@@ -1,8 +1,11 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  CalendarClock,
   Download,
   FileText,
+  LayoutDashboard,
+  ListChecks,
   Loader2,
   MessageCircle,
   Pencil,
@@ -59,6 +62,9 @@ import { temAcessoPrata, useAssinatura } from "@/lib/planos";
 import { CustoMargemCard } from "@/components/fazenda/CustoMargemCard";
 import { EstoqueBloqueado, EstoqueCard } from "@/components/fazenda/EstoqueCard";
 import { OrcamentoCard } from "@/components/fazenda/OrcamentoCard";
+import { AbasPremium, type AbaPremium } from "@/components/dashboard/inicio/AbasPremium";
+import { reaisCompacto } from "@/components/dashboard/inicio/KpiBento";
+import { aoMoverSpotlight } from "@/lib/useSpotlight";
 import { PendenciasCard } from "@/components/fazenda/PendenciasCard";
 import { PorTalhaoCard } from "@/components/fazenda/PorTalhaoCard";
 import {
@@ -142,6 +148,24 @@ function FazendaPage() {
   const [apagando, setApagando] = useState<RegistroFazenda | null>(null);
   const [temQualquerCoisa, setTemQualquerCoisa] = useState<boolean | null>(null);
   const [pendentes, setPendentes] = useState<RegistroFazenda[]>([]);
+  const [aba, setAba] = useState<string>(() => {
+    try {
+      const salva = sessionStorage.getItem("safralume_fazenda_aba");
+      return ["visao", "pendencias", "estoque", "lancamentos"].includes(salva ?? "")
+        ? (salva as string)
+        : "visao";
+    } catch {
+      return "visao";
+    }
+  });
+  function trocarAba(id: string) {
+    setAba(id);
+    try {
+      sessionStorage.setItem("safralume_fazenda_aba", id);
+    } catch {
+      // sem armazenamento: só não lembra a aba
+    }
+  }
   const [versao, setVersao] = useState(0);
   const [tipoInicial, setTipoInicial] = useState<TipoRegistro>("gasto");
   const { plano, assinaturaId, asaasSubscriptionId } = useAssinatura();
@@ -464,189 +488,235 @@ function FazendaPage() {
             </p>
           )}
 
-          <PendenciasCard
-            pendentes={pendentes}
-            onBaixa={darBaixa}
-            onEditar={(r) => setEditando(r)}
-            onApagar={(r) => setApagando(r)}
-          />
+          <AbasPremium
+            rotulo="Seções do Caderno"
+            abas={ABAS_DA_FAZENDA(pendentes.length)}
+            valor={aba}
+            onChange={trocarAba}
+          >
+            {(v) =>
+              v === "visao" ? (
+                <>
+                  <CustoMargemCard
+                    produtor={{ id: produtor.id, uf: produtor.uf }}
+                    culturasSugeridas={culturasSugeridas}
+                    versao={versao}
+                  />
 
-          <CustoMargemCard
-            produtor={{ id: produtor.id, uf: produtor.uf }}
-            culturasSugeridas={culturasSugeridas}
-            versao={versao}
-          />
+                  {!carregando && resumo.porTalhao.length > 0 && (
+                    <PorTalhaoCard porTalhao={resumo.porTalhao} onFiltrar={(t) => setBusca(t)} />
+                  )}
 
-          {temPrata ? (
-            <>
-              <EstoqueCard
-                produtor={{ id: produtor.id, uf: produtor.uf }}
-                versao={versao}
-                onInformarEstoque={() => {
-                  setTipoInicial("estoque");
-                  setEditando("novo");
-                }}
-              />
-              <OrcamentoCard produtor={{ id: produtor.id, uf: produtor.uf }} versao={versao} />
-            </>
-          ) : (
-            <EstoqueBloqueado
-              assinaturaId={assinaturaId}
-              asaasSubscriptionId={asaasSubscriptionId}
-            />
-          )}
-
-          {!carregando && resumo.porTalhao.length > 0 && (
-            <PorTalhaoCard porTalhao={resumo.porTalhao} onFiltrar={(t) => setBusca(t)} />
-          )}
-
-          {!carregando && (resumo.porCategoria.length > 0 || porMes.length > 1) && (
-            <div className="grid gap-3 lg:grid-cols-2">
-              {resumo.porCategoria.length > 0 && (
-                <Card>
-                  <CardContent className="space-y-3 pt-6">
-                    <h2 className="font-display text-base font-semibold">
-                      Para onde foi o dinheiro
-                    </h2>
-                    <ul className="space-y-2.5">
-                      {resumo.porCategoria.slice(0, 6).map((c) => (
-                        <li key={c.categoria}>
-                          <div className="mb-1 flex justify-between gap-3 text-sm">
-                            <span className="truncate">{c.categoria}</span>
-                            <span className="font-mono tabular-nums">{formatarReais(c.total)}</span>
-                          </div>
-                          <div className="h-2 overflow-hidden rounded-full bg-secondary">
+                  {!carregando && (resumo.porCategoria.length > 0 || porMes.length > 1) && (
+                    <div className="grid gap-3 lg:grid-cols-2">
+                      {resumo.porCategoria.length > 0 && (
+                        <Card>
+                          <CardContent className="space-y-3 pt-6">
+                            <h2 className="font-display text-base font-semibold">
+                              Para onde foi o dinheiro
+                            </h2>
+                            <ul className="space-y-2.5">
+                              {resumo.porCategoria.slice(0, 6).map((c) => (
+                                <li key={c.categoria}>
+                                  <div className="mb-1 flex justify-between gap-3 text-sm">
+                                    <span className="truncate">{c.categoria}</span>
+                                    <span className="font-mono tabular-nums">
+                                      {formatarReais(c.total)}
+                                    </span>
+                                  </div>
+                                  <div className="h-2 overflow-hidden rounded-full bg-secondary">
+                                    <div
+                                      className="h-full rounded-full bg-[color:var(--cta)]"
+                                      style={{
+                                        width: `${Math.max(3, (c.total / maiorCategoria) * 100)}%`,
+                                      }}
+                                    />
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          </CardContent>
+                        </Card>
+                      )}
+                      {porMes.length > 1 && (
+                        <Card>
+                          <CardContent className="space-y-3 pt-6">
+                            <h2 className="font-display text-base font-semibold">Mês a mês</h2>
                             <div
-                              className="h-full rounded-full bg-[color:var(--cta)]"
-                              style={{ width: `${Math.max(3, (c.total / maiorCategoria) * 100)}%` }}
-                            />
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-              )}
-              {porMes.length > 1 && (
-                <Card>
-                  <CardContent className="space-y-3 pt-6">
-                    <h2 className="font-display text-base font-semibold">Mês a mês</h2>
-                    <div
-                      className="flex h-36 items-end gap-2"
-                      role="img"
-                      aria-label="Gastos e vendas por mês"
-                    >
-                      {porMes.slice(-12).map(([mes, v]) => (
-                        <div key={mes} className="flex min-w-0 flex-1 flex-col items-center gap-1">
-                          <div className="flex h-28 w-full items-end justify-center gap-0.5">
-                            <div
-                              className="w-1/2 rounded-t bg-[color:var(--cta)]/80"
-                              style={{ height: `${Math.max(2, (v.gasto / maiorMes) * 100)}%` }}
-                              title={`Gastos: ${formatarReais(v.gasto)}`}
-                            />
-                            <div
-                              className="w-1/2 rounded-t bg-primary"
-                              style={{ height: `${Math.max(2, (v.venda / maiorMes) * 100)}%` }}
-                              title={`Vendas: ${formatarReais(v.venda)}`}
-                            />
-                          </div>
-                          <span className="text-[10px] text-muted-foreground">
-                            {mes.slice(5)}/{mes.slice(2, 4)}
-                          </span>
-                        </div>
-                      ))}
+                              className="flex h-36 items-end gap-2"
+                              role="img"
+                              aria-label="Gastos e vendas por mês"
+                            >
+                              {porMes.slice(-12).map(([mes, v]) => (
+                                <div
+                                  key={mes}
+                                  className="flex min-w-0 flex-1 flex-col items-center gap-1"
+                                >
+                                  <div className="flex h-28 w-full items-end justify-center gap-0.5">
+                                    <div
+                                      className="w-1/2 rounded-t bg-[color:var(--cta)]/80"
+                                      style={{
+                                        height: `${Math.max(2, (v.gasto / maiorMes) * 100)}%`,
+                                      }}
+                                      title={`Gastos: ${formatarReais(v.gasto)}`}
+                                    />
+                                    <div
+                                      className="w-1/2 rounded-t bg-primary"
+                                      style={{
+                                        height: `${Math.max(2, (v.venda / maiorMes) * 100)}%`,
+                                      }}
+                                      title={`Vendas: ${formatarReais(v.venda)}`}
+                                    />
+                                  </div>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {mes.slice(5)}/{mes.slice(2, 4)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="flex gap-4 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1.5">
+                                <span className="size-2.5 rounded-sm bg-[color:var(--cta)]/80" />{" "}
+                                Gastos
+                              </span>
+                              <span className="flex items-center gap-1.5">
+                                <span className="size-2.5 rounded-sm bg-primary" /> Vendas
+                              </span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
                     </div>
-                    <div className="flex gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1.5">
-                        <span className="size-2.5 rounded-sm bg-[color:var(--cta)]/80" /> Gastos
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <span className="size-2.5 rounded-sm bg-primary" /> Vendas
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )}
-
-          <Card>
-            <CardContent className="space-y-4 pt-6">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-wrap gap-1.5">
-                  {(["todos", ...TIPOS_REGISTRO] as const).map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => setFiltroTipo(t)}
-                      aria-pressed={filtroTipo === t}
-                      className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
-                        filtroTipo === t
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {t === "todos" ? "Todos" : ROTULO_TIPO[t]}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      value={busca}
-                      onChange={(e) => setBusca(e.target.value)}
-                      placeholder="Buscar"
-                      aria-label="Buscar lançamentos"
-                      className="h-8 w-40 pl-8 text-sm"
+                  )}
+                </>
+              ) : v === "pendencias" ? (
+                <>
+                  {pendentes.length === 0 ? (
+                    <Card data-testid="pendencias-vazio">
+                      <CardContent className="pt-6">
+                        <EmptyState
+                          icon={CalendarClock}
+                          title="Nada a pagar ou a receber"
+                          description='Diga no WhatsApp, por exemplo, "vendi 500 sacas e recebo dia 30" ou "tenho que pagar 5 mil de arrendamento dia 10", e eu te lembro no dia do vencimento.'
+                        />
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <PendenciasCard
+                      pendentes={pendentes}
+                      onBaixa={darBaixa}
+                      onEditar={(r) => setEditando(r)}
+                      onApagar={(r) => setApagando(r)}
                     />
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={baixarPlanilha}
-                    disabled={registros.length === 0}
-                  >
-                    <Download className="size-4" />
-                    Planilha
-                  </Button>
-                </div>
-              </div>
-
-              {carregando ? (
-                <div className="flex flex-col gap-2">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} className="h-14 w-full" />
-                  ))}
-                </div>
-              ) : grupos.length === 0 ? (
-                <EmptyState
-                  icon={Search}
-                  title="Nada por aqui nesse período"
-                  description="Troque o período ou o filtro, ou faça um novo lançamento."
-                />
+                  )}
+                </>
+              ) : v === "estoque" ? (
+                <>
+                  {temPrata ? (
+                    <>
+                      <EstoqueCard
+                        produtor={{ id: produtor.id, uf: produtor.uf }}
+                        versao={versao}
+                        onInformarEstoque={() => {
+                          setTipoInicial("estoque");
+                          setEditando("novo");
+                        }}
+                      />
+                      <OrcamentoCard
+                        produtor={{ id: produtor.id, uf: produtor.uf }}
+                        versao={versao}
+                      />
+                    </>
+                  ) : (
+                    <EstoqueBloqueado
+                      assinaturaId={assinaturaId}
+                      asaasSubscriptionId={asaasSubscriptionId}
+                    />
+                  )}
+                </>
               ) : (
-                <div className="space-y-5">
-                  {grupos.map(([dia, itens]) => (
-                    <section key={dia}>
-                      <h3 className="mb-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                        {rotuloDoDia(dia)}
-                      </h3>
-                      <ul className="divide-y rounded-lg border">
-                        {itens.map((r) => (
-                          <LinhaRegistro
-                            key={r.id}
-                            r={r}
-                            onEditar={() => setEditando(r)}
-                            onApagar={() => setApagando(r)}
-                          />
-                        ))}
-                      </ul>
-                    </section>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                <>
+                  <Card>
+                    <CardContent className="space-y-4 pt-6">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-wrap gap-1.5">
+                          {(["todos", ...TIPOS_REGISTRO] as const).map((t) => (
+                            <button
+                              key={t}
+                              onClick={() => setFiltroTipo(t)}
+                              aria-pressed={filtroTipo === t}
+                              className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
+                                filtroTipo === t
+                                  ? "border-primary bg-primary/10 text-primary"
+                                  : "border-border text-muted-foreground hover:text-foreground"
+                              }`}
+                            >
+                              {t === "todos" ? "Todos" : ROTULO_TIPO[t]}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="relative">
+                            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                              value={busca}
+                              onChange={(e) => setBusca(e.target.value)}
+                              placeholder="Buscar"
+                              aria-label="Buscar lançamentos"
+                              className="h-8 w-40 pl-8 text-sm"
+                            />
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={baixarPlanilha}
+                            disabled={registros.length === 0}
+                          >
+                            <Download className="size-4" />
+                            Planilha
+                          </Button>
+                        </div>
+                      </div>
+
+                      {carregando ? (
+                        <div className="flex flex-col gap-2">
+                          {Array.from({ length: 4 }).map((_, i) => (
+                            <Skeleton key={i} className="h-14 w-full" />
+                          ))}
+                        </div>
+                      ) : grupos.length === 0 ? (
+                        <EmptyState
+                          icon={Search}
+                          title="Nada por aqui nesse período"
+                          description="Troque o período ou o filtro, ou faça um novo lançamento."
+                        />
+                      ) : (
+                        <div className="space-y-5">
+                          {grupos.map(([dia, itens]) => (
+                            <section key={dia}>
+                              <h3 className="mb-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                {rotuloDoDia(dia)}
+                              </h3>
+                              <ul className="divide-y rounded-lg border">
+                                {itens.map((r) => (
+                                  <LinhaRegistro
+                                    key={r.id}
+                                    r={r}
+                                    onEditar={() => setEditando(r)}
+                                    onApagar={() => setApagando(r)}
+                                  />
+                                ))}
+                              </ul>
+                            </section>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </>
+              )
+            }
+          </AbasPremium>
 
           <p className="text-center text-xs text-muted-foreground">
             Só você vê esses dados. O caderno guarda apenas o que você lança; não emite nota fiscal
@@ -694,6 +764,32 @@ function FazendaPage() {
   );
 }
 
+const ABAS_DA_FAZENDA = (pendentes: number): AbaPremium[] => [
+  {
+    id: "visao",
+    rotulo: "Visão geral",
+    rotuloCurto: "Visão",
+    icone: LayoutDashboard,
+    semIconeNoCelular: true,
+  },
+  {
+    id: "pendencias",
+    rotulo: "A pagar e receber",
+    rotuloCurto: "Contas",
+    icone: CalendarClock,
+    contagem: pendentes,
+    semIconeNoCelular: true,
+  },
+  {
+    id: "estoque",
+    rotulo: "Estoque e orçamento",
+    rotuloCurto: "Estoque",
+    icone: Warehouse,
+    semIconeNoCelular: true,
+  },
+  { id: "lancamentos", rotulo: "Lançamentos", icone: ListChecks, semIconeNoCelular: true },
+];
+
 function ResumoCard({
   icone: Icone,
   rotulo,
@@ -710,8 +806,11 @@ function ResumoCard({
   carregando: boolean;
 }) {
   return (
-    <Card className="gap-2 py-3 sm:py-4">
-      <CardContent className="space-y-1 px-3 sm:px-4">
+    <Card
+      onPointerMove={aoMoverSpotlight}
+      className="card-premium spot spot-suave gap-2 py-3 sm:py-4"
+    >
+      <CardContent className="relative space-y-1 px-3 sm:px-4">
         <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground sm:gap-2 sm:text-sm">
           <Icone className="size-3.5 sm:size-4" />
           {rotulo}
@@ -720,11 +819,19 @@ function ResumoCard({
           <Skeleton className="h-8 w-32" />
         ) : (
           <p
-            className={`font-mono text-base font-semibold tabular-nums sm:text-2xl ${
+            className={`font-display text-[clamp(0.7rem,3.3vw,1.25rem)] font-semibold whitespace-nowrap tabular-nums lg:text-2xl ${
               destaque === "ruim" ? "text-destructive" : destaque === "bom" ? "text-primary" : ""
             }`}
           >
-            {formatarReais(valor)}
+            <span className="sr-only">{formatarReais(valor)}</span>
+            <span aria-hidden="true" className="lg:hidden">
+              {Math.abs(valor) >= 100_000
+                ? reaisCompacto(valor)
+                : formatarReais(valor).replace("R$ ", "R$\u00a0")}
+            </span>
+            <span aria-hidden="true" className="hidden lg:inline">
+              {formatarReais(valor)}
+            </span>
           </p>
         )}
         <p className="hidden text-xs text-muted-foreground sm:block">{nota}</p>
@@ -746,13 +853,13 @@ function LinhaRegistro({
   const qtd =
     r.quantidade !== null && r.unidade ? `${formatarQuantidade(r.quantidade)} ${r.unidade}` : null;
   return (
-    <li className="flex items-center gap-3 p-3">
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-1 p-3">
       <span
         className={`flex size-9 shrink-0 items-center justify-center rounded-full ${COR_TIPO[r.tipo]}`}
       >
         <Icone className="size-4" />
       </span>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-[8rem] flex-1">
         <p className="truncate text-sm font-medium">
           {(r.tipo === "plantio" || r.tipo === "colheita") && r.cultura
             ? `${ROTULO_TIPO[r.tipo]} de ${r.cultura.toLowerCase()}`
@@ -791,11 +898,11 @@ function LinhaRegistro({
           {formatarReais(r.valor)}
         </p>
       )}
-      <div className="flex shrink-0">
+      <div className="ml-auto flex shrink-0">
         <Button
           variant="ghost"
           size="icon"
-          className="size-7 sm:size-8"
+          className="size-8"
           onClick={onEditar}
           aria-label="Editar lançamento"
         >
@@ -804,7 +911,7 @@ function LinhaRegistro({
         <Button
           variant="ghost"
           size="icon"
-          className="size-7 sm:size-8"
+          className="size-8"
           onClick={onApagar}
           aria-label="Apagar lançamento"
         >

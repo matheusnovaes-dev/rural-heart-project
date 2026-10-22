@@ -522,7 +522,7 @@ function PreviewPrecos({
     <div className="flex flex-col gap-3">
       {/* cartão principal — o mesmo "Seu preço hoje" que abre o painel de
           verdade, com o mesmo glow radial no canto (ver dashboard/index.tsx) */}
-      <Card className="relative overflow-hidden border-primary bg-primary py-4 text-primary-foreground shadow-lg">
+      <Card className="rounded-xl border-border shadow relative overflow-hidden border-primary bg-primary py-4 text-primary-foreground shadow-lg">
         <div
           className="pointer-events-none absolute -top-16 -right-16 size-48 rounded-full bg-primary-foreground/10 blur-3xl"
           aria-hidden="true"
@@ -566,7 +566,7 @@ function PreviewPrecos({
       <p className="text-xs font-semibold text-muted-foreground">Compare com outros estados</p>
       <div className="grid gap-2 sm:grid-cols-2">
         {ufs.map((item) => (
-          <Card key={item.uf} className="gap-1.5 py-3">
+          <Card key={item.uf} className="rounded-xl border-border shadow gap-1.5 py-3">
             <CardContent className="px-3">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                 <span className="size-1.5 rounded-full" style={{ backgroundColor: item.cor }} />
@@ -805,7 +805,7 @@ function PreviewClima() {
       <p className="text-sm font-semibold text-foreground">Previsão · Rio Verde/GO</p>
       <div className="grid gap-2 sm:grid-cols-3">
         {dias.map((d) => (
-          <Card key={d.dia} className="gap-1.5 py-3">
+          <Card key={d.dia} className="rounded-xl border-border shadow gap-1.5 py-3">
             <CardContent className="flex flex-col items-center gap-1 px-3 text-center">
               <p className="text-xs font-semibold text-muted-foreground capitalize">{d.dia}</p>
               <CloudSun className="size-6 text-primary" />
@@ -973,7 +973,10 @@ function PreviewAcompanhamento() {
       </p>
       <div className="flex flex-col gap-2">
         {itens.map((item) => (
-          <Card key={item.cultura} className="gap-1 border-gold/40 py-3">
+          <Card
+            key={item.cultura}
+            className="rounded-xl border-border shadow gap-1 border-gold/40 py-3"
+          >
             <CardContent className="flex items-center justify-between px-3">
               <div className="flex items-center gap-2 text-sm text-foreground">
                 <Star className="size-4 shrink-0 text-gold-foreground" />
@@ -1051,7 +1054,10 @@ function PreviewLeiloes() {
       </p>
       <div className="flex flex-col gap-2">
         {leiloes.map((l) => (
-          <Card key={l.titulo} className="gap-1 border-zinc-300/60 py-3 dark:border-zinc-700/50">
+          <Card
+            key={l.titulo}
+            className="rounded-xl border-border shadow gap-1 border-zinc-300/60 py-3 dark:border-zinc-700/50"
+          >
             <CardContent className="flex items-center justify-between px-3">
               <div className="flex items-center gap-2 text-sm text-foreground">
                 <Gavel className="size-4 shrink-0 text-zinc-500" />
@@ -1089,7 +1095,10 @@ function PreviewInsumos() {
       </p>
       <div className="flex flex-col gap-2">
         {itens.map((item) => (
-          <Card key={item.rotulo} className="gap-1 border-zinc-300/60 py-3 dark:border-zinc-700/50">
+          <Card
+            key={item.rotulo}
+            className="rounded-xl border-border shadow gap-1 border-zinc-300/60 py-3 dark:border-zinc-700/50"
+          >
             <CardContent className="flex items-center justify-between px-3">
               <div className="flex items-center gap-2 text-sm text-foreground">
                 <FlaskConical className="size-4 shrink-0 text-zinc-500" />
