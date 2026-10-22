@@ -304,6 +304,28 @@ function RootComponent() {
     capturarOrigem();
   }, []);
 
+  // Métricas de desempenho de visitantes reais (anônimas), fora do caminho crítico: só depois do load e com o navegador
+  // ocioso, em pedaço de código próprio (ver lib/vitais.ts e supabase/vitais-web.sql).
+  useEffect(() => {
+    let parar: () => void = () => {};
+    let cancelado = false;
+    const iniciar = () =>
+      void import("@/lib/vitais").then((m) => {
+        if (!cancelado) parar = m.iniciarVitais();
+      });
+    const agendar = () => {
+      if ("requestIdleCallback" in window) window.requestIdleCallback(iniciar, { timeout: 4000 });
+      else setTimeout(iniciar, 1500);
+    };
+    if (document.readyState === "complete") agendar();
+    else window.addEventListener("load", agendar, { once: true });
+    return () => {
+      cancelado = true;
+      window.removeEventListener("load", agendar);
+      parar();
+    };
+  }, []);
+
   const noPainel = useRouterState({
     select: (s) => s.matches.some((m) => m.routeId.startsWith("/dashboard")),
   });
