@@ -134,322 +134,327 @@ export function CalculadoraSafraLanding() {
 
   return (
     <section id="calculadora" className="mx-auto max-w-6xl px-4 py-12 sm:py-20 sm:px-6">
-      <Reveal className="mx-auto max-w-2xl text-center">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3.5 py-1.5 text-xs font-semibold text-primary">
-          <Calculator className="size-3.5" aria-hidden="true" />
-          Uma das ferramentas do Safralume
-        </span>
-        <TituloDuasVozes
-          antes="Quanto sua produção"
-          serifa="VALE HOJE?"
-          className="mt-4 text-foreground"
-        />
-        <p className="mt-2.5 text-muted-foreground">
-          Essa é a Calculadora de Safra, uma amostra do que o Safralume faz. Cultura, estado e
-          quantidade de sacas. O preço é real, do dia, das mesmas fontes oficiais que usamos em
-          tudo.
-        </p>
-        <p className="mt-1.5 text-sm font-semibold text-primary">
-          O produto completo tem muito mais: preço comparado com o porto e o frete, sinal de venda,
-          previsão do tempo, alertas automáticos, janela de plantio e histórico de safra da Conab,
-          no painel ou direto pelo WhatsApp.
-        </p>
-      </Reveal>
+      {/* Desktop: duas colunas (título grande à esquerda, calculadora maior à direita); celular segue empilhado */}
+      <div className="desk:grid desk:grid-cols-[1fr_1.08fr] desk:items-center desk:gap-14 xl:pl-[max(0px,calc(10rem-(100vw-72rem)/2))]">
+        <Reveal className="mx-auto max-w-2xl text-center desk:mx-0 desk:max-w-none desk:text-left">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3.5 py-1.5 text-xs font-semibold text-primary">
+            <Calculator className="size-3.5" aria-hidden="true" />
+            Uma das ferramentas do Safralume
+          </span>
+          <TituloDuasVozes
+            antes="Quanto sua produção"
+            serifa="VALE HOJE?"
+            className="mt-4 text-foreground desk:text-6xl xl:text-7xl"
+          />
+          <p className="mt-2.5 text-muted-foreground desk:mt-6 desk:text-lg">
+            Essa é a Calculadora de Safra, uma amostra do que o Safralume faz. Cultura, estado e
+            quantidade de sacas. O preço é real, do dia, das mesmas fontes oficiais que usamos em
+            tudo.
+          </p>
+          <p className="mt-1.5 text-sm font-semibold text-primary desk:mt-4 desk:text-base">
+            O produto completo tem muito mais: preço comparado com o porto e o frete, sinal de
+            venda, previsão do tempo, alertas automáticos, janela de plantio e histórico de safra da
+            Conab, no painel ou direto pelo WhatsApp.
+          </p>
+        </Reveal>
 
-      <Reveal delay={0.1} className="mx-auto mt-9 max-w-xl">
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <Label className="mb-1.5 block text-xs font-semibold text-foreground">Cultura</Label>
-              <Select
-                value={cultura}
-                onValueChange={(v) => {
-                  setCultura(v);
-                  reiniciar();
-                }}
-              >
-                <SelectTrigger className="w-full" aria-label="Cultura">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Mais usadas</SelectLabel>
-                    {culturasMaisUsadas.map((c) => (
-                      <SelectItem key={c.value} value={c.value}>
-                        {c.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                  <SelectGroup>
-                    <SelectLabel>Outras culturas</SelectLabel>
-                    {culturasOutras.map((c) => (
-                      <SelectItem key={c.value} value={c.value}>
-                        {c.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="mb-1.5 block text-xs font-semibold text-foreground">Estado</Label>
-              <Select
-                value={uf}
-                onValueChange={(v) => {
-                  setUf(v);
-                  reiniciar();
-                  // Cultura, estado e sacas completos: calcula na hora, sem
-                  // exigir mais um toque no botão.
-                  if (sacasValidas) void calcular({ uf: v });
-                }}
-              >
-                <SelectTrigger
-                  aria-label="Estado onde você produz"
-                  className={`w-full ${faltaUf ? "border-destructive" : ""}`}
-                  aria-invalid={faltaUf || undefined}
-                  aria-describedby={faltaUf ? "calc-landing-uf-erro" : undefined}
+        <Reveal delay={0.1} className="mx-auto mt-9 max-w-xl desk:mt-0 desk:max-w-none">
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8 desk:rounded-3xl desk:p-10 desk:shadow-2xl desk:shadow-primary/10">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label className="mb-1.5 block text-xs font-semibold text-foreground">
+                  Cultura
+                </Label>
+                <Select
+                  value={cultura}
+                  onValueChange={(v) => {
+                    setCultura(v);
+                    reiniciar();
+                  }}
                 >
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ufs.map((u) => (
-                    <SelectItem key={u.value} value={u.value}>
-                      {u.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {faltaUf && (
+                  <SelectTrigger className="w-full" aria-label="Cultura">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Mais usadas</SelectLabel>
+                      {culturasMaisUsadas.map((c) => (
+                        <SelectItem key={c.value} value={c.value}>
+                          {c.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel>Outras culturas</SelectLabel>
+                      {culturasOutras.map((c) => (
+                        <SelectItem key={c.value} value={c.value}>
+                          {c.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="mb-1.5 block text-xs font-semibold text-foreground">Estado</Label>
+                <Select
+                  value={uf}
+                  onValueChange={(v) => {
+                    setUf(v);
+                    reiniciar();
+                    // Cultura, estado e sacas completos: calcula na hora, sem
+                    // exigir mais um toque no botão.
+                    if (sacasValidas) void calcular({ uf: v });
+                  }}
+                >
+                  <SelectTrigger
+                    aria-label="Estado onde você produz"
+                    className={`w-full ${faltaUf ? "border-destructive" : ""}`}
+                    aria-invalid={faltaUf || undefined}
+                    aria-describedby={faltaUf ? "calc-landing-uf-erro" : undefined}
+                  >
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ufs.map((u) => (
+                      <SelectItem key={u.value} value={u.value}>
+                        {u.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {faltaUf && (
+                  <p
+                    id="calc-landing-uf-erro"
+                    role="alert"
+                    className="mt-1.5 text-xs font-medium text-destructive"
+                  >
+                    Selecione o seu estado.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <Label
+                htmlFor="calc-landing-sacas"
+                className="mb-1.5 block text-xs font-semibold text-foreground"
+              >
+                Quantidade (sacas de 60 kg)
+              </Label>
+              <Input
+                id="calc-landing-sacas"
+                name="sacas"
+                inputMode="numeric"
+                autoComplete="off"
+                placeholder="Ex: 5.000"
+                value={sacas}
+                aria-invalid={faltaSacas || undefined}
+                aria-describedby={faltaSacas ? "calc-landing-sacas-erro" : undefined}
+                className={faltaSacas ? "border-destructive" : undefined}
+                onChange={(e) => {
+                  setSacas(e.target.value);
+                  reiniciar();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void calcular();
+                  }
+                }}
+              />
+              {faltaSacas && (
                 <p
-                  id="calc-landing-uf-erro"
+                  id="calc-landing-sacas-erro"
                   role="alert"
                   className="mt-1.5 text-xs font-medium text-destructive"
                 >
-                  Selecione o seu estado.
+                  Digite quantas sacas você tem (ou toque em uma sugestão).
                 </p>
               )}
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <Label
-              htmlFor="calc-landing-sacas"
-              className="mb-1.5 block text-xs font-semibold text-foreground"
-            >
-              Quantidade (sacas de 60 kg)
-            </Label>
-            <Input
-              id="calc-landing-sacas"
-              name="sacas"
-              inputMode="numeric"
-              autoComplete="off"
-              placeholder="Ex: 5.000"
-              value={sacas}
-              aria-invalid={faltaSacas || undefined}
-              aria-describedby={faltaSacas ? "calc-landing-sacas-erro" : undefined}
-              className={faltaSacas ? "border-destructive" : undefined}
-              onChange={(e) => {
-                setSacas(e.target.value);
-                reiniciar();
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  void calcular();
-                }
-              }}
-            />
-            {faltaSacas && (
-              <p
-                id="calc-landing-sacas-erro"
-                role="alert"
-                className="mt-1.5 text-xs font-medium text-destructive"
+              <div
+                className="mt-2.5 flex flex-wrap items-center gap-1.5"
+                aria-label="Sugestões de quantidade"
               >
-                Digite quantas sacas você tem (ou toque em uma sugestão).
+                {ATALHOS_SACAS.map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => {
+                      const texto = formatarSacas(n);
+                      setSacas(texto);
+                      reiniciar();
+                      if (uf) void calcular({ sacas: texto });
+                    }}
+                    className="touch-manipulation rounded-full border border-border bg-background px-3.5 py-2 text-sm font-semibold pointer-coarse:min-h-11 text-foreground transition-colors hover:border-primary hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none active:scale-[0.97]"
+                  >
+                    {formatarSacas(n)} sacas
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => void calcular()}
+              disabled={calculando}
+              className="mt-6 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-xl bg-cta text-sm font-bold text-cta-foreground shadow-md shadow-cta/20 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-lg hover:shadow-cta/30 focus-visible:ring-4 focus-visible:ring-cta/40 focus-visible:outline-none active:translate-y-0 active:scale-[0.98] disabled:cursor-wait disabled:opacity-80 motion-reduce:transition-none"
+            >
+              {calculando ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                  Calculando…
+                </>
+              ) : (
+                <>
+                  Calcular valor da safra
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </>
+              )}
+            </button>
+
+            {erro && (
+              <p role="alert" className="mt-3 text-center text-sm text-destructive">
+                {erro}
               </p>
             )}
-            <div
-              className="mt-2.5 flex flex-wrap items-center gap-1.5"
-              aria-label="Sugestões de quantidade"
-            >
-              {ATALHOS_SACAS.map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => {
-                    const texto = formatarSacas(n);
-                    setSacas(texto);
-                    reiniciar();
-                    if (uf) void calcular({ sacas: texto });
-                  }}
-                  className="touch-manipulation rounded-full border border-border bg-background px-3.5 py-2 text-sm font-semibold pointer-coarse:min-h-11 text-foreground transition-colors hover:border-primary hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none active:scale-[0.97]"
+
+            <AnimatePresence>
+              {resultado && (
+                <motion.div
+                  ref={resultadoRef}
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.35, ease: "easeOut" }}
+                  className="overflow-hidden"
                 >
-                  {formatarSacas(n)} sacas
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => void calcular()}
-            disabled={calculando}
-            className="mt-6 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-xl bg-cta text-sm font-bold text-cta-foreground shadow-md shadow-cta/20 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-lg hover:shadow-cta/30 focus-visible:ring-4 focus-visible:ring-cta/40 focus-visible:outline-none active:translate-y-0 active:scale-[0.98] disabled:cursor-wait disabled:opacity-80 motion-reduce:transition-none"
-          >
-            {calculando ? (
-              <>
-                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                Calculando…
-              </>
-            ) : (
-              <>
-                Calcular valor da safra
-                <ArrowRight className="size-4" aria-hidden="true" />
-              </>
-            )}
-          </button>
-
-          {erro && (
-            <p role="alert" className="mt-3 text-center text-sm text-destructive">
-              {erro}
-            </p>
-          )}
-
-          <AnimatePresence>
-            {resultado && (
-              <motion.div
-                ref={resultadoRef}
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.35, ease: "easeOut" }}
-                className="overflow-hidden"
-              >
-                <div className="mt-6 border-t border-dashed border-border pt-6">
-                  {!resultado.disponivel && resultado.outrasUfsDisponiveis.length === 0 && (
-                    <>
-                      <p className="text-center text-sm text-muted-foreground">
-                        Ainda não temos preço recente dessa cultura em nenhum estado. Tenta outra
-                        cultura, ou deixe seu WhatsApp: assim que sair um preço, você é avisado.
-                      </p>
-                      <PainelCaptura
-                        titulo="Avise-me quando sair o preço"
-                        texto={`Assim que houver cotação de ${culturaLabel.toLowerCase()}, você recebe no WhatsApp.`}
-                        aoEnviar={(whatsapp) =>
-                          abrirCadastro({ whatsapp, cultura, uf, origem: "calculadora" })
-                        }
-                      />
-                    </>
-                  )}
-
-                  {(!resultado.disponivel || escolhendoUf) &&
-                    resultado.outrasUfsDisponiveis.length > 0 && (
-                      <div className="flex flex-col gap-3">
+                  <div className="mt-6 border-t border-dashed border-border pt-6">
+                    {!resultado.disponivel && resultado.outrasUfsDisponiveis.length === 0 && (
+                      <>
                         <p className="text-center text-sm text-muted-foreground">
-                          {resultado.disponivel
-                            ? "Escolha o estado pra usar como referência:"
-                            : `Ainda não tem preço em ${nomeDaUf(uf)}, mas tem dado real recente em outros estados:`}
+                          Ainda não temos preço recente dessa cultura em nenhum estado. Tenta outra
+                          cultura, ou deixe seu WhatsApp: assim que sair um preço, você é avisado.
                         </p>
-                        <div className="flex flex-wrap justify-center gap-1.5">
-                          {resultado.outrasUfsDisponiveis.map((o) => (
-                            <button
-                              key={o.uf}
-                              type="button"
-                              onClick={() => void calcular({ ufReferencia: o.uf })}
-                              className={`touch-manipulation rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors hover:border-primary hover:bg-primary/5 ${
-                                o.uf === resultado.ufUsada
-                                  ? "border-primary bg-primary/5 text-primary"
-                                  : "border-border text-foreground"
-                              }`}
-                            >
-                              {nomeDaUf(o.uf)} · {brl(o.preco)}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                        <PainelCaptura
+                          titulo="Avise-me quando sair o preço"
+                          texto={`Assim que houver cotação de ${culturaLabel.toLowerCase()}, você recebe no WhatsApp.`}
+                          aoEnviar={(whatsapp) =>
+                            abrirCadastro({ whatsapp, cultura, uf, origem: "calculadora" })
+                          }
+                        />
+                      </>
                     )}
 
-                  {resultado.disponivel && !escolhendoUf && resultado.valorBruto != null && (
-                    <>
-                      {resultado.usandoOutraUf && (
-                        <p className="mb-3 text-center text-xs text-muted-foreground">
-                          Sem preço próprio em {nomeDaUf(uf)} ainda, usando{" "}
-                          <strong>{nomeDaUf(resultado.ufUsada ?? "")}</strong> como referência (
-                          {resultado.fonteFrase}).{" "}
-                          {resultado.outrasUfsDisponiveis.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => setEscolhendoUf(true)}
-                              className="font-semibold text-primary underline underline-offset-2"
-                            >
-                              Trocar estado de referência
-                            </button>
+                    {(!resultado.disponivel || escolhendoUf) &&
+                      resultado.outrasUfsDisponiveis.length > 0 && (
+                        <div className="flex flex-col gap-3">
+                          <p className="text-center text-sm text-muted-foreground">
+                            {resultado.disponivel
+                              ? "Escolha o estado pra usar como referência:"
+                              : `Ainda não tem preço em ${nomeDaUf(uf)}, mas tem dado real recente em outros estados:`}
+                          </p>
+                          <div className="flex flex-wrap justify-center gap-1.5">
+                            {resultado.outrasUfsDisponiveis.map((o) => (
+                              <button
+                                key={o.uf}
+                                type="button"
+                                onClick={() => void calcular({ ufReferencia: o.uf })}
+                                className={`touch-manipulation rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors hover:border-primary hover:bg-primary/5 ${
+                                  o.uf === resultado.ufUsada
+                                    ? "border-primary bg-primary/5 text-primary"
+                                    : "border-border text-foreground"
+                                }`}
+                              >
+                                {nomeDaUf(o.uf)} · {brl(o.preco)}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                    {resultado.disponivel && !escolhendoUf && resultado.valorBruto != null && (
+                      <>
+                        {resultado.usandoOutraUf && (
+                          <p className="mb-3 text-center text-xs text-muted-foreground">
+                            Sem preço próprio em {nomeDaUf(uf)} ainda, usando{" "}
+                            <strong>{nomeDaUf(resultado.ufUsada ?? "")}</strong> como referência (
+                            {resultado.fonteFrase}).{" "}
+                            {resultado.outrasUfsDisponiveis.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => setEscolhendoUf(true)}
+                                className="font-semibold text-primary underline underline-offset-2"
+                              >
+                                Trocar estado de referência
+                              </button>
+                            )}
+                          </p>
+                        )}
+                        <p className="text-center text-xs font-semibold text-muted-foreground">
+                          VALOR DA SUA PRODUÇÃO
+                        </p>
+                        <p className="text-center font-display text-4xl font-extrabold text-primary tabular-nums">
+                          {reduzMovimento ? (
+                            brl(resultado.valorBruto)
+                          ) : (
+                            <span aria-hidden="true">
+                              R$ <AnimatedNumber value={resultado.valorBruto} />
+                            </span>
                           )}
                         </p>
-                      )}
-                      <p className="text-center text-xs font-semibold text-muted-foreground">
-                        VALOR DA SUA PRODUÇÃO
-                      </p>
-                      <p className="text-center font-display text-4xl font-extrabold text-primary tabular-nums">
-                        {reduzMovimento ? (
-                          brl(resultado.valorBruto)
-                        ) : (
-                          <span aria-hidden="true">
-                            R$ <AnimatedNumber value={resultado.valorBruto} />
-                          </span>
-                        )}
-                      </p>
-                      {/* O número sobe animado (muda ~50x em 0,9s): lido direto,
+                        {/* O número sobe animado (muda ~50x em 0,9s): lido direto,
                           o leitor de tela soletraria valores parciais. Aqui vai
                           só o valor final, uma vez. */}
-                      <p role="status" className="sr-only">
-                        Valor da sua produção: {brl(resultado.valorBruto)}
-                      </p>
-                      <p className="text-center text-xs text-muted-foreground">
-                        {(consulta?.sacas ?? sacasNum).toLocaleString("pt-BR")} sacas ×{" "}
-                        {brl(resultado.precoAtual!)}
-                      </p>
-
-                      {resultado.frete?.tipo === "paridade" && (
-                        <SimuladorFrete freteReal={resultado.frete} />
-                      )}
-                      {resultado.frete?.tipo === "frete_referencia" && (
-                        <p className="mt-3 text-center text-xs text-muted-foreground">
-                          {resultado.frete.frase}
+                        <p role="status" className="sr-only">
+                          Valor da sua produção: {brl(resultado.valorBruto)}
                         </p>
-                      )}
+                        <p className="text-center text-xs text-muted-foreground">
+                          {(consulta?.sacas ?? sacasNum).toLocaleString("pt-BR")} sacas ×{" "}
+                          {brl(resultado.precoAtual!)}
+                        </p>
 
-                      {/* Momento de maior intenção da página: a pessoa acabou de
+                        {resultado.frete?.tipo === "paridade" && (
+                          <SimuladorFrete freteReal={resultado.frete} />
+                        )}
+                        {resultado.frete?.tipo === "frete_referencia" && (
+                          <p className="mt-3 text-center text-xs text-muted-foreground">
+                            {resultado.frete.frase}
+                          </p>
+                        )}
+
+                        {/* Momento de maior intenção da página: a pessoa acabou de
                           ver o valor da própria safra. O CTA fica aqui, com o
                           número já digitável, e leva cultura e estado já
                           escolhidos pro cadastro (antes era um link que
                           rolava ~10 mil px até o rodapé). */}
-                      <PainelCaptura
-                        titulo="Acompanhe esse preço direto no seu WhatsApp"
-                        texto={
-                          // Sem preço próprio no estado escolhido (resultado veio de um
-                          // estado de referência): não prometer "preço em <estado>".
-                          resultado.usandoOutraUf
-                            ? `Preço de ${culturaLabel.toLowerCase()}, o do porto com frete e um aviso quando for a hora de vender.`
-                            : `Preço de ${culturaLabel.toLowerCase()} em ${nomeDaUf(consulta?.uf ?? uf)}, o do porto com frete e um aviso quando for a hora de vender.`
-                        }
-                        aoEnviar={(whatsapp) =>
-                          abrirCadastro({
-                            whatsapp,
-                            cultura,
-                            uf: consulta?.uf ?? uf,
-                            origem: "calculadora",
-                          })
-                        }
-                      />
-                    </>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </Reveal>
+                        <PainelCaptura
+                          titulo="Acompanhe esse preço direto no seu WhatsApp"
+                          texto={
+                            // Sem preço próprio no estado escolhido (resultado veio de um
+                            // estado de referência): não prometer "preço em <estado>".
+                            resultado.usandoOutraUf
+                              ? `Preço de ${culturaLabel.toLowerCase()}, o do porto com frete e um aviso quando for a hora de vender.`
+                              : `Preço de ${culturaLabel.toLowerCase()} em ${nomeDaUf(consulta?.uf ?? uf)}, o do porto com frete e um aviso quando for a hora de vender.`
+                          }
+                          aoEnviar={(whatsapp) =>
+                            abrirCadastro({
+                              whatsapp,
+                              cultura,
+                              uf: consulta?.uf ?? uf,
+                              origem: "calculadora",
+                            })
+                          }
+                        />
+                      </>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </Reveal>
+      </div>
 
       <Reveal
         delay={0.2}

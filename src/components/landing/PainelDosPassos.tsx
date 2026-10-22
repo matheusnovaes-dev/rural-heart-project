@@ -73,23 +73,26 @@ export default function PainelDosPassos({ progresso }: { progresso: MotionValue<
             <article
               key={passo.titulo}
               data-ativo={ativo === i}
-              className="group flex w-1/3 shrink-0 justify-center px-6"
+              className="group flex w-1/3 shrink-0 justify-center px-6 xl:pr-16 xl:pl-48"
             >
-              <div className="grid w-full max-w-6xl grid-cols-[1fr_1.05fr] items-center gap-12">
+              <div className="grid w-full max-w-[86rem] grid-cols-[0.95fr_1.05fr] items-center gap-16">
                 <div className="relative pr-6">
                   <span
                     aria-hidden="true"
-                    className="block text-[11rem] leading-[0.8] text-[color:var(--cta)]/90 italic select-none"
+                    className="block text-[14rem] leading-[0.8] text-[color:var(--cta)]/90 italic select-none"
                     style={SERIFA}
                   >
                     {i + 1}
                   </span>
-                  <h3 className="mt-4 font-display text-4xl leading-[1.05] font-extrabold tracking-tight text-foreground">
+                  <h3 className="mt-6 font-display text-5xl leading-[1.02] font-extrabold tracking-tight text-foreground text-balance xl:text-6xl">
                     {passo.titulo}
                   </h3>
-                  <p className="mt-4 max-w-md text-lg text-muted-foreground">{passo.texto}</p>
+                  <p className="mt-5 max-w-lg text-xl leading-relaxed text-muted-foreground">
+                    {passo.texto}
+                  </p>
                 </div>
-                <div>
+                {/* ilustração ~30% maior (zoom mantém a caixa coerente com o tamanho visto, sem sobrepor o texto) */}
+                <div style={{ zoom: 1.3 }}>
                   <Visual />
                   <p className="mt-4 text-center text-xs text-muted-foreground">
                     Exemplo ilustrativo

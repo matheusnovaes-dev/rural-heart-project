@@ -1,7 +1,14 @@
 import { carregarFonte, FONTES_PAINEL_URL } from "@/lib/fontes";
 import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+  useMotionValueEvent,
+  useScroll,
+  useTransform,
+  type MotionValue,
+} from "framer-motion";
 import {
   TrendingUp,
   CloudSun,
@@ -136,24 +143,73 @@ const abas: {
 ];
 
 const INTERVALO_AUTOPLAY = 3800;
-/** Quanto de rolagem cada aba "ocupa" no modo que acompanha o scroll (desktop). */
-const VH_POR_ABA = 46;
 
-const legendas: Record<AbaId, string> = {
-  precos: "O preço da sua praça, com histórico e a variação da semana.",
-  sinal: "Preço, futuros da B3 e clima juntos dizem se é hora de vender ou esperar.",
-  alertas: "Avisos de preço, clima e dólar, e lembretes da lavoura direto no WhatsApp.",
-  fazenda:
-    "Gastos, vendas e plantios por mensagem, áudio ou foto da nota, com a pagar, a receber e custo por saca.",
-  estoque:
-    "Quantas sacas faltam vender, sua meta de margem e o aviso no WhatsApp quando o preço chegar nela.",
-  clima: "Previsão de chuva e temperatura pra sua cidade, pelos próximos dias.",
-  plantio: "A janela de plantio oficial (ZARC) pra sua cultura e região.",
-  ferrugem: "O risco de ferrugem da soja na sua região, pra se antecipar.",
-  insumos: "Preço de insumos como a ureia, pra comparar antes de comprar.",
-  leiloes: "Agenda de leilões de gado, presencial na região e virtuais.",
-  suporte: "Abra um chamado e acompanhe a resposta no painel e no WhatsApp.",
-  acompanhamento: "Acompanhe o preço de outras culturas e estados numa lista só sua.",
+/**
+ * Desktop: as 12 abas são percorridas em 6 capítulos (antes eram 12 paradas iguais, ~6.300px de rolagem com a mesma
+ * moldura). Cada capítulo tem um "peso" de rolagem; dentro dele, a rolagem passa pelas abas do capítulo e a câmera
+ * se aproxima do conteúdo e volta. Todas as abas continuam no menu do painel e clicáveis.
+ */
+const CAPITULOS: { titulo: string; texto: string; abas: AbaId[]; peso: number }[] = [
+  {
+    titulo: "Preço da sua praça",
+    texto:
+      "O preço da sua região com histórico, a variação da semana e a comparação com outros estados.",
+    abas: ["precos"],
+    peso: 1,
+  },
+  {
+    titulo: "Sinal de venda",
+    texto: "Preço, futuros da B3 e clima juntos dizem se é hora de vender ou de esperar.",
+    abas: ["sinal"],
+    peso: 1,
+  },
+  {
+    titulo: "Alertas e lembretes",
+    texto: "Avisos de preço, clima e dólar, e lembretes da lavoura, direto no WhatsApp.",
+    abas: ["alertas"],
+    peso: 1,
+  },
+  {
+    titulo: "Caderno da fazenda",
+    texto:
+      "Gastos, vendas e estoque por mensagem, áudio ou foto da nota, com custo por saca e aviso quando o preço bate a sua meta.",
+    abas: ["fazenda", "estoque"],
+    peso: 1.4,
+  },
+  {
+    titulo: "Clima e lavoura",
+    texto:
+      "Previsão da sua cidade, janela de plantio oficial (ZARC) e risco de ferrugem na região.",
+    abas: ["clima", "plantio", "ferrugem"],
+    peso: 1.5,
+  },
+  {
+    titulo: "E tem mais",
+    texto:
+      "Preço de insumos, agenda de leilões, suporte e uma lista pra acompanhar outras culturas.",
+    abas: ["insumos", "leiloes", "suporte", "acompanhamento"],
+    peso: 1.6,
+  },
+];
+const PESO_TOTAL = CAPITULOS.reduce((t, c) => t + c.peso, 0);
+/** Rolagem (em vh) de cada unidade de peso no desktop. */
+const VH_POR_PESO = 44;
+
+/** Em que capítulo a rolagem está (0..5) e quanto dele já passou (0..1). */
+function capituloDaRolagem(v: number): { c: number; dentro: number } {
+  let acumulado = 0;
+  const alvo = Math.min(0.9999, Math.max(0, v)) * PESO_TOTAL;
+  for (let c = 0; c < CAPITULOS.length; c++) {
+    const peso = CAPITULOS[c]!.peso;
+    if (alvo < acumulado + peso) return { c, dentro: (alvo - acumulado) / peso };
+    acumulado += peso;
+  }
+  return { c: CAPITULOS.length - 1, dentro: 1 };
+}
+
+const suave = (a: number, b: number, x: number) => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
 };
 
 export function DashboardPreview() {
@@ -194,10 +250,19 @@ export function DashboardPreview() {
   const [aba, setAba] = useState<AbaId>("precos");
   useMotionValueEvent(progresso, "change", (v) => {
     if (!fixo) return;
-    const i = Math.min(abas.length - 1, Math.max(0, Math.floor(v * abas.length * 0.999)));
-    const alvo = abas[i]!.id;
+    const { c, dentro } = capituloDaRolagem(v);
+    const lista = CAPITULOS[c]!.abas;
+    const alvo = lista[Math.min(lista.length - 1, Math.floor(dentro * lista.length))]!;
     setAba((atual) => (atual === alvo ? atual : alvo));
   });
+  // Câmera: em cada capítulo o painel começa inteiro, aproxima do conteúdo e volta antes de trocar de capítulo.
+  // Calculado direto da rolagem (motion value), sem re-renderizar o React a cada quadro.
+  const zoom = useTransform(progresso, (v) => {
+    const { c, dentro } = capituloDaRolagem(v);
+    const ultimo = c === CAPITULOS.length - 1;
+    return 1 + 0.14 * suave(0.06, 0.32, dentro) * (ultimo ? 1 : 1 - suave(0.8, 0.97, dentro));
+  });
+  const capituloAtual = CAPITULOS.findIndex((c) => c.abas.includes(aba));
   const [autoplay, setAutoplay] = useState(true);
   const retomarTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const precosReais = usePrecosReaisSoja(perto);
@@ -247,17 +312,21 @@ export function DashboardPreview() {
   }
 
   return (
-    <section id="painel" ref={raiz} className="mx-auto max-w-6xl px-4 py-12 sm:py-20 sm:px-6">
-      <Reveal className="mx-auto max-w-2xl text-center">
+    <section
+      id="painel"
+      ref={raiz}
+      className="mx-auto max-w-6xl px-4 py-12 sm:py-20 sm:px-6 desk:max-w-[min(92rem,94vw)] desk:pr-6 desk:pl-10"
+    >
+      <Reveal className="mx-auto max-w-2xl text-center desk:max-w-4xl">
         <span className="text-sm font-semibold uppercase tracking-wide text-primary">
           Além do WhatsApp
         </span>
         <TituloDuasVozes
           antes="Um painel que cresce junto com"
           serifa="SUA OPERAÇÃO"
-          className="mt-3 text-foreground sm:text-4xl lg:text-5xl"
+          className="mt-3 text-foreground sm:text-4xl lg:text-5xl desk:text-7xl"
         />
-        <p className="mt-4 text-muted-foreground">
+        <p className="mt-4 text-muted-foreground desk:mx-auto desk:mt-6 desk:max-w-2xl desk:text-lg">
           Preço, sinal de venda, alertas, lembretes, clima, janela de plantio e suporte, tudo num
           lugar só, desde o plano Bronze. Câmbio, diesel e boletins de mercado vêm junto.{" "}
           <span className="hidden [@media(pointer:fine)]:inline">
@@ -271,46 +340,76 @@ export function DashboardPreview() {
 
       <div
         ref={trilho}
-        className="mt-12 desk:h-[calc(100vh+var(--vh-abas))]"
-        style={{ "--vh-abas": `${abas.length * VH_POR_ABA}vh` } as React.CSSProperties}
+        className="mt-12 desk:mt-16 desk:h-[calc(100vh+var(--vh-abas))] desk:xl:pl-[max(0px,calc(11.5rem-(100vw-min(92rem,94vw))/2-2.5rem))]"
+        style={{ "--vh-abas": `${PESO_TOTAL * VH_POR_PESO}vh` } as React.CSSProperties}
       >
-        <div className="desk:sticky desk:top-[13vh] desk:grid desk:grid-cols-[17rem_1fr] desk:items-center desk:gap-10">
-          {/* Legenda grande da aba atual (só no desktop): número, nome e uma linha do que é */}
+        <div className="relative desk:sticky desk:top-[11vh] desk:grid desk:grid-cols-[17rem_1fr] desk:items-center desk:gap-10 min-[1400px]:desk:grid-cols-[20rem_1fr] min-[1400px]:desk:gap-12 min-[1700px]:desk:grid-cols-[24rem_1fr]">
+          {/* luz suave atrás do painel (só desktop): preenche a lateral sem objeto decorativo */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -inset-x-10 -inset-y-16 -z-10 hidden desk:block"
+            style={{
+              background:
+                "radial-gradient(closest-side at 68% 50%, color-mix(in oklab, var(--cta) 16%, transparent), transparent), radial-gradient(closest-side at 22% 64%, color-mix(in oklab, var(--primary) 8%, transparent), transparent)",
+            }}
+          />
+          {/* Legenda editorial do capítulo (só no desktop): número em serifa, título grande, abas do capítulo e progresso */}
           <div className="hidden desk:block" aria-hidden="true">
             <p
-              className="text-6xl leading-none text-[color:var(--cta)] italic"
+              className="flex items-baseline gap-3 leading-none text-[color:var(--cta)] italic"
               style={{ fontFamily: '"Instrument Serif", "Times New Roman", serif' }}
             >
-              {String(abas.findIndex((x) => x.id === aba) + 1).padStart(2, "0")}
-              <span className="text-2xl text-muted-foreground not-italic"> / {abas.length}</span>
+              <span className="text-[7.5rem] tracking-tight">
+                {String(capituloAtual + 1).padStart(2, "0")}
+              </span>
+              <span className="text-3xl text-muted-foreground not-italic">
+                / {String(CAPITULOS.length).padStart(2, "0")}
+              </span>
             </p>
             <AnimatePresence mode="wait">
               <motion.div
-                key={aba}
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.25 }}
+                key={capituloAtual}
+                initial={{ opacity: 0, y: 22, filter: "blur(6px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                exit={{ opacity: 0, y: -14, filter: "blur(6px)" }}
+                transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
               >
-                <h3 className="mt-4 font-display text-3xl leading-tight font-extrabold tracking-tight text-foreground">
-                  {abas.find((x) => x.id === aba)!.label}
+                <h3 className="mt-2 font-display text-5xl leading-[1.02] font-extrabold tracking-tight text-foreground text-balance">
+                  {CAPITULOS[capituloAtual]!.titulo}
                 </h3>
-                <p className="mt-3 text-base text-muted-foreground">{legendas[aba]}</p>
+                <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
+                  {CAPITULOS[capituloAtual]!.texto}
+                </p>
+                {CAPITULOS[capituloAtual]!.abas.length > 1 && (
+                  <div className="mt-6 flex flex-wrap gap-2">
+                    {CAPITULOS[capituloAtual]!.abas.map((id) => {
+                      const item = abas.find((x) => x.id === id)!;
+                      return (
+                        <span
+                          key={id}
+                          className={cn(
+                            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors duration-300",
+                            id === aba
+                              ? "border-[color:var(--cta)] bg-[color:var(--cta)]/12 text-foreground"
+                              : "border-border text-muted-foreground",
+                          )}
+                        >
+                          <item.icon className="size-5" />
+                          {item.label}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
               </motion.div>
             </AnimatePresence>
-            <div className="mt-6 flex gap-1.5">
-              {abas.map((x) => (
-                <span
-                  key={x.id}
-                  className={cn(
-                    "h-1 flex-1 rounded-full transition-colors duration-300",
-                    x.id === aba ? "bg-[color:var(--cta)]" : "bg-border",
-                  )}
-                />
+            <div className="mt-8 flex gap-1.5">
+              {CAPITULOS.map((c, i) => (
+                <BarraDoCapitulo key={c.titulo} indice={i} progresso={progresso} />
               ))}
             </div>
-            <p className="mt-6 text-xs text-muted-foreground">
-              Role para ver cada parte do painel.
+            <p className="mt-5 text-xs tracking-wide text-muted-foreground uppercase">
+              Role para percorrer o painel
             </p>
           </div>
           <Reveal delay={0.15} className="mx-auto w-full max-w-3xl desk:max-w-none">
@@ -338,7 +437,10 @@ export function DashboardPreview() {
                   </span>
                 </div>
 
-                <div className="flex flex-col sm:flex-row">
+                <motion.div
+                  className="flex flex-col sm:flex-row"
+                  style={fixo ? { scale: zoom, transformOrigin: "100% 0%" } : {}}
+                >
                   {/* mini sidebar — mesma cor/estrutura da sidebar real (bg-sidebar
                 verde-escuro, badge de logo, item ativo em sidebar-accent) */}
                   <div
@@ -439,7 +541,7 @@ export function DashboardPreview() {
                       </AnimatePresence>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               </div>
             </div>
             <p className="mt-3 text-center text-xs text-muted-foreground">
@@ -465,6 +567,28 @@ export function DashboardPreview() {
         </div>
       </div>
     </section>
+  );
+}
+
+/** Barra de um capítulo que enche com a rolagem (como os stories): cheia nos que já passaram, vazia nos próximos. */
+function BarraDoCapitulo({
+  indice,
+  progresso,
+}: {
+  indice: number;
+  progresso: MotionValue<number>;
+}) {
+  const largura = useTransform(progresso, (v) => {
+    const { c, dentro } = capituloDaRolagem(v);
+    return `${c > indice ? 100 : c < indice ? 0 : Math.round(dentro * 100)}%`;
+  });
+  return (
+    <span className="relative h-1 flex-1 overflow-hidden rounded-full bg-border">
+      <motion.span
+        className="absolute inset-y-0 left-0 rounded-full bg-[color:var(--cta)]"
+        style={{ width: largura }}
+      />
+    </span>
   );
 }
 
