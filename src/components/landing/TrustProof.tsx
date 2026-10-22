@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { TituloDuasVozes } from "@/components/landing/TituloDuasVozes";
 import { ShieldCheck } from "lucide-react";
 
@@ -5,28 +6,34 @@ import { Reveal } from "@/components/landing/Reveal";
 import { MIDIA } from "@/assets/midia";
 import { Grao } from "@/components/landing/Grao";
 import { RevelarImagem } from "@/components/landing/RevelarImagem";
+import { useDesktopFino } from "@/components/landing/desktop/useDesktopFino";
+
+// Desktop com mouse e máquina boa: no lugar da foto entra o mapa 3D com o caminho de cada fonte até a resposta. O
+// pedaço só é baixado nessa condição; celular e quem pede menos movimento ficam com a foto.
+const CaminhoDoDado = lazy(() => import("@/components/landing/desktop/CaminhoDoDado"));
+
+const FONTES = [
+  "Conab",
+  "Imea",
+  "Deral/PR",
+  "Epagri/SC",
+  "Emater/RS",
+  "BBM",
+  "IEA-SP",
+  "B3",
+  "Conseleite",
+];
 
 export function TrustProof() {
   return (
-    <section data-cortina className="relative bg-primary py-12 sm:py-20 text-primary-foreground">
+    <section
+      id="fontes"
+      data-cortina
+      className="relative bg-primary py-12 sm:py-20 text-primary-foreground"
+    >
       <Grao />
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2">
-        <RevelarImagem>
-          <picture>
-            <source
-              srcSet={`${MIDIA.soja640} 640w, ${MIDIA.sojaWebp} 1000w`}
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              type="image/webp"
-            />
-            <img
-              src={MIDIA.sojaJpg}
-              alt="Lavoura de soja"
-              data-parallax
-              className="h-72 w-full object-cover sm:h-96"
-              loading="lazy"
-            />
-          </picture>
-        </RevelarImagem>
+        <FotoOuMapa />
 
         <Reveal delay={0.1}>
           <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-medium">
@@ -55,20 +62,11 @@ export function TrustProof() {
           </p>
 
           <div className="mt-5 flex flex-wrap gap-2">
-            {[
-              "Conab",
-              "Imea",
-              "Deral/PR",
-              "Epagri/SC",
-              "Emater/RS",
-              "BBM",
-              "IEA-SP",
-              "B3",
-              "Conseleite",
-            ].map((fonte) => (
+            {FONTES.map((fonte) => (
               <span
                 key={fonte}
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-semibold tracking-wide"
+                data-fonte={fonte}
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-semibold tracking-wide transition-colors hover:border-[oklch(0.85_0.15_95)]/70 hover:bg-white/10"
               >
                 <span className="size-1.5 rounded-full bg-[oklch(0.85_0.15_95)]" />
                 {fonte}
@@ -83,5 +81,33 @@ export function TrustProof() {
         </Reveal>
       </div>
     </section>
+  );
+}
+
+function FotoOuMapa() {
+  const desktop = useDesktopFino();
+  const foto = (
+    <RevelarImagem>
+      <picture>
+        <source
+          srcSet={`${MIDIA.soja640} 640w, ${MIDIA.sojaWebp} 1000w`}
+          sizes="(max-width: 1024px) 100vw, 50vw"
+          type="image/webp"
+        />
+        <img
+          src={MIDIA.sojaJpg}
+          alt="Lavoura de soja"
+          data-parallax
+          className="h-72 w-full object-cover sm:h-96"
+          loading="lazy"
+        />
+      </picture>
+    </RevelarImagem>
+  );
+  if (!desktop) return foto;
+  return (
+    <Suspense fallback={foto}>
+      <CaminhoDoDado />
+    </Suspense>
   );
 }

@@ -12,6 +12,7 @@ const CAPITULOS: { id: string; nome: string }[] = [
   { id: "calculadora", nome: "Calculadora" },
   { id: "como-funciona", nome: "Como funciona" },
   { id: "painel", nome: "O painel" },
+  { id: "fontes", nome: "Fontes" },
   { id: "planos", nome: "Planos" },
   { id: "duvidas", nome: "Dúvidas" },
   { id: "comece", nome: "Comece" },
