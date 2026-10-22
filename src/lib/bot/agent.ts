@@ -141,10 +141,13 @@ import {
   type ResultadoLeilao,
   RESPOSTA_FALHA_AO_GERAR_LINK,
   valoresNaoAutorizados,
+  estadosNaoAutorizados,
+  ufsAutorizadas,
   type FreteCitado,
 } from "@/lib/bot/guardas";
 import { respostaDeProduto } from "@/lib/bot/respostasDeProduto";
 import { ufs } from "@/config/ufs";
+import { responderCoberturaDoProduto } from "@/lib/bot/cobertura";
 import { avisarCidadeSemCotacao } from "@/lib/bot/cidadeSemCotacao";
 import { culturasNaoConsultadas, culturasPerguntadas } from "@/lib/bot/produtoConsultado";
 import {
@@ -1442,6 +1445,7 @@ async function runAgentBase(input: {
         : null;
     const porCodigo =
       pronta(await responderCidadeDeclarada(supabase, texto, produtor)) ??
+      pronta(await responderCoberturaDoProduto(supabase, texto, produtor.uf)) ??
       (produtor.id && ehPedidoDeListarAlertas(texto)
         ? pronta(await responderListaDeAlertas(supabase, produtor))
         : null) ??
@@ -2044,13 +2048,23 @@ async function runAgentBase(input: {
     // Hectares/toneladas sem fonte valem em QUALQUER conversa (não só leite)
     // — achado real testando buscar_producao_ibge, ver comentário da função.
     const areaInvalida = areaProducaoNaoAutorizada(resposta, numerosPermitidos);
-    if (naoAutorizados.length > 0 || medidasInvalidas.length > 0 || areaInvalida.length > 0) {
+    const estadosInvalidos = estadosNaoAutorizados(
+      resposta,
+      ufsAutorizadas(messages, texto, historico, produtor.uf),
+    );
+    if (
+      naoAutorizados.length > 0 ||
+      medidasInvalidas.length > 0 ||
+      areaInvalida.length > 0 ||
+      estadosInvalidos.length > 0
+    ) {
       if (process.env["BOT_DEBUG_TOOLS"])
         console.error(
           "[valor-nao-autorizado]",
           naoAutorizados,
           medidasInvalidas,
           areaInvalida,
+          estadosInvalidos,
           resposta.slice(0, 400),
         );
       // duas chances de se corrigir (a bateria de 2026-10-16 teve 2 respostas de 97 que caíram no recuo seguro)
@@ -2060,11 +2074,12 @@ async function runAgentBase(input: {
           ...naoAutorizados.map((v) => `R$${v.toFixed(2).replace(".", ",")}`),
           ...medidasInvalidas.map((v) => String(v).replace(".", ",")),
           ...areaInvalida.map((v) => String(v).replace(".", ",")),
+          ...estadosInvalidos,
         ].join(", ");
         messages.push({ role: "assistant", content: conteudoBruto ?? parsed.resposta });
         messages.push({
           role: "system",
-          content: `Correção obrigatória: sua resposta anterior citou ${lista}, que NÃO veio de nenhuma ferramenta consultada agora nem do que o produtor escreveu — é valor inventado ou copiado/ajustado de uma resposta anterior. Chame a ferramenta necessária de novo agora (ex: buscar_preco com a cultura e a UF do contexto) e responda usando SOMENTE os valores que ela retornar, sem reaproveitar nem ajustar números de mensagens anteriores. Se nenhuma ferramenta dá esse valor, não cite valor nenhum.`,
+          content: `Correção obrigatória: sua resposta anterior citou ${lista}, que NÃO veio de nenhuma ferramenta consultada agora nem do que o produtor escreveu — é valor inventado ou copiado/ajustado de uma resposta anterior. Chame a ferramenta necessária de novo agora (ex: buscar_preco com a cultura e a UF do contexto) e responda usando SOMENTE os valores que ela retornar, sem reaproveitar nem ajustar números de mensagens anteriores. Se nenhuma ferramenta dá esse valor, não cite valor nenhum. Se o que foi citado é um ESTADO: quando a pergunta é onde existe dado de um produto, cite SOMENTE os estados de ufs_com_dado ou de referencia_mercado.outras_ufs que a ferramenta devolveu; nunca liste estados de memória (os maiores produtores).`,
         });
         return null;
       }

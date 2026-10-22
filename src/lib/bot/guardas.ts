@@ -70,6 +70,71 @@ function coletarNumerosDeJson(valor: unknown, saida: number[], chave?: string): 
 
 type MensagemComResultadoDeFerramenta = { role: string; content?: string | null };
 
+// ---------------------------------------------------------------------------------------------------------------------
+// Estados citados que nenhuma fonte deu. Achado real 2026-10-22: "Onde tem preço de cana?" respondeu "São Paulo, Goiás,
+// Alagoas, Pernambuco e Minas Gerais" (os maiores produtores, de cabeça) quando o banco só tinha AL, PR e SP. A trava de
+// números não pega isso: nome de estado não é valor em R$. Regra: estado citado por NOME na resposta precisa ter
+// aparecido na pergunta do produtor, no cadastro dele ou no que uma ferramenta devolveu neste turno.
+// ---------------------------------------------------------------------------------------------------------------------
+const semAcentoUf = (t: string) =>
+  t
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+// "Pará" sem acento é a preposição "para" ("posso buscar para você"): o Pará só conta com o acento e a inicial maiúscula.
+const UFS_POR_NOME = ufs
+  .filter((u) => u.value !== "PA")
+  .map((u) => ({ sigla: u.value, nome: semAcentoUf(u.label) }))
+  // nome mais longo primeiro: "Mato Grosso do Sul" casa antes de "Mato Grosso", "Rio Grande do Norte" antes de "Rio Grande do Sul"
+  .sort((a, b) => b.nome.length - a.nome.length);
+const SIGLAS_DE_UF = new Set<string>(ufs.map((u) => u.value));
+
+/** Siglas dos estados citados por nome num texto ("Paraná" não conta como "Pará"; "Mato Grosso do Sul" não conta como "Mato Grosso"). */
+export function estadosCitados(texto: string): string[] {
+  let t = semAcentoUf(texto);
+  const achados: string[] = [];
+  if (/(?<![\p{L}])Pará(?![\p{L}])/u.test(texto)) achados.push("PA");
+  for (const { sigla, nome } of UFS_POR_NOME) {
+    const re = new RegExp(`(?<![a-z])${nome.replace(/ /g, "\\s+")}(?![a-z])`, "g");
+    if (re.test(t)) {
+      achados.push(sigla);
+      t = t.replace(re, " ");
+    }
+  }
+  return achados;
+}
+
+/** Estados que a resposta pode citar: UF do cadastro, o que o produtor escreveu (agora e no histórico) e o que as ferramentas devolveram. */
+export function ufsAutorizadas(
+  mensagens: MensagemComResultadoDeFerramenta[],
+  textoProdutor: string,
+  historico: HistoricoLinha[],
+  ufDoProdutor: string | null,
+): Set<string> {
+  const autorizadas = new Set<string>();
+  if (ufDoProdutor) autorizadas.add(ufDoProdutor.toUpperCase());
+  const corpus: string[] = [
+    textoProdutor,
+    ...historico.filter((h) => h.role === "user").map((h) => h.conteudo),
+  ];
+  for (const m of mensagens) {
+    if (m.role !== "tool" || !m.content) continue;
+    corpus.push(m.content);
+    // ferramentas devolvem siglas ("uf":"AL", "ufs_com_dado":["AL","PR"]) e frases com o nome por extenso
+    for (const sig of m.content.matchAll(/\b[A-Z]{2}\b/g))
+      if (SIGLAS_DE_UF.has(sig[0])) autorizadas.add(sig[0]);
+  }
+  for (const c of corpus) for (const sigla of estadosCitados(c)) autorizadas.add(sigla);
+  return autorizadas;
+}
+
+/** Nomes dos estados que a resposta cita sem terem vindo de lugar nenhum. */
+export function estadosNaoAutorizados(resposta: string, autorizadas: Set<string>): string[] {
+  return estadosCitados(resposta)
+    .filter((sigla) => !autorizadas.has(sigla))
+    .map((sigla) => ufs.find((u) => u.value === sigla)!.label);
+}
+
 /**
  * Todo número que a resposta tem direito de citar: o que as ferramentas
  * devolveram NESTE turno (inclui o frete convertido pra R$/saca, que é

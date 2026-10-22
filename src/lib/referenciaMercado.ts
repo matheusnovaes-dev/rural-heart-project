@@ -28,6 +28,8 @@ export type PrecoOutraUf = {
   data_referencia: string;
   fonte: string;
   unidade: string | null;
+  /** Nome do produto na base (ex: "POLPA DE BURITI (kg)"): a frase ampliada o cita, porque pode ser uma variante do que foi pedido. */
+  produto?: string;
 };
 export type ContratoFuturo = { vencimento: string; preco: number; data_pregao: string };
 export type LinhaOutraUf = PrecoOutraUf & { regiao: string; produto: string };
@@ -55,6 +57,8 @@ export function escolherPrecosOutrasUfs(
   linhas: LinhaOutraUf[],
   ufExcluida: string,
   hojeIso: string,
+  janelaDias: number = DIAS_OUTRA_UF,
+  maxUfs: number = MAX_OUTRAS_UFS,
 ): PrecoOutraUf[] {
   const validas = linhas.filter(
     (l) =>
@@ -62,7 +66,7 @@ export function escolherPrecosOutrasUfs(
       !ehPracaDePorto(l.regiao) &&
       Number.isFinite(l.preco) &&
       l.preco > 0 &&
-      diasEntre(l.data_referencia, hojeIso) <= DIAS_OUTRA_UF,
+      diasEntre(l.data_referencia, hojeIso) <= janelaDias,
   );
 
   const porUf = new Map<string, LinhaOutraUf[]>();
@@ -94,11 +98,12 @@ export function escolherPrecosOutrasUfs(
       data_referencia: maisRecente,
       fonte: doDia[0]!.fonte,
       unidade: doDia[0]!.unidade,
+      produto: produtoDaUf,
     });
   }
   return resultado
     .sort((a, b) => b.data_referencia.localeCompare(a.data_referencia) || a.uf.localeCompare(b.uf))
-    .slice(0, MAX_OUTRAS_UFS);
+    .slice(0, maxUfs);
 }
 
 /** Frase da referência. Função pura. */
@@ -111,8 +116,10 @@ export function montarReferenciaMercado(params: {
   hojeIso: string;
   outras: PrecoOutraUf[];
   futuros: ContratoFuturo[];
+  /** Janela ampliada: os dados podem ser de semanas atrás; a frase não os chama de "recentes". */
+  ampliada?: boolean;
 }): ReferenciaMercado | null {
-  const { cultura, uf, ultimaDataUf, periodoUf, hojeIso, outras, futuros } = params;
+  const { cultura, uf, ultimaDataUf, periodoUf, hojeIso, outras, futuros, ampliada } = params;
   if (outras.length === 0 && futuros.length === 0) return null;
 
   const partes: string[] = [];
@@ -140,9 +147,13 @@ export function montarReferenciaMercado(params: {
             : o.unidade
         : null;
       const un = unidade ? ` por ${unidade}` : "";
-      return `${nomeDaUf(o.uf)} ${brl(o.preco)}${un} (${o.fonte}, ${dataBr(o.data_referencia)})`;
+      const variante =
+        ampliada && o.produto ? `${o.produto.replace(/\s*\([^)]*\)\s*$/, "").toLowerCase()}, ` : "";
+      return `${nomeDaUf(o.uf)} ${brl(o.preco)}${un} (${variante}${o.fonte}, ${dataBr(o.data_referencia)})`;
     };
-    partes.push(`Referências recentes em outros estados: ${outras.map(comUnidade).join("; ")}.`);
+    partes.push(
+      `${ampliada ? "Últimos dados que temos em outros estados" : "Referências recentes em outros estados"}: ${outras.map(comUnidade).join("; ")}.`,
+    );
   }
   if (futuros.length > 0) {
     partes.push(
@@ -164,11 +175,12 @@ export async function buscarPrecosOutrasUfs(
   culturaCadastrada: string,
   uf: string,
   hoje: Date = new Date(),
+  janelaDias: number = DIAS_OUTRA_UF,
 ): Promise<PrecoOutraUf[]> {
   const cultura = normalizarCultura(culturaCadastrada);
   const principal = produtoPrincipal(cultura);
   const desde = new Date(hoje);
-  desde.setDate(desde.getDate() - DIAS_OUTRA_UF);
+  desde.setDate(desde.getDate() - janelaDias);
   let q = supabase
     .from("precos")
     .select("uf, preco, data_referencia, fonte, unidade, regiao, produto")
@@ -178,7 +190,7 @@ export async function buscarPrecosOutrasUfs(
     .limit(600);
   q = principal ? q.eq("produto", principal) : filtrarPorProduto(q, cultura);
   const { data } = await q.returns<LinhaOutraUf[]>();
-  return escolherPrecosOutrasUfs(data ?? [], uf, hoje.toISOString().slice(0, 10));
+  return escolherPrecosOutrasUfs(data ?? [], uf, hoje.toISOString().slice(0, 10), janelaDias);
 }
 
 /** Os 3 contratos mais próximos do boi gordo na B3 (ajuste do último pregão). */
@@ -293,6 +305,8 @@ export async function buscarReferenciaMercado(
     periodoUf?: string | null;
     sempre?: boolean;
     hoje?: Date;
+    /** Janela maior que a padrão (14 dias): produto que o estado não tem e que outros estados atualizam devagar (Conab: polpa de buriti, mensal). A frase cita a data de cada estado. */
+    janelaDias?: number;
   },
 ): Promise<ReferenciaMercado | null> {
   const hoje = params.hoje ?? new Date();
@@ -302,7 +316,7 @@ export async function buscarReferenciaMercado(
     diasEntre(params.ultimaDataUf, hojeIso) > DIAS_DADO_DESATUALIZADO;
   if (!desatualizado && !params.sempre) return null;
   const [outras, futuros] = await Promise.all([
-    buscarPrecosOutrasUfs(supabase, params.cultura, params.uf, hoje),
+    buscarPrecosOutrasUfs(supabase, params.cultura, params.uf, hoje, params.janelaDias),
     ehBoi(params.cultura) ? buscarFuturoBoi(supabase, hoje) : Promise.resolve([]),
   ]);
   return montarReferenciaMercado({
@@ -313,5 +327,6 @@ export async function buscarReferenciaMercado(
     hojeIso,
     outras,
     futuros,
+    ampliada: (params.janelaDias ?? DIAS_OUTRA_UF) > DIAS_OUTRA_UF,
   });
 }

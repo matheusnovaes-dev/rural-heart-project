@@ -179,11 +179,22 @@ async function buscarPrecoDoProdutor(
     )
       .gte("data_referencia", desde.toISOString().slice(0, 10))
       .returns<{ uf: string }[]>();
-    const referencia = await buscarReferenciaMercado(supabase, {
+    const ufsComDado = [...new Set((outrasUfs ?? []).map((r) => r.uf))].filter((u) => u !== uf);
+    let referencia = await buscarReferenciaMercado(supabase, {
       cultura: produto,
       uf,
       ultimaDataUf: null,
     });
+    // Há dado em outros estados, mas fora da janela de "recente" (14 dias): sem preço na resposta o modelo concluía "não
+    // temos" (achado 2026-10-22: polpa de buriti no MA, Conab de 02/10). Amplia para 90 dias, citando a data de cada um.
+    if (!referencia && ufsComDado.length > 0) {
+      referencia = await buscarReferenciaMercado(supabase, {
+        cultura: produto,
+        uf,
+        ultimaDataUf: null,
+        janelaDias: 90,
+      });
+    }
     return {
       encontrado: false,
       ufs_com_dado: [...new Set((outrasUfs ?? []).map((r) => r.uf))],

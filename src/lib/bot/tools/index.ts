@@ -860,6 +860,36 @@ const semAcentoSimples = (t: string) =>
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
 
+/**
+ * O modelo juntava ao produto da pergunta uma cultura de mensagens anteriores (achado 2026-10-22: "tem dado de polpa?"
+ * depois de uma conversa sobre cana virou buscar_preco("POLPA DE CANA"), que não existe, e o produtor ouviu "não temos
+ * preço de polpa de cana" quando havia polpa de buriti no MA). Palavra do produto que é cultura do catálogo e NÃO está
+ * na mensagem atual sai: "POLPA DE CANA" -> "POLPA".
+ */
+export function tirarCulturaDeOutraMensagem(produtoDoModelo: string, textoDobrado: string): string {
+  const dobra = (t: string) =>
+    t
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+  const palavras = produtoDoModelo.split(/\s+/);
+  const culturasDoTexto = culturasMencionadas(textoDobrado);
+  const mantidas = palavras.filter((p) => {
+    const pd = dobra(p);
+    if (pd.length < 4 || textoDobrado.includes(pd)) return true;
+    const culturaDaPalavra = culturasMencionadas(pd);
+    if (culturaDaPalavra.length === 0) return true; // não é cultura (ex: BRANCA): continua
+    // variante de uma cultura que a pessoa citou ("café" no texto, ARÁBICA no produto = "café arábica"): continua
+    return culturaDaPalavra.some((c) =>
+      culturasDoTexto.some((t) => c === t || c.startsWith(`${t} `)),
+    );
+  });
+  // sobras de ligação no fim ("POLPA DE") saem
+  while (mantidas.length > 1 && ["de", "do", "da", "em"].includes(dobra(mantidas.at(-1)!)))
+    mantidas.pop();
+  return mantidas.length > 0 ? mantidas.join(" ") : produtoDoModelo;
+}
+
 function resolverCultura(ctx: ToolContext, produtoDoModelo: string): string {
   const mencionada = culturaMencionada(ctx.texto);
   if (mencionada) {
@@ -902,7 +932,8 @@ function resolverCultura(ctx: ToolContext, produtoDoModelo: string): string {
   const palavrasDoProduto = dobra(produtoDoModelo)
     .split(/\s+/)
     .filter((p) => p.length >= 4 && !["de", "do", "da", "em"].includes(p));
-  if (palavrasDoProduto.some((p) => textoDobrado.includes(p))) return produtoDoModelo;
+  if (palavrasDoProduto.some((p) => textoDobrado.includes(p)))
+    return tirarCulturaDeOutraMensagem(produtoDoModelo, textoDobrado);
   return (
     culturaMaisRecenteNoHistorico(ctx.historico) ??
     ctx.produtor.cultura_principal ??
