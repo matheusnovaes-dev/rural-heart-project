@@ -74,3 +74,22 @@ export async function avisoDeFimDoTeste(params: {
     return null;
   }
 }
+
+/**
+ * Quem está com acesso cortado (teste vencido, cancelada, inadimplente) e continua escrevendo é lead quente:
+ * achado de 22/10 (Anildo, 26 mensagens, 8 dias recebendo só "quero assinar"). Avisa o Matheus (o n8n manda o
+ * "Notificar humano") quando a pessoa já conversou o bastante (3+ mensagens no histórico recente) e ainda não houve
+ * aviso de bloqueio nas últimas horas, ou seja, no máximo 1 alerta por pessoa por dia.
+ */
+export function deveAvisarEquipeDeLeadBloqueado(
+  historico: HistoricoLinha[],
+  agora = new Date(),
+): boolean {
+  if (historico.filter((h) => h.role === "user").length < 3) return false;
+  const bloqueouRecente = historico.some((h) => {
+    if (h.role !== "assistant" || !/quero (assinar|pagar)/i.test(h.conteudo)) return false;
+    const t = Date.parse(h.created_at);
+    return Number.isNaN(t) || (agora.getTime() - t) / 3_600_000 < HORAS_ENTRE_AVISOS;
+  });
+  return !bloqueouRecente;
+}

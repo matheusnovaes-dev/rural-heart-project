@@ -1,3 +1,4 @@
+import { deveAvisarEquipeDeLeadBloqueado } from "@/lib/bot/fimDoTeste";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { culturaMencionada, mencionaDerivadoDeGrao, normalizarCultura } from "@/config/culturas";
@@ -1581,7 +1582,8 @@ async function runAgentBase(input: {
       const bloqueio = mensagemBloqueioAcesso(acesso.comLogin, acesso.motivo);
       return {
         resposta: jaAvisouDoBloqueio(historico, bloqueio) ? MENSAGEM_BLOQUEIO_CURTA : bloqueio,
-        precisa_humano: false,
+        // Acesso cortado mas continua escrevendo: lead quente, avisa o Matheus (1x por dia por pessoa).
+        precisa_humano: deveAvisarEquipeDeLeadBloqueado(historico),
         cadastro_criado: false,
         convite_dispensado: false,
       };
