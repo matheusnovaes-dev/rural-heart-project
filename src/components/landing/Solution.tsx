@@ -59,7 +59,9 @@ export function Solution() {
           <Flutuar className="flex w-full justify-center">
             <PhoneMockup />
           </Flutuar>
-          <p className="text-xs text-muted-foreground">Exemplo ilustrativo de conversa</p>
+          <p className="font-mono text-[10.5px] tracking-[0.18em] text-muted-foreground uppercase">
+            Exemplo ilustrativo de conversa
+          </p>
         </Reveal>
       </div>
     </section>

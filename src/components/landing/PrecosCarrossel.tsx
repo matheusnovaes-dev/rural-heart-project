@@ -125,7 +125,7 @@ function Cartao({ item }: { item: ItemDoMercado }) {
   const valor = item.unidade === "dolar" ? brl(item.valor, 4) : brl(item.valor);
   return (
     <div className="flex shrink-0 flex-col gap-1 px-8 sm:px-14">
-      <span className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase sm:text-xs">
+      <span className="font-mono text-[11px] font-medium tracking-[0.2em] text-muted-foreground uppercase sm:text-xs">
         {item.rotulo}
       </span>
       <span className="font-display text-4xl font-extrabold tracking-tight text-foreground tabular-nums sm:text-6xl">

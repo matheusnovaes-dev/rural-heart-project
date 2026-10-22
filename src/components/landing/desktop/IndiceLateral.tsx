@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 const CAPITULOS: { id: string; nome: string }[] = [
   { id: "topo", nome: "Início" },
   { id: "problema", nome: "O problema" },
+  { id: "no-whatsapp", nome: "No WhatsApp" },
   { id: "calculadora", nome: "Calculadora" },
   { id: "como-funciona", nome: "Como funciona" },
   { id: "painel", nome: "O painel" },
