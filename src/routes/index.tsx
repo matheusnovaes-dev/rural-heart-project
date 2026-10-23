@@ -69,8 +69,8 @@ export const Route = createFileRoute("/")({
       {
         // Decide, ANTES da primeira pintura, se a abertura com a assinatura roda: só desktop de verdade (tela larga, mouse,
         // sem "reduzir movimento", rede e máquina boas), só na primeira visita, e nunca em link com #âncora ou ?sem_intro.
-        // Põe a classe `intro-ativa` no <html>; sem ela a cobertura é display:none (ver IntroAssinatura.tsx e styles.css).
-        children: `(function(){try{var h=document.documentElement,m=function(q){return matchMedia(q).matches},c=navigator.connection||{};if(innerWidth>=1024&&m("(hover:hover) and (pointer:fine)")&&!m("(prefers-reduced-motion: reduce)")&&!c.saveData&&!/(^|slow-)2g|3g/.test(c.effectiveType||"")&&(navigator.hardwareConcurrency||4)>=4&&(navigator.deviceMemory||8)>=4&&!localStorage.getItem("safralume_intro_visto")&&!location.hash&&!/[?&]sem_intro/.test(location.search))h.classList.add("intro-ativa")}catch(e){}})()`,
+        // Põe a classe `intro-ativa` no <html>; sem ela a cobertura é display:none (ver IntroAssinatura.tsx e styles.css). `?intro` força a abertura (para rever).
+        children: `(function(){try{var h=document.documentElement,m=function(q){return matchMedia(q).matches},c=navigator.connection||{},f=/[?&]intro(=|&|$)/.test(location.search);if(innerWidth>=1024&&!m("(prefers-reduced-motion: reduce)")&&(f||m("(hover:hover) and (pointer:fine)")&&!c.saveData&&!/(^|slow-)2g|3g/.test(c.effectiveType||"")&&(navigator.hardwareConcurrency||4)>=4&&(navigator.deviceMemory||8)>=4&&!localStorage.getItem("safralume_intro_visto")&&!location.hash&&!/[?&]sem_intro/.test(location.search)))h.classList.add("intro-ativa","intro-rodou")}catch(e){}})()`,
       },
       {
         // Antes da página "acordar" (hidratar), o formulário do hero é HTML puro: em celular lento tocar no botão recarregava a

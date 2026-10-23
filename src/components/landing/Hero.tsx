@@ -38,7 +38,7 @@ export function Hero() {
   // Só atrasa as animações (não muda o HTML): o servidor e o primeiro render do cliente geram o mesmo DOM.
   const atrasoIntro =
     typeof document !== "undefined" && document.documentElement.classList.contains("intro-ativa")
-      ? 1.2
+      ? 2.15
       : 0;
   const sectionRef = useRef<HTMLElement>(null);
   // Parallax de scroll e luz-no-cursor são exatamente os dois efeitos que os
