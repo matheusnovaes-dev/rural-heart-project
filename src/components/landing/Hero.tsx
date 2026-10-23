@@ -36,10 +36,12 @@ export function Hero() {
   const { abrirCadastro } = useCadastro();
   // Com a abertura (assinatura em tela escura) rodando, a entrada do hero espera ela terminar para ser vista.
   // Só atrasa as animações (não muda o HTML): o servidor e o primeiro render do cliente geram o mesmo DOM.
-  const atrasoIntro =
-    typeof document !== "undefined" && document.documentElement.classList.contains("intro-ativa")
-      ? 2.15
-      : 0;
+  const html = typeof document !== "undefined" ? document.documentElement : null;
+  const atrasoIntro = html?.classList.contains("intro-ativa")
+    ? html.classList.contains("intro-3d")
+      ? 3.9
+      : 2.15
+    : 0;
   const sectionRef = useRef<HTMLElement>(null);
   // Parallax de scroll e luz-no-cursor são exatamente os dois efeitos que os
   // guias de acessibilidade mais citam como gatilho de enjoo em

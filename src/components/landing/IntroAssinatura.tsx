@@ -9,6 +9,48 @@ const FLORIO = "M 380 250 C 1500 360 2700 250 3190 70";
 
 /** Duração total da abertura (CSS em styles.css usa os mesmos tempos): a cobertura sai entre 2,05 e 2,85s. */
 const DURACAO_MS = 2950;
+/** Abertura 3D (ramos de luz + assinatura, desktop/introRamos.ts): a cobertura sai entre 3,6 e 4,4s. */
+const DURACAO_3D_MS = 4500;
+
+/**
+ * Abertura 3D: começa assim que este arquivo é avaliado no navegador (ANTES da hidratação do React), para os ramos aparecerem
+ * logo. Enquanto o WebGL não desenha o 1º quadro, o CSS da cobertura fica pausado (classe `intro-3d` sem `intro-3d-rodando`);
+ * no 1º quadro tudo corre junto. Se o WebGL falhar ou demorar mais de 1,8s, cai na abertura CSS (tira `intro-3d`).
+ */
+const estado3d = { comecou: false, caiu: false };
+function iniciar3d() {
+  const html = document.documentElement;
+  const cair = () => {
+    if (estado3d.comecou || estado3d.caiu) return;
+    estado3d.caiu = true;
+    html.classList.remove("intro-3d");
+    window.setTimeout(() => html.classList.remove("intro-ativa"), DURACAO_MS);
+  };
+  window.setTimeout(cair, 1800);
+  import("@/components/landing/desktop/introRamos")
+    .then((m) => {
+      if (estado3d.caiu) return;
+      const cobertura = document.querySelector<HTMLElement>(".intro-cobertura");
+      const forcar = /[?&]intro=3d/.test(location.search);
+      const ok =
+        !!cobertura &&
+        m.iniciarIntroRamos(
+          cobertura,
+          () => {
+            estado3d.comecou = true;
+            html.classList.add("intro-3d-rodando");
+            window.setTimeout(() => html.classList.remove("intro-ativa"), DURACAO_3D_MS);
+          },
+          () => {},
+          forcar,
+        );
+      if (!ok) cair();
+    })
+    .catch(cair);
+}
+if (typeof document !== "undefined" && document.documentElement.classList.contains("intro-3d")) {
+  iniciar3d();
+}
 
 /**
  * Poeira dourada em profundidade (como a abertura do Active Theory): pontos de luz suaves de vários tamanhos que sobem devagar.
@@ -64,13 +106,18 @@ export function IntroAssinatura() {
       encerrada = true;
       html.classList.remove("intro-ativa");
     };
+    const em3d = html.classList.contains("intro-3d");
     // `intro-rodou` fica um pouco mais (a foto do hero ainda "se aproxima") e some, para a animação não repetir ao voltar à página.
-    const tFoto = window.setTimeout(() => html.classList.remove("intro-rodou"), DURACAO_MS + 1800);
-    const t = window.setTimeout(encerrar, DURACAO_MS);
+    const tFoto = window.setTimeout(
+      () => html.classList.remove("intro-rodou"),
+      (em3d ? DURACAO_3D_MS + 1500 : DURACAO_MS) + 1800,
+    );
+    // Na abertura 3D quem encerra é o próprio 3D (a contagem começa no 1º quadro desenhado) ou a queda para o CSS.
+    const t = em3d ? 0 : window.setTimeout(encerrar, DURACAO_MS);
     // Quem não quer esperar: qualquer toque, tecla ou rolagem encerra a abertura na hora (a cobertura some em 0,25s).
     const pular = () => {
       if (encerrada) return;
-      html.classList.add("intro-pular");
+      html.classList.add("intro-pular", "intro-3d-rodando");
       window.setTimeout(encerrar, 260);
     };
     const eventos = ["keydown", "pointerdown", "wheel"] as const;
