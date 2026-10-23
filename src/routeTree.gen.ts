@@ -26,6 +26,7 @@ import { Route as ApiCronAvisoMargemRouteImport } from './routes/api/cron/aviso-
 import { Route as ApiCronAvisoTrialRouteImport } from './routes/api/cron/aviso-trial'
 import { Route as ApiCronLeiloesAlertasRouteImport } from './routes/api/cron/leiloes-alertas'
 import { Route as ApiCronMensagemProativaRouteImport } from './routes/api/cron/mensagem-proativa'
+import { Route as ApiCronLembreteLeadAnuncioRouteImport } from './routes/api/cron/lembrete-lead-anuncio'
 import { Route as ApiCronReativacaoRouteImport } from './routes/api/cron/reativacao'
 import { Route as ApiCronRecuperarCadastroRouteImport } from './routes/api/cron/recuperar-cadastro'
 import { Route as ApiCronReengajamentoRouteImport } from './routes/api/cron/reengajamento'
@@ -133,6 +134,11 @@ const ApiCronLeiloesAlertasRoute = ApiCronLeiloesAlertasRouteImport.update({
 const ApiCronMensagemProativaRoute = ApiCronMensagemProativaRouteImport.update({
   id: '/api/cron/mensagem-proativa',
   path: '/api/cron/mensagem-proativa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCronLembreteLeadAnuncioRoute = ApiCronLembreteLeadAnuncioRouteImport.update({
+  id: '/api/cron/lembrete-lead-anuncio',
+  path: '/api/cron/lembrete-lead-anuncio',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiCronReativacaoRoute = ApiCronReativacaoRouteImport.update({
@@ -278,6 +284,7 @@ export interface FileRoutesByFullPath {
   '/api/cron/aviso-trial': typeof ApiCronAvisoTrialRoute
   '/api/cron/leiloes-alertas': typeof ApiCronLeiloesAlertasRoute
   '/api/cron/mensagem-proativa': typeof ApiCronMensagemProativaRoute
+  '/api/cron/lembrete-lead-anuncio': typeof ApiCronLembreteLeadAnuncioRoute
   '/api/cron/reativacao': typeof ApiCronReativacaoRoute
   '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
   '/api/cron/reengajamento': typeof ApiCronReengajamentoRoute
@@ -319,6 +326,7 @@ export interface FileRoutesByTo {
   '/api/cron/aviso-trial': typeof ApiCronAvisoTrialRoute
   '/api/cron/leiloes-alertas': typeof ApiCronLeiloesAlertasRoute
   '/api/cron/mensagem-proativa': typeof ApiCronMensagemProativaRoute
+  '/api/cron/lembrete-lead-anuncio': typeof ApiCronLembreteLeadAnuncioRoute
   '/api/cron/reativacao': typeof ApiCronReativacaoRoute
   '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
   '/api/cron/reengajamento': typeof ApiCronReengajamentoRoute
@@ -362,6 +370,7 @@ export interface FileRoutesById {
   '/api/cron/aviso-trial': typeof ApiCronAvisoTrialRoute
   '/api/cron/leiloes-alertas': typeof ApiCronLeiloesAlertasRoute
   '/api/cron/mensagem-proativa': typeof ApiCronMensagemProativaRoute
+  '/api/cron/lembrete-lead-anuncio': typeof ApiCronLembreteLeadAnuncioRoute
   '/api/cron/reativacao': typeof ApiCronReativacaoRoute
   '/api/cron/recuperar-cadastro': typeof ApiCronRecuperarCadastroRoute
   '/api/cron/reengajamento': typeof ApiCronReengajamentoRoute
@@ -406,6 +415,7 @@ export interface FileRouteTypes {
     | '/api/cron/aviso-trial'
     | '/api/cron/leiloes-alertas'
     | '/api/cron/mensagem-proativa'
+    | '/api/cron/lembrete-lead-anuncio'
     | '/api/cron/reativacao'
     | '/api/cron/recuperar-cadastro'
     | '/api/cron/reengajamento'
@@ -447,6 +457,7 @@ export interface FileRouteTypes {
     | '/api/cron/aviso-trial'
     | '/api/cron/leiloes-alertas'
     | '/api/cron/mensagem-proativa'
+    | '/api/cron/lembrete-lead-anuncio'
     | '/api/cron/reativacao'
     | '/api/cron/recuperar-cadastro'
     | '/api/cron/reengajamento'
@@ -489,6 +500,7 @@ export interface FileRouteTypes {
     | '/api/cron/aviso-trial'
     | '/api/cron/leiloes-alertas'
     | '/api/cron/mensagem-proativa'
+    | '/api/cron/lembrete-lead-anuncio'
     | '/api/cron/reativacao'
     | '/api/cron/recuperar-cadastro'
     | '/api/cron/reengajamento'
@@ -532,6 +544,7 @@ export interface RootRouteChildren {
   ApiCronAvisoTrialRoute: typeof ApiCronAvisoTrialRoute
   ApiCronLeiloesAlertasRoute: typeof ApiCronLeiloesAlertasRoute
   ApiCronMensagemProativaRoute: typeof ApiCronMensagemProativaRoute
+  ApiCronLembreteLeadAnuncioRoute: typeof ApiCronLembreteLeadAnuncioRoute
   ApiCronReativacaoRoute: typeof ApiCronReativacaoRoute
   ApiCronRecuperarCadastroRoute: typeof ApiCronRecuperarCadastroRoute
   ApiCronReengajamentoRoute: typeof ApiCronReengajamentoRoute
@@ -658,6 +671,13 @@ declare module '@tanstack/react-router' {
       path: '/api/cron/mensagem-proativa'
       fullPath: '/api/cron/mensagem-proativa'
       preLoaderRoute: typeof ApiCronMensagemProativaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cron/lembrete-lead-anuncio': {
+      id: '/api/cron/lembrete-lead-anuncio'
+      path: '/api/cron/lembrete-lead-anuncio'
+      fullPath: '/api/cron/lembrete-lead-anuncio'
+      preLoaderRoute: typeof ApiCronLembreteLeadAnuncioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/cron/reativacao': {
@@ -888,6 +908,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCronAvisoTrialRoute: ApiCronAvisoTrialRoute,
   ApiCronLeiloesAlertasRoute: ApiCronLeiloesAlertasRoute,
   ApiCronMensagemProativaRoute: ApiCronMensagemProativaRoute,
+  ApiCronLembreteLeadAnuncioRoute: ApiCronLembreteLeadAnuncioRoute,
   ApiCronReativacaoRoute: ApiCronReativacaoRoute,
   ApiCronRecuperarCadastroRoute: ApiCronRecuperarCadastroRoute,
   ApiCronReengajamentoRoute: ApiCronReengajamentoRoute,
