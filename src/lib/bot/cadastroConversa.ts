@@ -199,6 +199,10 @@ function perguntaConfirma(cultura: string, uf: string): string {
 
 const PEDIR_CORRECAO = `Sem problema! ${MARC_CORRIGIR}: o que você produz e em que estado (ex: soja em Goiás).`;
 
+const MARCA_NAO_PRODUZ = "Muita gente usa o Safralume sem plantar";
+const NAO_PRODUZ =
+  /^(nada|nenhum|nenhuma|nao produzo( nada)?|nao planto( nada)?|nao crio( nada)?|nao tenho( nada)?|nao trabalho com isso|so curios[oa]|so curiosidade|so olhando|curiosidade|nada ainda|ainda nao produzo)$/;
+
 const FIM_DO_ESCALAR = "pra te ajudar a começar";
 const JA_AVISADO = "A nossa equipe já foi avisada e vai te chamar por aqui";
 
@@ -409,7 +413,12 @@ export function decidirCadastro(params: {
 
   // Fora de uma pergunta específica, só entra quem respondeu de fato ou pediu o cadastro.
   if (!trouxeAlgo) {
-    if (ehNegacao(texto) && passo !== "confirma") return null;
+    if (
+      ehNegacao(texto) &&
+      passo !== "confirma" &&
+      !(passo === "cultura" && NAO_PRODUZ.test(norm(texto)))
+    )
+      return null;
     if (AGRADECIMENTO_OU_DESPEDIDA.test(norm(texto)) && !ehAfirmacao(texto)) return null;
     if (passo === "convite" && !ehAfirmacao(texto) && !querCadastrar) return null;
     if (
@@ -511,6 +520,22 @@ export function decidirCadastro(params: {
 
   if (alvo === "confirma") {
     return { tipo: "responder", resposta: perguntaConfirma(cultura!, uf!), precisa_humano: false };
+  }
+
+  // "Nada", "não produzo", "só curiosidade": não é um erro de digitação, é alguém que não planta (comprador, corretor,
+  // estudante, quem pensa em começar). Achado de 23/10: uma lead que respondeu o lembrete foi para a equipe com "Nada".
+  // Uma chance de continuar o cadastro pelo que ela quer acompanhar; se ainda assim não responder, o fluxo normal chama a equipe.
+  if (
+    alvo === "cultura" &&
+    !trouxeAlgo &&
+    NAO_PRODUZ.test(norm(texto)) &&
+    !botDesc.slice(0, 8).some((m) => m.includes(MARCA_NAO_PRODUZ))
+  ) {
+    return {
+      tipo: "responder",
+      resposta: `Sem problema! ${MARCA_NAO_PRODUZ}: quem compra, corretor, cooperativa ou quem está pensando em começar. Pra eu montar o seu teste, o que você produz ou quer acompanhar? ${MARC_MENU}:\n${MENU}`,
+      precisa_humano: false,
+    };
   }
 
   // Ainda falta algo: pergunta uma coisa só, sem repetir a frase anterior.
