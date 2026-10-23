@@ -32,22 +32,6 @@ export async function buscarFaturaParaPagar(
   const apiKey = process.env["ASAAS_API_KEY"];
   if (!apiKey) return null;
   try {
-      await supabase.from("whatsapp_falhas").insert({
-        telefone: "diag-fatura",
-        wamid: `diag-fatura-${Date.now()}`,
-        codigo_erro: 0,
-        titulo_erro: "diag fatura",
-        contexto: motivo.slice(0, 300),
-      });
-    } catch {
-      // diagnóstico nunca atrapalha
-    }
-  };
-  if (!apiKey) {
-    await diag("sem ASAAS_API_KEY no ambiente");
-    return null;
-  }
-  try {
     const { data: assinatura } = await supabase
       .from("assinaturas")
       .select("plano, asaas_subscription_id, status")
