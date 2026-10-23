@@ -20,7 +20,8 @@ export type FunilPagamento = {
 const ehTeste = (nome: string | null | undefined, whatsapp: string | null | undefined) =>
   /\b(qa|teste|test)\b/i.test(nome ?? "") ||
   (whatsapp ?? "").startsWith("0090") ||
-  (whatsapp ?? "").startsWith("00000");
+  (whatsapp ?? "").startsWith("00000") ||
+  (whatsapp ?? "").endsWith("98333290"); // o número do próprio Matheus (testes)
 
 const chave = (t: string | null | undefined) => {
   let d = (t ?? "").replace(/\D/g, "");
