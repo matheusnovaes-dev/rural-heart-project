@@ -1,4 +1,5 @@
 import { deveAvisarEquipeDeLeadBloqueado } from "@/lib/bot/fimDoTeste";
+import { responderCheckoutWhatsapp } from "@/lib/bot/checkoutWhatsapp";
 import { buscarFaturaParaPagar, respostaComFatura } from "@/lib/bot/faturaPendente";
 import {
   RESPOSTA_CHAMAR_PESSOA,
@@ -1593,6 +1594,27 @@ async function runAgentBase(input: {
   // modelo — é acesso à conta de alguém, não pode depender de improviso.
   // "Quero assinar/pagar" vem antes do pedido de acesso e do paywall: quem está
   // com o teste vencido precisa do link de pagamento num passo só.
+  // Assinar pelo próprio WhatsApp (plano -> CPF -> cobrança na Asaas -> link do Pix): ver checkoutWhatsapp.ts. Só entra quando
+  // ainda não existe cobrança; quem já abriu uma recebe o link dela logo abaixo.
+  if (produtor.id) {
+    const checkout = await responderCheckoutWhatsapp(supabase, {
+      produtorId: produtor.id,
+      texto,
+      historico,
+    }).catch((err) => {
+      console.error("Erro no checkout pelo WhatsApp:", err);
+      return null;
+    });
+    if (checkout) {
+      return {
+        resposta: checkout.resposta,
+        precisa_humano: checkout.precisa_humano,
+        cadastro_criado: false,
+        convite_dispensado: true,
+      };
+    }
+  }
+
   if (produtor.id && classificarPedidoDeAssinatura(texto)) {
     const respostaAssinatura = await responderPedidoDeAssinatura(supabase, produtor.id);
     if (respostaAssinatura) return respostaAssinatura;

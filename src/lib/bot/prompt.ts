@@ -1,3 +1,4 @@
+import { mascararDocumentos } from "@/lib/documentos";
 import { primeiroNome } from "@/lib/nomes";
 import {
   dataCurta,
@@ -263,7 +264,8 @@ export function buildHistoryMessages(
   const ordenado = validas.sort((a, b) => a.ordem - b.ordem);
   return ordenado.slice(-MAX_TURNOS_HISTORICO).map((h) => ({
     role: h.role,
-    content: h.conteudo,
+    // CPF/CNPJ que a pessoa mandou para assinar não vai para o modelo (LGPD).
+    content: mascararDocumentos(h.conteudo),
   }));
 }
 
