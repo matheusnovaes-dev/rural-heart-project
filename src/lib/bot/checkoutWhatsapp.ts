@@ -5,6 +5,11 @@ import { buscarFaturaParaPagar } from "@/lib/bot/faturaPendente";
 import { classificarPedidoDeAssinatura } from "@/lib/bot/guardas";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
 import { documentoValido, soDigitos } from "@/lib/documentos";
+import {
+  cifrarDocumento,
+  decifrarDocumento,
+  DocumentoIlegivelError,
+} from "@/lib/documentoSeguro.server";
 
 /**
  * Assinar pelo próprio WhatsApp (pedido do Matheus, 23/10: "quero pagantes"). Antes: "quero assinar" levava a login + CPF +
@@ -187,7 +192,11 @@ async function criarAssinatura(
       .from("assinaturas")
       .update({ asaas_customer_id: customerId, asaas_subscription_id: sub.id, plano: p.plano })
       .eq("id", p.assinaturaId);
-    await supabase.from("produtores").update({ cpf_cnpj: p.documento }).eq("id", p.produtorId);
+    // O documento fica cifrado no banco (ver lib/documentoSeguro.server.ts); sem chave configurada continua em texto.
+    await supabase
+      .from("produtores")
+      .update({ cpf_cnpj: await cifrarDocumento(p.documento) })
+      .eq("id", p.produtorId);
     const noTeste = vencimento !== diaDeSaoPaulo(new Date());
     const quando = `${vencimento.slice(8, 10)}/${vencimento.slice(5, 7)}`;
     const aviso = noTeste
@@ -316,10 +325,14 @@ async function avancar(
   supabase: SupabaseClient,
   c: Contexto,
 ): Promise<{ resposta: string; precisa_humano: boolean }> {
-  let documento =
-    c.produtor.cpf_cnpj && documentoValido(c.produtor.cpf_cnpj)
-      ? soDigitos(c.produtor.cpf_cnpj)
-      : null;
+  // Documento já salvo (cifrado ou, nos cadastros antigos, em texto). Se não der para ler, pede de novo à pessoa em vez de travar.
+  let guardado: string | null = null;
+  try {
+    guardado = await decifrarDocumento(c.produtor.cpf_cnpj);
+  } catch (e) {
+    if (!(e instanceof DocumentoIlegivelError)) throw e;
+  }
+  let documento = guardado && documentoValido(guardado) ? soDigitos(guardado) : null;
 
   if (c.passo === "documento") {
     const lido = lerDocumento(c.texto);

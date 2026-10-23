@@ -15,7 +15,11 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
-import { criarAssinaturaAsaas, reconciliarCadastroWhatsapp } from "@/lib/asaas.server";
+import {
+  criarAssinaturaAsaas,
+  guardarMeuDocumento,
+  reconciliarCadastroWhatsapp,
+} from "@/lib/asaas.server";
 import { enviarBoasVindasWhatsApp } from "@/lib/notificacoes.server";
 import { culturas } from "@/config/culturas";
 import { CadastroConcluido } from "@/components/onboarding/CadastroConcluido";
@@ -125,6 +129,26 @@ function OnboardingPage() {
     }
     setStatus("loading");
 
+    // O documento não é mais gravado direto pelo navegador: o servidor confere de quem é o cadastro e guarda cifrado. Se falhar,
+    // o cadastro segue (o documento é pedido de novo na hora de pagar, em /assinar).
+    async function guardarDocumento(tipoCadastro: "produtor" | "cooperativa", id: string) {
+      for (let tentativa = 0; tentativa < 2; tentativa++) {
+        try {
+          await guardarMeuDocumento({
+            data: {
+              accessToken: session!.access_token,
+              tipo: tipoCadastro,
+              id,
+              documento: cpfCnpj.replace(/\D/g, ""),
+            },
+          });
+          return;
+        } catch {
+          // tenta mais uma vez
+        }
+      }
+    }
+
     let novaAssinaturaId: string | null = null;
     // Cadastro que já existia (feito pelo WhatsApp) e só ganhou login agora:
     // a conversão de anúncio e a mensagem de boas-vindas já aconteceram lá
@@ -167,12 +191,12 @@ function OnboardingPage() {
           lat,
           lon,
           cooperativa_id: convite ?? null,
-          cpf_cnpj: cpfCnpj.replace(/\D/g, ""),
         })
         .select("id")
         .single();
 
       if (!error) {
+        await guardarDocumento("produtor", produtorInserido.id);
         void anotarOrigemDoProdutor(produtorInserido.id).catch(() => {});
         // Produtor convidado por uma cooperativa já está coberto pelo plano
         // dela — só produtor solo (sem convite) assina o próprio plano.
@@ -258,7 +282,6 @@ function OnboardingPage() {
       const { error: coopError } = await supabase.from("cooperativas").insert({
         id: cooperativaId,
         nome: nomeCooperativa,
-        cpf_cnpj: cpfCnpj.replace(/\D/g, ""),
       });
       if (coopError) {
         setStatus("error");
@@ -275,6 +298,7 @@ function OnboardingPage() {
         setStatus("error");
         return;
       }
+      await guardarDocumento("cooperativa", cooperativaId);
 
       const { data: assinatura, error: assinaturaError } = await supabase
         .from("assinaturas")

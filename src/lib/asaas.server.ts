@@ -2,6 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { pricingPlans } from "@/config/site";
+import { soDigitos } from "@/lib/documentos";
+import {
+  cifrarDocumento,
+  decifrarDocumento,
+  DocumentoIlegivelError,
+} from "@/lib/documentoSeguro.server";
 import { novoVencimentoDaPausa } from "@/lib/pausa.shared";
 import { supabaseServiceRole } from "@/lib/supabase.server";
 
@@ -86,12 +92,17 @@ function proximoVencimento(diasDeTrial: number) {
   return data.toISOString().slice(0, 10);
 }
 
+/** O cliente (assinar.tsx) reconhece esta frase para mostrar o campo de CPF de novo. */
+const MENSAGEM_DOCUMENTO_ILEGIVEL =
+  "Confirme seu CPF ou CNPJ de novo: por segurança, não consegui ler o documento que estava salvo.";
+
 const criarAssinaturaSchema = z.object({
   accessToken: z.string().min(1),
   plano: z.enum(["bronze", "prata", "ouro"]),
   assinaturaId: z.string().uuid(),
   nome: z.string().min(1),
-  cpfCnpj: z.string().min(11),
+  // Opcional: quem já tem documento salvo (cifrado) não precisa mandar; o servidor lê o salvo. Só vem preenchido quando a pessoa digitou agora.
+  cpfCnpj: z.string().optional(),
   email: z.string().email().optional(),
   whatsapp: z.string().optional(),
   // true = quem veio do fluxo "prefere assinar direto" (sem passar pelo
@@ -117,14 +128,37 @@ export const criarAssinaturaAsaas = createServerFn({ method: "POST" })
     }
 
     const userId = await usuarioAutenticado(data.accessToken);
-    await confirmarDonoDaAssinatura(userId, { assinaturaId: data.assinaturaId });
+    const assinatura = await confirmarDonoDaAssinatura(userId, { assinaturaId: data.assinaturaId });
 
     const plano = pricingPlans.find((p) => p.id === data.plano);
     if (!plano) {
       throw new Error(`Plano "${data.plano}" não encontrado.`);
     }
 
-    const cpfCnpjLimpo = data.cpfCnpj.replace(/\D/g, "");
+    // Documento digitado agora (11 ou 14 dígitos). Um valor cifrado ("v1:..."), vindo de uma página antiga aberta, nunca vale como documento.
+    const bruto = data.cpfCnpj ?? "";
+    const digitado =
+      !bruto.startsWith("v1:") && soDigitos(bruto).length >= 11 ? soDigitos(bruto) : null;
+    let cpfCnpjLimpo = digitado;
+    if (!cpfCnpjLimpo) {
+      // Sem documento novo: usa o que já está salvo (cifrado ou legado em texto).
+      const tabela = assinatura.produtor_id ? "produtores" : "cooperativas";
+      const donoId = (assinatura.produtor_id ?? assinatura.cooperativa_id) as string;
+      const { data: dono } = await supabaseServiceRole()
+        .from(tabela)
+        .select("cpf_cnpj")
+        .eq("id", donoId)
+        .maybeSingle();
+      try {
+        cpfCnpjLimpo = await decifrarDocumento(dono?.cpf_cnpj);
+      } catch (e) {
+        if (!(e instanceof DocumentoIlegivelError)) throw e;
+        throw new Error(MENSAGEM_DOCUMENTO_ILEGIVEL);
+      }
+      if (!cpfCnpjLimpo || cpfCnpjLimpo.length < 11) {
+        throw new Error("Informe um CPF ou CNPJ válido pra emitir a cobrança.");
+      }
+    }
 
     const customer = (await asaasFetch(apiKey, "/customers", {
       method: "POST",
@@ -136,6 +170,14 @@ export const criarAssinaturaAsaas = createServerFn({ method: "POST" })
         externalReference: data.assinaturaId,
       }),
     })) as { id: string };
+
+    // Documento novo aceito pela Asaas: guarda cifrado (e só agora, para um CPF recusado não ficar salvo e travar a pessoa depois).
+    if (digitado) {
+      await supabaseServiceRole()
+        .from(assinatura.produtor_id ? "produtores" : "cooperativas")
+        .update({ cpf_cnpj: await cifrarDocumento(digitado) })
+        .eq("id", (assinatura.produtor_id ?? assinatura.cooperativa_id) as string);
+    }
 
     const appUrl = process.env["APP_URL"] ?? "https://www.safralume.com.br";
 
@@ -335,7 +377,7 @@ export const reconciliarCadastroWhatsapp = createServerFn({ method: "POST" })
         lat: data.lat,
         lon: data.lon,
         cooperativa_id: data.cooperativaId,
-        cpf_cnpj: data.cpfCnpj,
+        cpf_cnpj: await cifrarDocumento(data.cpfCnpj),
       })
       .eq("id", existente.id);
     if (updateProdutorError) {
@@ -620,4 +662,48 @@ export const listarCobrancas = createServerFn({ method: "GET" })
     )) as { data?: Cobranca[] };
 
     return { cobrancas: payments.data ?? [] };
+  });
+
+const guardarDocumentoSchema = z.object({
+  accessToken: z.string().min(1),
+  tipo: z.enum(["produtor", "cooperativa"]),
+  id: z.string().uuid(),
+  documento: z.string().min(11),
+});
+
+/**
+ * Guarda o CPF/CNPJ (cifrado) logo depois do cadastro pelo site. O navegador não grava mais o documento direto na tabela: quem grava é
+ * o servidor, que confere de quem é o cadastro. Usado pelo /onboarding.
+ */
+export const guardarMeuDocumento = createServerFn({ method: "POST" })
+  .validator(guardarDocumentoSchema)
+  .handler(async ({ data }) => {
+    const userId = await usuarioAutenticado(data.accessToken);
+    const supabase = supabaseServiceRole();
+    const digitos = soDigitos(data.documento);
+    if (digitos.length !== 11 && digitos.length !== 14) {
+      throw new Error("Informe um CPF ou CNPJ válido.");
+    }
+    if (data.tipo === "produtor") {
+      const { data: dono } = await supabase
+        .from("produtores")
+        .select("user_id")
+        .eq("id", data.id)
+        .maybeSingle();
+      if (dono?.user_id !== userId) throw new Error("Você não tem permissão para esse cadastro.");
+    } else {
+      const { data: membro } = await supabase
+        .from("cooperativa_membros")
+        .select("user_id")
+        .eq("cooperativa_id", data.id)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!membro) throw new Error("Você não tem permissão para esse cadastro.");
+    }
+    const { error } = await supabase
+      .from(data.tipo === "produtor" ? "produtores" : "cooperativas")
+      .update({ cpf_cnpj: await cifrarDocumento(digitos) })
+      .eq("id", data.id);
+    if (error) throw new Error("Não foi possível salvar o documento. Tente de novo.");
+    return { ok: true as const };
   });

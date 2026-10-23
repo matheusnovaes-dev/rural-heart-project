@@ -166,22 +166,10 @@ function AssinarPage() {
         await supabase.from("produtores").update({ nome: nomeFinal }).eq("id", produtor.id);
       }
       // Quem se cadastrou pelo formulário rápido da landing nunca informou
-      // CPF/CNPJ (só nome/WhatsApp/cultura) — grava agora, na hora que
-      // realmente precisa pra faturar.
-      if (!cpfCnpj) {
-        if (produtor) {
-          await supabase
-            .from("produtores")
-            .update({ cpf_cnpj: cpfCnpjFinal })
-            .eq("id", produtor.id);
-        } else if (cooperativa) {
-          await supabase
-            .from("cooperativas")
-            .update({ cpf_cnpj: cpfCnpjFinal })
-            .eq("id", cooperativa.id);
-        }
-      }
-
+      // CPF/CNPJ (só nome/WhatsApp/cultura): o documento digitado agora vai
+      // junto com o pedido e o SERVIDOR é quem grava, cifrado, depois que a
+      // Asaas aceita. Quem já tem documento salvo não manda nada: o servidor
+      // lê o que está guardado (o navegador nem enxerga o número).
       let idAssinatura = assinaturaId;
       if (!idAssinatura) {
         const { data, error } = await supabase
@@ -217,7 +205,7 @@ function AssinarPage() {
           plano: selecionado,
           assinaturaId: idAssinatura,
           nome: nomeFinal,
-          cpfCnpj: cpfCnpjFinal,
+          cpfCnpj: cpfCnpj ? undefined : cpfCnpjFinal,
           email: session.user.email,
           whatsapp: produtor?.whatsapp,
           semTrial: true,
@@ -225,7 +213,10 @@ function AssinarPage() {
       });
       window.location.href = checkout.url;
     } catch (err) {
-      setErro(err instanceof Error ? err.message : "Algo deu errado. Tenta de novo.");
+      const mensagem = err instanceof Error ? err.message : "Algo deu errado. Tenta de novo.";
+      // Documento salvo que não pôde ser lido: mostra o campo para a pessoa digitar de novo.
+      if (/^Confirme seu CPF/.test(mensagem)) setCpfCnpj(null);
+      setErro(mensagem);
       setEnviando(false);
     }
   }
