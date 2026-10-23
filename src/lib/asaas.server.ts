@@ -383,7 +383,7 @@ export const reconciliarCadastroWhatsapp = createServerFn({ method: "POST" })
     return { produtorId: existente.id, assinaturaId: novaAssinatura.id };
   });
 
-const MOTIVOS_CANCELAMENTO = [
+export const MOTIVOS_CANCELAMENTO = [
   "muito_caro",
   "nao_uso_o_suficiente",
   "faltou_funcionalidade",
@@ -408,33 +408,49 @@ const cancelarAssinaturaSchema = z.object({
  * do `/dashboard/_layout` já lê `status` pra liberar ou não, então não
  * precisa de nenhuma lógica extra de "cortar acesso".
  */
+/**
+ * Núcleo do cancelamento (usado pelo painel e pelo bot do WhatsApp, o mesmo efeito nos dois): cancela na Asaas (se já tinha
+ * assinatura lá) e marca `cancelada` na hora. A autorização de quem pede é feita por quem chama.
+ */
+export async function executarCancelamento(p: {
+  assinaturaId: string;
+  asaasSubscriptionId?: string | null | undefined;
+  motivo: (typeof MOTIVOS_CANCELAMENTO)[number];
+  motivoDetalhe?: string | null | undefined;
+}) {
+  if (p.asaasSubscriptionId) {
+    const apiKey = process.env["ASAAS_API_KEY"];
+    if (!apiKey) {
+      throw new Error("ASAAS_API_KEY não configurada.");
+    }
+    await asaasFetch(apiKey, `/subscriptions/${p.asaasSubscriptionId}`, {
+      method: "DELETE",
+    });
+  }
+
+  await supabaseServiceRole()
+    .from("assinaturas")
+    .update({
+      status: "cancelada",
+      motivo_cancelamento: p.motivo,
+      motivo_cancelamento_detalhe: p.motivoDetalhe || null,
+      cancelada_em: new Date().toISOString(),
+    })
+    .eq("id", p.assinaturaId);
+  return { ok: true as const };
+}
+
 export const cancelarAssinaturaAsaas = createServerFn({ method: "POST" })
   .validator(cancelarAssinaturaSchema)
   .handler(async ({ data }) => {
     const userId = await usuarioAutenticado(data.accessToken);
     await confirmarDonoDaAssinatura(userId, { assinaturaId: data.assinaturaId });
-
-    if (data.asaasSubscriptionId) {
-      const apiKey = process.env["ASAAS_API_KEY"];
-      if (!apiKey) {
-        throw new Error("ASAAS_API_KEY não configurada.");
-      }
-      await asaasFetch(apiKey, `/subscriptions/${data.asaasSubscriptionId}`, {
-        method: "DELETE",
-      });
-    }
-
-    await supabaseServiceRole()
-      .from("assinaturas")
-      .update({
-        status: "cancelada",
-        motivo_cancelamento: data.motivo,
-        motivo_cancelamento_detalhe: data.motivoDetalhe || null,
-        cancelada_em: new Date().toISOString(),
-      })
-      .eq("id", data.assinaturaId);
-
-    return { ok: true as const };
+    return executarCancelamento({
+      assinaturaId: data.assinaturaId,
+      asaasSubscriptionId: data.asaasSubscriptionId,
+      motivo: data.motivo,
+      motivoDetalhe: data.motivoDetalhe,
+    });
   });
 
 /** A Asaas devolveu erro 500 passageiro ao mexer numa cobrança recém-criada; uma segunda tentativa resolve. */
@@ -466,105 +482,110 @@ export const pausarAssinatura = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const userId = await usuarioAutenticado(data.accessToken);
     await confirmarDonoDaAssinatura(userId, { assinaturaId: data.assinaturaId });
-    const supabase = supabaseServiceRole();
+    return executarPausa(data.assinaturaId, data.dias);
+  });
 
-    const { data: a, error } = await supabase
-      .from("assinaturas")
-      .select("status, trial_expira_em, asaas_subscription_id, pausa_usada_em")
-      .eq("id", data.assinaturaId)
-      .maybeSingle();
-    if (error || !a) throw new Error("Não foi possível pausar agora. Tente de novo em instantes.");
-    if (a.pausa_usada_em) throw new Error("Essa assinatura já usou a pausa uma vez.");
-    if (a.status !== "ativa" && a.status !== "trial") {
-      throw new Error("A pausa só vale para assinatura ativa ou em teste.");
-    }
+/** Núcleo da pausa (painel e bot do WhatsApp): empurra a cobrança por 30 ou 60 dias e mantém o acesso. Autorização por quem chama. */
+export async function executarPausa(assinaturaId: string, dias: 30 | 60) {
+  const supabase = supabaseServiceRole();
 
-    const agora = new Date();
-    const apiKey = process.env["ASAAS_API_KEY"];
-    const subId = a.asaas_subscription_id;
-    // Cada escrita na Asaas que vai acontecer, decidida ANTES de mexer em qualquer coisa.
-    const escritas: (() => Promise<unknown>)[] = [];
-    let ate: string;
-    if (subId) {
-      if (!apiKey) throw new Error("ASAAS_API_KEY não configurada.");
-      const [sub, pendentes] = (await Promise.all([
-        asaasFetch(apiKey, `/subscriptions/${subId}`),
-        asaasFetch(
-          apiKey,
-          `/payments?subscription=${encodeURIComponent(subId)}&status=PENDING&limit=20`,
-        ),
-      ])) as [
-        { status?: string; nextDueDate?: string },
-        { data?: { id: string; dueDate: string }[] },
-      ];
-      if (sub.status !== "ACTIVE") throw new Error("A assinatura não está ativa na Asaas.");
-      // Testado na Asaas em 2026-10-21: mudar só o `nextDueDate` da assinatura NÃO move a cobrança que já está pendente
-      // (a do fim do teste), então cada cobrança pendente é empurrada uma a uma e também o ciclo seguinte da assinatura.
-      const novosVencimentos: string[] = [];
-      for (const c of pendentes.data ?? []) {
-        const novo = novoVencimentoDaPausa(c.dueDate, data.dias, agora);
-        novosVencimentos.push(novo);
-        escritas.push(() =>
-          atualizarComUmaRepeticao(() =>
-            asaasFetch(apiKey, `/payments/${c.id}`, {
-              method: "PUT",
-              body: JSON.stringify({ dueDate: novo }),
-            }),
-          ),
-        );
-      }
-      const proximoCiclo = novoVencimentoDaPausa(sub.nextDueDate ?? null, data.dias, agora);
+  const { data: a, error } = await supabase
+    .from("assinaturas")
+    .select("status, trial_expira_em, asaas_subscription_id, pausa_usada_em")
+    .eq("id", assinaturaId)
+    .maybeSingle();
+  if (error || !a) throw new Error("Não foi possível pausar agora. Tente de novo em instantes.");
+  if (a.pausa_usada_em) throw new Error("Essa assinatura já usou a pausa uma vez.");
+  if (a.status !== "ativa" && a.status !== "trial") {
+    throw new Error("A pausa só vale para assinatura ativa ou em teste.");
+  }
+
+  const agora = new Date();
+  const apiKey = process.env["ASAAS_API_KEY"];
+  const subId = a.asaas_subscription_id;
+  // Cada escrita na Asaas que vai acontecer, decidida ANTES de mexer em qualquer coisa.
+  const escritas: (() => Promise<unknown>)[] = [];
+  let ate: string;
+  if (subId) {
+    if (!apiKey) throw new Error("ASAAS_API_KEY não configurada.");
+    const [sub, pendentes] = (await Promise.all([
+      asaasFetch(apiKey, `/subscriptions/${subId}`),
+      asaasFetch(
+        apiKey,
+        `/payments?subscription=${encodeURIComponent(subId)}&status=PENDING&limit=20`,
+      ),
+    ])) as [
+      { status?: string; nextDueDate?: string },
+      { data?: { id: string; dueDate: string }[] },
+    ];
+    if (sub.status !== "ACTIVE") throw new Error("A assinatura não está ativa na Asaas.");
+    // Testado na Asaas em 2026-10-21: mudar só o `nextDueDate` da assinatura NÃO move a cobrança que já está pendente
+    // (a do fim do teste), então cada cobrança pendente é empurrada uma a uma e também o ciclo seguinte da assinatura.
+    const novosVencimentos: string[] = [];
+    for (const c of pendentes.data ?? []) {
+      const novo = novoVencimentoDaPausa(c.dueDate, dias, agora);
+      novosVencimentos.push(novo);
       escritas.push(() =>
-        asaasFetch(apiKey, `/subscriptions/${subId}`, {
-          method: "PUT",
-          body: JSON.stringify({ nextDueDate: proximoCiclo }),
-        }),
+        atualizarComUmaRepeticao(() =>
+          asaasFetch(apiKey, `/payments/${c.id}`, {
+            method: "PUT",
+            body: JSON.stringify({ dueDate: novo }),
+          }),
+        ),
       );
-      ate = [...novosVencimentos].sort()[0] ?? proximoCiclo;
-    } else {
-      if (data.dias !== 30) throw new Error("No teste sem cartão a extensão é de 30 dias.");
-      ate = novoVencimentoDaPausa(a.trial_expira_em ?? null, data.dias, agora);
     }
+    const proximoCiclo = novoVencimentoDaPausa(sub.nextDueDate ?? null, dias, agora);
+    escritas.push(() =>
+      asaasFetch(apiKey, `/subscriptions/${subId}`, {
+        method: "PUT",
+        body: JSON.stringify({ nextDueDate: proximoCiclo }),
+      }),
+    );
+    ate = [...novosVencimentos].sort()[0] ?? proximoCiclo;
+  } else {
+    if (dias !== 30) throw new Error("No teste sem cartão a extensão é de 30 dias.");
+    ate = novoVencimentoDaPausa(a.trial_expira_em ?? null, dias, agora);
+  }
 
-    // 1) Reserva a pausa no nosso banco ANTES de mexer na Asaas (testado: se o navegador fecha no meio, a função pode ser
-    //    interrompida; assim nunca sobra "cobrança movida, mas acesso não estendido"). A condição `pausa_usada_em is null`
-    //    também barra clique duplo. O acesso de quem está em teste vale até `trial_expira_em`, que acompanha o vencimento.
-    const fim = `${ate}T12:00:00Z`;
-    const { data: reservada, error: erroReserva } = await supabase
+  // 1) Reserva a pausa no nosso banco ANTES de mexer na Asaas (testado: se o navegador fecha no meio, a função pode ser
+  //    interrompida; assim nunca sobra "cobrança movida, mas acesso não estendido"). A condição `pausa_usada_em is null`
+  //    também barra clique duplo. O acesso de quem está em teste vale até `trial_expira_em`, que acompanha o vencimento.
+  const fim = `${ate}T12:00:00Z`;
+  const { data: reservada, error: erroReserva } = await supabase
+    .from("assinaturas")
+    .update({
+      pausa_usada_em: agora.toISOString(),
+      pausada_ate: fim,
+      ...(a.status === "trial" ? { trial_expira_em: fim } : {}),
+    })
+    .eq("id", assinaturaId)
+    .is("pausa_usada_em", null)
+    .select("id");
+  if (erroReserva || !reservada?.length) {
+    throw new Error("Não foi possível pausar agora (ou a pausa já foi usada).");
+  }
+
+  // 2) Escritas na Asaas, em paralelo. Se alguma falhar enquanto a função ainda está viva, desfaz a reserva.
+  try {
+    await Promise.all(escritas.map((f) => f()));
+  } catch (err) {
+    await supabase
       .from("assinaturas")
       .update({
-        pausa_usada_em: agora.toISOString(),
-        pausada_ate: fim,
-        ...(a.status === "trial" ? { trial_expira_em: fim } : {}),
+        pausa_usada_em: null,
+        pausada_ate: null,
+        ...(a.status === "trial" ? { trial_expira_em: a.trial_expira_em } : {}),
       })
-      .eq("id", data.assinaturaId)
-      .is("pausa_usada_em", null)
-      .select("id");
-    if (erroReserva || !reservada?.length) {
-      throw new Error("Não foi possível pausar agora (ou a pausa já foi usada).");
-    }
+      .eq("id", assinaturaId);
+    throw new Error(
+      err instanceof Error && err.message
+        ? `Não foi possível pausar: ${err.message}`
+        : "Não foi possível pausar agora.",
+    );
+  }
 
-    // 2) Escritas na Asaas, em paralelo. Se alguma falhar enquanto a função ainda está viva, desfaz a reserva.
-    try {
-      await Promise.all(escritas.map((f) => f()));
-    } catch (err) {
-      await supabase
-        .from("assinaturas")
-        .update({
-          pausa_usada_em: null,
-          pausada_ate: null,
-          ...(a.status === "trial" ? { trial_expira_em: a.trial_expira_em } : {}),
-        })
-        .eq("id", data.assinaturaId);
-      throw new Error(
-        err instanceof Error && err.message
-          ? `Não foi possível pausar: ${err.message}`
-          : "Não foi possível pausar agora.",
-      );
-    }
-
-    return { ok: true as const, ate };
-  });
+  return { ok: true as const, ate };
+}
 
 const listarCobrancasSchema = z.object({
   accessToken: z.string().min(1),

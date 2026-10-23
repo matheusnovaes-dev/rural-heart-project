@@ -1,4 +1,5 @@
 import { deveAvisarEquipeDeLeadBloqueado } from "@/lib/bot/fimDoTeste";
+import { responderCancelamentoWhatsapp } from "@/lib/bot/cancelamentoWhatsapp";
 import { responderCheckoutWhatsapp } from "@/lib/bot/checkoutWhatsapp";
 import { buscarFaturaParaPagar, respostaComFatura } from "@/lib/bot/faturaPendente";
 import {
@@ -1609,6 +1610,26 @@ async function runAgentBase(input: {
       return {
         resposta: checkout.resposta,
         precisa_humano: checkout.precisa_humano,
+        cadastro_criado: false,
+        convite_dispensado: true,
+      };
+    }
+  }
+
+  // Cancelar e pausar a assinatura pelo WhatsApp (motivo -> pausa -> confirmação), com o mesmo efeito do painel.
+  if (produtor.id) {
+    const cancelamento = await responderCancelamentoWhatsapp(supabase, {
+      produtorId: produtor.id,
+      texto,
+      historico,
+    }).catch((err) => {
+      console.error("Erro no cancelamento pelo WhatsApp:", err);
+      return null;
+    });
+    if (cancelamento) {
+      return {
+        resposta: cancelamento.resposta,
+        precisa_humano: cancelamento.precisa_humano,
         cadastro_criado: false,
         convite_dispensado: true,
       };
