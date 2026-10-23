@@ -30,7 +30,24 @@ export async function buscarFaturaParaPagar(
   produtorId: string,
 ): Promise<FaturaParaPagar | null> {
   const apiKey = process.env["ASAAS_API_KEY"];
-  if (!apiKey) return null;
+  // DIAGNÓSTICO TEMPORÁRIO (23/10): registra o motivo quando não acha a fatura, para achar por que o link não sai em produção.
+  const diag = async (motivo: string) => {
+    try {
+      await supabase.from("whatsapp_falhas").insert({
+        telefone: "diag-fatura",
+        wamid: `diag-fatura-${Date.now()}`,
+        codigo_erro: 0,
+        titulo_erro: "diag fatura",
+        contexto: motivo.slice(0, 300),
+      });
+    } catch {
+      // diagnóstico nunca atrapalha
+    }
+  };
+  if (!apiKey) {
+    await diag("sem ASAAS_API_KEY no ambiente");
+    return null;
+  }
   try {
     const { data: assinatura } = await supabase
       .from("assinaturas")
@@ -42,7 +59,10 @@ export async function buscarFaturaParaPagar(
       `https://api.asaas.com/v3/payments?subscription=${assinatura.asaas_subscription_id}&limit=20`,
       { headers: { access_token: apiKey, "User-Agent": "Safralume/1.0" } },
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      await diag(`Asaas respondeu ${res.status}`);
+      return null;
+    }
     const json = (await res.json()) as { data?: Pagamento[] };
     const valorDoPlano = pricingPlans.find((p) => p.id === assinatura.plano)?.price ?? null;
     const f = escolherFatura(json.data ?? [], valorDoPlano);
@@ -53,7 +73,8 @@ export async function buscarFaturaParaPagar(
       vencimento: f.dueDate,
       vencida: f.status === "OVERDUE",
     };
-  } catch {
+  } catch (err) {
+    await diag(`exceção: ${err instanceof Error ? err.message : String(err)}`);
     return null;
   }
 }
