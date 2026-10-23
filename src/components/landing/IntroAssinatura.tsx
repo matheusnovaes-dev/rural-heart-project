@@ -9,41 +9,11 @@ const FLORIO = "M 380 250 C 1500 360 2700 250 3190 70";
 
 /** Duração total da abertura (CSS em styles.css usa os mesmos tempos): a cobertura sai entre 2,05 e 2,85s. */
 const DURACAO_MS = 2950;
-/** Abertura 3D "Da semente à lavoura" (desktop/introLavoura.ts): a lavoura se funde no hero entre 2,2 e 2,75s. */
+/** Abertura 3D "Da semente à lavoura" (desktop/introLavoura.ts, mesma duração): a lavoura se funde no hero entre 2,2 e 2,75s. */
 const DURACAO_3D_MS = 2850;
 
-/**
- * Abertura 3D: começa assim que este arquivo é avaliado no navegador (ANTES da hidratação do React). Até o 3D desenhar o 1º
- * quadro, a tela mostra só a semente dourada pulsando (CSS, desde a 1ª pintura: nada de tela parada); o resto do CSS da cobertura
- * fica pausado (`intro-3d` sem `intro-3d-rodando`) e corre junto com o 3D. Se o 3D falhar ou demorar mais de 1,4s, cai na
- * abertura CSS (tira `intro-3d`).
- */
-const estado3d = { comecou: false, caiu: false };
-function iniciar3d() {
-  const html = document.documentElement;
-  const cair = () => {
-    if (estado3d.comecou || estado3d.caiu) return;
-    estado3d.caiu = true;
-    html.classList.remove("intro-3d");
-    window.setTimeout(() => html.classList.remove("intro-ativa"), DURACAO_MS);
-  };
-  window.setTimeout(cair, 1400);
-  import("@/components/landing/desktop/introLavoura")
-    .then((m) => {
-      if (estado3d.caiu) return;
-      const forcar = /[?&]intro=3d/.test(location.search);
-      const ok = m.iniciarIntroLavoura(() => {
-        estado3d.comecou = true;
-        html.classList.add("intro-3d-rodando");
-        window.setTimeout(() => html.classList.remove("intro-ativa"), DURACAO_3D_MS);
-      }, forcar);
-      if (!ok) cair();
-    })
-    .catch(cair);
-}
-if (typeof document !== "undefined" && document.documentElement.classList.contains("intro-3d")) {
-  iniciar3d();
-}
+// A abertura 3D (desktop/introLavoura.ts) não é carregada daqui: o script do head (routes/index.tsx) injeta o pacote separado
+// public/intro/lavoura-*.js assim que decide que ela roda, para começar sem esperar o resto do site.
 
 /**
  * Poeira dourada em profundidade (como a abertura do Active Theory): pontos de luz suaves de vários tamanhos que sobem devagar.
