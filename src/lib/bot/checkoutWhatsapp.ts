@@ -63,6 +63,8 @@ export function perguntaDeDocumento(plano: PlanoId): string {
 const REPERGUNTA_DOCUMENTO = (plano: PlanoId) =>
   `Não consegui validar esse número 😅 Confira e me mande o ${MARC_DOCUMENTO} de novo, só os números (plano ${nomeDoPlano(plano)}).`;
 
+const SAIDA_EDUCADA = "Tudo bem! Quando quiser assinar, é só me dizer *quero assinar* 🌱";
+
 const DESISTENCIA =
   /^\s*(nao|n|deixa|deixa pra la|depois|agora nao|cancela\w*|desisti\w*|esquece|nao quero)\b/;
 
@@ -72,6 +74,7 @@ export function passoDoCheckout(botDesc: string[]): {
   passo: Passo;
   plano: PlanoId | null;
   falhas: number;
+  repergunta: boolean;
 } {
   const ultima = botDesc[0] ?? "";
   const planoMsg = ultima.match(/plano (Bronze|Prata|Ouro)/i)?.[1]?.toLowerCase() as
@@ -81,10 +84,11 @@ export function passoDoCheckout(botDesc: string[]): {
     if (m.includes("Não consegui validar esse número")) falhas++;
     else break;
   }
-  if (ultima.includes(MARC_PLANO)) return { passo: "plano", plano: null, falhas };
+  const repergunta = ultima.includes("Pra eu seguir");
+  if (ultima.includes(MARC_PLANO)) return { passo: "plano", plano: null, falhas, repergunta };
   if (ultima.includes(MARC_DOCUMENTO))
-    return { passo: "documento", plano: planoMsg ?? null, falhas };
-  return { passo: null, plano: null, falhas };
+    return { passo: "documento", plano: planoMsg ?? null, falhas, repergunta };
+  return { passo: null, plano: null, falhas, repergunta };
 }
 
 /** Nome para a cobrança: o do cadastro; se for genérico ("Produtor"), um nome neutro (a cobrança é identificada pelo documento). */
@@ -218,15 +222,12 @@ export async function responderCheckoutWhatsapp(
     .filter((h) => h.role === "assistant")
     .sort((a, b) => b.ordem - a.ordem)
     .map((h) => h.conteudo);
-  const { passo, plano: planoDoPasso, falhas } = passoDoCheckout(botDesc);
+  const { passo, plano: planoDoPasso, falhas, repergunta } = passoDoCheckout(botDesc);
   const querAssinar = classificarPedidoDeAssinatura(texto);
   if (!passo && !querAssinar) return null;
   // "quero assinar" no meio de um passo aberto de outro assunto não é daqui; mas dentro de um passo, a resposta é.
   if (passo && DESISTENCIA.test(semAcento(texto)) && !querAssinar) {
-    return {
-      resposta: "Sem problema! Quando quiser assinar, é só me dizer *quero assinar* 🌱",
-      precisa_humano: false,
-    };
+    return { resposta: SAIDA_EDUCADA, precisa_humano: false };
   }
 
   const [{ data: assinatura }, { data: produtor }] = await Promise.all([
@@ -268,6 +269,7 @@ export async function responderCheckoutWhatsapp(
 
   if (passo === "plano") {
     const plano = lerPlano(texto);
+    if (!plano && repergunta) return { resposta: SAIDA_EDUCADA, precisa_humano: false };
     if (!plano) {
       return {
         resposta: `Pra eu seguir, me responda só com o número do plano: 1 Bronze (${brl(precoDoPlano("bronze"))}), 2 Prata (${brl(precoDoPlano("prata"))}) ou 3 Ouro (${brl(precoDoPlano("ouro"))}). ${MARC_PLANO}?`,
@@ -315,6 +317,7 @@ async function avancar(
 
   if (c.passo === "documento") {
     const lido = lerDocumento(c.texto);
+    if (!lido && c.falhas >= 1) return { resposta: SAIDA_EDUCADA, precisa_humano: false };
     if (!lido?.valido) {
       if (c.falhas >= 1) {
         return {
