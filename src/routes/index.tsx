@@ -38,6 +38,15 @@ export const Route = createFileRoute("/")({
     meta: [{ property: "og:url", content: "https://www.safralume.com.br/" }],
     links: [
       { rel: "canonical", href: "https://www.safralume.com.br/" },
+      // Abertura 3D (só desktop com mouse): o pacote começa a baixar já na leitura do HTML, sem esperar o CSS da página nem o
+      // script do head. Celular nunca baixa (media). Mesmo modo de CORS do <script type="module"> que o head injeta.
+      {
+        rel: "preload",
+        as: "script",
+        href: ARQUIVO_INTRO_3D,
+        crossOrigin: "anonymous" as const,
+        media: "(min-width: 1024px) and (hover: hover) and (pointer: fine)",
+      },
       // A foto do hero é o LCP em todos os tamanhos de tela. Sem isto ela só era pedida depois dos scripts e fontes, e em
       // rede lenta ficava para trás. Cada preload só vale para a faixa de tela da versão que o <picture> escolheria.
       {
