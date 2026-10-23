@@ -1236,9 +1236,6 @@ async function responderPedidoDeAcesso(
   try {
     const tipo = await tipoDeAcesso(supabase, produtorId);
     if (tipo === "sem_cadastro") return null;
-    // Já abriu uma cobrança na Asaas e não pagou: manda o link dela (um toque até o Pix), sem login/CPF de novo.
-    const fatura = await buscarFaturaParaPagar(supabase, produtorId);
-    if (fatura) return { ...base, resposta: respostaComFatura(fatura), precisa_humano: false };
     if (tipo === "propria") {
       return { ...base, resposta: respostaEntrarNoPainel(), precisa_humano: false };
     }
@@ -1267,6 +1264,9 @@ export async function responderPedidoDeAssinatura(
   try {
     const tipo = await tipoDeAcesso(supabase, produtorId);
     if (tipo === "sem_cadastro") return null;
+    // Já abriu uma cobrança na Asaas e não pagou: manda o link dela (um toque até o Pix), sem login/CPF de novo.
+    const fatura = await buscarFaturaParaPagar(supabase, produtorId);
+    if (fatura) return { ...base, resposta: respostaComFatura(fatura), precisa_humano: false };
     if (tipo === "propria") {
       return { ...base, resposta: respostaAssinarComLoginProprio(), precisa_humano: false };
     }
