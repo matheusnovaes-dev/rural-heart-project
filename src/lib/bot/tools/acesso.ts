@@ -1,3 +1,4 @@
+import { pricingPlans } from "@/config/site";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { StatusAssinatura } from "@/lib/planos.shared";
@@ -121,5 +122,5 @@ export function mensagemBloqueioAcesso(
   if (motivo === "cancelada") {
     return 'Sua assinatura do Safralume foi cancelada, então pausei as respostas por aqui. Se quiser voltar, é só responder "quero assinar" que eu te mando agora o link pra escolher o plano e pagar (Pix, cartão ou boleto).';
   }
-  return 'Seu teste grátis de 7 dias no Safralume acabou. Pra continuar recebendo preço, clima e alertas por aqui, é só responder "quero assinar" que eu te mando agora o link pra escolher o plano e pagar (Pix, cartão ou boleto).';
+  return `Seu teste grátis de 7 dias no Safralume acabou. Pra continuar recebendo preço, clima e alertas por aqui, o plano Bronze custa R$${pricingPlans[0]!.price} por mês. É só responder "quero assinar" que eu te mando agora o link pra pagar (Pix, cartão ou boleto).`;
 }

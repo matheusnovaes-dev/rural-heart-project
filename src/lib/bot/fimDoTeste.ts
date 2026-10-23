@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { pricingPlans } from "@/config/site";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
 import { telefonesDoBot } from "@/lib/telefone";
 
@@ -48,9 +49,9 @@ export function frasesDeUso(uso: UsoDoTeste | null): string | null {
 export function textoAvisoFimDoTeste(quando: string, uso: UsoDoTeste | null = null): string {
   const resumo = frasesDeUso(uso);
   if (resumo) {
-    return `⏳ Lembrete: seu teste grátis acaba ${quando}. Nesses dias você já ${resumo}. Pra não perder isso, responda *quero assinar* que eu te mando o link (Pix, cartão ou boleto).`;
+    return `⏳ Lembrete: seu teste grátis acaba ${quando}. Nesses dias você já ${resumo}. Pra não perder isso, o plano Bronze custa R$${pricingPlans[0]!.price} por mês: responda *quero assinar* que eu te mando o link (Pix, cartão ou boleto).`;
   }
-  return `⏳ Lembrete: seu teste grátis acaba ${quando}. Pra continuar com preços, alertas e o caderno da fazenda sem interromper, responda *quero assinar* que eu te mando o link (Pix, cartão ou boleto).`;
+  return `⏳ Lembrete: seu teste grátis acaba ${quando}. Pra continuar com preços, alertas e o caderno da fazenda sem interromper, o plano Bronze custa R$${pricingPlans[0]!.price} por mês: responda *quero assinar* que eu te mando o link (Pix, cartão ou boleto).`;
 }
 
 /** O que a pessoa fez durante o teste, direto do banco (conversas, alertas ligados, lançamentos do caderno). */
