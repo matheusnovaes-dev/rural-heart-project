@@ -61,7 +61,7 @@ export function respostaDeCondicoes(semCadastro = false): string {
   const fecho = semCadastro
     ? "Quer começar? Responda *quero testar* que eu crio seu teste agora, em 1 minuto 🌱"
     : "Enquanto isso, aproveite o teste: me manda o que você quer ver 🌱";
-  return `Sem risco nenhum 🙂 O teste de 7 dias é grátis e não pede cartão: se você não gostar, é só não assinar, que nada é cobrado.\n\nSe um dia assinar e quiser sair, dá pra cancelar quando quiser, direto em https://safralume.com.br/dashboard/assinatura ou pedindo aqui pra mim. E se achar que usa pouco, dá pra pausar a cobrança em vez de cancelar.\n\n${fecho}`;
+  return `Sem risco nenhum 🙂 O teste de 7 dias é grátis e não pede cartão: se você não gostar, é só não assinar, que nada é cobrado.\n\nSe um dia assinar e quiser sair, dá pra cancelar quando quiser, direto em https://safralume.com.br/dashboard/assinatura (se você ainda não tem login, é só me pedir o link de acesso que eu mando). E se achar que usa pouco, dá pra pausar a cobrança em vez de cancelar.\n\n${fecho}`;
 }
 
 // ---------- menu de ajuda ----------
