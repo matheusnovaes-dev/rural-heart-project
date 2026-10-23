@@ -195,7 +195,7 @@ async function criarAssinatura(
     return {
       tipo: "responder",
       precisa_humano: false,
-      resposta: `Pronto! Criei a sua assinatura do plano ${nomeDoPlano(p.plano)}, ${brl(precoDoPlano(p.plano))} por mês. 🌱\n\n${aviso}\n${url}\n\nÉ só abrir e escolher Pix, cartão ou boleto. Assim que o pagamento for confirmado, eu te aviso por aqui.`,
+      resposta: `Pronto! Criei a sua assinatura do plano ${nomeDoPlano(p.plano)}, ${brl(precoDoPlano(p.plano))} por mês. 🌱\n\n${aviso}\n${url}\n\nÉ só abrir e escolher Pix, cartão ou boleto. Na página de pagamento vai aparecer o nome *Matheus Novaes de Moura*, o responsável pelo Safralume (www.safralume.com.br): é normal, pode pagar tranquilo 🔒\n\nAssim que o pagamento for confirmado, eu te aviso por aqui.`,
     };
   } catch (err) {
     const msg = err instanceof Error ? err.message : "";

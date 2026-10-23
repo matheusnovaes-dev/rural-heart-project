@@ -61,5 +61,5 @@ export async function buscarFaturaParaPagar(
 const brl = (n: number) => `R$ ${n.toLocaleString("pt-BR", { minimumFractionDigits: 0 })}`;
 
 export function respostaComFatura(f: FaturaParaPagar): string {
-  return `Aqui está o link da sua assinatura, de ${brl(f.valor)} por mês: ${f.url}\n\nÉ só abrir e escolher como pagar (Pix, cartão ou boleto). Assim que o pagamento for confirmado, o Safralume segue funcionando por aqui normalmente 🌱`;
+  return `Aqui está o link da sua assinatura, de ${brl(f.valor)} por mês: ${f.url}\n\nÉ só abrir e escolher como pagar (Pix, cartão ou boleto). Na página de pagamento vai aparecer o nome *Matheus Novaes de Moura*, o responsável pelo Safralume (www.safralume.com.br): é normal, pode pagar tranquilo 🔒\n\nAssim que o pagamento for confirmado, o Safralume segue funcionando por aqui normalmente 🌱`;
 }
