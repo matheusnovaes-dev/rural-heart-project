@@ -10,7 +10,7 @@
  * Só vale para quem ainda não tem cadastro. Pergunta de verdade ("quanto está a soja?") continua
  * indo para o modelo.
  */
-import { culturaMencionada } from "@/config/culturas";
+import { culturaMencionada, culturaParecida } from "@/config/culturas";
 import { ufs } from "@/config/ufs";
 import { PALAVRAS_DE_MUNICIPIOS } from "@/lib/bot/municipiosPalavras";
 import { MARCADOR_DE_CONTATO } from "@/lib/bot/contatoHumano";
@@ -43,10 +43,17 @@ const MENU = `1 Soja\n2 Milho\n3 Boi (gado)\n4 Café\n5 Leite\n6 Outro (é só e
 
 export const PERGUNTA_CULTURA = `Pra começar, o que você produz? ${MARC_MENU}:\n${MENU}`;
 
+const PERGUNTA_QUIS_DIZER = (c: string) => `Você quis dizer *${c}*? Se for, responda *sim*.`;
+const RE_QUIS_DIZER_CULTURA =
+  /como uma cultura\. Você quis dizer \*([^*]+)\*\? Se for, responda \*sim\*/;
+
 /** Devolve o que a pessoa escreveu quando não deu pra entender (curto, com letras), em vez de repetir o menu como se nada tivesse sido dito. */
 function eco(texto: string | undefined): string {
   const t = (texto ?? "").trim().replace(/\s+/g, " ");
   if (!t || t.length > 30 || !/\p{L}{2}/u.test(t) || ehAfirmacao(t) || ehNegacao(t)) return "";
+  // Erro de digitação ("sioja", "melho"): o bot PERGUNTA se foi aquela cultura e só segue com um "sim". Nunca escolhe sozinho.
+  const parecida = culturaParecida(t);
+  if (parecida) return `Não reconheci “${t}” como uma cultura. ${PERGUNTA_QUIS_DIZER(parecida)} `;
   const umaPalavra = !t.includes(" ");
   return `Não reconheci “${t}” como uma cultura${umaPalavra ? " (se é o seu nome, prazer! 😊)" : ""}. `;
 }
@@ -417,10 +424,22 @@ export function decidirCadastro(params: {
     const tipo = tipoDeCafe(texto);
     if (tipo) lida = { cultura: tipo, cafeSemTipo: false, outro: false };
   }
-  const trouxeAlgo = !!lida.cultura || !!ufAtual || lida.cafeSemTipo || lida.outro;
+  let trouxeAlgo = !!lida.cultura || !!ufAtual || lida.cafeSemTipo || lida.outro;
 
   // Fora de uma pergunta específica, só entra quem respondeu de fato ou pediu o cadastro.
   if (!trouxeAlgo) {
+    if (
+      passo === "cultura" &&
+      ultimaBot &&
+      RE_QUIS_DIZER_CULTURA.test(ultimaBot) &&
+      ehNegacao(texto)
+    ) {
+      return {
+        tipo: "responder",
+        resposta: `Tudo bem! Então o que você produz? ${MARC_MENU} (ou escreva o nome, tipo "soja"):\n${MENU}`,
+        precisa_humano: false,
+      };
+    }
     if (
       ehNegacao(texto) &&
       passo !== "confirma" &&
@@ -450,6 +469,16 @@ export function decidirCadastro(params: {
     if (siglaSolta) uf = siglaSolta.value;
   }
   if (!uf && passo === "uf" && !lida.cultura) uf = ufUnicaMuitoParecida(texto);
+  // "Você quis dizer *soja*? Se for, responda *sim*": o "sim" vale como a cultura sugerida (conta como progresso, não como falha).
+  if (!cultura && !cafeSemTipo && passo === "cultura" && ultimaBot && ehAfirmacao(texto)) {
+    const sug = ultimaBot.match(RE_QUIS_DIZER_CULTURA);
+    if (sug) {
+      const c = culturaDoTexto(sug[1]!, false);
+      if (c.cultura) cultura = c.cultura;
+      else if (c.cafeSemTipo) cafeSemTipo = true;
+      if (c.cultura || c.cafeSemTipo) trouxeAlgo = true;
+    }
+  }
   // "Você quis dizer Goiás (GO)? Se for, responda *sim*": o "sim" vale como o estado sugerido (só quando era uma sugestão só)
   if (!uf && passo === "uf" && ultimaBot && ehAfirmacao(texto)) {
     const sug = ultimaBot.match(

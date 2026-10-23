@@ -309,6 +309,66 @@ export function culturaMencionada(texto: string): string | null {
   return normalizarCultura(original);
 }
 
+function distanciaTrocaVizinha(a: string, b: string): number {
+  // Damerau-Levenshtein: trocar duas letras vizinhas ("sioja") conta como 1 erro de digitação.
+  const d: number[][] = Array.from({ length: a.length + 1 }, (_, i) => [
+    i,
+    ...Array(b.length).fill(0),
+  ]);
+  for (let j = 1; j <= b.length; j++) d[0]![j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      d[i]![j] = Math.min(
+        d[i - 1]![j]! + 1,
+        d[i]![j - 1]! + 1,
+        d[i - 1]![j - 1]! + (a[i - 1] === b[j - 1] ? 0 : 1),
+      );
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1])
+        d[i]![j] = Math.min(d[i]![j]!, d[i - 2]![j - 2]! + 1);
+    }
+  }
+  return d[a.length]![b.length]!;
+}
+
+/**
+ * Cultura PARECIDA com o que a pessoa escreveu ("sója", "melho", "cafe arabica" mal escrito), só para o bot perguntar
+ * "você quis dizer soja?". Nunca escolhe sozinho. Só vale com uma única candidata (empate entre culturas diferentes = null),
+ * palavra de 4+ letras e no máximo 1 erro (2 em palavras de 7+ letras). Texto que já é uma cultura reconhecida devolve null.
+ */
+export function culturaParecida(texto: string): string | null {
+  if (culturaMencionada(texto)) return null;
+  const palavras = removerAcentos(texto)
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length >= 4);
+  if (palavras.length === 0 || palavras.length > 3) return null;
+  const candidatos = new Map<string, number>();
+  // "leite" não é item do catálogo (o bot trata à parte), mas é cultura que a pessoa pode digitar errado.
+  const termos: [string, string][] = [
+    ...TERMO_SEM_ACENTO_PARA_ORIGINAL,
+    ["leite", "leite de vaca"],
+  ];
+  for (const [termo, original] of termos) {
+    if (termo.length < 4) continue;
+    const alvos = palavras.length > 1 ? [palavras.join(" "), ...palavras] : palavras;
+    for (const w of alvos) {
+      const limite = w.length >= 7 ? 2 : 1;
+      if (Math.abs(w.length - termo.length) > limite) continue;
+      if (w.length <= 5 && w[0] !== termo[0]) continue; // erro de digitação raramente troca a 1ª letra ("Dalva" não é "malva")
+      const d = distanciaTrocaVizinha(w, termo);
+      if (d <= limite) {
+        const c = normalizarCultura(original);
+        candidatos.set(c, Math.min(candidatos.get(c) ?? 99, d));
+      }
+    }
+  }
+  if (candidatos.size === 0) return null;
+  const ordenados = [...candidatos.entries()].sort((x, y) => x[1] - y[1]);
+  if (ordenados.length > 1 && ordenados[0]![1] === ordenados[1]![1]) return null;
+  return ordenados[0]![0];
+}
+
 /** Todas as culturas do catálogo (ou apelidos) citadas no texto, já normalizadas e sem repetição, na ordem em que aparecem. */
 export function culturasMencionadas(texto: string): string[] {
   const achadas: string[] = [];
