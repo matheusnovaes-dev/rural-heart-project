@@ -7,6 +7,7 @@ import {
   cifrarDocumento,
   decifrarDocumento,
   DocumentoIlegivelError,
+  documentoDigitadoUtil,
 } from "@/lib/documentoSeguro.server";
 import { novoVencimentoDaPausa } from "@/lib/pausa.shared";
 import { supabaseServiceRole } from "@/lib/supabase.server";
@@ -136,9 +137,7 @@ export const criarAssinaturaAsaas = createServerFn({ method: "POST" })
     }
 
     // Documento digitado agora (11 ou 14 dígitos). Um valor cifrado ("v1:..."), vindo de uma página antiga aberta, nunca vale como documento.
-    const bruto = data.cpfCnpj ?? "";
-    const digitado =
-      !bruto.startsWith("v1:") && soDigitos(bruto).length >= 11 ? soDigitos(bruto) : null;
+    const digitado = documentoDigitadoUtil(data.cpfCnpj);
     let cpfCnpjLimpo = digitado;
     if (!cpfCnpjLimpo) {
       // Sem documento novo: usa o que já está salvo (cifrado ou legado em texto).

@@ -112,3 +112,14 @@ export async function decifrarDocumento(valor: string | null | undefined): Promi
     throw new DocumentoIlegivelError();
   }
 }
+
+/**
+ * O documento que a pessoa digitou agora, só se for aproveitável (11+ dígitos). Um valor cifrado ("v1:..."), que uma página antiga
+ * aberta no navegador pode devolver no lugar do CPF, NUNCA vale como documento digitado: o servidor usa o que está salvo.
+ */
+export function documentoDigitadoUtil(bruto: string | null | undefined): string | null {
+  const texto = bruto ?? "";
+  if (texto.startsWith(PREFIXO)) return null;
+  const digitos = soDigitos(texto);
+  return digitos.length >= 11 ? digitos : null;
+}
