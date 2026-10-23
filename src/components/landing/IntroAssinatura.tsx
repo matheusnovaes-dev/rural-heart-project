@@ -9,13 +9,14 @@ const FLORIO = "M 380 250 C 1500 360 2700 250 3190 70";
 
 /** Duração total da abertura (CSS em styles.css usa os mesmos tempos): a cobertura sai entre 2,05 e 2,85s. */
 const DURACAO_MS = 2950;
-/** Abertura 3D (ramos de luz + assinatura, desktop/introRamos.ts): a cobertura sai entre 3,6 e 4,4s. */
-const DURACAO_3D_MS = 4500;
+/** Abertura 3D "Da semente à lavoura" (desktop/introLavoura.ts): a lavoura se funde no hero entre 2,2 e 2,75s. */
+const DURACAO_3D_MS = 2850;
 
 /**
- * Abertura 3D: começa assim que este arquivo é avaliado no navegador (ANTES da hidratação do React), para os ramos aparecerem
- * logo. Enquanto o WebGL não desenha o 1º quadro, o CSS da cobertura fica pausado (classe `intro-3d` sem `intro-3d-rodando`);
- * no 1º quadro tudo corre junto. Se o WebGL falhar ou demorar mais de 1,8s, cai na abertura CSS (tira `intro-3d`).
+ * Abertura 3D: começa assim que este arquivo é avaliado no navegador (ANTES da hidratação do React). Até o 3D desenhar o 1º
+ * quadro, a tela mostra só a semente dourada pulsando (CSS, desde a 1ª pintura: nada de tela parada); o resto do CSS da cobertura
+ * fica pausado (`intro-3d` sem `intro-3d-rodando`) e corre junto com o 3D. Se o 3D falhar ou demorar mais de 1,4s, cai na
+ * abertura CSS (tira `intro-3d`).
  */
 const estado3d = { comecou: false, caiu: false };
 function iniciar3d() {
@@ -26,24 +27,16 @@ function iniciar3d() {
     html.classList.remove("intro-3d");
     window.setTimeout(() => html.classList.remove("intro-ativa"), DURACAO_MS);
   };
-  window.setTimeout(cair, 1800);
-  import("@/components/landing/desktop/introRamos")
+  window.setTimeout(cair, 1400);
+  import("@/components/landing/desktop/introLavoura")
     .then((m) => {
       if (estado3d.caiu) return;
-      const cobertura = document.querySelector<HTMLElement>(".intro-cobertura");
       const forcar = /[?&]intro=3d/.test(location.search);
-      const ok =
-        !!cobertura &&
-        m.iniciarIntroRamos(
-          cobertura,
-          () => {
-            estado3d.comecou = true;
-            html.classList.add("intro-3d-rodando");
-            window.setTimeout(() => html.classList.remove("intro-ativa"), DURACAO_3D_MS);
-          },
-          () => {},
-          forcar,
-        );
+      const ok = m.iniciarIntroLavoura(() => {
+        estado3d.comecou = true;
+        html.classList.add("intro-3d-rodando");
+        window.setTimeout(() => html.classList.remove("intro-ativa"), DURACAO_3D_MS);
+      }, forcar);
       if (!ok) cair();
     })
     .catch(cair);
@@ -132,6 +125,7 @@ export function IntroAssinatura() {
   return (
     <div aria-hidden="true" className="intro-cobertura">
       <span className="intro-luz" />
+      <span className="intro-semente" />
       <span className="intro-grao" />
       <div className="intro-poeira">
         {POEIRA.map((d, i) => (
