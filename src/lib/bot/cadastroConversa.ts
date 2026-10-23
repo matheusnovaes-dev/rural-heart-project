@@ -43,9 +43,17 @@ const MENU = `1 Soja\n2 Milho\n3 Boi (gado)\n4 Café\n5 Leite\n6 Outro (é só e
 
 export const PERGUNTA_CULTURA = `Pra começar, o que você produz? ${MARC_MENU}:\n${MENU}`;
 
-function perguntaCultura(tentativa: number): string {
+/** Devolve o que a pessoa escreveu quando não deu pra entender (curto, com letras), em vez de repetir o menu como se nada tivesse sido dito. */
+function eco(texto: string | undefined): string {
+  const t = (texto ?? "").trim().replace(/\s+/g, " ");
+  if (!t || t.length > 30 || !/\p{L}{2}/u.test(t) || ehAfirmacao(t) || ehNegacao(t)) return "";
+  const umaPalavra = !t.includes(" ");
+  return `Não reconheci “${t}” como uma cultura${umaPalavra ? " (se é o seu nome, prazer! 😊)" : ""}. `;
+}
+
+function perguntaCultura(tentativa: number, original?: string): string {
   if (tentativa <= 0) return PERGUNTA_CULTURA;
-  return `Entendi! Só falta saber o que você produz pra eu criar seu cadastro grátis. ${MARC_MENU} (ou escreva o nome, tipo "soja"):\n${MENU}`;
+  return `${eco(original) || "Entendi! "}Só falta saber o que você produz pra eu criar seu cadastro grátis. ${MARC_MENU} (ou escreva o nome, tipo "soja"):\n${MENU}`;
 }
 
 // Textos de re-pergunta (depois de uma resposta que não ajudou). Servem de marcador: só eles contam
@@ -574,7 +582,11 @@ export function decidirCadastro(params: {
       precisa_humano: false,
     };
   }
-  return { tipo: "responder", resposta: perguntaCultura(tentativas), precisa_humano: false };
+  return {
+    tipo: "responder",
+    resposta: perguntaCultura(tentativas, trouxeAlgo ? undefined : texto),
+    precisa_humano: false,
+  };
 }
 
 /**
