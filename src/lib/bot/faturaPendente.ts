@@ -37,7 +37,7 @@ export async function buscarFaturaParaPagar(
       .select("plano, asaas_subscription_id, status")
       .eq("produtor_id", produtorId)
       .maybeSingle();
-    if (!assinatura?.asaas_subscription_id || assinatura.status === "cancelada") return null;
+    if (!assinatura?.asaas_subscription_id) return null;
     const res = await fetch(
       `https://api.asaas.com/v3/payments?subscription=${assinatura.asaas_subscription_id}&limit=20`,
       { headers: { access_token: apiKey, "User-Agent": "Safralume/1.0" } },

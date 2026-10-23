@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { pricingPlans } from "@/config/site";
+import { buscarFaturaParaPagar } from "@/lib/bot/faturaPendente";
 import { classificarPedidoDeAssinatura } from "@/lib/bot/guardas";
 import type { HistoricoLinha } from "@/lib/bot/prompt";
 import { documentoValido, soDigitos } from "@/lib/documentos";
@@ -53,7 +54,7 @@ export const MARC_DOCUMENTO = "seu CPF ou CNPJ";
 const brl = (n: number) => `R$ ${n.toLocaleString("pt-BR")}`;
 
 export function perguntaDePlano(): string {
-  return `Que bom! ${MARC_PLANO}? Responda só com o número:\n1 Bronze, ${brl(precoDoPlano("bronze"))} por mês: preço da sua região, alertas, clima, estudo de proposta e caderno da fazenda\n2 Prata, ${brl(precoDoPlano("prata"))} por mês: tudo do Bronze, mais leilões, estoque com aviso de margem e até 3 funcionários\n3 Ouro, ${brl(precoDoPlano("ouro"))} por mês: tudo do Prata, mais outras culturas e estados e suporte prioritário\n\nTodos têm o teste grátis de 7 dias e dá pra pagar no Pix.`;
+  return `Que bom! ${MARC_PLANO}? Responda só com o número:\n1 Bronze, ${brl(precoDoPlano("bronze"))}/mês: preço, alertas, clima e caderno da fazenda\n2 Prata, ${brl(precoDoPlano("prata"))}/mês: o Bronze mais leilões, estoque e até 3 funcionários\n3 Ouro, ${brl(precoDoPlano("ouro"))}/mês: o Prata mais outras culturas e estados e suporte prioritário\n\nPaga no Pix, cartão ou boleto.`;
 }
 
 export function perguntaDeDocumento(plano: PlanoId): string {
@@ -244,7 +245,12 @@ export async function responderCheckoutWhatsapp(
   ]);
   if (!assinatura || !produtor) return null;
   // Já existe cobrança (o link dela é entregue por outro caminho) ou o caso não é deste fluxo.
-  if (assinatura.asaas_subscription_id || assinatura.status === "cancelada") return null;
+  if (assinatura.asaas_subscription_id && assinatura.status !== "cancelada") return null;
+  // Cancelou antes e quer voltar: cria uma assinatura nova. Se a antiga ainda tiver fatura em aberto, o link dela é entregue
+  // pelo outro caminho (evita cobrança duplicada).
+  if (assinatura.status === "cancelada" && assinatura.asaas_subscription_id) {
+    if (await buscarFaturaParaPagar(supabase, produtorId)) return null;
+  }
   if (assinatura.status === "ativa") {
     return {
       resposta: "Você já tem um plano ativo, tudo certo por aqui! 🌱",

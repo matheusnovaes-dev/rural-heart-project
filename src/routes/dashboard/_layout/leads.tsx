@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { ChamarHoje } from "@/components/dashboard/ChamarHoje";
+import { FunilPagamento } from "@/components/dashboard/FunilPagamento";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -112,6 +113,7 @@ function LeadsPage() {
         title="Leads"
         description="Quem chamar hoje e quem preencheu o formulário da landing page"
       />
+      <FunilPagamento />
       <ChamarHoje />
       <Card>
         <CardContent className="flex flex-col gap-4 pt-6">

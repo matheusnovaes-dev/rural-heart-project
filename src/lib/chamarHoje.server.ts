@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
+import { buscarFaturaParaPagar } from "@/lib/bot/faturaPendente";
 import { supabaseServiceRole } from "@/lib/supabase.server";
 
 /**
@@ -12,7 +13,8 @@ import { supabaseServiceRole } from "@/lib/supabase.server";
  */
 const EMAIL_ADMIN = "sirmatheus143@gmail.com";
 
-export type Grupo = "escrevendo" | "quente" | "ajudar" | "reconquistar" | "vencido";
+export type Grupo =
+  "tentou_pagar" | "cancelou" | "escrevendo" | "quente" | "ajudar" | "reconquistar" | "vencido";
 
 export type PessoaParaChamar = {
   id: string;
@@ -81,11 +83,16 @@ export function montarRoteiro(p: {
   cultura: string | null;
   ultimaPergunta: string | null;
   venceEmDias: number | null;
+  linkFatura?: string | null;
 }): string {
   const oi = p.primeiroNome ? `Oi, ${p.primeiroNome}! Tudo bem?` : "Oi! Tudo bem?";
   const eu = "Aqui é o Matheus, do Safralume (safralume.com.br).";
   const g = gancho(p);
   switch (p.grupo) {
+    case "tentou_pagar":
+      return `${oi} ${eu} Vi que você começou a assinar e o pagamento não chegou a ser concluído. Aconteceu algum problema na hora de pagar?${p.linkFatura ? ` Se foi só falta de tempo, o link direto é este (aceita Pix): ${p.linkFatura}` : ""} Se faltou alguma coisa pra você, me conta que eu ajusto 🌱`;
+    case "cancelou":
+      return `${oi} ${eu} Queria te agradecer por ter assinado e entender o que faltou pra você: foi pouco uso, preço, ou faltou algum dado? Sua resposta me ajuda muito a melhorar. Se um dia quiser voltar, é só me avisar 🌱`;
     case "escrevendo":
       return `${oi} ${eu} Tenho visto você mandar as novidades e as contas da safra por aqui e adoro acompanhar. Seu teste terminou e eu não quero que você fique sem resposta: me conta, o que mais te ajudaria no dia a dia? Se quiser continuar, te mando o link na hora 🌱`;
     case "quente":
@@ -188,7 +195,52 @@ export async function montarListaParaChamar(supabase: SupabaseClient): Promise<P
     });
   }
 
+  // Quem já tentou pagar (1ª fatura vencida) ou cancelou há pouco: o contato pessoal mais valioso. A Asaas dá o link da fatura.
+  const { data: tentaram } = await supabase
+    .from("assinaturas")
+    .select("produtor_id, status, plano, cancelada_em, motivo_cancelamento")
+    .or(
+      `and(status.eq.inadimplente,asaas_subscription_id.not.is.null),and(status.eq.cancelada,cancelada_em.gte.${new Date(agora - 14 * 86_400_000).toISOString()})`,
+    );
+  for (const a of tentaram ?? []) {
+    const p = porProdutor.get(a.produtor_id as string);
+    if (!p || !p.whatsapp || TESTES.test(String(p.nome ?? ""))) continue;
+    const f = falas.get(chave(p.whatsapp as string)) ?? [];
+    const nome = String(p.nome ?? "");
+    const primeiroNome = primeiroNomeLimpo(nome);
+    const cultura = (p.cultura_principal as string | null) ?? null;
+    const grupo: Grupo = a.status === "cancelada" ? "cancelou" : "tentou_pagar";
+    const fatura =
+      grupo === "tentou_pagar" ? await buscarFaturaParaPagar(supabase, p.id as string) : null;
+    lista.push({
+      id: p.id as string,
+      nome: nome || "Sem nome",
+      primeiroNome,
+      telefone: digitos(p.whatsapp as string),
+      uf: (p.uf as string | null) ?? null,
+      cultura,
+      grupo,
+      motivo:
+        grupo === "tentou_pagar"
+          ? `Começou a assinar o plano ${a.plano} e o pagamento não foi concluído${fatura ? ` (fatura de R$ ${fatura.valor}, vence ${fatura.vencimento.slice(8, 10)}/${fatura.vencimento.slice(5, 7)})` : ""}`
+          : `Cancelou em ${String(a.cancelada_em ?? "").slice(8, 10)}/${String(a.cancelada_em ?? "").slice(5, 7)}${a.motivo_cancelamento ? ` (motivo: ${String(a.motivo_cancelamento).replaceAll("_", " ")})` : ""}`,
+      venceEmDias: null,
+      mensagens: f.length,
+      ultimaPergunta: null,
+      script: montarRoteiro({
+        grupo,
+        primeiroNome,
+        cultura,
+        ultimaPergunta: null,
+        venceEmDias: null,
+        linkFatura: fatura?.url ?? null,
+      }),
+    });
+  }
+
   const peso: Record<Grupo, number> = {
+    tentou_pagar: -2,
+    cancelou: -1,
     escrevendo: 0,
     quente: 1,
     ajudar: 2,
