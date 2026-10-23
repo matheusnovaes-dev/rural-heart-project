@@ -46,7 +46,7 @@ export function ehPedidoDeCancelarAssinatura(texto: string): boolean {
 
 export const MARC_MOTIVO = "O que fez você querer cancelar";
 export const MARC_PAUSA = "Que tal pausar a cobrança";
-export const MARC_CONFIRMA = "Confirma o cancelamento";
+export const MARC_CONFIRMA = "Tem certeza que quer cancelar";
 
 const brl = (n: number) => `R$ ${n.toLocaleString("pt-BR")}`;
 const dataBr = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
