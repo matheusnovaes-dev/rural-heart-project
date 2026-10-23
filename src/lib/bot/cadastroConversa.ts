@@ -426,6 +426,12 @@ export function decidirCadastro(params: {
   let cultura: string | null = lida.cultura;
   let uf: string | null = ufAtual;
   let cafeSemTipo = lida.cafeSemTipo;
+  // Resposta de uma palavra só à pergunta "qual estado?": a sigla vale mesmo sendo palavra comum ("Pé" do corretor,
+  // "pa", "ce", "al"...). Visto em 22/10: o lead escreveu "Pé" duas vezes e foi para a equipe sem necessidade.
+  if (!uf && passo === "uf" && !lida.cultura && tokens.length === 1) {
+    const siglaSolta = ufs.find((u) => u.value.toLowerCase() === tokens[0]);
+    if (siglaSolta) uf = siglaSolta.value;
+  }
   if (!uf && passo === "uf" && !lida.cultura) uf = ufUnicaMuitoParecida(texto);
   // "Você quis dizer Goiás (GO)? Se for, responda *sim*": o "sim" vale como o estado sugerido (só quando era uma sugestão só)
   if (!uf && passo === "uf" && ultimaBot && ehAfirmacao(texto)) {
