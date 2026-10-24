@@ -10,11 +10,11 @@ const FLORIO = "M 380 250 C 1500 360 2700 250 3190 70";
 
 /** Duração total da abertura CSS (styles.css usa os mesmos tempos): a cortina sobe entre 2,4 e 3,2s. */
 const DURACAO_MS = 3250;
-/** Abertura com ramos em WebGL (desktop/introRamos.ts): a cena se dissolve na foto do hero entre 2,2 e 3,0s. */
-const DURACAO_3D_MS = 3000;
+/** Abertura com a tinta (desktop/introEntrada.ts): a cena se dissolve na foto do hero entre 2,25 e 3,0s. */
+const DURACAO_3D_MS = 3050;
 
-// A abertura com ramos não é carregada daqui: o script do head (routes/index.tsx) injeta o pacote separado
-// public/intro/abertura-*.js assim que decide que ela roda, para começar sem esperar o resto do site.
+// A tinta (espigas desenhadas em caligrafia) não é carregada daqui: o script do head (routes/index.tsx) injeta o pacote
+// separado public/intro/abertura-*.js no desktop, para começar sem esperar o resto do site e sem pesar no celular.
 
 /**
  * Poeira dourada em profundidade (como a abertura do Active Theory): pontos de luz suaves de vários tamanhos que sobem devagar.
@@ -70,7 +70,7 @@ export function IntroAssinatura() {
       encerrada = true;
       html.classList.remove("intro-ativa");
     };
-    const em3d = html.classList.contains("intro-3d");
+    const em3d = html.classList.contains("intro-tinta");
     // `intro-rodou` fica um pouco mais (a foto do hero ainda "se aproxima") e some, para a animação não repetir ao voltar à página.
     const tFoto = window.setTimeout(
       () => html.classList.remove("intro-rodou"),
@@ -81,7 +81,7 @@ export function IntroAssinatura() {
     // Quem não quer esperar: qualquer toque, tecla ou rolagem encerra a abertura na hora (a cobertura some em 0,25s).
     const pular = () => {
       if (encerrada) return;
-      html.classList.add("intro-pular", "intro-3d-rodando");
+      html.classList.add("intro-pular", "intro-tinta-pronta");
       window.setTimeout(encerrar, 260);
     };
     const eventos = ["keydown", "pointerdown", "wheel"] as const;

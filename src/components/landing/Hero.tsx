@@ -38,8 +38,8 @@ export function Hero() {
   // Só atrasa as animações (não muda o HTML): o servidor e o primeiro render do cliente geram o mesmo DOM.
   const html = typeof document !== "undefined" ? document.documentElement : null;
   const atrasoIntro = html?.classList.contains("intro-ativa")
-    ? html.classList.contains("intro-3d")
-      ? 2.45
+    ? html.classList.contains("intro-tinta")
+      ? 2.4
       : 2.5
     : 0;
   const sectionRef = useRef<HTMLElement>(null);
