@@ -872,9 +872,11 @@ html.grao-ok .grao {
    script no head da rota antes da primeira pintura. A assinatura é ESCRITA traço a traço, como uma caneta: cada traço da linha
    central (assinaturaTraco.ts) revela a letra por uma máscara, na ordem e no tempo da escrita, com a ponta brilhando.
    Abertura CSS (sem WebGL): assinatura 0,25 a 1,75s; floreio 1,65s; frase 1,8s; cortina sobe 2,4 a 3,2s.
-   Abertura com a tinta (desktop, `intro-tinta`): ver o bloco "caneta de tinta" mais abaixo.
+   Abertura com ramos (WebGL, `intro-3d`, desktop/introRamos.ts): ramos 0 a 1,6s; assinatura 1,2 a 2,7s; floreio 2,6s;
+   frase 2,75s; cortina 3,2 a 4,0s. Tudo pausado até o WebGL desenhar o 1º quadro (`intro-3d-rodando`).
    A animação de segurança esconde a cobertura mesmo sem JS. `intro-pular` (toque, tecla ou rolagem) encerra em 0,25s. */
-.intro-cobertura {
+.intro-cobertura,
+.intro-canvas {
   display: none;
 }
 html.intro-ativa .intro-cobertura {
@@ -1107,75 +1109,24 @@ html.intro-ativa .intro-cobertura {
   }
 }
 
-/* --- Abertura "caneta de tinta" (~3s, desktop/introEntrada.ts). Uma linha de tinta dourada desenha espigas de trigo em
-   caligrafia (0 a 0,75s) e flui até o "S"; a assinatura se escreve (0,7 a 1,7s); o sublinhado continua a linha e desenha as
-   espigas da direita (1,65 a 2,2s). De 2,25 a 3,0s a cena esquenta e se dissolve na foto do hero, que se aproxima, e a
-   assinatura voa até o nome do cabeçalho (--voa-* medidas no pacote). Até a tinta ser montada (`intro-tinta-pronta`), tudo
-   fica pausado sobre o fundo verde. O SVG da tinta fica fora do React, no fim do <body>. */
-.intro-tinta-svg {
-  display: none;
-}
-html.intro-ativa .intro-tinta-svg {
+/* --- Abertura com ramos (WebGL, ~3s). O canvas (fora da árvore do React, no fim do <body>) fica ENTRE o fundo verde e a
+   assinatura: ele mesmo pinta o fundo verde, e a cobertura vira transparente quando o 3D começa.
+   0 a 1,2s ramos; 0,75 a 1,95s assinatura escrita; 2,2 a 3,0s TRANSIÇÃO CONTÍNUA: a cena esquenta (do verde para os tons do
+   pôr do sol da foto) e se dissolve na própria foto do hero, que se aproxima; a assinatura encolhe e voa até o nome do
+   cabeçalho (variáveis --voa-* medidas em desktop/introEntrada.ts) e some ao chegar. Sem cortina. */
+html.intro-ativa .intro-canvas {
   display: block;
   position: fixed;
-  z-index: 201;
-  overflow: visible;
-  pointer-events: none;
-  transform-origin: 50% 80%;
-  animation: intro-tinta-sai 0.65s cubic-bezier(0.45, 0, 0.25, 1) 2.25s forwards;
-}
-@keyframes intro-tinta-sai {
-  to {
-    opacity: 0;
-    transform: scale(1.05);
-    filter: sepia(0.4) brightness(1.2);
-  }
-}
-.tinta-traco {
-  fill: none;
-  stroke: #fff;
-  stroke-width: 56;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-dasharray: 1 2;
-  stroke-dashoffset: 1;
-}
-.tinta-ponta {
-  fill: none;
-  stroke: #fff1cf;
-  stroke-width: 26;
-  stroke-linecap: round;
-  stroke-dasharray: 0.012 3;
-  stroke-dashoffset: 0.012;
-  opacity: 0;
-}
-.tinta-traco.tinta-1 {
-  animation: intro-traco 0.75s cubic-bezier(0.3, 0, 0.7, 1) forwards;
-}
-.tinta-ponta.tinta-1 {
-  animation: intro-ponta 0.75s cubic-bezier(0.3, 0, 0.7, 1);
-}
-.tinta-traco.tinta-2 {
-  animation: intro-traco 0.55s cubic-bezier(0.3, 0, 0.7, 1) 1.65s forwards;
-}
-.tinta-ponta.tinta-2 {
-  animation: intro-ponta 0.55s cubic-bezier(0.3, 0, 0.7, 1) 1.65s;
-}
-/* O fundo verde vira uma camada própria: é ela que esquenta (tons do pôr do sol da foto) e se dissolve no hero */
-html.intro-tinta .intro-cobertura {
-  background: transparent;
-  animation: intro-funde 0.15s linear 2.95s forwards;
-}
-html.intro-tinta .intro-cobertura::before {
-  content: "";
-  position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: 201;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
   background:
     radial-gradient(ellipse 70% 60% at 50% 56%, #1e4d37 0%, transparent 70%),
     radial-gradient(ellipse 120% 100% at 50% 50%, var(--primary) 30%, #0a1a12 100%);
   transform-origin: 50% 62%;
-  animation: intro-aquece 0.75s cubic-bezier(0.45, 0, 0.25, 1) 2.25s forwards;
+  animation: intro-aquece 0.8s cubic-bezier(0.45, 0, 0.25, 1) 2.2s forwards;
 }
 @keyframes intro-aquece {
   0% {
@@ -1194,6 +1145,10 @@ html.intro-tinta .intro-cobertura::before {
     visibility: hidden;
   }
 }
+html.intro-3d .intro-cobertura {
+  z-index: 202;
+  animation: intro-funde 0.15s linear 2.95s forwards;
+}
 @keyframes intro-funde {
   to {
     opacity: 0;
@@ -1201,18 +1156,19 @@ html.intro-tinta .intro-cobertura::before {
     pointer-events: none;
   }
 }
-html.intro-tinta .intro-poeira,
-html.intro-tinta .intro-luz,
-html.intro-tinta .intro-florio {
+html.intro-3d.intro-3d-rodando .intro-cobertura {
+  background: transparent;
+}
+html.intro-3d .intro-poeira,
+html.intro-3d .intro-luz {
   display: none;
 }
-html.intro-tinta .intro-conteudo {
-  width: min(44rem, 50vw);
+html.intro-3d .intro-conteudo {
   animation: none;
 }
-html.intro-tinta .intro-svg {
-  --intro-base: 0.7s;
-  --intro-T: 1s;
+html.intro-3d .intro-svg {
+  --intro-base: 0.75s;
+  --intro-T: 1.2s;
   --voa-x: -32vw;
   --voa-y: -40vh;
   --voa-s: 0.2;
@@ -1232,17 +1188,22 @@ html.intro-tinta .intro-svg {
     opacity: 0;
   }
 }
-html.intro-tinta .intro-frase {
+html.intro-3d .intro-florio {
   animation:
-    intro-frase 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 1.8s both,
+    intro-florio 0.4s ease-out 1.8s forwards,
     intro-some 0.25s ease 2.2s forwards;
 }
-html.intro-tinta .intro-rotulo {
+html.intro-3d .intro-frase {
+  animation:
+    intro-frase 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 1.85s both,
+    intro-some 0.25s ease 2.2s forwards;
+}
+html.intro-3d .intro-rotulo {
   animation:
     menu-surge 0.6s ease 0.3s both,
     intro-some 0.25s ease 2.2s forwards;
 }
-html.intro-tinta .intro-barra {
+html.intro-3d .intro-barra {
   animation:
     intro-barra 2.1s cubic-bezier(0.4, 0, 0.2, 1) 0.1s forwards,
     intro-some 0.25s ease 2.2s forwards;
@@ -1252,15 +1213,15 @@ html.intro-tinta .intro-barra {
     opacity: 0;
   }
 }
-/* Pausado até a tinta ser montada */
-html.intro-tinta:not(.intro-tinta-pronta) .intro-cobertura,
-html.intro-tinta:not(.intro-tinta-pronta) .intro-cobertura *,
-html.intro-tinta:not(.intro-tinta-pronta) .intro-cobertura::before,
-html.intro-tinta:not(.intro-tinta-pronta) #topo picture img {
+/* Pausado até o WebGL desenhar o 1º quadro */
+html.intro-3d:not(.intro-3d-rodando) .intro-cobertura,
+html.intro-3d:not(.intro-3d-rodando) .intro-cobertura *,
+html.intro-3d:not(.intro-3d-rodando) .intro-canvas,
+html.intro-3d:not(.intro-3d-rodando) #topo picture img {
   animation-play-state: paused !important;
 }
 html.intro-pular .intro-cobertura,
-html.intro-pular .intro-tinta-svg {
+html.intro-pular .intro-canvas {
   animation: intro-pular 0.25s ease forwards !important;
   animation-play-state: running !important;
 }
@@ -1270,8 +1231,8 @@ html.intro-rodou #topo picture img {
   transform-origin: 50% 62%;
   animation: intro-foto 2.4s cubic-bezier(0.16, 0.7, 0.2, 1) 2.25s both;
 }
-html.intro-tinta.intro-rodou #topo picture img {
-  animation: intro-foto-3d 1.5s cubic-bezier(0.16, 0.7, 0.2, 1) 2.25s both;
+html.intro-3d.intro-rodou #topo picture img {
+  animation: intro-foto-3d 1.5s cubic-bezier(0.16, 0.7, 0.2, 1) 2.2s both;
 }
 @keyframes intro-foto-3d {
   from {
