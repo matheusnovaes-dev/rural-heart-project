@@ -7,12 +7,10 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 import { coresAntigas } from "./plugins/coresAntigas";
-import { semFonteNo3d } from "./plugins/semFonteNo3d";
 
 export default defineConfig({
   // Cores de reserva para navegador antigo (Chrome < 111, WebView desatualizado): ver plugins/coresAntigas.ts
-  // semFonteNo3d: só no servidor de desenvolvimento, ver plugins/semFonteNo3d.ts
-  vite: { plugins: [coresAntigas(), semFonteNo3d()] },
+  vite: { plugins: [coresAntigas()] },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this

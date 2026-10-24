@@ -1753,20 +1753,3 @@ html[data-tema-reveal]::view-transition-new(root) {
   transform: translateX(calc((var(--brilho, 0) - 0.5) * 140%));
   mix-blend-mode: soft-light;
 }
-
-/* Painel de leitura da espiral 3D das páginas legais (components/landing/legal3d): a seção nova entra subindo e aparecendo. */
-.legal3d-entra {
-  animation: legal3d-entra 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-}
-@keyframes legal3d-entra {
-  from {
-    opacity: 0;
-    transform: translateY(18px);
-    filter: blur(4px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-    filter: none;
-  }
-}
