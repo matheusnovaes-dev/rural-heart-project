@@ -71,12 +71,14 @@ export function TituloDuasVozes({
    */
   corSerifa?: string;
 }) {
+  // ElementType inclui também os elementos 3D do React Three Fiber (usados nas páginas legais); aqui é sempre um título HTML.
+  const Titulo = Tag as "h2";
   const ref = useRef<HTMLHeadingElement>(null);
   const visivel = useInView(ref, { once: true, margin: "0px 0px -12% 0px" });
   const palavrasAntes = antes ? antes.split(" ") : [];
   const palavrasSerifa = serifa.split(" ");
   return (
-    <Tag
+    <Titulo
       ref={ref}
       id={id}
       aria-label={[antes, serifa].filter(Boolean).join(" ")}
@@ -100,6 +102,6 @@ export function TituloDuasVozes({
           />
         ))}
       </span>
-    </Tag>
+    </Titulo>
   );
 }
