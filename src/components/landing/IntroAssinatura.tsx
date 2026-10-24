@@ -1,19 +1,20 @@
 import { useEffect, type CSSProperties } from "react";
 
 import { ASSINATURA } from "@/components/landing/assinaturaPath";
+import { TRACOS_ASSINATURA } from "@/components/landing/assinaturaTraco";
 
 const { caixa } = ASSINATURA;
 const MARGEM = 120;
 const VB = `${caixa.x - MARGEM} ${caixa.y - MARGEM} ${caixa.largura + MARGEM * 2} ${caixa.altura + MARGEM * 2 + 120}`;
 const FLORIO = "M 380 250 C 1500 360 2700 250 3190 70";
 
-/** Duração total da abertura (CSS em styles.css usa os mesmos tempos): a cobertura sai entre 2,05 e 2,85s. */
-const DURACAO_MS = 2950;
-/** Abertura 3D "Da semente à lavoura" (desktop/introLavoura.ts, mesma duração): a lavoura se funde no hero entre 2,2 e 2,75s. */
-const DURACAO_3D_MS = 2850;
+/** Duração total da abertura CSS (styles.css usa os mesmos tempos): a cortina sobe entre 2,4 e 3,2s. */
+const DURACAO_MS = 3250;
+/** Abertura com ramos em WebGL (desktop/introRamos.ts): a cortina sobe entre 3,2 e 4,0s. */
+const DURACAO_3D_MS = 4000;
 
-// A abertura 3D (desktop/introLavoura.ts) não é carregada daqui: o script do head (routes/index.tsx) injeta o pacote separado
-// public/intro/lavoura-*.js assim que decide que ela roda, para começar sem esperar o resto do site.
+// A abertura com ramos não é carregada daqui: o script do head (routes/index.tsx) injeta o pacote separado
+// public/intro/abertura-*.js assim que decide que ela roda, para começar sem esperar o resto do site.
 
 /**
  * Poeira dourada em profundidade (como a abertura do Active Theory): pontos de luz suaves de vários tamanhos que sobem devagar.
@@ -95,7 +96,6 @@ export function IntroAssinatura() {
   return (
     <div aria-hidden="true" className="intro-cobertura">
       <span className="intro-luz" />
-      <span className="intro-semente" />
       <span className="intro-grao" />
       <div className="intro-poeira">
         {POEIRA.map((d, i) => (
@@ -117,36 +117,62 @@ export function IntroAssinatura() {
         ))}
       </div>
       <div className="intro-conteudo">
-        <div className="intro-escrita">
-          <div className="intro-escreve">
-            <svg viewBox={VB} className="intro-svg" style={{ overflow: "visible" }}>
-              <defs>
-                <linearGradient id="intro-g" x1="0" x2="1" y1="0" y2="1">
-                  <stop offset="0" stopColor="#FFC068" />
-                  <stop offset="0.5" stopColor="#E8912A" />
-                  <stop offset="1" stopColor="#D9771A" />
-                </linearGradient>
-              </defs>
-              {/* mesmo contorno do rodapé (id="assinatura-d" em AssinaturaSvg): evita repetir o caminho no HTML */}
-              <use href="#assinatura-d" />
+        <svg viewBox={VB} className="intro-svg">
+          <defs>
+            <linearGradient id="intro-g" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stopColor="#FFC068" />
+              <stop offset="0.5" stopColor="#E8912A" />
+              <stop offset="1" stopColor="#D9771A" />
+            </linearGradient>
+            {/* A tinta: cada traço da linha central da letra, na ordem em que a mão escreve, revela o contorno por baixo */}
+            <mask
+              id="intro-tinta"
+              maskUnits="userSpaceOnUse"
+              x={caixa.x - MARGEM * 2}
+              y={caixa.y - MARGEM * 2}
+              width={caixa.largura + MARGEM * 4}
+              height={caixa.altura + MARGEM * 4}
+            >
+              {TRACOS_ASSINATURA.map((t, i) => (
+                <path
+                  key={i}
+                  className="intro-traco"
+                  d={t.d}
+                  pathLength={1}
+                  style={{ "--i": t.ini, "--d": t.dur } as CSSProperties}
+                />
+              ))}
+            </mask>
+            <filter id="intro-brilho" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="10" />
+            </filter>
+          </defs>
+          {/* mesmo contorno do rodapé (id="assinatura-d" em AssinaturaSvg): evita repetir o caminho no HTML */}
+          <use href="#assinatura-d" mask="url(#intro-tinta)" />
+          <g filter="url(#intro-brilho)">
+            {TRACOS_ASSINATURA.map((t, i) => (
               <path
-                className="intro-florio"
-                d={FLORIO}
+                key={i}
+                className="intro-ponta"
+                d={t.d}
                 pathLength={1}
-                fill="none"
-                stroke="url(#intro-g)"
-                strokeWidth={26}
-                strokeLinecap="round"
+                style={{ "--i": t.ini, "--d": t.dur } as CSSProperties}
               />
-            </svg>
-          </div>
-          <span className="intro-caneta" />
-        </div>
+            ))}
+          </g>
+          <path
+            className="intro-florio"
+            d={FLORIO}
+            pathLength={1}
+            fill="none"
+            stroke="url(#intro-g)"
+            strokeWidth={26}
+            strokeLinecap="round"
+          />
+        </svg>
         <p className="intro-frase">Sempre na hora certa</p>
       </div>
-      {/* contador e linha de carregamento (como a abertura do Active Theory), só CSS */}
       <span className="intro-rotulo">Preço com fonte e data</span>
-      <span className="intro-contador" />
       <span className="intro-barra" />
     </div>
   );

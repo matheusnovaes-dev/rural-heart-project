@@ -1,7 +1,7 @@
 /**
- * Gera o pacote separado da abertura 3D (public/intro/lavoura-<hash>.js) e grava o nome em
+ * Gera o pacote separado da abertura 3D (public/intro/abertura-<hash>.js) e grava o nome em
  * src/components/landing/introArquivo.ts (usado pelo script do head). Rodar SEMPRE que mexer em
- * src/components/landing/desktop/introLavoura*.ts ou qualidade.ts:  bun run build:intro
+ * src/components/landing/desktop/introRamos.ts, introEntrada.ts, gl.ts ou qualidade.ts:  bun run build:intro
  */
 import { readdirSync, rmSync, writeFileSync } from "fs";
 
@@ -15,12 +15,12 @@ for (const f of (() => {
 })())
   rmSync(`${PASTA}/${f}`);
 const r = await Bun.build({
-  entrypoints: ["src/components/landing/desktop/introLavouraEntrada.ts"],
+  entrypoints: ["src/components/landing/desktop/introEntrada.ts"],
   outdir: PASTA,
   target: "browser",
   format: "esm",
   minify: true,
-  naming: "lavoura-[hash].[ext]",
+  naming: "abertura-[hash].[ext]",
 });
 if (!r.success) {
   console.error(r.logs);
