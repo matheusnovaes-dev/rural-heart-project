@@ -74,13 +74,28 @@ export function Header() {
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <Link
-            to="/login"
-            data-rolar
-            className="hidden px-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground md:inline"
-          >
-            Entrar
-          </Link>
+          {/* Navegação secundária em pílula fina, com um traço entre os itens (microtipografia em mono, como no site do
+              Active Theory); o botão laranja de testar continua sendo o destaque. Só a partir do desktop. */}
+          <div className="hidden h-9 items-center rounded-full border border-border/80 bg-background/70 px-1.5 backdrop-blur-sm md:flex">
+            <Link
+              to="/login"
+              data-rolar
+              className="rounded-full px-3 py-1.5 font-mono text-[11px] font-semibold tracking-[0.16em] text-muted-foreground uppercase transition-colors hover:text-foreground"
+            >
+              Entrar
+            </Link>
+            <span aria-hidden="true" className="h-px w-6 bg-border" />
+            <a
+              href={buildWhatsAppLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-rolar
+              onClick={() => trackLanding("WhatsappClique", { origem: "header" })}
+              className="rounded-full px-3 py-1.5 font-mono text-[11px] font-semibold tracking-[0.16em] text-foreground uppercase transition-colors hover:text-[color:var(--cta)]"
+            >
+              WhatsApp
+            </a>
+          </div>
           <Button
             type="button"
             size="sm"
@@ -91,18 +106,6 @@ export function Header() {
             className="pointer-events-none -ml-3 hidden max-w-0 overflow-hidden bg-cta !px-0 whitespace-nowrap text-cta-foreground opacity-0 transition-[opacity,max-width,margin,padding] duration-300 group-data-[passou=1]:pointer-events-auto group-data-[passou=1]:ml-0 group-data-[passou=1]:max-w-[16rem] group-data-[passou=1]:!px-3 group-data-[passou=1]:opacity-100 hover:bg-cta/90 md:inline-flex motion-reduce:transition-none"
           >
             Testar grátis por 7 dias
-          </Button>
-          <Button asChild size="sm" variant="outline" className="hidden md:inline-flex">
-            <a
-              href={buildWhatsAppLink()}
-              target="_blank"
-              rel="noopener noreferrer"
-              data-magnetico
-              data-rolar
-              onClick={() => trackLanding("WhatsappClique", { origem: "header" })}
-            >
-              Falar no WhatsApp
-            </a>
           </Button>
           <MenuTelaCheia />
         </div>

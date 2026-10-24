@@ -126,15 +126,22 @@ function Cartao({ item }: { item: ItemDoMercado }) {
   const valor = item.unidade === "dolar" ? brl(item.valor, 4) : brl(item.valor);
   return (
     <div className="flex shrink-0 flex-col gap-1 px-8 sm:px-14">
-      <span className="font-mono text-[11px] font-medium tracking-[0.2em] text-muted-foreground uppercase sm:text-xs">
+      <span
+        data-decodificar="tudo"
+        className="font-mono text-[11px] font-medium tracking-[0.2em] text-muted-foreground uppercase sm:text-xs"
+      >
         {item.rotulo}
       </span>
-      <span className="font-display text-4xl font-extrabold tracking-tight text-foreground tabular-nums sm:text-6xl">
+      <span
+        data-decodificar
+        className="font-display text-4xl font-extrabold tracking-tight text-foreground tabular-nums sm:text-6xl"
+      >
         <span className="mr-1 text-xl font-bold text-foreground/60 sm:text-3xl">R$</span>
         {valor}
       </span>
       {v !== null ? (
         <span
+          data-decodificar
           className={`text-sm font-semibold tabular-nums ${sobe ? "text-[#17753f]" : desce ? "text-[#c2412d]" : "text-muted-foreground"}`}
         >
           {sobe ? "▲" : desce ? "▼" : "•"} {brl(Math.abs(v), 1)}% em 7 dias

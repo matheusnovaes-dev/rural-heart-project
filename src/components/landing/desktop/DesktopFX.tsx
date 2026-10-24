@@ -7,6 +7,7 @@ import { iniciarCurvas } from "@/components/landing/desktop/curvas";
 import { nivelDaMaquina } from "@/components/landing/desktop/qualidade";
 import { iniciarVento } from "@/components/landing/desktop/vento";
 import { iniciarLetrasRolando } from "@/components/landing/desktop/letrasRolando";
+import { iniciarDecodificar } from "@/components/landing/desktop/decodificar";
 import {
   iniciarCartoes,
   iniciarCortinas,
@@ -37,6 +38,7 @@ export default function DesktopFX({ leve = false }: { leve?: boolean }) {
     seguro(iniciarCursor);
     seguro(iniciarMagneticos);
     seguro(iniciarLetrasRolando);
+    seguro(iniciarDecodificar);
     if (leve) return () => limpezas.reverse().forEach((f) => f());
     // Máquina fraca (placa sem aceleração ou gráfico Intel antigo): ficam os efeitos de CSS/transform; WebGL, rolagem suave e transformações contínuas
     // ligadas à rolagem (3D, paralaxe, profundidade: redesenho caro sem placa boa) ficam de fora, para a página rolar lisa em qualquer PC (ver qualidade.ts).

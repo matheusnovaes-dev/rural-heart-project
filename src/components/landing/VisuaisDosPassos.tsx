@@ -96,7 +96,10 @@ export function Resposta() {
   ] as const;
   return (
     <div className="mx-auto w-full max-w-md rounded-3xl bg-primary p-6 text-primary-foreground shadow-xl">
-      <p className="text-xs font-semibold tracking-[0.2em] text-primary-foreground/60 uppercase">
+      <p
+        data-decodificar="tudo"
+        className="text-xs font-semibold tracking-[0.2em] text-primary-foreground/60 uppercase"
+      >
         Soja · saca de 60 kg
       </p>
       <ul className="mt-4 divide-y divide-white/10">
@@ -107,7 +110,9 @@ export function Resposta() {
             style={atraso(150 + i * 250)}
           >
             <span className="text-sm text-primary-foreground/80">{rotulo}</span>
-            <span className="font-mono text-lg font-semibold tabular-nums">{valor}</span>
+            <span data-decodificar className="font-mono text-lg font-semibold tabular-nums">
+              {valor}
+            </span>
           </li>
         ))}
       </ul>
@@ -116,7 +121,10 @@ export function Resposta() {
         style={atraso(1000)}
       >
         <span className="text-sm font-semibold">Sobra na paridade</span>
-        <span className="font-mono text-2xl font-bold text-[color:var(--cta)] tabular-nums">
+        <span
+          data-decodificar
+          className="font-mono text-2xl font-bold text-[color:var(--cta)] tabular-nums"
+        >
           R$ 143,73
         </span>
       </p>
