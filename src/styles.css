@@ -1109,8 +1109,11 @@ html.intro-ativa .intro-cobertura {
   }
 }
 
-/* --- Abertura com ramos (WebGL). O canvas (fora da árvore do React, no fim do <body>) fica ENTRE o fundo verde e a
-   assinatura: ele mesmo pinta o fundo verde, e a cobertura vira transparente quando o 3D começa. */
+/* --- Abertura com ramos (WebGL, ~3s). O canvas (fora da árvore do React, no fim do <body>) fica ENTRE o fundo verde e a
+   assinatura: ele mesmo pinta o fundo verde, e a cobertura vira transparente quando o 3D começa.
+   0 a 1,2s ramos; 0,75 a 1,95s assinatura escrita; 2,2 a 3,0s TRANSIÇÃO CONTÍNUA: a cena esquenta (do verde para os tons do
+   pôr do sol da foto) e se dissolve na própria foto do hero, que se aproxima; a assinatura encolhe e voa até o nome do
+   cabeçalho (variáveis --voa-* medidas em desktop/introEntrada.ts) e some ao chegar. Sem cortina. */
 html.intro-ativa .intro-canvas {
   display: block;
   position: fixed;
@@ -1122,36 +1125,98 @@ html.intro-ativa .intro-canvas {
   background:
     radial-gradient(ellipse 70% 60% at 50% 56%, #1e4d37 0%, transparent 70%),
     radial-gradient(ellipse 120% 100% at 50% 50%, var(--primary) 30%, #0a1a12 100%);
-  animation: intro-saida 0.8s cubic-bezier(0.76, 0, 0.24, 1) 3.2s forwards;
+  transform-origin: 50% 62%;
+  animation: intro-aquece 0.8s cubic-bezier(0.45, 0, 0.25, 1) 2.2s forwards;
+}
+@keyframes intro-aquece {
+  0% {
+    opacity: 1;
+    filter: none;
+    transform: scale(1);
+  }
+  40% {
+    opacity: 0.95;
+    filter: sepia(0.6) saturate(1.5) hue-rotate(-12deg) brightness(1.05);
+  }
+  100% {
+    opacity: 0;
+    filter: sepia(0.75) saturate(1.6) hue-rotate(-16deg) brightness(1.15);
+    transform: scale(1.06);
+    visibility: hidden;
+  }
 }
 html.intro-3d .intro-cobertura {
   z-index: 202;
-  animation-delay: 3.2s;
+  animation: intro-funde 0.15s linear 2.95s forwards;
+}
+@keyframes intro-funde {
+  to {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
 }
 html.intro-3d.intro-3d-rodando .intro-cobertura {
   background: transparent;
 }
-html.intro-3d .intro-poeira {
+html.intro-3d .intro-poeira,
+html.intro-3d .intro-luz {
   display: none;
 }
+html.intro-3d .intro-conteudo {
+  animation: none;
+}
 html.intro-3d .intro-svg {
-  --intro-base: 1.2s;
+  --intro-base: 0.75s;
+  --intro-T: 1.2s;
+  --voa-x: -32vw;
+  --voa-y: -40vh;
+  --voa-s: 0.2;
+  transform-origin: 50% 46.13%;
+  animation: intro-voa 0.7s cubic-bezier(0.6, 0, 0.2, 1) 2.25s forwards;
+}
+@keyframes intro-voa {
+  0% {
+    transform: none;
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--voa-x), var(--voa-y)) scale(var(--voa-s));
+    opacity: 0;
+  }
 }
 html.intro-3d .intro-florio {
-  animation-delay: 2.6s;
+  animation:
+    intro-florio 0.4s ease-out 1.8s forwards,
+    intro-some 0.25s ease 2.2s forwards;
 }
 html.intro-3d .intro-frase {
-  animation-delay: 2.75s;
+  animation:
+    intro-frase 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 1.85s both,
+    intro-some 0.25s ease 2.2s forwards;
 }
-html.intro-3d .intro-conteudo {
-  animation-delay: 3.2s;
+html.intro-3d .intro-rotulo {
+  animation:
+    menu-surge 0.6s ease 0.3s both,
+    intro-some 0.25s ease 2.2s forwards;
 }
 html.intro-3d .intro-barra {
-  animation-duration: 3.1s;
+  animation:
+    intro-barra 2.1s cubic-bezier(0.4, 0, 0.2, 1) 0.1s forwards,
+    intro-some 0.25s ease 2.2s forwards;
+}
+@keyframes intro-some {
+  to {
+    opacity: 0;
+  }
 }
 /* Pausado até o WebGL desenhar o 1º quadro */
 html.intro-3d:not(.intro-3d-rodando) .intro-cobertura,
 html.intro-3d:not(.intro-3d-rodando) .intro-cobertura *,
+html.intro-3d:not(.intro-3d-rodando) .intro-canvas,
 html.intro-3d:not(.intro-3d-rodando) #topo picture img {
   animation-play-state: paused !important;
 }
@@ -1167,7 +1232,17 @@ html.intro-rodou #topo picture img {
   animation: intro-foto 2.4s cubic-bezier(0.16, 0.7, 0.2, 1) 2.25s both;
 }
 html.intro-3d.intro-rodou #topo picture img {
-  animation-delay: 3.05s;
+  animation: intro-foto-3d 1.5s cubic-bezier(0.16, 0.7, 0.2, 1) 2.2s both;
+}
+@keyframes intro-foto-3d {
+  from {
+    transform: scale(1.12);
+    filter: brightness(1.15) saturate(1.2);
+  }
+  to {
+    transform: scale(1);
+    filter: none;
+  }
 }
 @keyframes intro-foto {
   from {

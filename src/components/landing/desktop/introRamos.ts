@@ -11,11 +11,11 @@ import { nivelDaMaquina } from "./qualidade";
  * largo; o crescimento é calculado na GPU a partir do tempo de nascimento de cada vértice. Gerado com semente fixa (mesmo desenho
  * sempre). Resolução se adapta se a máquina não aguentar.
  *
- * Linha do tempo (a mesma do CSS em styles.css, bloco `intro-3d`): ramos 0,1 a ~2,2s; assinatura 2,0 a 2,9s; tudo se dissolve a
- * partir de 3,3s; a cortina sobe de 3,6 a 4,4s. Quem chama é IntroAssinatura (só desktop, 1ª visita, máquina que não seja "baixa").
+ * Linha do tempo (a mesma do CSS em styles.css, bloco `intro-3d`, ~3s): ramos 0 a ~1,2s; assinatura 0,75 a 1,95s; de 2,2 a
+ * 3,0s a cena esquenta e se dissolve na foto do hero enquanto a assinatura voa até o logo do topo. Quem chama é IntroAssinatura (só desktop, 1ª visita, máquina que não seja "baixa").
  */
 
-const FIM_MS = 4000;
+const FIM_MS = 3000;
 
 // ------------------------------------------------------------------ geração dos ramos
 type Pt = { x: number; y: number; t: number; w: number };
@@ -40,7 +40,7 @@ function gerar(W: number, H: number, nivel: "alta" | "media") {
   const rajadas: Rajada[] = [];
   const larguraAss = Math.min(704, W * 0.66);
   const cy = H * 0.5;
-  const N = nivel === "alta" ? 14 : 10;
+  const N = nivel === "alta" ? 9 : 7;
   const PASSO = 7;
 
   // ramo que cresce de `ini` em direção a `alvo` (se houver), com ondulação orgânica; devolve os pontos
@@ -85,15 +85,15 @@ function gerar(W: number, H: number, nivel: "alta" | "media") {
   for (let i = 0; i < N; i++) {
     const u = i / (N - 1);
     const z = r() * 0.85; // 0 perto, ~0.85 longe
-    const lateral = i === 0 || i === N - 1;
-    const x0 = lateral ? (i === 0 ? -20 : W + 20) : W * (0.06 + 0.88 * u) + (r() - 0.5) * 60;
+    const lateral = false;
+    const x0 = lateral ? (i === 0 ? -20 : W + 20) : W * (0.1 + 0.8 * u) + (r() - 0.5) * 50;
     const y0 = lateral ? H * (0.62 + r() * 0.2) : H + 24;
     // alvo: um ponto da linha da assinatura (centro da tela)
     const ux = (u - 0.5) * 0.92 + (r() - 0.5) * 0.08;
     const alvo = { x: W / 2 + ux * larguraAss, y: cy + H * 0.05 + (r() - 0.5) * 24 };
     const dist = Math.hypot(alvo.x - x0, alvo.y - y0);
-    const t0 = 0.0 + r() * 0.18;
-    const tFim = 1.3 + r() * 0.3;
+    const t0 = 0.0 + r() * 0.12;
+    const tFim = 0.95 + r() * 0.25;
     const vel = (dist * 1.25) / (tFim - t0);
     const angIni = lateral ? (i === 0 ? -0.35 : Math.PI + 0.35) : -Math.PI / 2 + (r() - 0.5) * 0.5;
     const pts = crescer({
@@ -104,7 +104,7 @@ function gerar(W: number, H: number, nivel: "alta" | "media") {
       comp: dist * 1.6,
       t0,
       vel,
-      w0: 4.6 - z * 2.0,
+      w0: 6.2 - z * 2.6,
       curva: 0,
       fase: r() * 6.28,
     });
@@ -131,7 +131,7 @@ function gerar(W: number, H: number, nivel: "alta" | "media") {
       if (acumulado < proximo) continue;
       acumulado = 0;
       proximo = 45 + r() * 70;
-      if (r() > 0.74) continue;
+      if (r() > 0.5) continue;
       const a = pts[k]!;
       const b = pts[k + 1]!;
       const dir = Math.atan2(b.y - a.y, b.x - a.x);
@@ -159,7 +159,7 @@ function gerar(W: number, H: number, nivel: "alta" | "media") {
         tipo: 0,
       });
       // netos curtos
-      if (r() < 0.4 && filho.length > 6) {
+      if (r() < 0.2 && filho.length > 6) {
         const m = filho[Math.floor(filho.length / 2)]!;
         const n = filho[Math.floor(filho.length / 2) + 1]!;
         const d2 = Math.atan2(n.y - m.y, n.x - m.x);
@@ -224,7 +224,7 @@ void main(){
   vHead = idade >= 0.0 ? exp(-idade * 7.0) : 0.0;
   vSide = aSide; vZ = aZ; vW = clamp((aW - 0.4) / 2.5, 0.0, 1.0);
   // seiva/luz que sobe da base às pontas enquanto a assinatura se escreve
-  float onda = (uTime - (1.2 + aT * 0.38)) * 5.0;
+  float onda = (uTime - (0.9 + aT * 0.38)) * 5.0;
   vPulso = exp(-onda * onda);
   float persp = uCam / (1.0 + aZ * 0.75);
   vec2 p = aPos + aNrm * aSide * aW * uLarg / max(persp, 0.3);
@@ -326,7 +326,7 @@ void main(){
     float vel = 14.0 + (1.0 - aZ) * 26.0;
     p.y = mod(aPos.y - uTime * vel, uRes.y + 80.0) - 40.0;
     p.x += sin(uTime * 0.6 + aExtra.x * 6.28) * 14.0;
-    a = (0.25 + (1.0 - aZ) * 0.6) * smoothstep(0.0, 0.8, uTime);
+    a = (0.12 + (1.0 - aZ) * 0.3) * smoothstep(0.0, 0.8, uTime);
   } else {
     // rajada: sai do ponto onde o ramo chegou, abre e some
     float idade = uTime - aExtra.y;
@@ -387,22 +387,13 @@ function quadFolhas(folhas: Folha[]) {
 function polen(W: number, H: number, nivel: "alta" | "media", rajadas: Rajada[]) {
   const r = rng(77);
   const v: number[] = []; // aPos(2) aZ aTam aExtra(4) = 8
-  const n = nivel === "alta" ? 260 : 150;
+  const n = nivel === "alta" ? 60 : 40;
   for (let i = 0; i < n; i++) {
     const z = r();
-    v.push(
-      r() * W,
-      r() * (H + 80),
-      z,
-      2 + (1 - z) * (1 - z) * 18 * (r() < 0.15 ? 2.2 : 1),
-      r(),
-      -1,
-      0,
-      0,
-    );
+    v.push(r() * W, r() * (H + 80), z, 2 + (1 - z) * (1 - z) * 9, r(), -1, 0, 0);
   }
   for (const j of rajadas) {
-    for (let k = 0; k < 14; k++) {
+    for (let k = 0; k < 6; k++) {
       const ang = (k / 14) * Math.PI * 2 + r() * 0.4;
       const f = 0.4 + r() * 0.8;
       v.push(j.x, j.y, j.z, 3 + r() * 7, r(), j.t, Math.cos(ang) * f, Math.sin(ang) * f - 0.3);
@@ -543,7 +534,7 @@ export function iniciarIntroRamos(
     mouseX += (alvoX - mouseX) * 0.06;
     mouseY += (alvoY - mouseY) * 0.06;
     const cam = 1 + 0.07 * (1 - Math.exp(-t * 0.55)); // câmera avançando devagar
-    const fade = 1 - Math.min(1, Math.max(0, (t - 2.9) / 0.6));
+    const fade = 1 - Math.min(1, Math.max(0, (t - 2.9) / 0.2));
 
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);

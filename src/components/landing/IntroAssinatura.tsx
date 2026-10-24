@@ -10,8 +10,8 @@ const FLORIO = "M 380 250 C 1500 360 2700 250 3190 70";
 
 /** Duração total da abertura CSS (styles.css usa os mesmos tempos): a cortina sobe entre 2,4 e 3,2s. */
 const DURACAO_MS = 3250;
-/** Abertura com ramos em WebGL (desktop/introRamos.ts): a cortina sobe entre 3,2 e 4,0s. */
-const DURACAO_3D_MS = 4000;
+/** Abertura com ramos em WebGL (desktop/introRamos.ts): a cena se dissolve na foto do hero entre 2,2 e 3,0s. */
+const DURACAO_3D_MS = 3000;
 
 // A abertura com ramos não é carregada daqui: o script do head (routes/index.tsx) injeta o pacote separado
 // public/intro/abertura-*.js assim que decide que ela roda, para começar sem esperar o resto do site.

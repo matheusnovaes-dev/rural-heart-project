@@ -39,7 +39,7 @@ export function Hero() {
   const html = typeof document !== "undefined" ? document.documentElement : null;
   const atrasoIntro = html?.classList.contains("intro-ativa")
     ? html.classList.contains("intro-3d")
-      ? 3.3
+      ? 2.45
       : 2.5
     : 0;
   const sectionRef = useRef<HTMLElement>(null);
